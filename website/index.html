@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Crucible — Architecture</title>
+<style>
+  :root{
+    --bg:#0a0e1a; --panel:#1a2236; --panel-2:#11182b; --accent:#6366f1;
+    --text:#e2e8f0; --muted:#94a3b8; --line:#1f2a44;
+    --red:#c0584f; --green:#34d399; --teal:#2fa589; --violet:#8b7fd4; --amber:#d08a3e;
+    --radius:14px; --maxw:1080px;
+    --font:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:#a5b4fc;text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);background:var(--panel-2);color:#a5b4fc;padding:1px 6px;border-radius:5px;font-size:.88em}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 22px}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(10,14,26,.86);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;gap:18px;height:56px;overflow-x:auto}
+  nav .brand{font-weight:800;letter-spacing:.02em;white-space:nowrap}
+  nav .brand span{color:var(--accent)}
+  nav a.link{color:var(--muted);font-size:13.5px;white-space:nowrap}
+  nav a.link:hover{color:var(--text);text-decoration:none}
+
+  /* hero */
+  header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line)}
+  .kicker{color:var(--accent);font-weight:700;letter-spacing:.16em;font-size:12px;text-transform:uppercase}
+  h1{font-size:clamp(34px,6vw,56px);margin:.28em 0 .12em;line-height:1.04;letter-spacing:-.01em}
+  .lede{color:var(--muted);font-size:clamp(15px,2.2vw,18px);max-width:760px}
+  .meta{margin-top:16px;color:var(--muted);font-size:13.5px;display:flex;flex-wrap:wrap;gap:8px 18px}
+  .meta b{color:var(--text);font-weight:600}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:30px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 16px 14px}
+  .stat .n{font-size:30px;font-weight:800;line-height:1}
+  .stat .l{color:var(--muted);font-size:12.5px;margin-top:8px}
+  .note{margin-top:22px;background:var(--panel-2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:12px 15px;color:var(--muted);font-size:13px}
+
+  section{padding:40px 0;border-bottom:1px solid var(--line)}
+  h2.sec{font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:0 0 6px}
+  h3.title{font-size:clamp(22px,3.6vw,30px);margin:0 0 14px;letter-spacing:-.01em}
+  p.intro{color:var(--muted);max-width:820px;margin:0 0 22px}
+
+  .figure{background:#0c1120;border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .figure .cap{color:var(--muted);font-size:12px;letter-spacing:.12em;font-weight:600;margin-bottom:10px}
+  .mermaid{text-align:center;overflow-x:auto}
+  .mermaid .sub{font-size:11px;opacity:.82}
+  .figcaption{color:var(--muted);font-size:13px;margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+  .figcaption b{color:#cbd5e1}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h4{margin:0 0 4px;font-size:17px}
+  .card .who{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
+  .pc{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px}
+  .pc h5{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+  .pc .pros h5{color:var(--green)}
+  .pc .cons h5{color:var(--red)}
+  .pc ul{margin:0;padding-left:16px}
+  .pc li{font-size:13px;color:#cbd5e1;margin-bottom:5px}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;overflow:hidden;border-radius:var(--radius)}
+  th,td{text-align:left;padding:11px 13px;border-bottom:1px solid var(--line);vertical-align:top}
+  thead th{background:var(--panel-2);color:#cbd5e1;font-size:12px;letter-spacing:.05em;text-transform:uppercase}
+  tbody tr:hover{background:#0e1424}
+  td b{color:var(--text)}
+  .tbl-wrap{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+
+  .tradeoffs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .to{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+  .to h4{margin:0 0 10px;font-size:15px}
+  .to .row{font-size:13px;margin-bottom:8px}
+  .to .row .k{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:2px}
+  .to .accept .k{color:var(--green)} .to .bite .k{color:var(--amber)}
+
+  .stack{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .chip{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;gap:11px;align-items:center}
+  .chip img{width:26px;height:26px;flex:0 0 26px}
+  .chip .mono{width:26px;height:26px;flex:0 0 26px;border-radius:7px;display:grid;place-items:center;font-weight:800;font-size:10px;color:#0a0e1a}
+  .chip .t{font-weight:600;font-size:14px}
+  .chip .d{color:var(--muted);font-size:11.5px;margin-top:1px}
+
+  .measure-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .m{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .m .h{font-weight:700;font-size:14px} .m .h.head{color:var(--green)}
+  .m .d{color:var(--muted);font-size:12.5px;margin-top:5px}
+
+  footer{padding:30px 0 60px;color:var(--muted);font-size:13px}
+  footer .links{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:10px}
+
+  @media(max-width:760px){
+    .stats,.stack,.measure-grid{grid-template-columns:repeat(2,1fr)}
+    .grid2,.tradeoffs{grid-template-columns:1fr}
+    .pc{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">Crucible<span>.</span></div>
+    <a class="link" href="#loop">Loop</a>
+    <a class="link" href="#topology">Topology</a>
+    <a class="link" href="#pillars">Pillars</a>
+    <a class="link" href="#trust">Trust boundaries</a>
+    <a class="link" href="#flow">Data flow</a>
+    <a class="link" href="#decisions">Decisions</a>
+    <a class="link" href="#tradeoffs">Trade-offs</a>
+    <a class="link" href="#safety">Safety map</a>
+    <a class="link" href="#stack">Stack</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Gauntlet capstone · ML + LLM hybrid</div>
+    <h1>Crucible</h1>
+    <p class="lede">An adversarial security platform that attacks an AI system, verifies its work with checks the system can never see, hardens it in a closed loop, and then measures its own catch rate against an adversary that already knows the scheme.</p>
+    <div class="meta">
+      <span><b>Direction:</b> ML + LLM hybrid</span>
+      <span><b>Showcase:</b> June 29, 2026 · 10-minute live demo</span>
+      <span><b>Team:</b> clean four-way split</span>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="n" style="color:var(--accent)">4</div><div class="l">pillars — one ownable piece per teammate</div></div>
+      <div class="stat"><div class="n" style="color:var(--teal)">4</div><div class="l">independent oracles, each failing differently (+ LLM judge as one vote)</div></div>
+      <div class="stat"><div class="n" style="color:var(--amber)">&ge;3</div><div class="l">distinct evasion strategies in committed scope</div></div>
+      <div class="stat"><div class="n" style="color:var(--red)">1</div><div class="l">headline number — how often a cheat still gets through</div></div>
+    </div>
+    <div class="note">Derived solely from <b>Crucible_Capstone_Proposal.pdf</b> (the uploaded version). This is a proposal-stage architecture; no implementation exists yet, so the dashboard metrics below are named but unvalued — they populate from real runs, never from placeholders.</div>
+  </div>
+</header>
+
+<!-- LOOP -->
+<section id="loop">
+  <div class="wrap">
+    <h2 class="sec">The idea</h2>
+    <h3 class="title">One platform, a single self-closing loop</h3>
+    <p class="intro">Crucible is not a verifier and not just a fuzzer. The red agent attacks, an ensemble of independent oracles verifies, the blue loop hardens the target, and the platform measures itself — then re-attacks. The loop closes on itself and grades each pass.</p>
+    <div class="figure">
+      <div class="cap">FIG 1 · THE SELF-CLOSING LOOP</div>
+      <div class="mermaid">
+flowchart LR
+  RED["&lt;b&gt;RED&lt;/b&gt;<br/><span class='sub'>attack</span>"]:::red --> VERIFY["&lt;b&gt;VERIFY&lt;/b&gt;<br/><span class='sub'>independent oracles</span>"]:::verify
+  VERIFY --> HARDEN["&lt;b&gt;HARDEN&lt;/b&gt;<br/><span class='sub'>blue loop</span>"]:::harden
+  HARDEN --> MEASURE["&lt;b&gt;MEASURE&lt;/b&gt;<br/><span class='sub'>self-test</span>"]:::measure
+  MEASURE -. "re-attack · grade each pass" .-> RED
+  classDef red fill:#7f2d2d,stroke:#c0584f,color:#fff,stroke-width:2px;
+  classDef verify fill:#1f6b5c,stroke:#2fa589,color:#fff,stroke-width:2px;
+  classDef harden fill:#3b3f8f,stroke:#6366f1,color:#fff,stroke-width:2px;
+  classDef measure fill:#2f3b52,stroke:#64748b,color:#e2e8f0,stroke-width:2px;
+      </div>
+      <div class="figcaption">AI is a primitive on two sides — the <b>adversarial search engine</b> and the <b>hardening engine</b> — not a bolt-on. Oracle access to the target is a first-class tool inside the loop.</div>
+    </div>
+  </div>
+</section>
+
+<!-- TOPOLOGY -->
+<section id="topology">
+  <div class="wrap">
+    <h2 class="sec">Architecture</h2>
+    <h3 class="title">System topology</h3>
+    <p class="intro">A thin adapter wraps each system under test, so the core never changes when the target does — one core, three adapters. The target runs with no path to the verification artifacts; that independence is the foundation everything else rests on.</p>
+    <div class="figure">
+      <div class="cap">FIG 2 · SYSTEM TOPOLOGY (FOUR PILLARS)</div>
+      <div class="mermaid">
+flowchart LR
+  SPEC["Sealed Spec<br/><span class='sub'>source of truth</span>"]:::spec
+  RED["<img src='https://cdn.simpleicons.org/anthropic/d4a373' width='14'/> Red Agent<br/><span class='sub'>LLM adversarial search</span>"]:::red
+  TARGET["Target + Producer Sandbox<br/><span class='sub'>fraud · code · research</span>"]:::tgt
+  ORACLES["4 Independent Oracles<br/><span class='sub'>+ LLM judge</span>"]:::ora
+  CAT["Strategy Catalog<br/><span class='sub'>persistent memory</span>"]:::red
+  BLUE["<img src='https://cdn.simpleicons.org/anthropic/d4a373' width='14'/> Blue Loop<br/><span class='sub'>auto-harden + retrain</span>"]:::blue
+  MEAS["Measure<br/><span class='sub'>dashboard · traces · benchmark</span>"]:::meas
+  RED -->|"query_target / submit"| TARGET
+  TARGET -->|"output only"| ORACLES
+  SPEC -->|"derives"| ORACLES
+  ORACLES -. "verdict + audit trace" .-> RED
+  ORACLES -->|"undetected hacks"| CAT
+  CAT --> BLUE
+  BLUE -. "retrain" .-> TARGET
+  ORACLES -->|"recall · ASR · val−heldout gap"| MEAS
+  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
+  classDef red fill:#7f2d2d,stroke:#c0584f,color:#fff,stroke-width:2px;
+  classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
+  classDef ora fill:#1f6b5c,stroke:#2fa589,color:#fff,stroke-width:2px;
+  classDef blue fill:#3b3f8f,stroke:#6366f1,color:#fff,stroke-width:2px;
+  classDef meas fill:#2f3b52,stroke:#64748b,color:#e2e8f0,stroke-width:2px;
+      </div>
+      <div class="figcaption">Dashed edges are feedback: verdicts return to the red agent, retraining returns to the target. The same core runs over a fraud model, a code-producing agent, and a multi-step research agent through a thin adapter.</div>
+    </div>
+  </div>
+</section>
+
+<!-- PILLARS -->
+<section id="pillars">
+  <div class="wrap">
+    <h2 class="sec">Architecture · every piece, and who owns it</h2>
+    <h3 class="title">Four pillars</h3>
+    <p class="intro">Each pillar is a clean ownership boundary for one team member, and each folds in the distinct features of both source designs.</p>
+
+    <!-- Pillar 1 -->
+    <div class="figure" style="margin-bottom:16px">
+      <div class="cap">FIG 3 · PILLAR 1 — TARGETS &amp; INDEPENDENT ORACLES</div>
+      <div class="mermaid">
+flowchart LR
+  subgraph ADAPT["Adapter layer · one core, three adapters"]
+    direction TB
+    FA["Fraud adapter<br/><span class='sub'>LightGBM · swap AE / GMM / DAGMM</span>"]:::a
+    CA["Code-agent adapter"]:::a
+    RA["Research-agent adapter"]:::a
+  end
+  IFACE["Uniform interface<br/><span class='sub'>query_target() · submit()</span>"]:::i
+  SBX["Producer sandbox<br/><span class='sub'>no path to artifacts</span>"]:::s
+  SPEC["Sealed spec"]:::spec
+  subgraph ORACLES["Four independent oracles + judge"]
+    direction TB
+    O1["Held-out tests<br/><span class='sub'>made after submit, never shown</span>"]:::o
+    O2["Metamorphic relations<br/><span class='sub'>no reference answer</span>"]:::o
+    O3["Differential oracle<br/><span class='sub'>2nd impl, diff family, must agree</span>"]:::o
+    O4["Property-based fuzzing<br/><span class='sub'>invariants</span>"]:::o
+    OJ["LLM judge<br/><span class='sub'>one vote, not the authority</span>"]:::j
+  end
+  AGG["Verdict + audit trace"]:::agg
+  FA --> IFACE
+  CA --> IFACE
+  RA --> IFACE
+  IFACE --> SBX
+  SBX -->|"output only"| ORACLES
+  SPEC -->|"derives, never from submission"| ORACLES
+  O1 --> AGG
+  O2 --> AGG
+  O3 --> AGG
+  O4 --> AGG
+  OJ --> AGG
+  classDef a fill:#1a2236,stroke:#475569,color:#e2e8f0;
+  classDef i fill:#243049,stroke:#64748b,color:#e2e8f0;
+  classDef s fill:#3a2a2a,stroke:#a35d5d,color:#f1e2e2;
+  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
+  classDef o fill:#1f6b5c,stroke:#2fa589,color:#fff;
+  classDef j fill:#155e63,stroke:#3aa6ad,color:#e6fffb;
+  classDef agg fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
+      </div>
+    </div>
+
+    <!-- Pillar 2 -->
+    <div class="figure" style="margin-bottom:16px">
+      <div class="cap">FIG 4 · PILLAR 2 — RED, THE ADVERSARIAL SEARCH ENGINE</div>
+      <div class="mermaid">
+flowchart LR
+  IN["Flagged case /<br/>artifact"]:::n
+  REASON["Reason<br/><span class='sub'>why was I caught?</span>"]:::r
+  PROP["Propose minimal change<br/><span class='sub'>preserve intent + constraints</span>"]:::r
+  QT["query_target()"]:::q
+  OUT["Evasion +<br/><span class='sub'>attack-success-rate</span>"]:::out
+  CAT["Strategy catalog<br/><span class='sub'>persistent MCP-style memory</span>"]:::mem
+  WB["White-box mode<br/><span class='sub'>full scheme revealed</span>"]:::wb
+  HYB["Hybrid fallback<br/><span class='sub'>constrained numeric search</span>"]:::hyb
+  IN --> REASON --> PROP --> QT
+  QT -. "score · iterate" .-> REASON
+  QT --> OUT
+  CAT -. "reuse tactics" .-> PROP
+  OUT -. "distill wins" .-> CAT
+  WB -. "stress test" .-> REASON
+  PROP -. "when constraints hard" .-> HYB
+  HYB -. "executes" .-> QT
+  classDef n fill:#1a2236,stroke:#475569,color:#e2e8f0;
+  classDef r fill:#7f2d2d,stroke:#c0584f,color:#fff;
+  classDef q fill:#243049,stroke:#6366f1,color:#e2e8f0;
+  classDef out fill:#5c3a1a,stroke:#d08a3e,color:#fff2e0,stroke-width:2px;
+  classDef mem fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe;
+  classDef wb fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2;
+  classDef hyb fill:#243049,stroke:#64748b,color:#e2e8f0;
+      </div>
+    </div>
+
+    <!-- Pillar 3 -->
+    <div class="figure" style="margin-bottom:16px">
+      <div class="cap">FIG 5 · PILLAR 3 — BLUE, AUTOMATED HARDENING</div>
+      <div class="mermaid">
+flowchart LR
+  CAT["Strategy catalog<br/><span class='sub'>discovered attacks</span>"]:::mem
+  LLM["<img src='https://cdn.simpleicons.org/anthropic/d4a373' width='14'/> Blue LLM<br/><span class='sub'>reads tactics</span>"]:::b
+  subgraph PATCH["Proposes a patch"]
+    direction TB
+    F["New features"]:::p
+    S["Adversarial training samples"]:::p
+    E["Specialist ensemble"]:::p
+  end
+  RETRAIN["Retrain target"]:::t
+  HELD["Re-evaluate on<br/><span class='sub'>HELD-OUT attacks</span>"]:::h
+  OUT["Detection rate recovers<br/><span class='sub'>generalization measured</span>"]:::out
+  CAT --> LLM --> PATCH
+  F --> RETRAIN
+  S --> RETRAIN
+  E --> RETRAIN
+  RETRAIN --> HELD --> OUT
+  classDef mem fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe;
+  classDef b fill:#3b3f8f,stroke:#6366f1,color:#fff,stroke-width:2px;
+  classDef p fill:#243049,stroke:#64748b,color:#e2e8f0;
+  classDef t fill:#1a2236,stroke:#475569,color:#e2e8f0;
+  classDef h fill:#1f6b5c,stroke:#2fa589,color:#fff;
+  classDef out fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
+      </div>
+    </div>
+
+    <!-- Pillar 4 -->
+    <div class="figure" style="margin-bottom:22px">
+      <div class="cap">FIG 6 · PILLAR 4 — MEASURE, SELF-TEST &amp; BENCHMARK</div>
+      <div class="mermaid">
+flowchart LR
+  TRACE["Agent step traces<br/><span class='sub'>+ every verdict</span>"]:::in
+  DASH["Honest dashboard<br/><span class='sub'>undetected-hack · val−heldout gap</span><br/><span class='sub'>recall · cost/hack · human-min/1k</span>"]:::dash
+  CURVE["Curves<br/><span class='sub'>ASR · detection · red↔blue co-evolution</span>"]:::curve
+  AUDIT["Audit trace per verdict<br/><span class='sub'>check fired · obligation · 1-click replay</span>"]:::audit
+  ART["Artifacts<br/><span class='sub'>seeded corpus · leaderboard · SR 11-7 report</span>"]:::art
+  HALT["Halt certification<br/><span class='sub'>recall past residual red line</span>"]:::halt
+  TRACE --> DASH
+  TRACE --> CURVE
+  TRACE --> AUDIT
+  DASH --> HALT
+  DASH --> ART
+  CURVE --> ART
+  AUDIT --> ART
+  classDef in fill:#1a2236,stroke:#475569,color:#e2e8f0;
+  classDef dash fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
+  classDef curve fill:#243049,stroke:#6366f1,color:#e2e8f0;
+  classDef audit fill:#243049,stroke:#64748b,color:#e2e8f0;
+  classDef art fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
+  classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
+      </div>
+    </div>
+
+    <!-- pros/cons cards -->
+    <div class="grid2">
+      <div class="card">
+        <h4>Pillar 1 · Targets &amp; oracles</h4>
+        <div class="who">owner: adapters, sealing, the four-oracle ensemble</div>
+        <div class="pc">
+          <div class="pros"><h5>Pros</h5><ul>
+            <li>Target-agnostic: one core, three thin adapters.</li>
+            <li>Four mechanisms that fail differently — a hack past one is caught by another.</li>
+            <li>Oracles derive from the sealed spec, never the submission; held-out instances made after submit.</li>
+            <li>Differential oracle uses a different model family.</li>
+          </ul></div>
+          <div class="cons"><h5>Cons</h5><ul>
+            <li>The spec is only a proxy for intent.</li>
+            <li>Oracles could share blind spots — the hardest piece to get right.</li>
+            <li>Mitigation: the white-box adversary is rewarded for finding a shared gap.</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Pillar 2 · Red search engine</h4>
+        <div class="who">owner: LLM search, catalog, white-box, fallback</div>
+        <div class="pc">
+          <div class="pros"><h5>Pros</h5><ul>
+            <li>LLM semantic search yields valid, interpretable evasions.</li>
+            <li>Persistent strategy memory compounds across runs.</li>
+            <li>White-box mode turns the catch-rate claim into a measured recall number.</li>
+          </ul></div>
+          <div class="cons"><h5>Cons</h5><ul>
+            <li>LLM may fail constraint satisfaction &rarr; degrade to the hybrid.</li>
+            <li>Per-loop cost and latency &rarr; cache, batch, small inner model.</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Pillar 3 · Blue loop</h4>
+        <div class="who">owner: automated hardening &amp; retraining</div>
+        <div class="pc">
+          <div class="pros"><h5>Pros</h5><ul>
+            <li>Automated rapid-response patch: find the hole, close it, verify.</li>
+            <li>Verified on held-out attacks, not the patch's own attacks.</li>
+            <li>Proposes features, samples, or an ensemble automatically.</li>
+          </ul></div>
+          <div class="cons"><h5>Cons</h5><ul>
+            <li>Can overfit to known attacks or fail to converge.</li>
+            <li>Mitigation: measure generalization on a held-out attack set defined up front.</li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="card">
+        <h4>Pillar 4 · Measure</h4>
+        <div class="who">owner: traces, curves, dashboard, benchmark</div>
+        <div class="pc">
+          <div class="pros"><h5>Pros</h5><ul>
+            <li>A single honest number: undetected-hack rate.</li>
+            <li>Per-verdict audit trace with one-click replay.</li>
+            <li>Exported reusable benchmark; halt-certification at a red line.</li>
+          </ul></div>
+          <div class="cons"><h5>Cons</h5><ul>
+            <li>Self-deceiving evaluation risk &rarr; freeze the eval protocol on day one.</li>
+            <li>Cost-per-hack depends on LLM spend.</li>
+          </ul></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST -->
+<section id="trust">
+  <div class="wrap">
+    <h2 class="sec">The core bet</h2>
+    <h3 class="title">Trust boundaries &amp; spec sealing</h3>
+    <p class="intro">The single hardest piece — and the reason the project is worth attempting — is independent oracle generation that survives a white-box adversary. If the oracle holds when the producer knows the scheme, the catch rate is real.</p>
+    <div class="figure">
+      <div class="cap">FIG 7 · TRUST BOUNDARIES (THE CORE BET)</div>
+      <div class="mermaid">
+flowchart LR
+  RED["<img src='https://cdn.simpleicons.org/anthropic/d4a373' width='14'/> Red Agent<br/><span class='sub'>adversarial search</span>"]:::red
+  subgraph PROD["PRODUCER ZONE · sandboxed"]
+    direction TB
+    TARGET["Target under test<br/><span class='sub'>fraud · code · research</span>"]:::tgt
+  end
+  subgraph SEAL["SEALED VERIFICATION ZONE · no producer path in"]
+    direction TB
+    SPEC["Sealed Spec<br/><span class='sub'>source of truth</span>"]:::spec
+    OR["4 Independent Oracles<br/><span class='sub'>held-out · metamorphic · differential · fuzz</span><br/><span class='sub'>+ LLM judge = one vote</span>"]:::ora
+    SPEC -->|"derives, never from submission"| OR
+  end
+  RED -->|"submit / query_target()"| TARGET
+  TARGET -->|"output only"| OR
+  OR -. "score / verdict only" .-> RED
+  RED == "WHITE-BOX: scheme revealed,<br/>held-out instances still hidden" ==> SEAL
+  classDef red fill:#7f2d2d,stroke:#c0584f,color:#fff,stroke-width:2px;
+  classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
+  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
+  classDef ora fill:#1f6b5c,stroke:#2fa589,color:#fff,stroke-width:2px;
+      </div>
+      <div class="figcaption">
+        <b style="color:var(--green)">Producer can see:</b> its own input, its own output, the <code>query_target()</code> score.<br/>
+        <b style="color:var(--red)">Producer cannot see:</b> held-out test instances, the differential second implementation, or any oracle internals. White-box mode reveals the <em>scheme</em>, not the instances.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FLOW -->
+<section id="flow">
+  <div class="wrap">
+    <h2 class="sec">Data flow</h2>
+    <h3 class="title">One pass, end to end</h3>
+    <p class="intro">The red agent probes, reasons, and submits an evasion; the oracles verify against the sealed spec; an undetected hack is logged and patched; the dashboard records it; the white-box adversary re-attacks knowing the scheme.</p>
+    <div class="figure">
+      <div class="cap">FIG 8 · END-TO-END DATA FLOW</div>
+      <div class="mermaid">
+sequenceDiagram
+  autonumber
+  participant RED as Red Agent
+  participant TGT as Target · sandbox
+  participant ORA as Oracles · 4 + judge
+  participant CAT as Strategy Catalog
+  participant BLUE as Blue Loop
+  participant MEAS as Measure
+  RED->>TGT: submit / query_target()
+  TGT-->>RED: score
+  Note over RED: reason about why caught,<br/>propose minimal-change evasion
+  RED->>TGT: submit evasion
+  TGT->>ORA: output only (sealed from spec)
+  Note over ORA: held-out · metamorphic ·<br/>differential · fuzz · judge vote
+  ORA-->>RED: verdict + audit trace
+  alt undetected hack gets through
+    ORA->>CAT: log successful evasion
+    CAT->>BLUE: read distilled tactics
+    BLUE->>TGT: features / adv. samples / ensemble, retrain
+    BLUE->>ORA: re-evaluate on HELD-OUT attacks
+  end
+  ORA->>MEAS: recall · ASR · detection · val−heldout gap
+  Note over MEAS: curves · benchmark export ·<br/>halt-cert vs red line
+  RED->>TGT: white-box re-attack (knows the scheme)
+  Note over RED,MEAS: loop closes — each pass graded
+      </div>
+      <div class="figcaption">The patch is always verified on <b>held-out</b> attacks, never the attacks used to build it — what keeps the recovered detection rate honest.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DECISIONS -->
+<section id="decisions">
+  <div class="wrap">
+    <h2 class="sec">Design philosophy</h2>
+    <h3 class="title">Decisions</h3>
+    <p class="intro">Using an LLM's semantic reasoning in place of gradients as the search engine is a genuinely different design philosophy from a standard adversarial-ML pipeline. Each row is a decision the architecture commits to.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:21%">Decision</th><th style="width:24%">What we chose</th><th style="width:25%">Alternative considered</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><b>Search engine</b></td><td>LLM semantic reasoning</td><td>Gradient-based adversarial attacks</td><td>Gradients produce illegal or meaningless samples — negative amounts, impossible timestamps, violated business rules — that tell you nothing actionable.</td></tr>
+          <tr><td><b>Verification</b></td><td>Non-colluding ensemble of four oracles</td><td>Single LLM judge, or a fixed test suite</td><td>A fixed suite is something the producer learns to pass; an LLM judge shares the producer's blind spots.</td></tr>
+          <tr><td><b>Held-out tests</b></td><td>Generated after submission, never exposed</td><td>A static held-out set</td><td>A static set leaks over time and becomes gameable.</td></tr>
+          <tr><td><b>Differential oracle</b></td><td>Second implementation from a different model family</td><td>Second model from the same family</td><td>Same family shares blind spots, defeating the cross-check.</td></tr>
+          <tr><td><b>Target coupling</b></td><td>Thin adapter, one shared core</td><td>Core rewritten per target</td><td>Keeps the platform target-agnostic: one core, three adapters.</td></tr>
+          <tr><td><b>Catch-rate claim</b></td><td>White-box adversary self-test</td><td>Assert the catch rate</td><td>Converts &ldquo;we catch cheats&rdquo; into a measured recall number against an adversary that knows the scheme.</td></tr>
+          <tr><td><b>Hard constraints</b></td><td>Hybrid: LLM proposes, constrained search executes</td><td>Pure LLM search</td><td>Graceful degradation when constraint satisfaction fails, instead of failing outright.</td></tr>
+          <tr><td><b>Patch validation</b></td><td>A held-out attack set defined up front</td><td>The attacks used to build the patch</td><td>Prevents the blue loop from overfitting to known attacks.</td></tr>
+          <tr><td><b>Stop rule</b></td><td>Halt certification at a residual red line</td><td>Ship regardless of residual</td><td>Capability-threshold gating in the spirit of a Responsible Scaling Policy.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- TRADEOFFS -->
+<section id="tradeoffs">
+  <div class="wrap">
+    <h2 class="sec">Honest limits</h2>
+    <h3 class="title">Trade-offs</h3>
+    <p class="intro">The deep limits are not solved. For each, Crucible shrinks the gap with a concrete mechanism, reports the residual as a number, and halts certification when that residual crosses a red line. Measuring the limits honestly is the artifact.</p>
+    <div class="tradeoffs">
+      <div class="to">
+        <h4>Per-loop LLM cost &amp; latency</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Cache, batch, and run a small model on the inner loop.</div>
+        <div class="row bite"><span class="k">When it would bite</span>Many co-evolution rounds at scale, where inner-loop spend dominates.</div>
+      </div>
+      <div class="to">
+        <h4>The spec is a proxy for intent</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Report verifier recall on the seeded corpus continuously; halt at the red line.</div>
+        <div class="row bite"><span class="k">When it would bite</span>Unknown hack classes exist and oversight erodes as the producer outpaces the verifier.</div>
+      </div>
+      <div class="to">
+        <h4>Oracles may share blind spots</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Four mechanisms fail differently, and the white-box adversary is rewarded for finding a shared gap.</div>
+        <div class="row bite"><span class="k">When it would bite</span>All four correlate on a class no one anticipated.</div>
+      </div>
+      <div class="to">
+        <h4>Blue overfits or doesn't converge</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Measure generalization on a held-out attack set defined up front.</div>
+        <div class="row bite"><span class="k">When it would bite</span>The held-out set isn't representative of real attacks.</div>
+      </div>
+      <div class="to">
+        <h4>Self-deceiving evaluation</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Freeze the evaluation protocol on day one.</div>
+        <div class="row bite"><span class="k">When it would bite</span>The frozen protocol itself carries a flaw.</div>
+      </div>
+      <div class="to">
+        <h4>Constraint satisfaction fails</h4>
+        <div class="row accept"><span class="k">Why we accept it</span>Degrade to the hybrid: the LLM proposes the strategy, a small constrained search executes it numerically.</div>
+        <div class="row bite"><span class="k">When it would bite</span>Domains where even a constrained numerical search can't find a valid sample.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MEASURE PANEL -->
+<section id="metrics">
+  <div class="wrap">
+    <h2 class="sec">What Crucible reports</h2>
+    <h3 class="title">The honest dashboard</h3>
+    <p class="intro">These are the metrics the platform measures — listed, not valued. They populate from real runs at demo time; no number here is fabricated or placeheld.</p>
+    <div class="measure-grid">
+      <div class="m"><div class="h head">Validation &minus; held-out gap</div><div class="d">The headline metric — proxy reward R minus ground truth R*, the slack a producer learns to exploit.</div></div>
+      <div class="m"><div class="h">Undetected-hack rate</div><div class="d">How often a cheat still gets through, as a single number.</div></div>
+      <div class="m"><div class="h">Verifier recall</div><div class="d">Catch rate on the seeded hack corpus, tracked continuously against the red line.</div></div>
+      <div class="m"><div class="h">Cost per caught hack</div><div class="d">LLM spend amortized over confirmed catches.</div></div>
+      <div class="m"><div class="h">Human minutes / 1k units</div><div class="d">Review effort per thousand units of output.</div></div>
+      <div class="m"><div class="h">Attack &amp; detection curves</div><div class="d">ASR and detection rate across rounds; red&harr;blue co-evolution converging or oscillating.</div></div>
+    </div>
+    <div class="note" style="margin-top:18px">A cost-vs-scale chart is intentionally omitted: the proposal commits no figures, and this project's standing rule is to never render placeholder or synthetic values. The chart lands once a real run produces the numbers.</div>
+  </div>
+</section>
+
+<!-- SAFETY MAP -->
+<section id="safety">
+  <div class="wrap">
+    <h2 class="sec">Why it resonates</h2>
+    <h3 class="title">Frontier-lab safety map</h3>
+    <p class="intro">Component for component, Crucible is a working testbed for problems on Anthropic's published list of technical safety research directions — a measured, reusable artifact pointed at the questions a safety lab is asking.</p>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr><th style="width:38%">Crucible mechanism</th><th>Named open problem it instantiates</th></tr></thead>
+        <tbody>
+          <tr><td><b>Validation vs held-out pass-rate gap</b></td><td>Scalable oversight under <b>systematic, exploitable oversight error</b>: the gap is the proxy reward R minus ground truth R* a producer can learn to exploit.</td></tr>
+          <tr><td><b>Non-colluding oracle ensemble over a sealed spec</b></td><td><b>AI control</b>: reducing actor&ndash;monitor collusion; a trusted screen the actor cannot subvert or see.</td></tr>
+          <tr><td><b>Differential cross-family oracle</b></td><td><b>Anomaly detection between two models</b>: flag inputs where a second implementation from a different family disagrees.</td></tr>
+          <tr><td><b>Blue loop / rapid-response patch</b></td><td><b>Adaptive defenses</b> that respond to a discovered attack rather than static pre-deployment hardening.</td></tr>
+          <tr><td><b>Exported seeded-hack corpus &amp; leaderboard</b></td><td><b>Realistic, differential benchmarks</b> for adversarial robustness that outlive the demo.</td></tr>
+          <tr><td><b>Audit &amp; reasoning trace per verdict</b></td><td>Auditable, faithful <b>externalized reasoning</b> for after-the-fact review.</td></tr>
+          <tr><td><b>Halt certification at a residual red line</b></td><td>Capability-threshold gating in the spirit of a <b>Responsible Scaling Policy</b>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack">
+  <div class="wrap">
+    <h2 class="sec">Technology</h2>
+    <h3 class="title">Stack</h3>
+    <p class="intro">Named or directly implied by the proposal. The dashboard and web layer are deliberately left open — the proposal does not specify them, and nothing here is invented to fill the grid.</p>
+    <div class="stack">
+      <div class="chip"><img src="https://cdn.simpleicons.org/python/3776ab" alt="Python"/><div><div class="t">Python</div><div class="d">core platform language</div></div></div>
+      <div class="chip"><div class="mono" style="background:#9acd32">LGB</div><div><div class="t">LightGBM</div><div class="d">fraud-detector target</div></div></div>
+      <div class="chip"><img src="https://cdn.simpleicons.org/scikitlearn/f7931e" alt="scikit-learn"/><div><div class="t">scikit-learn</div><div class="d">AE / GMM / DAGMM anomaly path</div></div></div>
+      <div class="chip"><img src="https://cdn.simpleicons.org/anthropic/d4a373" alt="Anthropic"/><div><div class="t">LLM (Claude)</div><div class="d">red &amp; blue engines</div></div></div>
+      <div class="chip"><div class="mono" style="background:#8b7fd4">MCP</div><div><div class="t">MCP-style memory</div><div class="d">strategy catalog &amp; observability</div></div></div>
+      <div class="chip"><div class="mono" style="background:#64748b">IEEE</div><div><div class="t">IEEE-CIS / Kaggle</div><div class="d">public fraud datasets</div></div></div>
+      <div class="chip"><div class="mono" style="background:#475569">SR</div><div><div class="t">SR 11-7</div><div class="d">model-risk report format</div></div></div>
+      <div class="chip" style="border-style:dashed"><div class="mono" style="background:#334155;color:#cbd5e1">?</div><div><div class="t">Dashboard / web</div><div class="d">to be selected — not yet specified</div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="links">
+      <a href="https://github.com/scott-lydon/openemr">github.com/scott-lydon</a>
+      <a href="https://alignment.anthropic.com/2025/recommended-directions">Anthropic recommended directions</a>
+      <a href="https://www.anthropic.com/responsible-scaling-policy">Responsible Scaling Policy</a>
+    </div>
+    <div>Crucible &middot; Gauntlet capstone proposal &middot; combined from the fraud-detection red/blue harness and the self-measuring verification platform. Architecture derived solely from the uploaded <code>Crucible_Capstone_Proposal.pdf</code>.</div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  (function(){
+    function run(){
+      if(!window.mermaid) return;
+      mermaid.initialize({
+        startOnLoad:false, theme:'dark', securityLevel:'loose',
+        themeVariables:{
+          fontFamily:'ui-sans-serif, system-ui, sans-serif', fontSize:'14px',
+          lineColor:'#64748b', primaryColor:'#1a2236', primaryTextColor:'#e2e8f0', primaryBorderColor:'#6366f1',
+          clusterBkg:'#0d1322', clusterBorder:'#334155',
+          actorBkg:'#1a2236', actorBorder:'#6366f1', actorTextColor:'#e2e8f0',
+          noteBkgColor:'#11182b', noteTextColor:'#cbd5e1', noteBorderColor:'#334155',
+          sequenceNumberColor:'#0a0e1a'
+        }
+      });
+      mermaid.run({querySelector:'.mermaid'});
+    }
+    var s=document.querySelector('script[src*="mermaid"]');
+    if(window.mermaid){run();}
+    else if(s){s.addEventListener('load',run); s.addEventListener('error',function(){
+      document.querySelectorAll('.mermaid').forEach(function(d){d.style.color='#f87171';d.textContent='Mermaid failed to load (check network / VPN).';});
+    });}
+    else {setTimeout(run,400);}
+  })();
+</script>
+</body>
+</html>
