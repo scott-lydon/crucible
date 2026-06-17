@@ -1,0 +1,88 @@
+"""Command-line interface."""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from . import __version__
+from .config import ALL_CLASSES, CrucibleConfig, NotAuthorizedError
+from .runner import run
+
+
+def _build_config(args: argparse.Namespace) -> CrucibleConfig:
+    return CrucibleConfig(
+        target=args.target,
+        mode=args.mode,
+        classes=[c.strip() for c in args.classes.split(",") if c.strip()],
+        seeds=args.seeds,
+        operator_owned=args.operator_owned,
+        assume_yes=args.assume_yes,
+        out_dir=args.out_dir,
+        llm=args.llm,
+        model=args.model,
+        prefer_structural=not args.prompt_only,
+        verbose=not args.quiet,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    p = argparse.ArgumentParser(
+        prog="crucible",
+        description="Automated AI red-team: break your own AI agent, harden it, prove it.",
+    )
+    sub = p.add_subparsers(dest="cmd")
+
+    rp = sub.add_parser("run", help="Run the full loop against a target")
+    rp.add_argument("--target", default="builtin:acmebot",
+                    help="builtin:acmebot or an http(s):// endpoint")
+    rp.add_argument("--mode", choices=["approve", "auto"], default="approve")
+    rp.add_argument("--classes", default=",".join(ALL_CLASSES))
+    rp.add_argument("--seeds", type=int, default=3)
+    rp.add_argument("--i-own-this-target", action="store_true", dest="operator_owned",
+                    help="REQUIRED attestation: you own / are authorized to test this target")
+    rp.add_argument("-y", "--yes", action="store_true", dest="assume_yes",
+                    help="non-interactive approval of fixes")
+    rp.add_argument("--out", default="runs", dest="out_dir")
+    rp.add_argument("--llm", choices=["deterministic", "anthropic"], default="deterministic")
+    rp.add_argument("--model", default="claude-sonnet-4-6")
+    rp.add_argument("--prompt-only", action="store_true",
+                    help="prefer prompt fixes (demonstrates the generalization gap)")
+    rp.add_argument("--quiet", action="store_true")
+
+    sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
+    sub.add_parser("version", help="Print version")
+
+    args = p.parse_args(argv)
+
+    if args.cmd is None:
+        p.print_help()
+        return 1
+    if args.cmd == "version":
+        print(__version__)
+        return 0
+    if args.cmd == "demo":
+        cfg = CrucibleConfig(target="builtin:acmebot", mode="auto",
+                             operator_owned=True, assume_yes=True)
+    else:
+        cfg = _build_config(args)
+
+    try:
+        rec = run(cfg)
+    except NotAuthorizedError as e:
+        print(f"\nERROR: {e}", file=sys.stderr)
+        return 2
+
+    ev = rec.eval_result
+    md = rec.report_paths[0] if rec.report_paths else "(none)"
+    if ev:
+        print(f"\n✓ done — held-out catch rate {ev.held_out_catch_rate:.0%}, "
+              f"generalization gap {ev.generalization_gap:+.0%}, "
+              f"utility {ev.utility_delta:+.0%}. Report: {md}")
+    else:
+        print(f"\n✓ done — {len(rec.findings)} finding(s). Report: {md}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
