@@ -40,7 +40,7 @@ class RunResult:
     report_paths: tuple[str, str] | None = None
 
 
-def build_target(spec: str) -> TargetAdapter:
+def build_target(spec: str, http: dict | None = None) -> TargetAdapter:
     if spec.startswith("builtin:") or spec == "acmebot":
         return get_builtin_target(spec)
     if spec.startswith("browser:"):
@@ -51,7 +51,7 @@ def build_target(spec: str) -> TargetAdapter:
         from .llm_target import LLMAgentTarget
         return LLMAgentTarget(OpenRouterLLM(model=spec[len("llm:"):]))
     if spec.startswith(("http://", "https://")):
-        return HTTPAdapter(spec)
+        return HTTPAdapter(spec, **(http or {}))
     raise ValueError(f"unsupported target spec: {spec!r} "
                      "(use builtin:acmebot, browser:<url>, or an http(s):// endpoint)")
 
@@ -66,7 +66,7 @@ def run(config: CrucibleConfig) -> RunResult:
         if config.verbose:
             print(msg, flush=True)
 
-    target = build_target(config.target)
+    target = build_target(config.target, config.http)
     profile = profile_target(target)
     narrate(f"▶ profiled target: access={profile.access}, "
             f"tools={[t.get('name') for t in profile.tools]}, "
