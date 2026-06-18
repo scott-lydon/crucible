@@ -1,4 +1,4 @@
-from crucible.attacks import ATTACK_MUTATORS, HELDOUT_MUTATORS, AttackEngine, expand
+from crucible.attacks import ATTACK_MUTATORS, HELDOUT_MUTATORS, AttackEngine
 from crucible.attacks.library import LIBRARY
 from crucible.models import AttackClass
 from crucible.oracles import OracleSuite
