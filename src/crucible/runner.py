@@ -7,6 +7,7 @@ from typing import Any
 
 from .adapter import HTTPAdapter, TargetAdapter
 from .attacks import AttackEngine
+from .audit import fix_durability_audit
 from .catalog import StrategyCatalog
 from .config import CrucibleConfig
 from .evaluate import EvalEngine
@@ -30,6 +31,7 @@ class RunResult:
     fixes: list[FixCandidate] = field(default_factory=list)
     eval_result: EvalResult | None = None
     patch: dict[str, Any] = field(default_factory=dict)
+    audit: dict | None = None
     narration: list[str] = field(default_factory=list)
     report_paths: tuple[str, str] | None = None
 
@@ -69,7 +71,11 @@ def run(config: CrucibleConfig) -> RunResult:
     classes = [AttackClass(c) for c in config.classes]
 
     narrate("\n========== ATTACK ==========")
-    engine = AttackEngine(target, oracles, catalog=catalog, seeds=config.seeds, narrator=narrate)
+    engine = AttackEngine(
+        target, oracles, catalog=catalog, seeds=config.seeds, narrator=narrate,
+        llm=llm, llm_variants=(4 if llm.available else 0),
+        llm_iterate=(2 if llm.available else 0),
+    )
     findings = engine.run(classes)
 
     fixer = FixEngine(
@@ -83,6 +89,7 @@ def run(config: CrucibleConfig) -> RunResult:
     fixes: list[FixCandidate] = []
     patch: dict[str, Any] = {}
     eval_result: EvalResult | None = None
+    audit: dict | None = None
 
     if findings and decide(config.mode, config.assume_yes):
         narrate("\n========== FIX ==========")
@@ -94,6 +101,11 @@ def run(config: CrucibleConfig) -> RunResult:
         narrate(f"held-out catch rate: {eval_result.held_out_catch_rate:.0%}  "
                 f"(gap {eval_result.generalization_gap:+.0%}, "
                 f"utility {eval_result.utility_delta:+.0%})")
+        if profile.secrets:
+            narrate("\n========== FIX-DURABILITY AUDIT (re-attack the fix) ==========")
+            audit = fix_durability_audit(fixed_target, profile.secrets)
+            narrate(f"fix is {'DURABLE ✓' if audit['durable'] else 'BYPASSABLE ✗'} "
+                    f"({audit['n_leaks']}/{audit['n_attacks']} fix-aware attacks leaked)")
     else:
         narrate("gate: not proceeding (no approval, or no findings).")
 
@@ -101,7 +113,7 @@ def run(config: CrucibleConfig) -> RunResult:
     record = RunResult(
         target=config.target, mode=config.mode, profile=profile, findings=findings,
         vulnerabilities=vulns, fixes=fixes, eval_result=eval_result, patch=patch,
-        narration=narration,
+        audit=audit, narration=narration,
     )
     narrate("\n========== REPORT ==========")
     paths = write_report(config.out_dir, record)

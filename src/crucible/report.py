@@ -37,6 +37,11 @@ def render_markdown(record: Any) -> str:
                    f"Generalization gap: {ev.generalization_gap:+.0%}  ·  "
                    f"Utility delta: {ev.utility_delta:+.0%}")
         out.append(f"- Sets: seen={ev.n_seen}, held-out={ev.n_held_out}, benign={ev.n_benign}\n")
+    if getattr(r, "audit", None):
+        a = r.audit
+        out.append(f"- **Fix durability (fix-aware re-attack): "
+                   f"{'DURABLE ✓' if a['durable'] else 'BYPASSABLE ✗'}** "
+                   f"({a['n_leaks']}/{a['n_attacks']} transform-based attacks leaked)\n")
     out.append("## Findings\n")
     if not r.findings:
         out.append("_No confirmed vulnerabilities._\n")
@@ -87,6 +92,7 @@ def write_report(out_dir: str, record: Any) -> tuple[str, str]:
         "vulnerabilities": to_jsonable(record.vulnerabilities),
         "fixes": to_jsonable(record.fixes),
         "eval": to_jsonable(record.eval_result),
+        "fix_durability": to_jsonable(record.audit),
         "config_patch": to_jsonable(record.patch),
         "narration": record.narration,
     }

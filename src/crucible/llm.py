@@ -29,6 +29,26 @@ class NullLLM:
         raise RuntimeError("No LLM configured (running in deterministic mode).")
 
 
+class ScriptedLLM:
+    """Deterministic LLM stand-in for testing the LLM code paths offline.
+
+    `responder(system, prompt) -> str`. Records calls so tests can assert the
+    LLM paths actually fired without needing an API key.
+    """
+
+    def __init__(self, responder):
+        self._responder = responder
+        self.calls: list[tuple[str, str]] = []
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    def complete(self, system: str, prompt: str, max_tokens: int = 512) -> str:
+        self.calls.append((system, prompt))
+        return self._responder(system, prompt)
+
+
 class AnthropicLLM:
     """Optional. Requires `pip install crucible-redteam[anthropic]` and ANTHROPIC_API_KEY."""
 

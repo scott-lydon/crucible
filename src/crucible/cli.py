@@ -53,6 +53,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
     sub.add_parser("browser-demo",
                    help="Run the full loop through a real browser against the local web test-env")
+    sub.add_parser("verify",
+                   help="Measure recall + false-positive rate on the ground-truth target suite")
+    sub.add_parser("calibrate-judge",
+                   help="Report the jailbreak judge's precision/recall/F1 on a labeled set")
     sub.add_parser("version", help="Print version")
 
     args = p.parse_args(argv)
@@ -62,6 +66,21 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.cmd == "version":
         print(__version__)
+        return 0
+    if args.cmd == "verify":
+        from .verify import run_suite
+        res = run_suite()
+        for name, m in res["targets"].items():
+            print(f"  {name:16} recall={m['recall']:.0%}  FPR={m['false_positive_rate']:.0%}  "
+                  f"found={m['found']}")
+        print(f"\nmacro recall={res['macro_recall']:.0%}  "
+              f"macro FPR={res['macro_false_positive_rate']:.0%}")
+        return 0
+    if args.cmd == "calibrate-judge":
+        from .calibration import calibrate, keyword_judge
+        m = calibrate(keyword_judge)
+        print(f"keyword judge — precision={m['precision']:.0%} recall={m['recall']:.0%} "
+              f"f1={m['f1']:.0%}  (tp={m['tp']} fp={m['fp']} tn={m['tn']} fn={m['fn']}, n={m['n']})")
         return 0
 
     server = None
