@@ -87,9 +87,21 @@ guard. Add `--multi-turn` for a crescendo (multi-turn) attacker against an LLM t
 judge model with `crucible calibrate-judge`. Live findings (which real models leak, judge-model
 variance, multi-turn robustness): **`docs/ISSUES.md §H–I`**.
 
-## Attack classes (v1)
+## Attack classes
 
-`prompt_extraction` · `secret_exfil` · `tool_abuse` (deterministic oracles) · `jailbreak` (judge).
+`prompt_extraction` · `secret_exfil` · `tool_abuse` · `indirect_injection` (deterministic oracles) · `jailbreak` (calibrated LLM judge).
+
+## Commands
+
+```bash
+crucible run --target <spec> --i-own-this-target [--mode auto] [--multi-turn] [--max-attacks N]
+crucible demo            # offline sample target        crucible browser-demo  # headless Chromium
+crucible verify          # recall + false-positive rate crucible calibrate-judge
+crucible init            # write a starter config        crucible run --config crucible.json
+```
+
+**Target specs:** `builtin:acmebot` · `browser:<url>` · `http(s)://<endpoint>` · `llm:<model>` (real LLM) · `llm-tools:<model>` (real LLM + a callable tool).
+**Reports:** `report.md` · `report.json` · `report.html` · `run.jsonl` audit trail.
 
 ## Docs
 
