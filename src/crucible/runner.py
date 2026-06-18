@@ -79,7 +79,7 @@ def run(config: CrucibleConfig) -> RunResult:
     engine = AttackEngine(
         target, oracles, catalog=catalog, seeds=config.seeds, narrator=narrate,
         llm=llm, llm_variants=(4 if llm.available else 0),
-        llm_iterate=(2 if llm.available else 0),
+        llm_iterate=(2 if llm.available else 0), max_attacks=config.max_attacks,
     )
     findings = engine.run(classes)
 

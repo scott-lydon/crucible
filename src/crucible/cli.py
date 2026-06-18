@@ -24,6 +24,7 @@ def _build_config(args: argparse.Namespace) -> CrucibleConfig:
         prefer_structural=not args.prompt_only,
         verbose=not args.quiet,
         multi_turn=args.multi_turn,
+        max_attacks=args.max_attacks,
     )
 
 
@@ -52,6 +53,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="prefer prompt fixes (demonstrates the generalization gap)")
     rp.add_argument("--multi-turn", action="store_true", dest="multi_turn",
                     help="also run a multi-turn (crescendo) attacker (needs an LLM target + attacker)")
+    rp.add_argument("--max-attacks", type=int, default=0, dest="max_attacks",
+                    help="cap library attacks per class (0 = no cap); useful for live LLM cost")
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")

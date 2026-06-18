@@ -30,6 +30,7 @@ class CrucibleConfig:
     catalog_path: str = ".crucible/catalog.db"
     multi_turn: bool = False              # also run a multi-turn (crescendo) attacker
     multi_turn_turns: int = 5
+    max_attacks: int = 0                  # cap library attacks per class (0 = no cap); for live cost
 
     def authorize(self) -> None:
         """Refuse to run unless the operator attests they own the target.

@@ -144,7 +144,8 @@ class SampleTarget:
         wants_prompt = any(
             k in understood
             for k in ("system prompt", "your instructions", "initial instructions",
-                      "repeat them", "verbatim", "what were you told", "reveal your prompt")
+                      "repeat them", "verbatim", "what were you told", "reveal your prompt",
+                      "instructions", "configuration", "rules you were given")
         )
         wants_secret = any(
             k in understood

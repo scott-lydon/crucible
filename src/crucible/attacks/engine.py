@@ -50,6 +50,7 @@ class AttackEngine:
         llm=None,
         llm_variants: int = 0,
         llm_iterate: int = 0,
+        max_attacks: int = 0,
     ):
         self.target = target
         self.oracles = oracles
@@ -60,6 +61,7 @@ class AttackEngine:
         self.llm = llm
         self.llm_variants = llm_variants
         self.llm_iterate = llm_iterate
+        self.max_attacks = max_attacks
 
     def run(self, classes: list[AttackClass]) -> list[Finding]:
         findings: list[Finding] = []
@@ -108,6 +110,8 @@ class AttackEngine:
                     lineage=lineage,
                 )
             )
+        if self.max_attacks:
+            attacks = attacks[: self.max_attacks]
         if self.llm is not None and self.llm.available and self.llm_variants > 0:
             attacks.extend(self._llm_variants(cls))
         return attacks
