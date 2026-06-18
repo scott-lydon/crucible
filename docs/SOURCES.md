@@ -29,3 +29,24 @@ We do **not** invent the attack corpus from scratch. Crucible stands on establis
 - Target project license: **permissive (MIT or Apache-2.0)** to match the foundation.
 - Permissive spine to rely on: **garak (Apache-2.0) + PyRIT (MIT) + promptfoo (MIT) + OWASP/ATLAS taxonomy.**
 - Record every inbound source + license in `THIRD_PARTY.md`. Treat jailbreak/harmful datasets as quarantined unless cleared.
+
+## Responsible corpus posture (DECIDED — 2026-06-18)
+
+Crucible's goals are **benign**: extract a *planted canary* the operator owns, exceed a refund
+limit, reveal a system prompt, or follow an injected instruction. None require harmful content.
+So we **ship attack *techniques/structures*, not harmful-content payloads.** We evaluated the
+recommended corpora and decided:
+
+| Source | License | Decision |
+|---|---|---|
+| JailbreakBench (JBB-Behaviors + artifacts) | MIT | Techniques (TAP, search, role-play) **adopted**; harmful behavior prompts **not vendored** |
+| HarmBench (400 behaviors) | MIT | Multilingual/encoding *techniques* adopted; harmful prompts **not vendored** |
+| InjecAgent (1,054 cases) | Apache-2.0 | Indirect-injection *patterns* adopted; reference for the class |
+| garak / PyRIT / promptfoo | Apache-2.0 / MIT / MIT | Permissive; usable as optional integrations |
+
+Implemented techniques (against benign goals): policy-puppetry, persona/role-play, hypothetical,
+dev-mode, encoding (base64/leetspeak/rot13), translation-frame, payload-split, many-shot, multi-turn
+crescendo, and **best-of-N / TAP-style adaptive search**.
+
+**BYO corpus:** advanced users may plug their own payloads via `--payloads <file>` (`{class: [str]}`),
+at their own risk and license responsibility. We ship **no harmful content** in this repo.

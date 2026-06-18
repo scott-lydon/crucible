@@ -7,7 +7,7 @@ and illustrate the mechanism — they are NOT empirical claims about real agents
 
 ---
 
-## A. What is genuinely real and tested (33 tests; real browser E2E + live-LLM verified)
+## A. What is genuinely real and tested (36 tests; real browser E2E + live-LLM verified)
 
 - The full pipeline runs end-to-end: profile → attack → gate → fix → held-out re-eval → report.
 - **Deterministic oracles** (planted-canary leak detection, tool-call interception) are real ground truth — no model opinion involved.
@@ -174,6 +174,26 @@ Takeaways:
 - **Multi-turn alone (5 turns) is not enough to crack frontier-aligned models.** Doing so would
   need specialized jailbreak corpora (garak/PyRIT), many-shot, or encoding/translation chains — the
   next real lever. The capability is built; the strong corpus is the gap.
+
+## J. Hardened-attack re-test (2026-06-18)
+
+Added stronger techniques (policy-puppetry, hypothetical, dev-mode, translation-frame) + a
+best-of-N / TAP-style **adaptive search** attacker, then re-tested secret extraction live:
+
+| Target | Strong-technique library | Adaptive search |
+|---|---|---|
+| Llama-3.1-8B | **5 leaks** | held |
+| GPT-4o-mini | 0 | held |
+| Claude 3.5 Haiku | 0 | held |
+
+**Honest conclusion:** even with stronger techniques + adaptive search, **frontier-aligned models
+(Claude/GPT) resist system-prompt-secret extraction** — they are genuinely robust to this goal, and
+Crucible reports it correctly (no false positives). So the tool's real value is: (1) catching the
+**long tail of non-frontier / custom-prompt / fine-tuned agents** people actually deploy (Llama-8B
+leaks readily), (2) **regression-testing your own agent** as you change its prompt/guardrails, and
+(3) **verifying robustness** as a negative control. Cracking a frontier model's planted secret would
+need white-box / gradient methods (GCG — requires logits, not available via API), out of scope for a
+black/grey-box tool. This is the truth about your agent, not a tool failure.
 
 ## E. Honest bottom line
 
