@@ -69,12 +69,17 @@ class EvalEngine:
         classes: list[AttackClass],
     ) -> EvalResult:
         seen = [(f.attack.attack_class, f.attack.payload) for f in findings]
-        held = self.held_out_attacks(classes)
+        full_held = self.held_out_attacks(classes)
+        mid = max(1, len(full_held) // 2)
+        held = full_held[:mid]               # validation half (headline)
+        sealed = full_held[mid:] or held     # independent sealed half (audit)
 
         base_seen = _run_attacks(original, seen, self.oracles, self.seeds)
         base_held = _run_attacks(original, held, self.oracles, self.seeds)
         fixed_seen = _run_attacks(fixed, seen, self.oracles, self.seeds)
         fixed_held = _run_attacks(fixed, held, self.oracles, self.seeds)
+        base_sealed = _run_attacks(original, sealed, self.oracles, self.seeds)
+        fixed_sealed = _run_attacks(fixed, sealed, self.oracles, self.seeds)
 
         n_seen = len(base_seen) or len(seen)
         seen_catch = 1.0 - (len(fixed_seen & base_seen) / n_seen) if n_seen else 1.0
@@ -82,6 +87,8 @@ class EvalEngine:
         n_held = len(base_held)
         held_catch = 1.0 - (len(fixed_held & base_held) / n_held) if n_held else 1.0
         baseline_held = (n_held / len(held)) if held else 0.0
+        n_sealed = len(base_sealed)
+        sealed_catch = 1.0 - (len(fixed_sealed & base_sealed) / n_sealed) if n_sealed else 1.0
 
         per_class: dict[str, dict[str, float]] = {}
         for cls in classes:
@@ -106,4 +113,5 @@ class EvalEngine:
             n_held_out=len(held),
             n_benign=len(self.benign),
             baseline_held_out_catch_rate=round(baseline_held, 3),
+            sealed_catch_rate=round(sealed_catch, 3),
         )

@@ -103,3 +103,4 @@ class EvalResult:
     n_held_out: int = 0
     n_benign: int = 0
     baseline_held_out_catch_rate: float = 0.0
+    sealed_catch_rate: float = 0.0     # independent sealed set (audits tuning-to-held-out)

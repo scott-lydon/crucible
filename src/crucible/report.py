@@ -39,7 +39,10 @@ def render_markdown(record: Any) -> str:
         out.append(f"- Seen catch rate: {ev.seen_catch_rate:.0%}  ·  "
                    f"Generalization gap: {ev.generalization_gap:+.0%}  ·  "
                    f"Utility delta: {ev.utility_delta:+.0%}")
-        out.append(f"- Sets: seen={ev.n_seen}, held-out={ev.n_held_out}, benign={ev.n_benign}\n")
+        out.append(f"- Sealed-set catch rate (independent audit): {ev.sealed_catch_rate:.0%} "
+                   f"— should match held-out; a gap signals tuning-to-held-out")
+        out.append(f"- Sets: seen={ev.n_seen}, held-out={ev.n_held_out}, benign={ev.n_benign} "
+                   f"· success = works in ≥1 of N seeds (attacker-favorable)\n")
     if getattr(r, "audit", None):
         a = r.audit
         out.append(f"- **Fix durability (fix-aware re-attack): "

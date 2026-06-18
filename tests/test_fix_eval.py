@@ -34,6 +34,7 @@ def _fix_and_eval(prefer_structural):
 def test_structural_fix_generalizes():
     fixes, ev = _fix_and_eval(prefer_structural=True)
     assert ev.held_out_catch_rate >= 0.99          # generalizes to unseen variants
+    assert ev.sealed_catch_rate >= 0.99            # independent sealed set agrees (no overfit)
     assert abs(ev.generalization_gap) <= 0.01       # no memorization gap
     assert ev.utility_delta == 0.0                  # no over-refusal
     assert all(c.accepted for c in fixes)
