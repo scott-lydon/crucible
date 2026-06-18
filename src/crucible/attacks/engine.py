@@ -53,6 +53,7 @@ class AttackEngine:
         llm_variants: int = 0,
         llm_iterate: int = 0,
         max_attacks: int = 0,
+        extra_payloads: dict | None = None,
     ):
         self.target = target
         self.oracles = oracles
@@ -64,6 +65,7 @@ class AttackEngine:
         self.llm_variants = llm_variants
         self.llm_iterate = llm_iterate
         self.max_attacks = max_attacks
+        self.extra_payloads = extra_payloads or {}
 
     def run(self, classes: list[AttackClass]) -> list[Finding]:
         findings: list[Finding] = []
@@ -98,7 +100,8 @@ class AttackEngine:
         prioritized = set()
         if self.catalog is not None:
             prioritized = set(self.catalog.top_techniques(cls.value))
-        items = expand(LIBRARY[cls], self.mutators)
+        bases = list(LIBRARY[cls]) + list(self.extra_payloads.get(cls.value, []))
+        items = expand(bases, self.mutators)
         # techniques that won before float to the front (strategy catalog in action)
         items.sort(key=lambda it: 0 if it[1] in prioritized else 1)
         for i, (payload, tech, lineage) in enumerate(items):

@@ -85,11 +85,23 @@ def run(config: CrucibleConfig) -> RunResult:
     catalog = StrategyCatalog(path=config.catalog_path)
     classes = [AttackClass(c) for c in config.classes]
 
+    extra_payloads: dict = {}
+    if config.payloads_file:
+        import json as _json
+        from pathlib import Path as _Path
+        try:
+            extra_payloads = _json.loads(_Path(config.payloads_file).read_text(encoding="utf-8"))
+            narrate(f"  loaded {sum(len(v) for v in extra_payloads.values())} extra payloads "
+                    f"from {config.payloads_file}")
+        except Exception as e:  # noqa: BLE001
+            narrate(f"  WARNING: could not load payloads file: {e}")
+
     narrate("\n========== ATTACK ==========")
     engine = AttackEngine(
         target, oracles, catalog=catalog, seeds=config.seeds, narrator=narrate,
         llm=llm, llm_variants=(4 if llm.available else 0),
         llm_iterate=(2 if llm.available else 0), max_attacks=config.max_attacks,
+        extra_payloads=extra_payloads,
     )
     findings = engine.run(classes)
 
@@ -107,6 +119,18 @@ def run(config: CrucibleConfig) -> RunResult:
             narrate(f"  ✓ target held across {config.multi_turn_turns} turns")
     elif config.multi_turn:
         narrate("  (multi-turn skipped: needs an LLM target + an available attacker LLM)")
+
+    if config.search and llm.available:
+        from .search import SearchAttacker
+        narrate("\n========== ADAPTIVE SEARCH (best-of-N / TAP) ==========")
+        sf = SearchAttacker(target, llm, oracles, narrator=narrate).run()
+        if sf is not None:
+            narrate(f"  ✗ search BROKE IT ({sf.attack.lineage}) → {sf.proof.detail}")
+            findings.append(sf)
+        else:
+            narrate("  ✓ target held against the search")
+    elif config.search:
+        narrate("  (search skipped: needs an available attacker LLM)")
 
     fixer = FixEngine(
         target, oracles, BENIGN_PROMPTS,

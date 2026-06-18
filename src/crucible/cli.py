@@ -24,7 +24,9 @@ def _build_config(args: argparse.Namespace) -> CrucibleConfig:
         prefer_structural=not args.prompt_only,
         verbose=not args.quiet,
         multi_turn=args.multi_turn,
+        search=args.search,
         max_attacks=args.max_attacks,
+        payloads_file=args.payloads_file,
     )
 
 
@@ -53,9 +55,13 @@ def main(argv: list[str] | None = None) -> int:
                     help="prefer prompt fixes (demonstrates the generalization gap)")
     rp.add_argument("--multi-turn", action="store_true", dest="multi_turn",
                     help="also run a multi-turn (crescendo) attacker (needs an LLM target + attacker)")
+    rp.add_argument("--search", action="store_true",
+                    help="also run a best-of-N / TAP-style adaptive search attacker (needs an LLM)")
     rp.add_argument("--max-attacks", type=int, default=0, dest="max_attacks",
                     help="cap library attacks per class (0 = no cap); useful for live LLM cost")
     rp.add_argument("--config", help="load run config from a JSON file (CLI flags still apply)")
+    rp.add_argument("--payloads", dest="payloads_file", default="",
+                    help="JSON file of extra attack payloads {class: [str]} (bring your own corpus)")
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
@@ -101,7 +107,7 @@ def main(argv: list[str] | None = None) -> int:
     server = None
     if args.cmd == "demo":
         cfg = CrucibleConfig(target="builtin:acmebot", mode="auto",
-                             operator_owned=True, assume_yes=True)
+                             operator_owned=True, assume_yes=True, max_attacks=8)
     elif args.cmd == "browser-demo":
         from .testenv import serve_background
         server, url = serve_background()
