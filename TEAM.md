@@ -6,7 +6,15 @@ each break with a ground-truth check, **fixes** it with a verified guardrail, an
 held** on attacks it never saw. Runs from the CLI or as an MCP tool. This branch (`julian/devtool-mvp`)
 is the developer-tool version; `main` is the original research proposal.
 
-## 1. Try it offline — no API key, ~30 seconds
+## 0. Easiest — open the hosted demo (no install, no key)
+
+**→ https://crucible-51-81-34-160.nip.io**
+
+Paste a system prompt (or use the built-in sample bot), hit **Attack it**, and watch Crucible break
+it and produce a report. The sample bot is free and instant; real models cost a few cents (covered by
+my key for now). That's the whole tool in a browser.
+
+## 1. Try it offline on your machine — no API key, ~30 seconds
 
 ```bash
 git clone -b julian/devtool-mvp https://github.com/scott-lydon/crucible

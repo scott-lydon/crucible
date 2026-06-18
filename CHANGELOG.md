@@ -25,6 +25,12 @@ ground-truth oracle, fix it, and prove the fix held on held-out attacks.
 - **Reports**: Markdown + JSON + **self-contained HTML** + **JSONL audit trail**; cost + timing.
 - **Verification**: `crucible verify` (ground-truth recall / false-positive rate).
 - **Config**: `crucible init` + `crucible run --config crucible.json`; `--max-attacks` cost cap.
+- **Hosted demo**: `crucible.webapp_demo` (stdlib web app) — paste a system prompt, attack a real
+  model or the offline bot, get the HTML report. Deployed at crucible-51-81-34-160.nip.io.
+- **Integrations**: `py:module:function` target (wrap any callable / LangChain / OpenAI SDK);
+  `--fail-on-findings` CI gate; `fixes.patch` export; configurable HTTP adapter.
+- **Hardened attacks**: policy-puppetry / hypothetical / dev-mode / translation-frame mutators +
+  best-of-N / TAP-style adaptive search (`--search`); BYO corpus via `--payloads`.
 - Safety: operator-owned attestation enforced; 32 tests + 2 gated live tests; CI; ruff-clean.
 
 ### Live findings (OpenRouter)
