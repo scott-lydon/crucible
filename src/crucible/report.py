@@ -163,6 +163,36 @@ def render_html(record: Any) -> str:
             f"</body></html>")
 
 
+def write_audit_log(out_dir: str, record: Any) -> str:
+    """Machine-readable audit trail (one JSON event per line) for after-the-fact review."""
+    events: list[dict] = [{
+        "type": "run", "target": record.target, "mode": record.mode,
+        "duration_s": getattr(record, "duration_s", 0.0),
+        "llm_calls": getattr(record, "llm_calls", 0), "llm_cost": getattr(record, "llm_cost", 0.0),
+    }]
+    for f in record.findings:
+        events.append({
+            "type": "finding", "class": f.attack.attack_class.value,
+            "technique": f.attack.technique, "surface": f.surface, "severity": f.severity.value,
+            "proof_kind": f.proof.kind, "deterministic": f.proof.deterministic,
+            "detail": f.proof.detail, "payload": f.attack.payload[:200],
+        })
+    for c in record.fixes:
+        events.append({"type": "fix", "vulnerability": c.vulnerability_id, "layer": c.layer,
+                       "accepted": c.accepted, "notes": c.notes})
+    if record.eval_result:
+        ev = record.eval_result
+        events.append({"type": "eval", "held_out_catch_rate": ev.held_out_catch_rate,
+                       "seen_catch_rate": ev.seen_catch_rate,
+                       "generalization_gap": ev.generalization_gap,
+                       "utility_delta": ev.utility_delta})
+    if getattr(record, "audit", None):
+        events.append({"type": "fix_durability", **record.audit})
+    path = str(Path(out_dir) / "run.jsonl")
+    Path(path).write_text("\n".join(json.dumps(e) for e in events) + "\n", encoding="utf-8")
+    return path
+
+
 def write_report(out_dir: str, record: Any) -> tuple[str, str]:
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     md_path = str(Path(out_dir) / "report.md")
@@ -170,6 +200,7 @@ def write_report(out_dir: str, record: Any) -> tuple[str, str]:
     html_path = str(Path(out_dir) / "report.html")
     Path(md_path).write_text(render_markdown(record), encoding="utf-8")
     Path(html_path).write_text(render_html(record), encoding="utf-8")
+    write_audit_log(out_dir, record)
     payload = {
         "target": record.target,
         "mode": record.mode,

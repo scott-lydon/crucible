@@ -27,6 +27,10 @@ def test_full_loop_auto(tmp_path):
     assert html.exists()
     html_text = html.read_text()
     assert "Crucible report" in html_text and "held-out catch rate" in html_text
+    log = Path(md).with_name("run.jsonl")
+    events = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
+    assert events[0]["type"] == "run"
+    assert any(e["type"] == "finding" and e["deterministic"] for e in events)
 
 
 def test_refuses_without_attestation():
