@@ -19,7 +19,10 @@ uv venv && . .venv/bin/activate
 uv pip install -e ".[dev]"
 
 crucible demo                 # full loop on the built-in vulnerable sample agent
-pytest -q                     # 14 tests
+pytest -q                     # 16 tests
+
+uv pip install -e ".[browser]"   # optional: browser support (playwright + browser-use)
+crucible browser-demo            # same loop, driven through a REAL headless browser
 ```
 
 Against your own target:
@@ -50,6 +53,21 @@ Reports land in `runs/report.md` (human) and `runs/report.json` (machine, for a 
 ```bash
 python -m crucible.mcp_server      # newline-delimited JSON-RPC over stdio; tool: crucible_run
 ```
+
+## Reaching UI-only chatbots (browser)
+
+Many deployed assistants have no API — just a web chat widget. The **browser adapter**
+(Playwright/Chromium) types attacks into the real UI and reads the bot reply **and tool
+calls from the rendered DOM** (observing the actual side effect, not a trusted JSON field):
+
+```bash
+crucible run --target browser:http://localhost:8080 --i-own-this-target --mode approve
+```
+
+`crucible browser-demo` runs the entire loop through headless Chromium against a built-in
+vulnerable web chatbot (`crucible.testenv`) — verified end-to-end with no API key. The
+optional `browser-use` Agent (LLM-driven navigation of unknown UIs) is wired behind a
+key-gated path; see `docs/ISSUES.md` for what is verified vs. not.
 
 ## Attack classes (v1)
 

@@ -51,6 +51,8 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
+    sub.add_parser("browser-demo",
+                   help="Run the full loop through a real browser against the local web test-env")
     sub.add_parser("version", help="Print version")
 
     args = p.parse_args(argv)
@@ -61,9 +63,17 @@ def main(argv: list[str] | None = None) -> int:
     if args.cmd == "version":
         print(__version__)
         return 0
+
+    server = None
     if args.cmd == "demo":
         cfg = CrucibleConfig(target="builtin:acmebot", mode="auto",
                              operator_owned=True, assume_yes=True)
+    elif args.cmd == "browser-demo":
+        from .testenv import serve_background
+        server, url = serve_background()
+        print(f"▶ test-env vulnerable chatbot live at {url} (driving it via headless Chromium)")
+        cfg = CrucibleConfig(target=f"browser:{url}", mode="auto", operator_owned=True,
+                             assume_yes=True, seeds=1, out_dir="runs-browser")
     else:
         cfg = _build_config(args)
 
@@ -72,6 +82,9 @@ def main(argv: list[str] | None = None) -> int:
     except NotAuthorizedError as e:
         print(f"\nERROR: {e}", file=sys.stderr)
         return 2
+    finally:
+        if server is not None:
+            server.shutdown()
 
     ev = rec.eval_result
     md = rec.report_paths[0] if rec.report_paths else "(none)"

@@ -7,7 +7,7 @@ and illustrate the mechanism — they are NOT empirical claims about real agents
 
 ---
 
-## A. What is genuinely real and tested (14 passing tests)
+## A. What is genuinely real and tested (16 passing tests, incl. real-browser E2E)
 
 - The full pipeline runs end-to-end: profile → attack → gate → fix → held-out re-eval → report.
 - **Deterministic oracles** (planted-canary leak detection, tool-call interception) are real ground truth — no model opinion involved.
@@ -79,6 +79,39 @@ and illustrate the mechanism — they are NOT empirical claims about real agents
    expensive; no caching/budgeting yet.
 5. **Held-out reproducibility** depends on deterministic mutators; with a real LLM mutator the
    set varies per run and no generation seed is logged yet.
+
+## F. Browser integration (added 2026-06-18) — verified vs not
+
+**Verified, tested, working:**
+- `BrowserAdapter` drives real headless Chromium (Playwright) against a web chat UI: types the
+  attack, reads the bot reply **and tool calls from the rendered DOM**.
+- A built-in web test-env (`crucible.testenv`) serves the vulnerable AcmeBot over HTTP with a
+  chat widget, grey-box config endpoint, and patched-clone support.
+- `crucible browser-demo` runs the **entire** loop (attack → fix → held-out re-eval) through the
+  browser: 30 findings, 4 structural fixes, 100% held-out catch — **no API key**.
+- 2 browser tests (auto-skip if chromium is absent).
+
+**Environment note:** this host is Ubuntu 26.04, which Playwright's chromium *download* doesn't
+recognize. The adapter auto-detects the already-cached Chromium binary (or `$CRUCIBLE_CHROME`)
+and launches with `--no-sandbox`.
+
+**NOT verified (honest):**
+- The **browser-use Agent autonomous-navigation** path (LLM figures out an unknown UI) is wired
+  as a dependency + documented, but **needs an API key and was not exercised** — do not treat it
+  as working. The tested browser path uses Playwright directly.
+- The DOM "side-effect oracle" is only as independent as the app's rendering; in the test-env the
+  UI renders from the same JSON, so it demonstrates the mechanism but isn't yet a fully
+  independent signal on a real app.
+
+## G. Evaluated and declined: ruflo (claude-flow)
+
+Assessed `github.com/ruvnet/ruflo` for inclusion. **Declined.** It is a 1865-file Node/TypeScript
+multi-agent orchestration framework (0 Python) — a peer to Gas Town, not a security component. Its
+`ruflo-aidefence` plugin is Claude-Code-plugin prose (commands + an agent persona), not an
+extractable, testable attack corpus or library; its concrete payloads are generic ones Crucible
+already has. Integrating it would add a heavyweight Node dependency to a deliberately stdlib-only
+Python tool and duplicate Gas Town, with no testable security gain. The earmarked
+garak/PyRIT/promptfoo sources (`docs/SOURCES.md`) are the right Python-native, license-clean path.
 
 ## E. Honest bottom line
 

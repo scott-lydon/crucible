@@ -37,10 +37,13 @@ class RunResult:
 def build_target(spec: str) -> TargetAdapter:
     if spec.startswith("builtin:") or spec == "acmebot":
         return get_builtin_target(spec)
+    if spec.startswith("browser:"):
+        from .browser import BrowserAdapter  # optional dep (playwright)
+        return BrowserAdapter(spec[len("browser:"):])
     if spec.startswith(("http://", "https://")):
         return HTTPAdapter(spec)
     raise ValueError(f"unsupported target spec: {spec!r} "
-                     "(use builtin:acmebot or an http(s):// endpoint)")
+                     "(use builtin:acmebot, browser:<url>, or an http(s):// endpoint)")
 
 
 def run(config: CrucibleConfig) -> RunResult:
