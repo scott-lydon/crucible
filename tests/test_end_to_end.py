@@ -31,6 +31,8 @@ def test_full_loop_auto(tmp_path):
     events = [json.loads(line) for line in log.read_text().splitlines() if line.strip()]
     assert events[0]["type"] == "run"
     assert any(e["type"] == "finding" and e["deterministic"] for e in events)
+    patch = Path(md).with_name("fixes.patch")
+    assert patch.exists() and patch.read_text().strip()
 
 
 def test_refuses_without_attestation():

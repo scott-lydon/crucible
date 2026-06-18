@@ -55,13 +55,19 @@ def build_target(spec: str, http: dict | None = None) -> TargetAdapter:
         from .llm import OpenRouterLLM
         from .llm_target import LLMAgentTarget
         return LLMAgentTarget(OpenRouterLLM(model=spec[len("llm:"):]))
+    if spec.startswith("py:"):  # wrap any Python callable: py:module.path:function
+        import importlib
+        from .adapter import CallableAdapter
+        mod_path, _, fn_name = spec[len("py:"):].partition(":")
+        fn = getattr(importlib.import_module(mod_path), fn_name)
+        return CallableAdapter(fn)
     if spec.startswith(("http://", "https://")):
         return HTTPAdapter(spec, **(http or {}))
     raise ValueError(f"unsupported target spec: {spec!r} "
                      "(use builtin:acmebot, browser:<url>, or an http(s):// endpoint)")
 
 
-def run(config: CrucibleConfig) -> RunResult:
+def run(config: CrucibleConfig, target=None) -> RunResult:
     config.authorize()
     t0 = time.time()
     narration: list[str] = []
@@ -71,7 +77,7 @@ def run(config: CrucibleConfig) -> RunResult:
         if config.verbose:
             print(msg, flush=True)
 
-    target = build_target(config.target, config.http)
+    target = target or build_target(config.target, config.http)
     profile = profile_target(target)
     narrate(f"▶ profiled target: access={profile.access}, "
             f"tools={[t.get('name') for t in profile.tools]}, "

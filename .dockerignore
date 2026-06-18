@@ -1,0 +1,13 @@
+.git
+.venv
+venv
+__pycache__
+*.pyc
+*.egg-info
+.pytest_cache
+.ruff_cache
+runs
+runs-*
+.crucible
+website
+*.mp4

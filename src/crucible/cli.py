@@ -27,6 +27,7 @@ def _build_config(args: argparse.Namespace) -> CrucibleConfig:
         search=args.search,
         max_attacks=args.max_attacks,
         payloads_file=args.payloads_file,
+        fail_on_findings=args.fail_on_findings,
     )
 
 
@@ -62,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("--config", help="load run config from a JSON file (CLI flags still apply)")
     rp.add_argument("--payloads", dest="payloads_file", default="",
                     help="JSON file of extra attack payloads {class: [str]} (bring your own corpus)")
+    rp.add_argument("--fail-on-findings", action="store_true", dest="fail_on_findings",
+                    help="exit non-zero if any vulnerability is found (use as a CI gate)")
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
@@ -140,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
               f"utility {ev.utility_delta:+.0%}. Report: {md}")
     else:
         print(f"\n✓ done — {len(rec.findings)} finding(s). Report: {md}")
-    return 0
+    return 3 if (cfg.fail_on_findings and rec.findings) else 0
 
 
 if __name__ == "__main__":

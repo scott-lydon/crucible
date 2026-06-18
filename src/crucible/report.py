@@ -204,6 +204,11 @@ def write_report(out_dir: str, record: Any) -> tuple[str, str]:
     Path(md_path).write_text(render_markdown(record), encoding="utf-8")
     Path(html_path).write_text(render_html(record), encoding="utf-8")
     write_audit_log(out_dir, record)
+    accepted = [c for c in record.fixes if c.accepted]
+    if accepted:
+        patch = "\n\n".join(f"# Fix for {c.vulnerability_id} [{c.layer}] — {c.description}\n{c.diff}"
+                            for c in accepted)
+        Path(str(Path(out_dir) / "fixes.patch")).write_text(patch + "\n", encoding="utf-8")
     payload = {
         "target": record.target,
         "mode": record.mode,

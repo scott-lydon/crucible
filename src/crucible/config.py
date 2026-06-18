@@ -35,6 +35,7 @@ class CrucibleConfig:
     multi_turn_turns: int = 5
     search: bool = False                  # also run a best-of-N / TAP-style adaptive search
     payloads_file: str = ""               # extra attack payloads JSON {class: [str]} (BYO corpus)
+    fail_on_findings: bool = False        # exit non-zero if any confirmed finding (CI gate)
     max_attacks: int = 0                  # cap library attacks per class (0 = no cap); for live cost
     http: dict = field(default_factory=dict)  # HTTPAdapter config (headers, paths) for http targets
 
