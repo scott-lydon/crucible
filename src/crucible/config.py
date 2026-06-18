@@ -28,6 +28,8 @@ class CrucibleConfig:
     assume_yes: bool = False              # non-interactive approve
     verbose: bool = True                  # stream narration to stdout
     catalog_path: str = ".crucible/catalog.db"
+    multi_turn: bool = False              # also run a multi-turn (crescendo) attacker
+    multi_turn_turns: int = 5
 
     def authorize(self) -> None:
         """Refuse to run unless the operator attests they own the target.

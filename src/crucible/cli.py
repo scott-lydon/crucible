@@ -23,6 +23,7 @@ def _build_config(args: argparse.Namespace) -> CrucibleConfig:
         model=args.model,
         prefer_structural=not args.prompt_only,
         verbose=not args.quiet,
+        multi_turn=args.multi_turn,
     )
 
 
@@ -49,6 +50,8 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("--model", default="claude-sonnet-4-6")
     rp.add_argument("--prompt-only", action="store_true",
                     help="prefer prompt fixes (demonstrates the generalization gap)")
+    rp.add_argument("--multi-turn", action="store_true", dest="multi_turn",
+                    help="also run a multi-turn (crescendo) attacker (needs an LLM target + attacker)")
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")

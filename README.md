@@ -83,8 +83,9 @@ crucible run --target llm:meta-llama/llama-3.1-8b-instruct \
 
 `--target llm:<model>` makes the agent under test a real LLM (canary in its system prompt, verified
 by the deterministic oracle). The client tracks per-call cost and hard-caps calls as a budget
-guard. Calibrate a judge model with `crucible calibrate-judge`. Live findings (which real models
-leak, judge-model variance): **`docs/ISSUES.md §H`**.
+guard. Add `--multi-turn` for a crescendo (multi-turn) attacker against an LLM target. Calibrate a
+judge model with `crucible calibrate-judge`. Live findings (which real models leak, judge-model
+variance, multi-turn robustness): **`docs/ISSUES.md §H–I`**.
 
 ## Attack classes (v1)
 

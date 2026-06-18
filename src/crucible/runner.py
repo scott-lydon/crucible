@@ -83,6 +83,21 @@ def run(config: CrucibleConfig) -> RunResult:
     )
     findings = engine.run(classes)
 
+    if config.multi_turn and hasattr(target, "respond_history") and llm.available:
+        from .multiturn import MultiTurnAttacker
+        narrate("\n========== MULTI-TURN (crescendo) ==========")
+        mt = MultiTurnAttacker(target, llm, oracles, max_turns=config.multi_turn_turns,
+                               narrator=narrate)
+        mt_finding = mt.run()
+        if mt_finding is not None:
+            narrate(f"  ✗ multi-turn BROKE IT ({mt_finding.attack.lineage}) → "
+                    f"{mt_finding.proof.detail}")
+            findings.append(mt_finding)
+        else:
+            narrate(f"  ✓ target held across {config.multi_turn_turns} turns")
+    elif config.multi_turn:
+        narrate("  (multi-turn skipped: needs an LLM target + an available attacker LLM)")
+
     fixer = FixEngine(
         target, oracles, BENIGN_PROMPTS,
         prefer_structural=config.prefer_structural,

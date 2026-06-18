@@ -46,6 +46,27 @@ class LLMAgentTarget:
                 text = strong_redact(text, s)
         return Response(text=text)
 
+    def respond_history(self, history: list[dict]) -> Response:
+        """Multi-turn reply given the full conversation (list of {role, content})."""
+        last_user = next((m["content"] for m in reversed(history) if m["role"] == "user"), "")
+        for f in self.input_filters:
+            if f.strip() and f.strip().lower() in last_user.lower():
+                return Response(text="I can't help with that.")
+        try:
+            if hasattr(self.llm, "chat"):
+                text = self.llm.chat(
+                    [{"role": "system", "content": self.system_prompt}, *history],
+                    max_tokens=self.max_tokens)
+            else:
+                flat = "\n".join(f"{m['role']}: {m['content']}" for m in history)
+                text = self.llm.complete(self.system_prompt, flat, max_tokens=self.max_tokens)
+        except Exception:  # noqa: BLE001
+            text = ""
+        if "secret_redact" in self.guardrails:
+            for s in self.secrets:
+                text = strong_redact(text, s)
+        return Response(text=text)
+
     def get_config(self) -> dict[str, Any]:
         return {"system_prompt": self.system_prompt, "tools": [],
                 "guardrails": list(self.guardrails), "tool_limits": {},

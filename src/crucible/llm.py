@@ -103,16 +103,14 @@ class OpenRouterLLM:
     def available(self) -> bool:
         return bool(self.api_key)
 
-    def complete(self, system: str, prompt: str, max_tokens: int = 512) -> str:
+    def chat(self, messages: list[dict], max_tokens: int = 512) -> str:
+        """Full multi-turn chat. `messages` = [{"role","content"}, ...]."""
         if not self.api_key:
             raise RuntimeError("OPENROUTER_API_KEY not set")
         if self.n_calls >= self.max_calls:
             raise RuntimeError(f"OpenRouter call cap reached ({self.max_calls}) — budget guard")
-        body = json.dumps({
-            "model": self.model, "max_tokens": max_tokens,
-            "messages": [{"role": "system", "content": system},
-                         {"role": "user", "content": prompt}],
-        }).encode()
+        body = json.dumps({"model": self.model, "max_tokens": max_tokens,
+                           "messages": messages}).encode()
         req = urllib.request.Request(  # noqa: S310
             f"{self.base_url}/chat/completions", data=body,
             headers={"Authorization": f"Bearer {self.api_key}",
@@ -122,6 +120,10 @@ class OpenRouterLLM:
         self.n_calls += 1
         self.cost += float((d.get("usage") or {}).get("cost", 0.0) or 0.0)
         return d["choices"][0]["message"]["content"]
+
+    def complete(self, system: str, prompt: str, max_tokens: int = 512) -> str:
+        return self.chat([{"role": "system", "content": system},
+                          {"role": "user", "content": prompt}], max_tokens=max_tokens)
 
 
 def make_llm(kind: str = "deterministic", model: str = "claude-sonnet-4-6") -> LLMClient:
