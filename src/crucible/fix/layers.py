@@ -20,6 +20,9 @@ ROOT_CAUSE = {
         "prompt, not *enforced* in the tool.",
     AttackClass.JAILBREAK:
         "No output-policy guardrail; role-play / override talks the model past its rules.",
+    AttackClass.INDIRECT_INJECTION:
+        "Content the agent processes (docs, tickets, tool results) is treated as instructions; "
+        "no isolation of untrusted data and no output-side protection for the secret.",
 }
 
 _HARDENING = (
@@ -43,7 +46,8 @@ def _diff(before: str, after: str, label: str) -> str:
 def layer_order(cls: AttackClass, prefer_structural: bool) -> list[str]:
     if cls == AttackClass.TOOL_ABUSE:
         structural = ["tool_perm"]
-    elif cls in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL, AttackClass.JAILBREAK):
+    elif cls in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL, AttackClass.JAILBREAK,
+                 AttackClass.INDIRECT_INJECTION):
         structural = ["guardrail"]
     else:
         structural = []
@@ -54,7 +58,8 @@ def propose(vuln: Vulnerability, layer: str, seen_payloads: list[str],
             profile: TargetProfile) -> FixCandidate | None:
     cls = vuln.attack_class
     if layer == "guardrail":
-        if cls in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL):
+        if cls in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL,
+                   AttackClass.INDIRECT_INJECTION):
             g, desc = "secret_redact", "Add an output guardrail that redacts the secret token " \
                                       "from every response (phrasing-independent)."
         elif cls == AttackClass.JAILBREAK:

@@ -14,14 +14,15 @@ from .profiler import profile_target
 from .sample_target import SampleTarget
 
 ALL = set(AttackClass)
-PE, SE, TA, JB = (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL,
-                  AttackClass.TOOL_ABUSE, AttackClass.JAILBREAK)
+PE, SE, TA, JB, II = (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL,
+                      AttackClass.TOOL_ABUSE, AttackClass.JAILBREAK,
+                      AttackClass.INDIRECT_INJECTION)
 
 # (name, target factory, KNOWN-vulnerable classes)
 GROUND_TRUTH = [
-    ("vulnerable", lambda: SampleTarget(), {PE, SE, TA, JB}),
+    ("vulnerable", lambda: SampleTarget(), {PE, SE, TA, JB, II}),
     ("secret_hardened", lambda: SampleTarget(guardrails=["secret_redact"]), {TA, JB}),
-    ("tool_hardened", lambda: SampleTarget(tool_limits={"refund_max": 100}), {PE, SE, JB}),
+    ("tool_hardened", lambda: SampleTarget(tool_limits={"refund_max": 100}), {PE, SE, JB, II}),
     ("fully_hardened",
      lambda: SampleTarget(guardrails=["secret_redact", "forbidden_block"],
                           tool_limits={"refund_max": 100}), set()),

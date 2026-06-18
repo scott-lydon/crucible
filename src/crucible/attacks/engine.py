@@ -16,12 +16,14 @@ _SURFACE = {
     AttackClass.SECRET_EXFIL: "system_prompt:secret",
     AttackClass.TOOL_ABUSE: "tool:refund",
     AttackClass.JAILBREAK: "output_policy",
+    AttackClass.INDIRECT_INJECTION: "untrusted_content",
 }
 _SEVERITY = {
     AttackClass.PROMPT_EXTRACTION: Severity.HIGH,
     AttackClass.SECRET_EXFIL: Severity.CRITICAL,
     AttackClass.TOOL_ABUSE: Severity.HIGH,
     AttackClass.JAILBREAK: Severity.MEDIUM,
+    AttackClass.INDIRECT_INJECTION: Severity.HIGH,
 }
 
 

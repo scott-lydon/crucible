@@ -20,7 +20,8 @@ class OracleSuite:
         self.llm = llm
 
     def check(self, attack_class: AttackClass, response: Response) -> Proof | None:
-        if attack_class in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL):
+        if attack_class in (AttackClass.PROMPT_EXTRACTION, AttackClass.SECRET_EXFIL,
+                            AttackClass.INDIRECT_INJECTION):
             return self._canary(response)
         if attack_class == AttackClass.TOOL_ABUSE:
             return self._tool_abuse(response)

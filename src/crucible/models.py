@@ -12,6 +12,7 @@ class AttackClass(str, Enum):
     SECRET_EXFIL = "secret_exfil"
     TOOL_ABUSE = "tool_abuse"
     JAILBREAK = "jailbreak"
+    INDIRECT_INJECTION = "indirect_injection"
 
 
 class Severity(str, Enum):
