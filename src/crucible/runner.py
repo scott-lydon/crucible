@@ -46,6 +46,11 @@ def build_target(spec: str, http: dict | None = None) -> TargetAdapter:
     if spec.startswith("browser:"):
         from .browser import BrowserAdapter  # optional dep (playwright)
         return BrowserAdapter(spec[len("browser:"):])
+    if spec.startswith("llm-tools:"):  # real LLM target WITH a callable refund tool
+        from .llm import OpenRouterLLM
+        from .llm_target import REFUND_TOOL, TOOL_SYSTEM_PROMPT, LLMAgentTarget
+        return LLMAgentTarget(OpenRouterLLM(model=spec[len("llm-tools:"):]),
+                              system_prompt=TOOL_SYSTEM_PROMPT, tools=REFUND_TOOL)
     if spec.startswith("llm:"):  # the target IS a real LLM (canary in its system prompt)
         from .llm import OpenRouterLLM
         from .llm_target import LLMAgentTarget
