@@ -55,11 +55,14 @@ def main(argv: list[str] | None = None) -> int:
                     help="also run a multi-turn (crescendo) attacker (needs an LLM target + attacker)")
     rp.add_argument("--max-attacks", type=int, default=0, dest="max_attacks",
                     help="cap library attacks per class (0 = no cap); useful for live LLM cost")
+    rp.add_argument("--config", help="load run config from a JSON file (CLI flags still apply)")
     rp.add_argument("--quiet", action="store_true")
 
     sub.add_parser("demo", help="Run the built-in demo (auto mode, sample target)")
     sub.add_parser("browser-demo",
                    help="Run the full loop through a real browser against the local web test-env")
+    ip = sub.add_parser("init", help="Write a starter crucible.json config")
+    ip.add_argument("path", nargs="?", default="crucible.json")
     sub.add_parser("verify",
                    help="Measure recall + false-positive rate on the ground-truth target suite")
     sub.add_parser("calibrate-judge",
@@ -73,6 +76,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     if args.cmd == "version":
         print(__version__)
+        return 0
+    if args.cmd == "init":
+        from .config import write_config_template
+        write_config_template(args.path)
+        print(f"wrote {args.path}")
         return 0
     if args.cmd == "verify":
         from .verify import run_suite
@@ -100,6 +108,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"▶ test-env vulnerable chatbot live at {url} (driving it via headless Chromium)")
         cfg = CrucibleConfig(target=f"browser:{url}", mode="auto", operator_owned=True,
                              assume_yes=True, seeds=1, out_dir="runs-browser")
+    elif getattr(args, "config", None):
+        from .config import config_from_file
+        cfg = config_from_file(args.config)
+        cfg.operator_owned = cfg.operator_owned or args.operator_owned
+        cfg.assume_yes = cfg.assume_yes or args.assume_yes
+        cfg.verbose = not args.quiet
     else:
         cfg = _build_config(args)
 

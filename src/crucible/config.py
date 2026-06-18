@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import dataclasses
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from .models import AttackClass
 
@@ -49,3 +52,27 @@ class CrucibleConfig:
             # A remote URL is allowed only with explicit attestation already checked above,
             # but we keep a visible reminder in the audit trail.
             pass
+
+
+CONFIG_TEMPLATE = {
+    "_comment": "Crucible run config — set your target, then `crucible run --config crucible.json`.",
+    "target": "builtin:acmebot",
+    "mode": "approve",
+    "classes": list(ALL_CLASSES),
+    "seeds": 3,
+    "operator_owned": False,
+    "llm": "deterministic",
+    "model": "claude-sonnet-4-6",
+    "out_dir": "runs",
+    "max_attacks": 0,
+}
+
+
+def config_from_file(path: str) -> CrucibleConfig:
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    names = {f.name for f in dataclasses.fields(CrucibleConfig)}
+    return CrucibleConfig(**{k: v for k, v in data.items() if k in names})
+
+
+def write_config_template(path: str) -> None:
+    Path(path).write_text(json.dumps(CONFIG_TEMPLATE, indent=2) + "\n", encoding="utf-8")
