@@ -8,6 +8,9 @@ relying on pricing/limits.
 
 from __future__ import annotations
 
+import json
+import os
+import urllib.request
 from typing import Protocol
 
 
@@ -78,9 +81,58 @@ class AnthropicLLM:
         return "".join(block.text for block in msg.content if getattr(block, "type", "") == "text")
 
 
+class OpenRouterLLM:
+    """OpenAI-compatible client for OpenRouter (https://openrouter.ai), stdlib-only.
+
+    Tracks call count + cumulative cost (OpenRouter returns per-call cost) and
+    hard-caps the number of calls as a budget guard. Reads OPENROUTER_API_KEY.
+    """
+
+    def __init__(self, model: str = "anthropic/claude-3.5-haiku", api_key: str | None = None,
+                 base_url: str = "https://openrouter.ai/api/v1", max_calls: int = 300,
+                 timeout: float = 60.0):
+        self.model = model
+        self.api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+        self.base_url = base_url.rstrip("/")
+        self.max_calls = max_calls
+        self.timeout = timeout
+        self.n_calls = 0
+        self.cost = 0.0
+
+    @property
+    def available(self) -> bool:
+        return bool(self.api_key)
+
+    def complete(self, system: str, prompt: str, max_tokens: int = 512) -> str:
+        if not self.api_key:
+            raise RuntimeError("OPENROUTER_API_KEY not set")
+        if self.n_calls >= self.max_calls:
+            raise RuntimeError(f"OpenRouter call cap reached ({self.max_calls}) — budget guard")
+        body = json.dumps({
+            "model": self.model, "max_tokens": max_tokens,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": prompt}],
+        }).encode()
+        req = urllib.request.Request(  # noqa: S310
+            f"{self.base_url}/chat/completions", data=body,
+            headers={"Authorization": f"Bearer {self.api_key}",
+                     "Content-Type": "application/json", "X-Title": "crucible"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            d = json.loads(r.read().decode())
+        self.n_calls += 1
+        self.cost += float((d.get("usage") or {}).get("cost", 0.0) or 0.0)
+        return d["choices"][0]["message"]["content"]
+
+
 def make_llm(kind: str = "deterministic", model: str = "claude-sonnet-4-6") -> LLMClient:
     if kind == "anthropic":
         client = AnthropicLLM(model=model)
+        if client.available:
+            return client
+    if kind == "openrouter":
+        if "/" not in model:
+            model = "anthropic/claude-3.5-haiku"
+        client = OpenRouterLLM(model=model)
         if client.available:
             return client
     return NullLLM()

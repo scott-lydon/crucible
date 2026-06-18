@@ -42,6 +42,10 @@ def build_target(spec: str) -> TargetAdapter:
     if spec.startswith("browser:"):
         from .browser import BrowserAdapter  # optional dep (playwright)
         return BrowserAdapter(spec[len("browser:"):])
+    if spec.startswith("llm:"):  # the target IS a real LLM (canary in its system prompt)
+        from .llm import OpenRouterLLM
+        from .llm_target import LLMAgentTarget
+        return LLMAgentTarget(OpenRouterLLM(model=spec[len("llm:"):]))
     if spec.startswith(("http://", "https://")):
         return HTTPAdapter(spec)
     raise ValueError(f"unsupported target spec: {spec!r} "
@@ -64,8 +68,9 @@ def run(config: CrucibleConfig) -> RunResult:
             f"secrets_known={len(profile.secrets)}")
 
     llm = make_llm(config.llm, config.model)
-    if config.llm == "anthropic":
-        narrate(f"  LLM: anthropic {'available' if llm.available else 'UNAVAILABLE → deterministic'}")
+    if config.llm != "deterministic":
+        narrate(f"  LLM: {config.llm}/{config.model} "
+                f"{'available' if llm.available else 'UNAVAILABLE → deterministic'}")
     oracles = OracleSuite(secrets=profile.secrets, refund_limit=profile.refund_limit, llm=llm)
     catalog = StrategyCatalog(path=config.catalog_path)
     classes = [AttackClass(c) for c in config.classes]
@@ -109,6 +114,8 @@ def run(config: CrucibleConfig) -> RunResult:
     else:
         narrate("gate: not proceeding (no approval, or no findings).")
 
+    if getattr(llm, "n_calls", 0):
+        narrate(f"LLM usage: {llm.n_calls} calls, ${llm.cost:.4f} ({config.model})")
     catalog.close()
     record = RunResult(
         target=config.target, mode=config.mode, profile=profile, findings=findings,

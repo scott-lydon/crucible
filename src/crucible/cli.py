@@ -44,7 +44,8 @@ def main(argv: list[str] | None = None) -> int:
     rp.add_argument("-y", "--yes", action="store_true", dest="assume_yes",
                     help="non-interactive approval of fixes")
     rp.add_argument("--out", default="runs", dest="out_dir")
-    rp.add_argument("--llm", choices=["deterministic", "anthropic"], default="deterministic")
+    rp.add_argument("--llm", choices=["deterministic", "anthropic", "openrouter"],
+                    default="deterministic")
     rp.add_argument("--model", default="claude-sonnet-4-6")
     rp.add_argument("--prompt-only", action="store_true",
                     help="prefer prompt fixes (demonstrates the generalization gap)")

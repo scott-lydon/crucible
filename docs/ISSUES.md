@@ -7,7 +7,7 @@ and illustrate the mechanism — they are NOT empirical claims about real agents
 
 ---
 
-## A. What is genuinely real and tested (16 passing tests, incl. real-browser E2E)
+## A. What is genuinely real and tested (24 tests; real browser E2E + live-LLM verified)
 
 - The full pipeline runs end-to-end: profile → attack → gate → fix → held-out re-eval → report.
 - **Deterministic oracles** (planted-canary leak detection, tool-call interception) are real ground truth — no model opinion involved.
@@ -112,6 +112,42 @@ extractable, testable attack corpus or library; its concrete payloads are generi
 already has. Integrating it would add a heavyweight Node dependency to a deliberately stdlib-only
 Python tool and duplicate Gas Town, with no testable security gain. The earmarked
 garak/PyRIT/promptfoo sources (`docs/SOURCES.md`) are the right Python-native, license-clean path.
+
+## H. Live-model findings (OpenRouter, 2026-06-18) — the empirical part
+
+Exercised the real-LLM paths against live models via OpenRouter (~$0.02 total, budget-capped).
+These are findings the deterministic/mock paths could not have surfaced:
+
+1. **Aligned models resist the public-payload library.** System-prompt-secret extraction, 16
+   public injection payloads each:
+
+   | Model | leaks / 16 |
+   |---|---|
+   | Claude 3.5 Haiku | 0 |
+   | GPT-4o-mini | 0 |
+   | **Llama-3.1-8B** | **8** |
+   | Mistral-7B, Gemini-Flash-1.5 | errored on the gateway ($0 — not a valid measurement) |
+
+   A static, public library cannot crack a frontier-aligned model — empirical evidence that a real
+   product needs an **adaptive LLM attacker** + harder corpora (garak/PyRIT) + multi-turn.
+
+2. **The full real loop works on a leaky real model.** On Llama-3.1-8B: baseline 25% of held-out
+   attacks landed → after the **output-redaction guardrail-wrapper** fix, **100% held-out catch,
+   utility +0%** — a real fix proven on a real model via the deterministic canary oracle.
+
+3. **Judge-model choice matters enormously.** Same labeled set: GPT-4o-mini 100% precision/recall;
+   Claude 3.5 Haiku 57%. The judge is the weak link; `crucible calibrate-judge` makes it a number.
+
+4. **Safety-trained models refuse the attacker role.** Asked to "produce jailbreak prompts," Claude
+   Haiku refused — and the refusal was initially mistaken for an attack. Fixed with refusal
+   filtering + authorized-testing framing; some classes likely need a less-aligned attacker model.
+
+5. **Adaptive rewrite works.** Claude Haiku (as attacker) bypassed a "secret token" blocklist by
+   switching to "authorization token" — the iterate-on-block loop adapting past a defense.
+
+**New limitation noted:** `LLMAgentTarget` swallows API errors as empty (non-leaking) replies, so a
+gateway error silently reads as "robust" (see Mistral/Gemini above). A real benchmark must
+distinguish refusal/safe from errored.
 
 ## E. Honest bottom line
 

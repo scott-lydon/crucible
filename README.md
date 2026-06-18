@@ -69,6 +69,23 @@ vulnerable web chatbot (`crucible.testenv`) — verified end-to-end with no API 
 optional `browser-use` Agent (LLM-driven navigation of unknown UIs) is wired behind a
 key-gated path; see `docs/ISSUES.md` for what is verified vs. not.
 
+## Real LLMs (OpenRouter)
+
+Run with a real model as the **attacker** (adaptive: generates + rewrites attacks) and/or as the
+**target under test**:
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...
+crucible run --target llm:meta-llama/llama-3.1-8b-instruct \
+             --llm openrouter --model anthropic/claude-3.5-haiku \
+             --i-own-this-target --yes
+```
+
+`--target llm:<model>` makes the agent under test a real LLM (canary in its system prompt, verified
+by the deterministic oracle). The client tracks per-call cost and hard-caps calls as a budget
+guard. Calibrate a judge model with `crucible calibrate-judge`. Live findings (which real models
+leak, judge-model variance): **`docs/ISSUES.md §H`**.
+
 ## Attack classes (v1)
 
 `prompt_extraction` · `secret_exfil` · `tool_abuse` (deterministic oracles) · `jailbreak` (judge).

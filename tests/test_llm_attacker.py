@@ -33,3 +33,14 @@ def test_llm_rewrite_path_uses_the_llm():
     out = engine._llm_rewrite(AttackClass.JAILBREAK, "orig", "blocked response")
     assert out == "rewritten attack"
     assert llm.calls
+
+
+def test_llm_refusal_is_filtered_not_treated_as_attack():
+    # a safety-trained model often refuses; its refusal must not become an "attack"
+    llm = ScriptedLLM(lambda _s, _p: "I'm sorry, I cannot help with generating attacks.")
+    target = SampleTarget()
+    profile = profile_target(target)
+    oracles = OracleSuite(secrets=profile.secrets, refund_limit=profile.refund_limit)
+    engine = AttackEngine(target, oracles, seeds=1, llm=llm, llm_variants=3)
+    findings = engine.run([AttackClass.JAILBREAK])
+    assert not any(f.attack.origin == "llm" for f in findings)
