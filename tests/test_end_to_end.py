@@ -22,6 +22,11 @@ def test_full_loop_auto(tmp_path):
     data = json.loads(Path(js).read_text())
     assert data["eval"]["held_out_catch_rate"] >= 0.99
     assert data["findings"]
+    assert "duration_s" in data["run"]
+    html = Path(md).with_name("report.html")
+    assert html.exists()
+    html_text = html.read_text()
+    assert "Crucible report" in html_text and "held-out catch rate" in html_text
 
 
 def test_refuses_without_attestation():

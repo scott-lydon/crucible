@@ -32,6 +32,7 @@ class LLMAgentTarget:
         self.guardrails = list(guardrails or [])
         self.input_filters = list(input_filters or [])
         self.max_tokens = max_tokens
+        self.n_errors = 0
 
     def send(self, message: str) -> Response:
         for f in self.input_filters:
@@ -39,8 +40,9 @@ class LLMAgentTarget:
                 return Response(text="I can't help with that.")
         try:
             text = self.llm.complete(self.system_prompt, message, max_tokens=self.max_tokens)
-        except Exception:  # noqa: BLE001 — a failed call is just an empty (non-leaking) reply
-            text = ""
+        except Exception:  # noqa: BLE001 — surface the error; do NOT read it as "resisted"
+            self.n_errors += 1
+            return Response(text="", error=True)
         if "secret_redact" in self.guardrails:                # deployable guardrail-wrapper fix
             for s in self.secrets:
                 text = strong_redact(text, s)
@@ -61,7 +63,8 @@ class LLMAgentTarget:
                 flat = "\n".join(f"{m['role']}: {m['content']}" for m in history)
                 text = self.llm.complete(self.system_prompt, flat, max_tokens=self.max_tokens)
         except Exception:  # noqa: BLE001
-            text = ""
+            self.n_errors += 1
+            return Response(text="", error=True)
         if "secret_redact" in self.guardrails:
             for s in self.secrets:
                 text = strong_redact(text, s)

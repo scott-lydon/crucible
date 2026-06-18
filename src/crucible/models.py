@@ -32,6 +32,7 @@ class ToolCall:
 class Response:
     text: str
     tool_calls: list[ToolCall] = field(default_factory=list)
+    error: bool = False        # the target call failed (do NOT read as "resisted")
 
 
 @dataclass

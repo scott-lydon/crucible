@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import html as _html
 import json
 from enum import Enum
 from pathlib import Path
@@ -27,6 +28,8 @@ def render_markdown(record: Any) -> str:
     out.append("# Crucible report\n")
     out.append(f"**Target:** `{r.target}`  ·  **Access:** {r.profile.access}  "
                f"·  **Mode:** {r.mode}\n")
+    if getattr(r, "duration_s", 0) or getattr(r, "llm_calls", 0):
+        out.append(f"_Run: {r.duration_s:.1f}s · {r.llm_calls} LLM calls · ${r.llm_cost:.4f}_\n")
     ev = r.eval_result
     if ev:
         out.append("## Headline\n")
@@ -79,14 +82,100 @@ def render_markdown(record: Any) -> str:
     return "\n".join(out) + "\n"
 
 
+_HTML_CSS = """
+body{background:#0a0e1a;color:#e2e8f0;font-family:ui-sans-serif,system-ui,sans-serif;
+max-width:960px;margin:0 auto;padding:2rem;line-height:1.5}
+h1{margin:.2em 0}.muted{color:#94a3b8;font-size:14px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:18px 0}
+.card{background:#1a2236;border:1px solid #1f2a44;border-radius:12px;padding:14px}
+.card .n{font-size:26px;font-weight:800}.card .l{color:#94a3b8;font-size:12px;margin-top:6px}
+.badge{display:inline-block;padding:4px 10px;border-radius:8px;font-weight:700;font-size:13px}
+.ok{background:#143a2a;color:#34d399}.bad{background:#3a1a1a;color:#f87171}
+table{width:100%;border-collapse:collapse;font-size:13.5px;margin:10px 0}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #1f2a44;vertical-align:top}
+th{color:#cbd5e1;text-transform:uppercase;font-size:11px}
+code,pre{background:#11182b;color:#a5b4fc;border-radius:6px;font-family:ui-monospace,monospace}
+code{padding:1px 5px;font-size:.9em}pre{padding:12px;overflow-x:auto;font-size:12px;white-space:pre-wrap}
+.sev-critical{color:#f87171}.sev-high{color:#fb923c}.sev-medium{color:#fbbf24}.sev-low{color:#94a3b8}
+.bar{height:8px;background:#1f2a44;border-radius:4px;overflow:hidden}
+.bar>span{display:block;height:100%;background:#34d399}
+"""
+
+
+def render_html(record: Any) -> str:
+    r = record
+    ev = r.eval_result
+    e = _html.escape
+
+    def card(n, label):
+        return f'<div class=card><div class=n>{n}</div><div class=l>{label}</div></div>'
+
+    cards = card(len(r.findings), "findings")
+    if ev:
+        cards = (card(f"{ev.held_out_catch_rate:.0%}", "held-out catch rate")
+                 + card(f"{ev.generalization_gap:+.0%}", "generalization gap")
+                 + card(f"{ev.utility_delta:+.0%}", "utility delta") + cards)
+    durability = ""
+    if getattr(r, "audit", None):
+        a = r.audit
+        cls = "ok" if a["durable"] else "bad"
+        txt = "DURABLE" if a["durable"] else "BYPASSABLE"
+        durability = (f'<p>Fix durability (fix-aware re-attack): '
+                      f'<span class="badge {cls}">{txt}</span> '
+                      f'({a["n_leaks"]}/{a["n_attacks"]} transform attacks leaked)</p>')
+    findings_rows = "".join(
+        f'<tr><td class="sev-{f.severity.value}">{f.severity.value.upper()}</td>'
+        f'<td>{e(f.attack.attack_class.value)}</td><td>{e(f.attack.technique)}</td>'
+        f'<td>{e(f.proof.detail)}</td><td><code>{e(f.attack.payload[:70])}</code></td></tr>'
+        for f in r.findings[:60])
+    fixes_by_v = {c.vulnerability_id: c for c in r.fixes}
+    vuln_blocks = []
+    for v in r.vulnerabilities:
+        c = fixes_by_v.get(v.id)
+        fix_html = ""
+        if c:
+            status = "✅ applied" if c.accepted else "⚠️ suggestion"
+            fix_html = (f'<p>fix [{e(c.layer)}] — {status}: {e(c.description)}</p>'
+                        f'<pre>{e(c.diff.strip())}</pre>')
+        vuln_blocks.append(
+            f'<h3>{e(v.id)} — {e(v.attack_class.value)} @ {e(v.surface)} '
+            f'<span class="sev-{v.severity.value}">({v.severity.value})</span></h3>'
+            f'<p class=muted>{e(v.root_cause)}</p>{fix_html}')
+    per_class = ""
+    if ev and ev.per_class:
+        per_class = "<h2>Per-class held-out catch rate</h2>"
+        for cls, m in ev.per_class.items():
+            pct = m["catch_rate"]
+            per_class += (f'<p>{e(cls)} — {pct:.0%}<div class=bar>'
+                          f'<span style="width:{pct*100:.0f}%"></span></div></p>')
+    meta = (f"Target: <code>{e(r.target)}</code> · Access: {e(r.profile.access)} · "
+            f"Mode: {e(r.mode)}")
+    if getattr(r, "duration_s", 0) or getattr(r, "llm_calls", 0):
+        meta += f" · {r.duration_s:.1f}s · {r.llm_calls} LLM calls · ${r.llm_cost:.4f}"
+    return (f"<!doctype html><html><head><meta charset=utf-8><title>Crucible report</title>"
+            f"<style>{_HTML_CSS}</style></head><body>"
+            f"<h1>Crucible report</h1><p class=muted>{meta}</p>"
+            f"<div class=cards>{cards}</div>{durability}"
+            f"<h2>Findings</h2><table><tr><th>sev</th><th>class</th><th>technique</th>"
+            f"<th>proof</th><th>payload</th></tr>{findings_rows}</table>"
+            f"<h2>Vulnerabilities &amp; fixes</h2>{''.join(vuln_blocks)}{per_class}"
+            f"<p class=muted>Generated by Crucible — fixes are diffs, never applied live.</p>"
+            f"</body></html>")
+
+
 def write_report(out_dir: str, record: Any) -> tuple[str, str]:
     Path(out_dir).mkdir(parents=True, exist_ok=True)
     md_path = str(Path(out_dir) / "report.md")
     json_path = str(Path(out_dir) / "report.json")
+    html_path = str(Path(out_dir) / "report.html")
     Path(md_path).write_text(render_markdown(record), encoding="utf-8")
+    Path(html_path).write_text(render_html(record), encoding="utf-8")
     payload = {
         "target": record.target,
         "mode": record.mode,
+        "run": {"duration_s": getattr(record, "duration_s", 0.0),
+                "llm_calls": getattr(record, "llm_calls", 0),
+                "llm_cost": getattr(record, "llm_cost", 0.0)},
         "profile": to_jsonable(record.profile),
         "findings": to_jsonable(record.findings),
         "vulnerabilities": to_jsonable(record.vulnerabilities),

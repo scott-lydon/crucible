@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -32,6 +33,9 @@ class RunResult:
     eval_result: EvalResult | None = None
     patch: dict[str, Any] = field(default_factory=dict)
     audit: dict | None = None
+    duration_s: float = 0.0
+    llm_calls: int = 0
+    llm_cost: float = 0.0
     narration: list[str] = field(default_factory=list)
     report_paths: tuple[str, str] | None = None
 
@@ -54,6 +58,7 @@ def build_target(spec: str) -> TargetAdapter:
 
 def run(config: CrucibleConfig) -> RunResult:
     config.authorize()
+    t0 = time.time()
     narration: list[str] = []
 
     def narrate(msg: str) -> None:
@@ -129,13 +134,17 @@ def run(config: CrucibleConfig) -> RunResult:
     else:
         narrate("gate: not proceeding (no approval, or no findings).")
 
-    if getattr(llm, "n_calls", 0):
-        narrate(f"LLM usage: {llm.n_calls} calls, ${llm.cost:.4f} ({config.model})")
+    tllm = getattr(target, "llm", None)
+    llm_calls = getattr(llm, "n_calls", 0) + getattr(tllm, "n_calls", 0)
+    llm_cost = getattr(llm, "cost", 0.0) + getattr(tllm, "cost", 0.0)
+    if llm_calls:
+        narrate(f"LLM usage: {llm_calls} calls, ${llm_cost:.4f}")
     catalog.close()
     record = RunResult(
         target=config.target, mode=config.mode, profile=profile, findings=findings,
         vulnerabilities=vulns, fixes=fixes, eval_result=eval_result, patch=patch,
-        audit=audit, narration=narration,
+        audit=audit, duration_s=time.time() - t0, llm_calls=llm_calls, llm_cost=llm_cost,
+        narration=narration,
     )
     narrate("\n========== REPORT ==========")
     paths = write_report(config.out_dir, record)
