@@ -2,6 +2,8 @@
 
 **A red-team that breaks your own AI agent, then helps you harden it — and proves the fix actually held.**
 
+> 👋 **First time / testing this? Start with [`TEAM.md`](TEAM.md)** — it's a 2-minute, copy-paste test guide. What's left to build is in [`ROADMAP.md`](ROADMAP.md); honest limits in [`docs/ISSUES.md`](docs/ISSUES.md).
+
 > **Branch note.** This branch (`julian/devtool-mvp`) proposes a *developer-tool* instantiation of Crucible: instead of the fraud-model / sealed-spec research platform in the original proposal (preserved at [`docs/ORIGINAL_PROPOSAL.md`](docs/ORIGINAL_PROPOSAL.md) and `website/`), it ships a **working tool** that attacks the *AI behavior* of agents you own. Same spine (attack → verify → harden → re-eval), different organism.
 
 Point Crucible at an AI agent **you own**. It adversarially probes the agent's *behavior* — prompt injection, jailbreaks, leaked secrets, tricked tool calls — proves each break with a **ground-truth signal**, proposes fixes as **reviewable diffs (never applied live)**, and re-tests against attacks it **never saw** to prove the fix generalized instead of memorizing the test.
