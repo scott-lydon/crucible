@@ -4,17 +4,13 @@
 
 `Direction:` ML + LLM hybrid &nbsp;•&nbsp; `Showcase:` June 29, 2026 (10-minute live demo) &nbsp;•&nbsp; `Team:` clean four-way split
 
-> Crucible is a target-agnostic red-team and blue-team platform. An LLM-driven adversary discovers semantically valid ways to defeat a target system — evading a fraud model, reward-hacking a coding agent, or violating the spec of a research agent. An ensemble of independent oracles, generated from a sealed spec and unable to collude, catches those attacks without trusting the thing being checked. A blue loop hardens the target automatically. And the platform continuously red-teams itself to report, as a single number, how often a cheat still gets through.
-
-The diagrams below render natively on GitHub. A polished interactive version — with logos, a decision table, trade-off panels, and the safety map — lives at [`website/index.html`](website/index.html).
-
 > **Provenance.** This architecture is derived solely from the project proposal (`Crucible_Capstone_Proposal.pdf`). It is proposal-stage: no implementation exists yet, so the dashboard metrics named below are listed without values — they populate from real runs, never from placeholders.
 
 ---
 
 ## The problem
 
-AI models are graded against a *proxy metric* (a validation set, a benchmark, a unit-test suite, a user-feedback signal). The training process is an *optimizer*, and it finds the cheapest path to maximize whatever score it was given. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job.
+AI models are graded against a *proxy metric* (a validation set, a benchmark, a unit-test suite, a user-feedback signal). Whatever optimizer fit the model to that metric — gradient descent for a supervised classifier like a fraud model, reinforcement learning or fine-tuning for an agent — finds the cheapest path to maximize the score it was given. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job.
 
 Examples:
 
@@ -50,9 +46,13 @@ Confidentiality and Availability are out of scope. If your concern is "did anyth
 
 ## What Crucible does
 
-The producer (the team that trained and submitted the model) hands Crucible two things: the model itself, and a description of the task it is supposed to do (example: "given a transaction record, output fraud or not-fraud"). The producer does **not** pick the test inputs. Crucible generates fresh inputs on its own, the producer does not see them, Crucible runs them through the model, and Crucible checks whether the model's answers are correct.
+Crucible is a target-agnostic red-team and blue-team platform. The producer (the team that trained and submitted the model) hands Crucible two things: the model itself, and a description of the task it is supposed to do (example: "given a transaction record, output fraud or not-fraud"). The producer does **not** pick the test inputs. Crucible generates fresh inputs on its own, the producer does not see them, Crucible runs them through the model, and Crucible checks whether the model's answers are correct.
+
+The same core handles three target types behind thin adapters: a fraud-detection model, a code-producing agent, and a multi-step research agent. An LLM-driven adversary searches for semantically valid attacks (evading the fraud model, reward-hacking the coding agent, violating the spec of the research agent). An ensemble of independent oracles, generated from a sealed spec and unable to collude with the producer or each other, catches those attacks without trusting the thing being checked. A blue loop hardens the target automatically. The platform then continuously red-teams itself and reports, as a single number, how often a cheat still gets through.
 
 If the producer were allowed to pick the test inputs, the cheapest winning move would be to ship a lookup table of memorized answers. An honest verifier has to control its own inputs.
+
+The diagrams below render natively on GitHub. A polished interactive version — with logos, a decision table, trade-off panels, and the safety map — lives at [`website/index.html`](website/index.html).
 
 ---
 
