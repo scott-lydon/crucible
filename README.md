@@ -1,9 +1,18 @@
 # Crucible
 
-Give Crucible a trained AI model and a description of the one task it
-should do (example: "flag fraud in transactions"). Crucible checks if the
-model gets the right answer on inputs the producer never saw. Doing well
-on the producer's own benchmark does not count.
+Crucible verifies that a trained AI model actually performs the task its
+producer (the team that built and submitted it) claims it performs.
+
+The producer hands Crucible two things: the model itself, and a
+description of the task it is supposed to do (example: "given a
+transaction record, output fraud or not-fraud"). The producer does
+**not** pick the test inputs. Crucible generates fresh inputs on its
+own, after the producer is locked out, runs them through the model, and
+checks whether the model's answers are correct.
+
+If the producer were allowed to pick the test inputs, the cheapest
+winning move would be to ship a lookup table of memorized answers. An
+honest verifier has to control its own inputs.
 
 ## Scope: the Integrity pillar
 
