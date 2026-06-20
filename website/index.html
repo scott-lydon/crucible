@@ -249,6 +249,7 @@ flowchart LR
   classDef j fill:#155e63,stroke:#3aa6ad,color:#e6fffb;
   classDef agg fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
       </div>
+      <div class="figcaption"><b>In plain terms.</b> The system under test produces an output (a fraud score, a snippet of code, a research answer), sealed off from the answer key. Four independent checks plus one AI opinion rule pass or fail on that output, and their combined ruling is the <b>verdict</b> (a verdict on the output, not on a red attack or a blue patch). An <em>oracle</em> is a trustworthy independent check; the <em>judge</em> is the AI-opinion check, the weakest, with one vote.</div>
     </div>
 
     <!-- Pillar 2 -->
@@ -280,6 +281,7 @@ flowchart LR
   classDef wb fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2;
   classDef hyb fill:#243049,stroke:#64748b,color:#e2e8f0;
       </div>
+      <div class="figcaption"><b>In plain terms.</b> A smart attacker in a loop. It tries an attack, sees the target's score, works out why it failed, makes the smallest change that keeps the bad intent but slips past, and repeats until it gets through, banking what works. Reasoning about meaning, not gradient math on raw numbers, keeps its attacks valid and is what sets it apart from a standard adversarial-ML attacker.</div>
     </div>
 
     <!-- Pillar 3 -->
@@ -310,6 +312,7 @@ flowchart LR
   classDef h fill:#1f6b5c,stroke:#2fa589,color:#fff;
   classDef out fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
       </div>
+      <div class="figcaption"><b>In plain terms.</b> Blue reads the red team's catalog of attacks that worked and hardens the target. For the machine-learning target it needs the training pipeline and features to retrain (for an agent target it would write a reviewable diff to prompts and guardrails). It must never see the held-out attack set used for the final grade, or "the fix generalized" would just mean it memorized the test.</div>
     </div>
 
     <!-- Pillar 4 -->
@@ -337,6 +340,7 @@ flowchart LR
   classDef art fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
   classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
       </div>
+      <div class="figcaption"><b>In plain terms.</b> The scoreboard and flight recorder. The headline number is the gap between how the target does on checks it was tuned against (validation) and brand-new checks it has never seen (held-out); a big gap means it learned to pass the test, not do the work. It records every step for replay, plots the curves, exports a reusable benchmark, and trips a kill switch if the catch rate falls below a preset red line.</div>
     </div>
 
     <!-- pros/cons cards -->
@@ -441,6 +445,7 @@ flowchart LR
         <b style="color:var(--green)">Producer can see:</b> its own input, its own output, the <code>query_target()</code> score.<br/>
         <b style="color:var(--red)">Producer cannot see:</b> held-out test instances, the differential second implementation, or any oracle internals. White-box mode reveals the <em>scheme</em>, not the instances.
       </div>
+      <div class="figcaption"><b>In plain terms.</b> A checker is only worth anything if it still works when the cheater knows exactly how the checking works. White-box means the attacker holds the blueprint. Think of a lock: one that only works because burglars do not know the brand is worthless, versus one that resists a burglar holding the schematics and a key mold. Crucible bets it can build the second kind, and a catch rate measured against an attacker who knows the scheme is the only one you can believe.</div>
     </div>
   </div>
 </section>

@@ -67,7 +67,7 @@ Dashed edges are feedback: verdicts return to the red agent, retraining returns 
 
 ## 3. Pillar 1 — Targets & independent oracles
 
-Three adapters wrap the systems under test behind one uniform interface into a producer sandbox. The sealed spec derives four oracles that each fail differently, plus an LLM judge with one vote, aggregating to a verdict and audit trace.
+Three adapters wrap the systems under test behind one uniform interface and run them inside a *producer sandbox* (an isolated box where the system under test can produce its output but has no path to the answer key used to grade it). The sealed spec derives four *oracles* (independent checks that decide on their own whether an output is correct; the term comes from software testing, where a "test oracle" is the component that knows the right answer) that each fail differently, plus an *LLM judge* (a large language model asked for its opinion, which is why it gets only one vote), aggregating to a *verdict* (the pass-or-fail ruling on one produced output) and an audit trace.
 
 ```mermaid
 flowchart LR
@@ -111,11 +111,13 @@ flowchart LR
 
 Each oracle fails differently, so a hack that slips past one is caught by another. The judge is measured like any other check, never trusted as the sole authority.
 
+> **In plain terms.** The "producer" is the system under test, and it *produces* an output: a fraud score, a snippet of code, or a research answer. It runs sealed off so it cannot peek at how it will be graded. Four independent checks plus one AI opinion then look only at that output and each rule pass or fail; their combined ruling is the **verdict**. The verdict is about the *target's output*, not about a red-team attack and not about a blue-team patch. (The same checks get reused later to grade a blue-team patch, but a verdict always answers one question: did this output satisfy the spec, or did a cheat get through?) "Oracle" is the umbrella word for a trustworthy independent check; "judge" is reserved for the AI-opinion check, because it is the least trustworthy of the group and earns only one vote.
+
 ---
 
 ## 4. Pillar 2 — Red: the adversarial search engine
 
-The LLM reasons about why an artifact was caught, proposes a minimal intent-preserving change, queries the target for a score, and iterates toward evasion. A strategy catalog stores winning tactics across runs; a white-box mode hands over the full scheme to measure recall; a hybrid fallback runs a constrained numerical search when constraint satisfaction is hard.
+The LLM reasons about why an *artifact* (whatever the target produced: a fraud score, a snippet of code, a research answer) was caught, proposes a minimal intent-preserving change, queries the target for a *score* (the target's own rating of the candidate input, for example its fraud probability), and iterates toward evasion. A strategy catalog stores winning tactics across runs; a white-box mode hands over the full scheme to measure recall; a hybrid fallback runs a constrained numerical search when constraint satisfaction is hard.
 
 ```mermaid
 flowchart LR
@@ -144,7 +146,9 @@ flowchart LR
   classDef hyb fill:#243049,stroke:#64748b,color:#e2e8f0;
 ```
 
-The LLM's semantic reasoning replaces gradients as the search engine — the design philosophy that separates this from a standard adversarial-ML pipeline. Winning tactics persist and compound across runs.
+The LLM's semantic reasoning replaces gradients as the search engine, the design philosophy that separates this from a standard adversarial-ML pipeline. Winning tactics persist and compound across runs.
+
+> **In plain terms.** Yes, this pillar is a smart attacker stuck in a loop: it tries an attack, sees how the target rated it, works out *why* it failed, makes the smallest change that keeps the bad intent but slips past, asks again, and repeats until it gets through. It also banks what works, so it sharpens over time. And yes, this is the part that sets Crucible apart from a standard adversarial-ML attacker. Ordinary attackers use *gradient math* (nudging the input numbers in whatever direction fools the model), which spits out impossible inputs like negative dollar amounts. Crucible's red agent uses *semantic reasoning* (reasoning about meaning and real-world plausibility, for example "is this still a believable fraudulent transaction?"), so its attacks stay valid and point at a real weakness you can fix.
 
 ---
 
@@ -178,13 +182,15 @@ flowchart LR
   classDef out fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
 ```
 
-The hole is verified closed on held-out attacks, **not** the attacks used to build the patch — the rule that stops the blue loop from overfitting to known attacks.
+The hole is verified closed on held-out attacks, **not** the attacks used to build the patch, the rule that stops the blue loop from overfitting to known attacks.
+
+> **In plain terms.** Your assumption is right: the blue side reads the red team's strategy catalog (the attacks that worked) and uses it to harden the target. How much access it needs depends on the target. For the proposal's machine-learning target there is no codebase to read; blue needs the model's training pipeline and feature set so it can add features, add adversarial training examples, and retrain. (In the re-scoped agent version the target *is* prompts, guardrails, and config, so there blue would write a reviewable diff to those, never to your business logic.) The one thing blue must *never* see is the held-out attack set used for the final grade. If blue could train against those exact attacks, "the fix generalized" would be a lie, because the model would just be memorizing the test. Blue closes the hole, then a separate held-out set it never touched decides whether the fix actually holds.
 
 ---
 
 ## 6. Pillar 4 — Measure: self-test, observability & benchmark
 
-Agent step traces and every verdict feed an honest dashboard, co-evolution curves, and a per-verdict audit trace. These export a seeded-hack corpus, a leaderboard, and an SR 11-7 style model risk report, and certification halts when verifier recall crosses a residual red line.
+Agent step traces and every verdict feed an honest dashboard, co-evolution curves, and a per-verdict audit trace. These export a seeded-hack corpus, a leaderboard, and an SR 11-7 style model risk report (SR 11-7 is the United States Federal Reserve's guidance on model risk management, a standard format for documenting a model's risks), and certification halts when verifier recall crosses a residual red line.
 
 ```mermaid
 flowchart LR
@@ -209,13 +215,17 @@ flowchart LR
   classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
 ```
 
-The headline number is the gap between validation pass-rate and held-out pass-rate — the proxy reward minus ground truth that a producer learns to exploit. When recall drops below the red line, the platform stops certifying.
+The headline number is the gap between validation pass-rate and held-out pass-rate, the proxy reward minus ground truth that a producer learns to exploit. When recall drops below the red line, the platform stops certifying.
+
+> **In plain terms.** This pillar is the scoreboard and the flight recorder. It watches the whole fight and reports numbers you can trust. The headline number is the *gap*: how well the target does on checks it was tuned against (validation) versus brand-new checks it has never seen (held-out). A big gap means it learned to pass the test rather than do the real work. It also records every step so any ruling can be replayed, plots attack-success and detection over time, saves the whole attack set as a reusable benchmark with a *leaderboard*, and keeps a kill switch: if the catch rate falls below a preset *red line*, it refuses to certify the system as safe. Its whole job is to stop the project from fooling itself.
 
 ---
 
 ## 7. Trust boundaries & spec sealing (the core bet)
 
-The single hardest piece — and the reason the project is worth attempting — is independent oracle generation that survives a white-box adversary. If the oracle holds when the producer knows the scheme, the catch rate is real.
+The single hardest piece, and the reason the project is worth attempting, is independent oracle generation that survives a white-box adversary. If the oracle holds when the producer knows the scheme, the catch rate is real.
+
+> **In plain terms.** A checker is only worth anything if it still works when the cheater knows exactly how the checking works. *White-box* means the attacker can see the entire checking scheme (the blueprint). An oracle "survives a white-box adversary" if it keeps catching cheats even after you hand the attacker that blueprint. Picture a lock: one that only works because burglars do not know the brand is worthless, while one that resists a burglar holding the schematics and a copy of the key mold is the real thing. Most checks built for AI are the first kind. Crucible's bet is that it can build the second kind, and a catch rate measured against an attacker who already knows the scheme is the only catch rate you can believe.
 
 ```mermaid
 flowchart LR
