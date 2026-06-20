@@ -334,6 +334,15 @@ Any "we caught X percent of cheats" claim rests on what the attacker knows. Hide
 
 Crucible's self-test runs the same red agent from earlier in the loop in **white-box mode**: the verification scheme (which oracles fire, what relations they check, how the held-out test generator is structured, the design of the differential second implementation) is handed to the red agent as input. What stays hidden is the *instances*: the specific held-out test cases used to grade any given submission, and the per-run outputs of the differential oracle. The red agent now knows the blueprint and still has to find attacks that survive.
 
+The red agent's *role* does not change in white-box mode. It is still the attacker; the four oracles plus the judge are still the verifier. What changes is the information available to the attacker. In black-box mode the red agent probes the target blindly; in white-box mode it also reads the verifier's design and can craft attacks aimed at the verifier's known mechanisms. Same actor, harder difficulty setting.
+
+**Concrete example, code-agent target.** Suppose the visible tests are five `(input, expected-output)` pairs and the held-out oracle is described as "we will grade your code on new inputs that equal a visible input plus a random integer in `[1, 100]`."
+
+- *Black-box cheat that gets caught.* The producer ships code that hardcodes branches for exactly the five visible inputs and returns the cached answer when one matches, garbage otherwise. The held-out oracle picks a shifted input (say, `visible + 47`), the hardcoded branch misses, garbage is returned, the oracle catches the cheat.
+- *White-box cheat that slips through.* The red agent is now given the held-out generator's description. It crafts a producer submission that runs `n = n % 101` before the hardcoded lookup, so every shifted input is remapped to one of the original five before the cached answer is returned. The same hardcoded-cheat strategy that the black-box test caught now slips through.
+
+The catch-rate gap between the two runs is exactly the strength the oracle was borrowing from the attacker's ignorance.
+
 The number this produces, recall against an attacker who knows the verification scheme, is what the dashboard reports as the platform's catch rate. It also drives the halt-certification rule:
 
 - A high white-box catch rate is evidence the oracles work because of their *design*, not because the attacker was uninformed.
