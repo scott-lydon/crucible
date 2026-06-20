@@ -1,6 +1,6 @@
 # Crucible
 
-**An adversarial platform for AI Integrity: it hunts cases where a model is silently wrong, verifies with independent checks the model can never see, hardens it in a closed loop, and measures its own catch rate against an adversary that already knows the scheme.**
+**An adversarial platform for AI Integrity: it hunts cases where a model is silently wrong, verifies with independent checks the model and its makers cannot access, hardens it in a closed loop, and measures its own catch rate against an adversary that already knows the scheme.**
 
 `Direction:` ML + LLM hybrid &nbsp;•&nbsp; `Showcase:` June 29, 2026 (10-minute live demo) &nbsp;•&nbsp; `Team:` clean four-way split
 
