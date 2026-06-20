@@ -1,7 +1,9 @@
 # Crucible
 
-Crucible verifies that an AI model is actually doing its job, not just scoring
-high on the test it was graded on.
+Crucible verifies that an AI model is actually doing its job, not just
+scoring high on the metric it was optimized against (a benchmark, a
+validation set, a unit-test suite, a user-feedback signal, whatever the
+producer's training loop was pointed at).
 
 ## Scope: the Integrity pillar
 
