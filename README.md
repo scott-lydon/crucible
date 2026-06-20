@@ -21,17 +21,22 @@ jobs (SAST, DAST, secret scanners, uptime monitors). Crucible will not help.
 
 ## Threat model
 
-The attacker is not a network intruder. The attacker is an **optimizer**:
-the model's training process, an agentic system iterating on its own outputs,
-or a human producer chasing a benchmark. Any of them can find outputs that
-score high on a proxy reward while failing the actual goal. The AI safety
-field calls this *reward hacking*, *specification gaming*, or *hallucination*
-depending on the shape it takes.
+Three terms, used precisely:
+
+| Term | What it is |
+|---|---|
+| **Threat** | Silent wrongness introduced by optimization pressure. A model trained against a proxy reward (validation AUC, unit tests passing, user thumbs-up) learns the cheapest way to satisfy that proxy, which is not always the actual goal. The AI safety field calls this *reward hacking*, *specification gaming*, or *hallucination* depending on the shape it takes. |
+| **Attack** | A specific input that surfaces the wrongness at runtime. A fraudulent transaction in an unseen merchant category. A code-gen prompt outside the visible test inputs. A research query whose answer cannot be fabricated. |
+| **Red agent** | The component inside Crucible that searches for attacks. LLM-driven adversarial search with a persistent strategy catalog. |
+
+The producer (the team or system that built the model) is not assumed to
+be malicious. The optimization process itself is what found the cheat;
+the producer may not even know it is there.
 
 A fraud detector that misses 69 percent of real fraud is, operationally,
 identical to a database whose values were silently tampered with. The data
 flowing downstream is wrong, the code consuming it trusts it, the same
-class of harm follows. Same Integrity failure, different attacker.
+class of harm follows. Same Integrity failure, different mechanism.
 
 Traditional security tooling does not look here, because the failure does
 not live in a code path. It lives in the model's output distribution.
