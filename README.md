@@ -326,7 +326,24 @@ flowchart LR
 
 ---
 
-## 8. Data flow — one pass, end to end
+## 8. White-box self-test — how the catch rate becomes real
+
+The four pillars catch attacks. The white-box self-test answers the harder question: would the oracles still catch attacks if the attacker already knew how the checking worked?
+
+Any "we caught X percent of cheats" claim rests on what the attacker knows. Hide the verification scheme and even a naive attacker scores low against it; reveal the scheme and the same attacker may walk through unchallenged. A catch rate measured against a blind attacker tells you what the oracles do against ignorance, not against capability.
+
+Crucible's self-test runs the same red agent from earlier in the loop in **white-box mode**: the verification scheme (which oracles fire, what relations they check, how the held-out test generator is structured, the design of the differential second implementation) is handed to the red agent as input. What stays hidden is the *instances*: the specific held-out test cases used to grade any given submission, and the per-run outputs of the differential oracle. The red agent now knows the blueprint and still has to find attacks that survive.
+
+The number this produces, recall against an attacker who knows the verification scheme, is what the dashboard reports as the platform's catch rate. It also drives the halt-certification rule:
+
+- A high white-box catch rate is evidence the oracles work because of their *design*, not because the attacker was uninformed.
+- A low white-box catch rate triggers the halt-certification rule until either the oracles are strengthened or the spec is narrowed.
+
+No second adversary is built and no third-party red team is contracted. The same red agent that does the black-box search becomes the auditor of the oracle ensemble it was just attacking. The platform red-teams itself, with its own scheme exposed, on every pass.
+
+---
+
+## 9. Data flow — one pass, end to end
 
 ```mermaid
 sequenceDiagram
