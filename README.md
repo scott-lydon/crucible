@@ -1,9 +1,13 @@
 # Crucible
 
-Crucible verifies that an AI model is actually doing its job, not just
-scoring high on the metric it was optimized against (a benchmark, a
-validation set, a unit-test suite, a user-feedback signal, whatever the
-producer's training loop was pointed at).
+Crucible takes an AI artifact plus one declared task spec (e.g. "given
+this transaction record, output fraud / not-fraud") and verifies that the
+artifact's outputs are correct on that one task. It does not grade general
+capability or other jobs the same model might also perform. It grades one
+spec, on inputs the producer could not have seen in advance. A high score
+on the metric the producer optimized against (a benchmark, a validation
+set, a unit-test suite, a user-feedback signal) does not, on its own,
+count as evidence.
 
 ## Scope: the Integrity pillar
 
