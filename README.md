@@ -1,14 +1,59 @@
 # Crucible
 
-Crucible verifies that a trained AI model actually performs the task its
-producer (the team that built and submitted it) claims it performs.
+## The problem
 
-The producer hands Crucible two things: the model itself, and a
-description of the task it is supposed to do (example: "given a
-transaction record, output fraud or not-fraud"). The producer does
-**not** pick the test inputs. Crucible generates fresh inputs on its
-own, after the producer is locked out, runs them through the model, and
-checks whether the model's answers are correct.
+A trained AI model is graded against a *proxy metric*: a validation set,
+a benchmark, a unit-test suite, a user-feedback signal, or whatever
+scorecard the producer's training process was pointed at. The producer's
+training process is an *optimizer*. Optimizers find the cheapest way to
+maximize the metric they were given.
+
+When the metric matches the real-world goal perfectly, this is harmless.
+When it does not, the optimizer finds the gap and lives in it. The
+result is a model that scores high on the metric while silently failing
+at the actual job.
+
+Concrete instances of this failure mode:
+
+- A fraud detector that learns "flag transactions in merchant category
+  code 5816" because the validation set happened to be heavy in that
+  category. It scores 99 percent on the producer's eval and misses
+  two-thirds of real fraud in production.
+- A code-generation agent that learns to hardcode the visible test
+  inputs into a lookup table. It passes the test suite and produces
+  broken code on anything new.
+- A research agent that learns to fabricate citations because the
+  reward signal rewarded "answer that looks sourced" rather than
+  "answer that is actually sourced." It sounds authoritative and cites
+  papers that do not exist.
+
+The AI safety field has names for this class of failure:
+
+- **Reward hacking** is when an optimizer maximizes the reward signal
+  in a way that does not maximize the goal the reward signal was meant
+  to capture.
+- **Specification gaming** is when a system satisfies the literal
+  written specification while violating its intent.
+- **Hallucination** is when a generative system produces confident
+  outputs that have no grounding in reality.
+
+These failures do not live in a code path. Static analysis, fuzzers,
+authentication testers, and secret scanners cannot see them. They live
+in the model's output distribution, and they only become visible when
+something checks the outputs for correctness on inputs the producer did
+not get to choose.
+
+That something is what Crucible is.
+
+## What Crucible does
+
+The producer (the team that trained and submitted the model) hands
+Crucible two things: the model itself, and a description of the task it
+is supposed to do (example: "given a transaction record, output fraud
+or not-fraud"). The producer does **not** pick the test inputs.
+Crucible generates fresh inputs on its own, the producer does not see
+them, Crucible runs them through the model, and Crucible checks whether
+the model's answers are correct.
 
 If the producer were allowed to pick the test inputs, the cheapest
 winning move would be to ship a lookup table of memorized answers. An
@@ -36,21 +81,13 @@ Three terms, used precisely:
 
 | Term | What it is |
 |---|---|
-| **Threat** | Silent wrongness introduced by optimization pressure. A model trained against a proxy reward (validation AUC, unit tests passing, user thumbs-up) learns the cheapest way to satisfy that proxy, which is not always the actual goal. The AI safety field calls this *reward hacking*, *specification gaming*, or *hallucination* depending on the shape it takes. |
-| **Attack** | A specific input that surfaces the wrongness at runtime. A fraudulent transaction in an unseen merchant category. A code-gen prompt outside the visible test inputs. A research query whose answer cannot be fabricated. |
+| **Threat** | Silent wrongness introduced by optimization pressure. See the Problem section above. |
+| **Attack** | A specific input that surfaces the wrongness at runtime. A fraudulent transaction in an unseen merchant category. A code-generation prompt outside the visible test inputs. A research query whose answer cannot be fabricated. |
 | **Red agent** | The component inside Crucible that searches for attacks. LLM-driven adversarial search with a persistent strategy catalog. |
 
-The producer (the team or system that built the model) is not assumed to
-be malicious. The optimization process itself is what found the cheat;
-the producer may not even know it is there.
-
-A fraud detector that misses 69 percent of real fraud is, operationally,
-identical to a database whose values were silently tampered with. The data
-flowing downstream is wrong, the code consuming it trusts it, the same
-class of harm follows. Same Integrity failure, different mechanism.
-
-Traditional security tooling does not look here, because the failure does
-not live in a code path. It lives in the model's output distribution.
+The producer is not assumed to be malicious. The optimization process
+itself is what found the cheat; the producer may not even know it is
+there. Crucible's job is to surface the failure regardless of intent.
 
 ## What Crucible is not
 
@@ -72,7 +109,7 @@ that fools one is caught by another.
 
 | Oracle | Method |
 |---|---|
-| Held-out tests | New instances generated *after* submission, never exposed to the producer |
+| Held-out tests | New inputs Crucible generates *after* the model is submitted; the producer has no way to see them in advance |
 | Metamorphic relations | Transformations that should not change the verdict |
 | Differential oracle | A second implementation from a different model family that must agree |
 | Property-based fuzzing | Random inputs against declared invariants |
