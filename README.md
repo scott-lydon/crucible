@@ -14,25 +14,21 @@ The diagrams below render natively on GitHub. A polished interactive version —
 
 ## The problem
 
-A trained AI model is graded against a *proxy metric*: a validation set, a benchmark, a unit-test suite, a user-feedback signal, or whatever scorecard the producer's training process was pointed at. The producer's training process is an *optimizer*. Optimizers find the cheapest way to maximize the metric they were given.
+AI models are graded against a *proxy metric* (a validation set, a benchmark, a unit-test suite, a user-feedback signal). The training process is an *optimizer*, and it finds the cheapest path to maximize whatever score it was given. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job.
 
-When the metric matches the real-world goal perfectly, this is harmless. When it does not, the optimizer finds the gap and lives in it. The result is a model that scores high on the metric while silently failing at the actual job.
+Examples:
 
-Concrete instances of this failure mode:
+- Fraud detector learns "flag merchant category 5816" because the validation set was heavy there. Scores 99 percent on eval, misses two-thirds of real fraud.
+- Code-generation agent hardcodes the visible test inputs into a lookup table. Passes the test suite, breaks on anything new.
+- Research agent fabricates citations because the reward signal rewarded "answer that looks sourced," not "answer that is actually sourced."
 
-- A fraud detector that learns "flag transactions in merchant category code 5816" because the validation set happened to be heavy in that category. It scores 99 percent on the producer's eval and misses two-thirds of real fraud in production.
-- A code-generation agent that learns to hardcode the visible test inputs into a lookup table. It passes the test suite and produces broken code on anything new.
-- A research agent that learns to fabricate citations because the reward signal rewarded "answer that looks sourced" rather than "answer that is actually sourced." It sounds authoritative and cites papers that do not exist.
+Named in the AI safety literature:
 
-The AI safety field has names for this class of failure:
+- **Reward hacking**: an optimizer maximizes the reward in a way that does not maximize the goal the reward was meant to capture.
+- **Specification gaming**: a system satisfies the literal spec while violating its intent.
+- **Hallucination**: a generative system produces confident outputs with no grounding in reality.
 
-- **Reward hacking** is when an optimizer maximizes the reward signal in a way that does not maximize the goal the reward signal was meant to capture.
-- **Specification gaming** is when a system satisfies the literal written specification while violating its intent.
-- **Hallucination** is when a generative system produces confident outputs that have no grounding in reality.
-
-These failures do not live in a code path. Static analysis, fuzzers, authentication testers, and secret scanners cannot see them. They live in the model's output distribution, and they only become visible when something checks the outputs for correctness on inputs the producer did not get to choose.
-
-That something is what Crucible is.
+These failures live in the model's output distribution, not in any code path. Static analysis, fuzzers, and secret scanners cannot see them. They only become visible when something checks the outputs for correctness on inputs the producer did not pick. That something is Crucible.
 
 ---
 
