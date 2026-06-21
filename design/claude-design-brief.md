@@ -12,7 +12,7 @@ Build the operator dashboard for Crucible, an adversarial security platform that
 
 The full architecture lives at `https://github.com/scott-lydon/crucible`. The product is open source, target-agnostic, and pitched at three customer segments: a bank's model risk officer subject to United States Federal Reserve Supervisory Letter 11-7 (SR 11-7); a code-generation agent vendor whose buyers ask "does this agent reward-hack our tests"; and a public-sector AI procurement officer.
 
-The dashboard ships as a React 18 single-page application built with Vite and Tailwind, using Recharts for plots and React Router 6 for routing. The architecture website already exists at `website/index.html` in a dark theme (`bg #0a0e1a`, panel `#1a2236`, accent `#6366f1`, text `#e2e8f0`, muted `#94a3b8`). Match that palette so dashboard and architecture site share visual identity.
+The dashboard ships as a React 18 single-page application built with Vite and Tailwind, using Recharts for plots and React Router 6 for routing. The palette is yours to choose; see the "Audience and palette decision" section below for the customer context to reason from. Whatever palette you pick will be back-applied to the architecture website so the two share visual identity.
 
 ### Hard product rules the design must honor
 
@@ -57,24 +57,32 @@ For each route, design (a) the page layout, (b) one happy-state mock, (c) one em
 - **CostChip.** Inline dollar amount with a tooltip showing pillar and run identifier. Used on every catalog row, every blue patch, every LLM call.
 - **NotYetMeasuredTile.** Stand-in for any metric that has zero contributing runs. Renders the text and a "Run Launcher" link, never a numeric value.
 
+### Audience and palette decision (you pick the palette)
+
+Pick a palette that resonates with all three customer segments at once. Do not default to "tech demo dark with neon accents"; reason about what the three audiences see every day and find a palette that earns trust from all three. Name the palette decision in a `_palette_notes.md` file in the design bundle, with the hex codes and the audience-by-audience rationale, so we can defend the choice in the architecture interview.
+
+What the three audiences see daily:
+
+1. **Bank model risk officer (Supervisory Letter 11-7 (SR 11-7) world).** Lives in Bloomberg Terminal, internal model governance portals, Excel risk dashboards. Visual context: dense data, restrained palettes, often dark backgrounds with amber or cyan data accents. Trust signals: typography hierarchy, gridded layouts, no playful illustration, no gradients, conservative iconography. Warning signals: marketing flourish, neon, anything that reads "consumer app."
+2. **Code-generation agent vendor engineering lead.** Lives in GitHub Dark, Linear, Vercel, Sentry, Datadog. Visual context: dark theme is table stakes; strong accent colors used sparingly; sharp monospace; high information density without feeling crowded. Trust signals: a designer touched it (not bootstrap-grey), the data-to-chrome ratio is right, latency and cost are first-class. Warning signals: light theme as default (reads as marketing site, not tool); too much chrome.
+3. **Public-sector artificial intelligence (AI) procurement officer.** Lives in National Institute of Standards and Technology (NIST) documentation, government Geographic Information System (GIS) tools, agency dashboards, often with strong accessibility requirements (Web Content Accessibility Guidelines (WCAG) AA contrast at minimum, AAA preferred). Visual context: institutional palettes, often United States flag-adjacent (deep navy, off-white, restrained red). Trust signals: contrast ratios are excellent, type is readable at smaller sizes, no decorative animation. Warning signals: low contrast, animated chrome, anything that prioritizes aesthetics over readability.
+
+The intersection where all three feel at home: a dark or near-dark base (not pure black), one restrained primary accent that is neither neon nor pastel, two semantic accents (success and danger) chosen for WCAG AAA contrast on the base, an amber for warning that does not read alarming. Specifically avoid pure black backgrounds (banks read as terminal-from-the-90s), purple neon accents (banks and government read as "consumer AI hype"), and high-saturation gradients (procurement reads as marketing).
+
+You are not obligated to follow that intersection literally; you are obligated to deliver a palette that defends itself to all three audiences and explain the decision in `_palette_notes.md`.
+
 ### Visual style
 
-- Dark theme matching `website/index.html`:
-  - `bg #0a0e1a`
-  - `panel #1a2236`
-  - `accent #6366f1` (interactive primary)
-  - `text #e2e8f0`
-  - `muted #94a3b8`
-  - `red #c0584f` (halt banner, errors)
-  - `green #34d399` (health pass, detection recovered)
-  - `amber #f59e0b` (warnings, mock-LLM mode)
-- Typography: sans serif, with a monospace face for code, traces, prompts, and audit JavaScript Object Notation (JSON).
-- Logos for technologies and oracles use the Simple Icons style already in `website/index.html` (an `<img>` tag from `cdn.simpleicons.org/<slug>/<hex>`).
-- Charts use Recharts; line for ASR and detection over rounds, bar for verdict counts per oracle.
+- Palette: your choice, per the section above.
+- Typography: sans serif body face, monospace face for code, traces, prompts, audit JavaScript Object Notation (JSON), and dollar amounts. Type ramp must remain readable at 14 pixel base.
+- Contrast: Web Content Accessibility Guidelines (WCAG) AA minimum across all text, AAA for body copy where possible.
+- Logos for technologies and oracles use the Simple Icons style (an `<img>` tag from `cdn.simpleicons.org/<slug>/<hex>` where `<hex>` is the brand color). Confirm each chosen accent reads acceptably next to the brand-colored logos.
+- Charts use Recharts; line for attack-success-rate and detection over rounds, bar for verdict counts per oracle. Pick chart colors from your palette, not Recharts defaults.
+- Motion: no decorative animation. Data-driven transitions only (chart updates, state changes, drawer slides).
 
 ### What to deliver
 
-A complete design bundle with one HTML file per route plus the standardized components in their own files, all using the palette above. Include both the happy state, the empty state, and the error state for each route. Use the route list as the bundle's directory shape so it copies cleanly into the live `dashboard/src/pages/` tree per the verbatim-copy rule.
+A complete design bundle with one HTML file per route plus the standardized components in their own files, all using the palette you chose. Include the happy state, the empty state, and the error state for each route. Use the route list as the bundle's directory shape so it copies cleanly into the live `dashboard/src/pages/` tree per the verbatim-copy rule. Include `_palette_notes.md` at the bundle root naming the hex codes and the audience-by-audience rationale.
 
 End of prompt.
 
@@ -94,7 +102,7 @@ Re-run Claude Design (with this same prompt plus a delta paragraph) whenever:
 
 - A new route is added to `spec.md`.
 - A cross-cutting component is added or renamed.
-- The palette changes in `website/index.html`.
 - A user story changes the layout shape of an existing page.
+- The palette needs revisiting (audience feedback, accessibility audit finding).
 
-Re-exports re-converge live to design, not the other way around. If the live tree has drifted from `_design_bundle/`, the live tree changes, not the design files.
+Re-exports re-converge live to design, not the other way around. If the live tree has drifted from `_design_bundle/`, the live tree changes, not the design files. The architecture website at `website/index.html` re-syncs to whatever palette the latest export carries.

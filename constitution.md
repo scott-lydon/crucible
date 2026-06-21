@@ -12,7 +12,7 @@ This file is the first of the five foundational artifacts that govern the projec
 - **Object-relational mapping (ORM):** SQLAlchemy 2.x in async mode, with Alembic for migrations. No raw SQL outside `shared/persistence/`.
 - **Producer sandbox:** Modal. The producer container has no environment variables and no network access to Postgres or the verification artifact bucket.
 - **Large language model (LLM) provider:** Anthropic Claude. Sonnet 4.6 on the inner red and blue loops; Opus 4.8 on the judge oracle and the white-box self-test pass. No other provider; no fallback to OpenAI or Google for "redundancy." Cross-family in the differential oracle is satisfied by the two model families (LightGBM versus IsolationForest for fraud; Sonnet versus Haiku for code), not by mixing vendors.
-- **Dashboard front end:** React 18 plus Vite plus Tailwind, Recharts for plots, React Router 6. Same dark theme palette as `website/index.html` (`bg #0a0e1a`, panel `#1a2236`, accent `#6366f1`, text `#e2e8f0`).
+- **Dashboard front end:** React 18 plus Vite plus Tailwind, Recharts for plots, React Router 6. Palette is owned by the Claude Design export at `_design_bundle/` and is documented in `_design_bundle/_palette_notes.md` with audience-by-audience rationale. The architecture website at `website/index.html` re-syncs to whatever palette the latest export carries; the constitution does not pin specific hex codes.
 - **Test runner:** pytest 8 with `pytest-asyncio`. Coverage minimum 80% per module, measured by `coverage.py`.
 - **Static analysis:** `ruff` for lint, `mypy --strict` for types, both run pre-merge. No `# type: ignore` without a numbered ticket reference in the comment.
 
