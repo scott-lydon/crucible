@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import hashlib
 
-from modules.targets.fraud.data import CSV_PATH, load_dataframe
+from shared.datasets.fraud import CSV_PATH, load_dataframe
 
 
 def main() -> int:

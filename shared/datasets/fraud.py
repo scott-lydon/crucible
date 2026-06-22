@@ -21,7 +21,7 @@ import pandas as pd
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 
-REPO = Path(__file__).resolve().parents[3]
+REPO = Path(__file__).resolve().parents[2]
 CSV_PATH = REPO / "data" / "creditcard.csv"
 OPENML_DATA_ID = 1597
 TARGET_COLUMN = "Class"

@@ -12,10 +12,11 @@ from dataclasses import dataclass, field
 from sqlalchemy import text
 
 from modules.measure.sink import InMemoryMeasureSink
+from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
-from orchestrator.interfaces import HealthProbe, MeasureSink, RedAgent, Target
+from orchestrator.interfaces import HealthProbe, MeasureSink, Oracle, RedAgent, Target
 from shared.persistence.db import session_scope
 from shared.telemetry.log import get_logger
 from shared.types.results import HealthStatus
@@ -35,6 +36,7 @@ class Container:
     sink: MeasureSink
     red: RedAgent
     targets: dict[str, Target] = field(default_factory=dict)
+    oracles: dict[str, list[Oracle]] = field(default_factory=dict)
 
     def register_target(self, target: Target) -> None:
         self.targets[target.kind] = target
@@ -46,6 +48,12 @@ class Container:
                 f"Registered: {sorted(self.targets)}"
             )
         return self.targets[kind]
+
+    def register_oracle(self, target_kind: str, oracle: Oracle) -> None:
+        self.oracles.setdefault(target_kind, []).append(oracle)
+
+    def oracles_for(self, target_kind: str) -> list[Oracle]:
+        return self.oracles.get(target_kind, [])
 
 
 async def _db_health() -> HealthStatus:
@@ -81,6 +89,16 @@ def build_container() -> Container:
     except FileNotFoundError as exc:
         _log.warning("fraud_model_missing", error=str(exc))
         sink.register_health_probe("targets/fraud", _untrained_probe(str(exc)))
+
+    # Fraud oracles. Differential (IsolationForest) lands in slice 7; the held-out,
+    # metamorphic, property-fuzz and judge oracles append here in slices 5/6/8/9.
+    try:
+        differential = FraudDifferentialOracle.load()
+        container.register_oracle("fraud", differential)
+        sink.register_health_probe("oracles/fraud/differential", differential.health)
+    except FileNotFoundError as exc:
+        _log.warning("fraud_iso_missing", error=str(exc))
+        sink.register_health_probe("oracles/fraud/differential", _untrained_probe(str(exc)))
 
     return container
 

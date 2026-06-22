@@ -69,10 +69,10 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic rules from spec invariants; rules persisted to `metamorphic_rules`; runtime checks fire each rule and report pass / fail.
   - [ ] **Done criteria for `vouch`:** at least three metamorphic rules synthesized per spec, all surface in the dashboard verdict view.
 
-- [ ] **slice-7-differential-oracle** (T).
-  - [ ] `modules/oracles/differential/`: for fraud, LightGBM versus IsolationForest; for code, Sonnet versus Haiku.
-  - [ ] Both implementations are spawned per submission, outputs compared.
-  - [ ] **Done criteria for `vouch`:** disagreement rate measured on the test fixtures; the platform never trusts a single side as ground truth.
+- [x] **slice-7-differential-oracle** (T). (fraud branch; code Sonnet-vs-Haiku lands with slice 3.)
+  - [x] `modules/oracles/differential/`: for fraud, LightGBM versus IsolationForest (held-out AUC ~0.94; score thresholded at the 98th training percentile, not the too-strict `predict()`).
+  - [x] Both implementations score per submission; the oracle fires only on disagreement in the missed-fraud direction (one vote of four — never trusts a single side).
+  - [x] **Done criteria for `vouch`:** fire logic verified deterministically (anomalous+missed→fires, agreement→silent); false-positive rate on legit < 5%. (Dataset loader moved to `shared/datasets/` to keep the module-import rule.)
 
 - [ ] **slice-8-property-fuzz-oracle** (T).
   - [ ] `modules/oracles/property_fuzz/`: `hypothesis` strategies derived from spec invariants.

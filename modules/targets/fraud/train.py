@@ -17,7 +17,7 @@ from typing import Any, cast
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score
 
-from modules.targets.fraud.data import load_splits
+from shared.datasets.fraud import load_splits
 
 ARTIFACTS = Path(__file__).resolve().parents[3] / "artifacts"
 DEFAULT_THRESHOLD = 0.5

@@ -58,9 +58,11 @@ def _migrated_test_db() -> Iterator[None]:
 def _fraud_model(_migrated_test_db: None) -> None:
     # Train fraud-v1 once per session if the (gitignored) artifact is missing, so the
     # container's fraud target loads. Idempotent and cheap when already trained.
+    from modules.oracles.differential.model import ensure_isoforest
     from modules.targets.fraud.train import ensure_model
 
     ensure_model(1)
+    ensure_isoforest(1)
 
 
 @pytest.fixture(scope="session")

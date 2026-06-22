@@ -8,9 +8,9 @@ import asyncio
 
 from fastapi.testclient import TestClient
 
-from modules.targets.fraud.data import load_splits
 from modules.targets.fraud.target import FraudTarget
 from modules.targets.fraud.train import ensure_model
+from shared.datasets.fraud import load_splits
 
 
 def test_fraud_model_trained_on_real_data_auc() -> None:
