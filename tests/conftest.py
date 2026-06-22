@@ -53,8 +53,17 @@ def _migrated_test_db() -> Iterator[None]:
     yield
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _fraud_model(_migrated_test_db: None) -> None:
+    # Train fraud-v1 once per session if the (gitignored) artifact is missing, so the
+    # container's fraud target loads. Idempotent and cheap when already trained.
+    from modules.targets.fraud.train import ensure_model
+
+    ensure_model(1)
+
+
 @pytest.fixture(scope="session")
-def client() -> Iterator[TestClient]:
+def client(_fraud_model: None) -> Iterator[TestClient]:
     # One TestClient (one event loop, one async engine) for the whole session, so the
     # asyncpg engine is never used across loops.
     from orchestrator.api import app

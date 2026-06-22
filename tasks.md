@@ -37,11 +37,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Integration test exercises one loop round end to end with `DummyTarget`.
   - [x] **Done criteria for `vouch`:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
 
-- [ ] **slice-2-fraud-target** (T).
-  - [ ] `modules/targets/fraud/`: Kaggle credit-card dataset downloader (`scripts/fetch_fraud_dataset.py`), LightGBM trainer (`train.py`), serialized model under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation.
-  - [ ] Self-test endpoint `/health/targets/fraud` returns model file checksum and last training timestamp.
-  - [ ] Integration test with real data: `pytest tests/integration/test_fraud_target.py`.
-  - [ ] **Done criteria for `vouch`:** model trained on real Kaggle data (not a stub), AUC against the held-out portion at or above 0.85, health endpoint returns 200.
+- [x] **slice-2-fraud-target** (T).
+  - [x] `modules/targets/fraud/`: dataset downloader (`scripts/fetch_fraud_dataset.py`, OpenML mirror — DEVIATION from Kaggle, no creds), LightGBM trainer (`train.py`), serialized model under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation. Plus `data.py` with the sealed 3-way split (train / holdout / eval).
+  - [x] Self-test endpoint `/health/targets/fraud` returns model file checksum (`model_sha256`) and last training timestamp.
+  - [x] Integration test with real data: `pytest tests/integration/test_fraud_target.py`.
+  - [x] **Done criteria for `vouch`:** model trained on real data (not a stub, n_train≈199k), AUC on held-out eval = 0.916 (≥ 0.85), health endpoint returns 200 green.
 
 - [ ] **slice-3-code-agent-target** (T).
   - [ ] `modules/targets/code_agent/`: producer that takes a sealed `code_spec.yaml` and returns Python source via Claude Sonnet 4.6 tool use.

@@ -14,9 +14,20 @@ from sqlalchemy import text
 from modules.measure.sink import InMemoryMeasureSink
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
-from orchestrator.interfaces import MeasureSink, RedAgent, Target
+from modules.targets.fraud.target import FraudTarget
+from orchestrator.interfaces import HealthProbe, MeasureSink, RedAgent, Target
 from shared.persistence.db import session_scope
+from shared.telemetry.log import get_logger
 from shared.types.results import HealthStatus
+
+_log = get_logger("orchestrator.wiring")
+
+
+def _untrained_probe(message: str) -> HealthProbe:
+    async def probe() -> HealthStatus:
+        return HealthStatus(status="amber", error=message)
+
+    return probe
 
 
 @dataclass
@@ -60,6 +71,17 @@ def build_container() -> Container:
 
     container = Container(sink=sink, red=static_red)
     container.register_target(dummy)
+
+    # Fraud target loads from the trained artifact; if it has not been trained yet the
+    # /health leaf reports amber rather than the platform failing to start.
+    try:
+        fraud = FraudTarget.load()
+        container.register_target(fraud)
+        sink.register_health_probe("targets/fraud", fraud.health)
+    except FileNotFoundError as exc:
+        _log.warning("fraud_model_missing", error=str(exc))
+        sink.register_health_probe("targets/fraud", _untrained_probe(str(exc)))
+
     return container
 
 
