@@ -43,14 +43,31 @@ class SealedSpec:
     invariants: tuple[Invariant, ...]
     holdout_generator_kind: str   # "data_partition" (Shape 1) | "llm_generated" (Shape 2)
 
-    @classmethod
-    def from_yaml(cls, text: str) -> SealedSpec:
-        """Parse the YAML an operator pastes into the Run Launcher.
+    def to_dict(self) -> dict[str, Any]:
+        """Full serialization for the ``specs`` table, so the server-side resolver
+        can rehydrate the spec without re-parsing YAML."""
+        return {
+            "spec_id": self.spec_id,
+            "target_kind": self.target_kind,
+            "shape": str(self.shape),
+            "holdout_generator_kind": self.holdout_generator_kind,
+            "obligations": [
+                {
+                    "id": o.obligation_id,
+                    "description": o.description,
+                    "check_kind": o.check_kind,
+                    "params": dict(o.params),
+                }
+                for o in self.obligations
+            ],
+            "invariants": [
+                {"id": i.invariant_id, "description": i.description, "expression": i.expression}
+                for i in self.invariants
+            ],
+        }
 
-        Fails loud (KeyError / ValueError) on a malformed spec — never silently
-        defaults, per constitution.md section 8.
-        """
-        raw = cast("dict[str, Any]", yaml.safe_load(text))
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> SealedSpec:
         obligations = tuple(
             Obligation(
                 obligation_id=str(o["id"]),
@@ -76,3 +93,15 @@ class SealedSpec:
             invariants=invariants,
             holdout_generator_kind=str(raw["holdout_generator_kind"]),
         )
+
+    @classmethod
+    def from_yaml(cls, text: str) -> SealedSpec:
+        """Parse the YAML an operator pastes into the Run Launcher.
+
+        Fails loud (KeyError / ValueError) on a malformed spec — never silently
+        defaults, per constitution.md section 8.
+        """
+        raw = cast("dict[str, Any]", yaml.safe_load(text))
+        if not isinstance(raw, dict):
+            raise ValueError("sealed spec must be a YAML mapping")
+        return cls.from_dict(raw)

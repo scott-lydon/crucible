@@ -30,12 +30,12 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] Dual-push confirmed. (DEVIATION: GitLab remote not configured on this clone — GitHub-only push; tracked in bead cr-dev.)
   - [x] **Done criteria for `vouch`:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean.
 
-- [ ] **slice-1-target-protocol** (T).
-  - [ ] `interfaces.Target` Protocol with `submit(input)` and `query_target(input)`.
-  - [ ] `modules/targets/dummy/` concrete `DummyTarget` returning canned `(output, score)`.
-  - [ ] `orchestrator/wiring.py` registers `DummyTarget` as default for tests.
-  - [ ] Integration test exercises one loop round end to end with `DummyTarget`.
-  - [ ] **Done criteria for `vouch`:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
+- [x] **slice-1-target-protocol** (T).
+  - [x] `interfaces.Target` Protocol with `submit(input)` (consolidated `query_target` into `submit`) plus `health()`.
+  - [x] `modules/targets/dummy/` concrete `DummyTarget` returning canned `(output, score)`.
+  - [x] `orchestrator/wiring.py` registers `DummyTarget` (and a `StaticRedAgent`) so the loop runs a real round.
+  - [x] Integration test exercises one loop round end to end with `DummyTarget`.
+  - [x] **Done criteria for `vouch`:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
 
 - [ ] **slice-2-fraud-target** (T).
   - [ ] `modules/targets/fraud/`: Kaggle credit-card dataset downloader (`scripts/fetch_fraud_dataset.py`), LightGBM trainer (`train.py`), serialized model under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation.

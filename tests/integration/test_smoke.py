@@ -7,7 +7,7 @@ import time
 
 from fastapi.testclient import TestClient
 
-from tests.conftest import FRAUD_SPEC_YAML
+from tests.conftest import DUMMY_SPEC_YAML
 
 
 def _poll_status(client: TestClient, run_id: str, target: str, timeout: float = 5.0) -> str:
@@ -26,9 +26,9 @@ def test_post_runs_returns_run_id(client: TestClient) -> None:
     resp = client.post(
         "/runs",
         json={
-            "target_kind": "fraud",
+            "target_kind": "dummy",
             "shape": "shape1_ml",
-            "spec_yaml": FRAUD_SPEC_YAML,
+            "spec_yaml": DUMMY_SPEC_YAML,
             "budget_rounds": 3,
             "budget_dollars": 1.0,
         },
@@ -38,7 +38,7 @@ def test_post_runs_returns_run_id(client: TestClient) -> None:
     assert body["runId"].startswith("run_")
     assert body["status"] == "pending"
 
-    # The background loop drives the run to completion (slice-0 lifecycle scaffold).
+    # The background loop drives the run to completion through the dummy target.
     assert _poll_status(client, body["runId"], "complete") == "complete"
 
 

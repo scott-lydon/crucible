@@ -12,7 +12,9 @@ from dataclasses import dataclass, field
 from sqlalchemy import text
 
 from modules.measure.sink import InMemoryMeasureSink
-from orchestrator.interfaces import MeasureSink, Target
+from modules.red.static import StaticRedAgent
+from modules.targets.dummy.target import DummyTarget
+from orchestrator.interfaces import MeasureSink, RedAgent, Target
 from shared.persistence.db import session_scope
 from shared.types.results import HealthStatus
 
@@ -20,6 +22,7 @@ from shared.types.results import HealthStatus
 @dataclass
 class Container:
     sink: MeasureSink
+    red: RedAgent
     targets: dict[str, Target] = field(default_factory=dict)
 
     def register_target(self, target: Target) -> None:
@@ -44,11 +47,20 @@ async def _db_health() -> HealthStatus:
 
 
 def build_container() -> Container:
-    """Construct the wired container. Targets/oracles/red/blue register as their
-    slices land; slice 0 wires the sink and the persistence health probe."""
+    """Construct the wired container. Oracles/blue register as their slices land;
+    slice 1 wires the dummy target and the static red agent so the loop runs a real
+    round end to end."""
     sink: MeasureSink = InMemoryMeasureSink()
     sink.register_health_probe("shared/persistence", _db_health)
-    return Container(sink=sink)
+
+    dummy = DummyTarget()
+    static_red = StaticRedAgent()
+    sink.register_health_probe("targets/dummy", dummy.health)
+    sink.register_health_probe("red/static", static_red.health)
+
+    container = Container(sink=sink, red=static_red)
+    container.register_target(dummy)
+    return container
 
 
 _container: Container | None = None

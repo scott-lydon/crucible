@@ -85,3 +85,19 @@ invariants:
     description: Transaction amount is non-negative.
     expression: "amount >= 0"
 """
+
+DUMMY_SPEC_YAML = """
+spec_id: dummy-demo-v1
+target_kind: dummy
+shape: shape1_ml
+holdout_generator_kind: data_partition
+obligations:
+  - id: catch-fraud
+    description: A transaction labelled fraudulent must score above the decision threshold.
+    check_kind: label_match
+    params: {threshold: 0.5}
+invariants:
+  - id: amount-nonneg
+    description: Transaction amount is non-negative.
+    expression: "amount >= 0"
+"""
