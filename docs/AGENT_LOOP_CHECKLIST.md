@@ -219,7 +219,7 @@ This cap exists because the global `~/.claude/CLAUDE.md` "Cap processes to ~1 mi
 The agent pauses and waits for a human at exactly these points:
 
 1. **After slice 4 lands.** Surface "slice 0 to 4 complete, the loop runs end to end with the producer sandbox, Postgres, and the two real target adapters. Recommend the four pillar owners take over for slices 5 to 18, or confirm the loop should continue solo."
-2. **After slice 14 lands.** Surface "the blue loop is live; recommend a human review of the proposed patch's training samples before retraining is applied at scale."
+2. **After slice 14 lands.** Surface "the blue loop is live; recommend a human review of the proposed patch's training samples before the hardening operation is applied at scale (a LightGBM retrain for the fraud target, a prompt-and-configuration patch for the code-agent target)."
 3. **Before slice 19 (demo polish).** Surface "all 18 build slices passed vouch; ready to enter demo polish. Confirm the demo runbook target."
 4. **Before any production deploy.** Per the global `~/.claude/CLAUDE.md` "DEPLOY-VERIFY-OR-DIE" rule, the agent prints the deploy verification checklist filled in with the specific commands it ran and waits for the human to verify the dashboard renders.
 

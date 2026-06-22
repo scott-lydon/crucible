@@ -1,6 +1,6 @@
 # Crucible
 
-**An adversarial platform for AI Integrity: Crucible's red agent attacks a model to expose silently wrong outputs, independent oracles verify each output using checks held back from the model and its makers, a blue loop hardens the model using the training/configuration surface the makers share, and the platform measures its own catch rate against the same red agent, now armed with the verification scheme.**
+**An adversarial platform for AI Integrity: Crucible's red agent attacks an AI system under verification (a classifier such as a fraud LightGBM model, or an agent such as a code-generation agent), independent oracles verify each output using checks held back from that AI system and its makers, a blue loop hardens it by retraining classical-ML targets or patching agent targets' prompts and configuration, and the platform measures its own catch rate against the same red agent, now armed with the verification scheme. Crucible does NOT detect fraud or write code itself; it verifies that the AI systems doing those jobs are not silently wrong. See [`docs/VOCABULARY.md`](docs/VOCABULARY.md) for term-by-term definitions.**
 
 `Direction:` ML + LLM hybrid &nbsp;•&nbsp; `Showcase:` June 29, 2026 (10-minute live demo) &nbsp;•&nbsp; `Team:` clean four-way split
 
@@ -46,9 +46,9 @@ Confidentiality and Availability are out of scope. If your concern is "did anyth
 
 ## What Crucible does
 
-Crucible is a target-agnostic red-team and blue-team platform. The producer (the team that trained and submitted the model) hands Crucible two things: the model itself, and a description of the task it is supposed to do (example: "given a transaction record, output fraud or not-fraud"). The producer does **not** pick the test inputs. Crucible generates fresh inputs on its own, the producer does not see them, Crucible runs them through the model, and Crucible checks whether the model's answers are correct.
+Crucible is a target-agnostic red-team and blue-team platform. The producer (the team that built and submitted the AI system) hands Crucible two things: the AI system to verify (a trained LightGBM classifier file for the fraud target, or an agent endpoint plus prompts and configuration for the code-agent target), and a description of the task it is supposed to do (example: "given a transaction record, output fraud or not-fraud"). The producer does **not** pick the test inputs. Crucible generates fresh inputs on its own, the producer does not see them, Crucible runs them through the AI system under verification, and Crucible checks whether that AI system's answers are correct against the sealed specification.
 
-The same core handles three target types behind thin adapters: a fraud-detection model, a code-producing agent, and a multi-step research agent. An LLM-driven adversary searches for semantically valid attacks (evading the fraud model, reward-hacking the coding agent, violating the spec of the research agent). An ensemble of independent oracles, generated from a sealed spec and unable to collude with the producer or each other, catches those attacks without trusting the thing being checked. A blue loop hardens the target automatically. The platform then continuously red-teams itself and reports, as a single number, how often a cheat still gets through.
+The same core handles three target types behind thin adapters: a fraud-detection LightGBM classifier (a classical machine-learning model), a code-producing agent (an agent loop wrapping a vendor language model), and a multi-step research agent (stubbed in the two-week build). An LLM-driven adversary searches for semantically valid attacks (evading the fraud classifier, reward-hacking the code agent, violating the spec of the research agent). An ensemble of independent oracles, generated from a sealed spec and unable to collude with the producer or each other, catches those attacks without trusting the thing being checked. A blue loop hardens the target automatically: it retrains the fraud classifier into a new versioned `.lgb` artifact, or it patches the code agent's prompts, guardrails, and configuration into a new versioned agent-config row. The platform then continuously red-teams itself and reports, as a single number, how often a cheat still gets through.
 
 If the producer were allowed to pick the test inputs, the cheapest winning move would be to ship a lookup table of memorized answers. An honest verifier has to control its own inputs.
 
@@ -131,7 +131,7 @@ flowchart LR
   classDef meas fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
 ```
 
-Dashed edges are feedback: verdicts return to the red agent, retraining returns to the target. The same core runs over a fraud model, a code-producing agent, and a multi-step research agent through a thin adapter.
+Dashed edges are feedback: verdicts return to the red agent; the blue-loop output returns to the target (retrain for the fraud LightGBM classifier, patch for the code agent's prompts and configuration). The same core runs over a fraud-detection LightGBM classifier, a code-producing agent, and a multi-step research agent through a thin adapter.
 
 ---
 
@@ -224,7 +224,7 @@ The LLM's semantic reasoning replaces gradients as the search engine, the design
 
 ## 5. Pillar 3 — Blue: automated hardening
 
-A second LLM reads the strategy catalog and proposes new features, adversarial training samples, or a specialist ensemble. The target is retrained and re-evaluated on held-out attacks so the recovered detection rate is honest.
+A second LLM reads the strategy catalog and proposes new features, adversarial training samples, or a specialist ensemble. The target is hardened and re-evaluated on held-out attacks so the recovered detection rate is honest. Hardening is target-specific: for the fraud LightGBM classifier it is a literal retrain into a new `artifacts/fraud-vN.lgb` version; for the code agent it is a reviewable patch against the agent's prompts, guardrails, and configuration. The vendor language model the code agent talks to (Sonnet 4.6) is never touched. See [`docs/VOCABULARY.md`](../docs/VOCABULARY.md) under "Retrain — two different operations."
 
 ```mermaid
 flowchart LR
@@ -448,7 +448,7 @@ Component for component, Crucible is a working testbed for problems on Anthropic
 
 - **Targets and oracles:** adapters, spec sealing and sandbox, the four-oracle verification ensemble (tabular and time-series anomaly detection included).
 - **Red agent:** LLM-driven adversarial search, strategy catalog, white-box adversary, hybrid fallback.
-- **Blue loop:** automated hardening and retraining closed loop.
+- **Blue loop:** automated hardening closed loop (retrain for ML targets, prompt-and-config patch for agent targets).
 - **Measure:** traces, attack-success and detection curves, co-evolution curve, dashboard, exported benchmark, and model risk report.
 
 ---
