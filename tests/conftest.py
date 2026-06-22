@@ -8,12 +8,13 @@ from __future__ import annotations
 import asyncio
 import os
 import subprocess
-from collections.abc import Iterator
+from collections.abc import Awaitable, Callable, Iterator
 from pathlib import Path
 
 import asyncpg
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 REPO = Path(__file__).resolve().parent.parent
 TEST_DB = "crucible_test"
@@ -77,6 +78,23 @@ def client(_fraud_model: None) -> Iterator[TestClient]:
 @pytest.fixture(autouse=True)
 def _clean_tables() -> None:
     _sql(TEST_DB, f"TRUNCATE {_TABLES} RESTART IDENTITY CASCADE")
+
+
+def run_db[T](work: Callable[[AsyncSession], Awaitable[T]]) -> T:
+    """Run a server-side coroutine that needs a session, in its own event loop with a
+    fresh, disposed-after engine. Avoids reusing the app's global engine across loops
+    (asyncpg binds connections to one loop). The reusable pattern for unit-testing
+    oracles/aggregator/blue server-side functions."""
+
+    async def _run() -> T:
+        engine = create_async_engine(os.environ["DATABASE_URL"])
+        try:
+            async with async_sessionmaker(engine, expire_on_commit=False)() as session:
+                return await work(session)
+        finally:
+            await engine.dispose()
+
+    return asyncio.run(_run())
 
 
 FRAUD_SPEC_YAML = """

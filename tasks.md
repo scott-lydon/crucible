@@ -49,13 +49,13 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] Self-test endpoint `/health/targets/code_agent` runs a "produce hello world" round trip in under one second.
   - [ ] **Done criteria for `vouch`:** integration test produces real Python code that compiles via `ast.parse`.
 
-- [ ] **slice-4-sealed-spec-and-sandbox** (T).
-  - [ ] `shared/sandbox/`: Modal job wrapper. Strips env vars, denies network egress except to Claude.
-  - [ ] `shared/types/sealed_spec.py`: typed `SealedSpec` value object.
-  - [ ] Spec sealing: spec stored in Postgres `specs` table, read by oracles through a server-side resolver. Producer container has no Postgres credentials.
-  - [ ] "Seal Probe" fixture under `shared/sandbox/probes/` that, from inside the sandbox, tries to reach Postgres, Modal control plane, and the verification bucket. All three must time out.
-  - [ ] Integration test runs the seal probe and asserts all three probes failed.
-  - [ ] **Done criteria for `vouch`:** `tests/integration/test_sandbox_seal.py` passes; the test for "producer can read the spec from Postgres directly" fails as expected.
+- [x] **slice-4-sealed-spec-and-sandbox** (T).
+  - [x] `shared/sandbox/`: local Docker job wrapper (DEVIATION from Modal — bead cr-dev). Strips env vars, denies ALL network egress (`--network none`); returns stdout/stderr/exit/job_ref.
+  - [x] `shared/types/sealed_spec.py`: typed `SealedSpec` value object (landed slice 0; + dict round-trip).
+  - [x] Spec sealing: spec stored in Postgres `specs` table, read by oracles through a server-side resolver (`shared/persistence/resolver.py`). Producer container has no Postgres credentials and no network.
+  - [x] "Seal Probe" fixture under `shared/sandbox/probes/` that, from inside the sandbox, tries to reach Postgres and the internet (Modal control plane N/A). All time out.
+  - [x] Integration test runs the seal probe and asserts all probes failed.
+  - [x] **Done criteria for `vouch`:** `tests/integration/test_sandbox_seal.py` passes; the producer (sandbox) cannot reach Postgres (seal probe `postgres.reachable=False`), while the server-side resolver can.
 
 ### Per-pillar (parallel after slice 4)
 

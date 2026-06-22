@@ -13,6 +13,7 @@ from sqlalchemy import select
 from orchestrator.wiring import Container
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow
+from shared.persistence.resolver import resolve_spec
 from shared.telemetry.log import get_logger
 from shared.types.core import Attack, AttackBudget, TargetSpec
 from shared.types.enums import Pillar, RunStatus
@@ -68,10 +69,8 @@ async def _set_status(run_id: RunId, status: RunStatus, *, error: str | None = N
 async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int]:
     async with session_scope() as session:
         run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
-        spec_row = (
-            await session.execute(select(SpecRow).where(SpecRow.run_id == run_id))
-        ).scalar_one()
-        return SealedSpec.from_dict(spec_row.payload), run.target_kind, run.budget_rounds
+        spec = await resolve_spec(session, run_id)
+        return spec, run.target_kind, run.budget_rounds
 
 
 async def _persist_attack(run_id: RunId, attack: Attack, result: ProducerResult) -> None:
