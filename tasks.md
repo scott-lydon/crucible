@@ -6,7 +6,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-0-foundation** (A). Foundational artifacts (this file plus four others), repo scaffolding, Continuous Integration (CI) skeleton.
+- [x] **slice-0-foundation** (A). Foundational artifacts (this file plus four others), repo scaffolding, Continuous Integration (CI) skeleton.
 
 ## Next slice
 
@@ -16,19 +16,19 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ### Critical path (sequential)
 
-- [ ] **slice-0-foundation** (A).
+- [x] **slice-0-foundation** (A).
   - [x] `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, `QA_ADVERSARY.md` at repo root, populated (no template placeholders, grep clean).
   - [x] `CONTRIBUTING.md` with squash-per-slice and shared-folder discipline.
   - [x] `design/claude-design-brief.md` ready for paste into claude.ai/design.
-  - [ ] `pyproject.toml` with `python = "^3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, Modal, structlog. `ruff` and `mypy --strict` configured.
-  - [ ] `orchestrator/interfaces/{target,oracle,red,blue,measure}.py` stub Protocols. No implementations yet.
-  - [ ] `shared/types/`: `Attack`, `Verdict`, `AuditTrace`, `TargetSpec`, `OracleVote`, `RunId`, `AttackBudget`, `SealedSpec` as `@dataclass(frozen=True, slots=True)`.
-  - [ ] `shared/persistence/`: async SQLAlchemy engine, base session, Alembic `env.py`. Migrations for `runs`, `verdicts`, `attacks`, `llm_calls`, `sandbox_jobs`, `health_probes`.
-  - [ ] FastAPI `POST /runs`, `GET /health`, `GET /runs/:runId/stream` (SSE).
-  - [ ] Pre-merge check script `scripts/check_module_imports.py` that rejects `from modules.<x>` inside `modules/<y>/` and rejects pull requests touching `modules/` and `shared/types/` together.
-  - [ ] GitHub Actions workflow `.github/workflows/ci.yml` runs ruff, mypy strict, pytest, the pre-merge check script.
-  - [ ] Dual-push confirmed: `git ls-remote https://github.com/scott-lydon/crucible.git main` equals `git ls-remote gitlab main`.
-  - [ ] **Done criteria for `vouch`:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean.
+  - [x] `pyproject.toml` with `python = ">=3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, structlog. `ruff` and `mypy --strict` configured. (DEVIATION: Modal replaced by a local Docker sandbox — see bead cr-dev; LLM via OpenRouter-routed Anthropic models.)
+  - [x] `orchestrator/interfaces/{target,oracle,red,blue,measure}.py` stub Protocols. No implementations yet.
+  - [x] `shared/types/`: `Attack`, `Verdict`, `AuditTrace`, `TargetSpec`, `OracleVote`, `RunId`, `AttackBudget`, `SealedSpec` as `@dataclass(frozen=True, slots=True)`.
+  - [x] `shared/persistence/`: async SQLAlchemy engine, base session, Alembic `env.py`. Migrations for `runs`, `verdicts`, `attacks`, `llm_calls`, `sandbox_jobs`, `health_probes`. (Plus `specs`.)
+  - [x] FastAPI `POST /runs`, `GET /health`, `GET /runs/:runId/stream` (SSE).
+  - [x] Pre-merge check script `scripts/check_module_imports.py` that rejects `from modules.<x>` inside `modules/<y>/` and rejects pull requests touching `modules/` and `shared/types/` together.
+  - [x] GitHub Actions workflow `.github/workflows/ci.yml` runs ruff, mypy strict, pytest, the pre-merge check script.
+  - [ ] Dual-push confirmed. (DEVIATION: GitLab remote not configured on this clone — GitHub-only push; tracked in bead cr-dev.)
+  - [x] **Done criteria for `vouch`:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean.
 
 - [ ] **slice-1-target-protocol** (T).
   - [ ] `interfaces.Target` Protocol with `submit(input)` and `query_target(input)`.

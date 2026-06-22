@@ -1,6 +1,30 @@
-.DS_Store
-Thumbs.db
-node_modules/
-*.log
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Secrets / env
 .env
 .env.*
+*.key
+
+# Trained model artifacts (regenerated, checksummed — not source)
+artifacts/
+
+# Data (downloaded + checksummed at build time)
+data/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Frontend (lands later)
+node_modules/
+dashboard/dist/
