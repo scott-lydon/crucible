@@ -65,7 +65,7 @@ Inherited from the project-level CLAUDE.md hard rule ("NO MOCK / STUB / FAKE / R
 - The seeded-hack corpus and leaderboard export contain only attacks that actually succeeded against the running target.
 - The Supervisory Letter 11-7 (United States Federal Reserve, SR 11-7) model risk report is generated from the run's actual numbers, never from a template with sample values.
 
-If a number cannot be measured for real (the service is down, the dataset failed to download, the model failed to train), the dashboard renders a typed error explaining the failure, not a sample value.
+If a number cannot be measured for real (the service is down, the dataset failed to download, the target failed to train or patch — `LGBMClassifier.fit(...)` crashed for the Shape 1 fraud LightGBM classifier, or the agent-configuration diff failed to apply for the Shape 2 code agent), the dashboard renders a typed error explaining the failure, not a sample value.
 
 ## 6. Non-negotiables on quality
 

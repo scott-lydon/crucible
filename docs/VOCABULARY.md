@@ -16,6 +16,26 @@ The same shape holds for the code-agent target. The code agent generates code (i
 
 A target / producer is NEVER: Crucible itself, the oracles, the red agent, the blue agent, the orchestrator, or any of Crucible's own internal LLM calls.
 
+## Target shapes — Shape 1 and Shape 2
+
+Crucible verifies two architectural shapes of AI system. The same Target Protocol covers both, and the same red, blue, and measure pillars run against both, but several behaviors (what "model" refers to, what "retrain" does, what hardening can touch) differ by shape. Naming the shape explicitly removes the ambiguity.
+
+### Shape 1 — Smaller custom machine-learning model the customer owns
+
+A supervised or unsupervised ML model the customer trained themselves on data they own, with weights they can hold in their hand. The fraud LightGBM classifier in `modules/targets/fraud/` is the example shipping in the two-week build. Other systems that fit this shape: credit scorers, churn predictors, anomaly detectors, content moderation classifiers, medical triage scorers, insurance underwriting models, demand forecasters. None are large language models. Persistence is a versioned weight file at `artifacts/fraud-vN.lgb` (or the equivalent for other Shape 1 systems).
+
+For Shape 1, "model" means this trained classifier. "Retrain" means running a fresh `LGBMClassifier.fit(...)` pass and emitting a new versioned weight file. The customer owns everything end to end (data, features, training pipeline, weights).
+
+### Shape 2 — Agent product built on a vendor language model
+
+An agent loop the customer built, wrapping a vendor large language model the customer rents (Anthropic Sonnet 4.6, OpenAI GPT-equivalent, Google Gemini-equivalent). The code-generation agent in `modules/targets/code_agent/` is the example shipping in the two-week build. Other systems that fit this shape: code-review bots, customer-service chatbots, research assistants, retrieval-augmented Q&A systems, internal-knowledge agents, document-extraction agents. Persistence is the agent's prompts, guardrails, configuration, and any orchestration logic — never the vendor language model's weights.
+
+For Shape 2, "model" almost always means the agent's prompts and configuration, NOT the vendor language model. "Retrain" is a misnomer for this shape; the operation is a reviewable patch against the prompts and configuration emitted to a new `agent_configs` row. The vendor language model is never modified by Crucible because the customer does not own it.
+
+### Why the distinction matters in the docs
+
+A sentence about "the model" is ambiguous unless the reader knows which shape is in play. Throughout `README.md`, `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, and `QA_ADVERSARY.md`, sentences that apply to only one shape should name it (e.g., "the Shape 1 fraud LightGBM classifier" or "the Shape 2 code agent's prompts and configuration"). Sentences that genuinely apply to both shapes can use "the target" or "the AI system." Sentences that use "the model" without a shape qualifier are bugs and should be tightened.
+
 ## "Model" — three different referents
 
 The word "model" alone is ambiguous. Use one of these specific terms:

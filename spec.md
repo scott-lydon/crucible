@@ -29,9 +29,9 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 
 ### US-1. Submit a target for evaluation
 
-**As an** operator running Crucible, **I want** to register a target (a model endpoint or a code-agent harness) together with a sealed specification, **so that** Crucible can run a measured red-and-blue pass against it.
+**As an** operator running Crucible, **I want** to register a target (Shape 1: a smaller custom machine-learning model exposed through an endpoint, such as the fraud LightGBM classifier; or Shape 2: an agent harness built on a vendor language model, such as the code-generation agent) together with a sealed specification, **so that** Crucible can run a measured red-and-blue pass against it.
 
-- **Given** the operator pastes a Yet Another Markup Language (YAML) spec describing the task plus a model artifact reference,
+- **Given** the operator pastes a Yet Another Markup Language (YAML) spec describing the task plus a target artifact reference (a `.lgb` checksum for Shape 1, an agent-configuration version for Shape 2),
 - **When** the operator clicks Start on the Run Launcher (`/`),
 - **Then** the dashboard navigates to `/runs/:runId` and shows the spec accepted, the producer sandbox launched, and the first attack round in progress within ten seconds.
 
