@@ -12,11 +12,19 @@ from dataclasses import dataclass, field
 from sqlalchemy import text
 
 from modules.measure.sink import InMemoryMeasureSink
+from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
-from orchestrator.interfaces import HealthProbe, MeasureSink, Oracle, RedAgent, Target
+from orchestrator.interfaces import (
+    HealthProbe,
+    MeasureSink,
+    Oracle,
+    RedAgent,
+    Target,
+    VerifyFn,
+)
 from shared.persistence.db import session_scope
 from shared.telemetry.log import get_logger
 from shared.types.results import HealthStatus
@@ -35,6 +43,7 @@ def _untrained_probe(message: str) -> HealthProbe:
 class Container:
     sink: MeasureSink
     red: RedAgent
+    verify: VerifyFn
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
 
@@ -77,7 +86,7 @@ def build_container() -> Container:
     sink.register_health_probe("targets/dummy", dummy.health)
     sink.register_health_probe("red/static", static_red.health)
 
-    container = Container(sink=sink, red=static_red)
+    container = Container(sink=sink, red=static_red, verify=run_verdict)
     container.register_target(dummy)
 
     # Fraud target loads from the trained artifact; if it has not been trained yet the

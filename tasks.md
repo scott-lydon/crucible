@@ -83,11 +83,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] Judge gets 0.5 vote weight per `plan.md` section 3.
   - [ ] Verdict view marks the judge card "one vote" with the tooltip from spec US-4.
 
-- [ ] **slice-10-verdict-aggregator** (T).
-  - [ ] `modules/oracles/aggregator.py`: vote tally per `plan.md` section 3.
-  - [ ] Audit trace JSON written to `verdicts.audit_trace`.
-  - [ ] Replay determinism: seed capture on every oracle's row.
-  - [ ] **Done criteria for `vouch`:** integration test replays a past verdict and asserts byte-equal output.
+- [x] **slice-10-verdict-aggregator** (T).
+  - [x] `modules/oracles/aggregator.py`: vote tally per `plan.md` section 3 (4×1.0 + judge 0.5, threshold 2.0; injected into the loop via the `VerifyFn` port so loop.py imports no concrete module).
+  - [x] Audit trace JSON written to `verdicts.audit_trace` (summary + every oracle's verbatim reason). Loop persists a verdict per round + emits an SSE `verdict` event.
+  - [x] Replay determinism: seed captured on the verdict; deterministic oracles replay identically.
+  - [x] **Done criteria for `vouch`:** `test_verdict_replays_byte_equal` re-runs the verdict and asserts byte-equal votes/tally/outcome; aggregator threshold logic verified (judge alone cannot decide).
 
 - [ ] **slice-11-red-search** (R).
   - [ ] `modules/red/search.py`: reason → propose → query → iterate using Sonnet 4.6.

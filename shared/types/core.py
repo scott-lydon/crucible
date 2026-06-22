@@ -64,6 +64,19 @@ class OracleVote:
     seed: str
     dollars: float = 0.0
 
+    def as_dict(self) -> dict[str, Any]:
+        """JSON-serializable form for the verdict audit trace (persisted to JSONB)."""
+        return {
+            "oracle": str(self.oracle),
+            "fired": self.fired,
+            "weight": self.weight,
+            "obligation": self.obligation,
+            "observation": self.observation,
+            "reason": self.reason,
+            "dollars": self.dollars,
+            "seed": self.seed,
+        }
+
 
 @dataclass(frozen=True, slots=True)
 class AuditTrace:

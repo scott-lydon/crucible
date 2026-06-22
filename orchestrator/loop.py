@@ -12,10 +12,10 @@ from sqlalchemy import select
 
 from orchestrator.wiring import Container
 from shared.persistence.db import session_scope
-from shared.persistence.models import AttackRow, Run, SpecRow
+from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
 from shared.persistence.resolver import resolve_spec
 from shared.telemetry.log import get_logger
-from shared.types.core import Attack, AttackBudget, TargetSpec
+from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
 from shared.types.enums import Pillar, RunStatus
 from shared.types.ids import RunId, new_id
 from shared.types.results import ProducerResult
@@ -73,7 +73,9 @@ async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int]:
         return spec, run.target_kind, run.budget_rounds
 
 
-async def _persist_attack(run_id: RunId, attack: Attack, result: ProducerResult) -> None:
+async def _persist_round(
+    run_id: RunId, attack: Attack, result: ProducerResult, verdict: Verdict | None
+) -> None:
     async with session_scope() as session:
         session.add(
             AttackRow(
@@ -85,6 +87,10 @@ async def _persist_attack(run_id: RunId, attack: Attack, result: ProducerResult)
                 rationale=attack.rationale,
                 white_box=attack.white_box,
                 hybrid=attack.hybrid,
+                # "succeeded" = evaded the oracle ensemble (verdict clean). Whether the
+                # producer was truly wrong needs ground truth — set by Measure once the
+                # held-out oracle lands (slice 5).
+                succeeded=verdict is not None and not verdict.caught,
                 pillar=Pillar.red,
                 seed=attack.seed,
                 dollars_spent=result.dollars,
@@ -95,6 +101,23 @@ async def _persist_attack(run_id: RunId, attack: Attack, result: ProducerResult)
                 },
             )
         )
+        if verdict is not None:
+            session.add(
+                VerdictRow(
+                    id=verdict.verdict_id,
+                    run_id=run_id,
+                    attack_id=attack.attack_id,
+                    producer_output=dict(verdict.producer_output),
+                    votes=[v.as_dict() for v in verdict.votes],
+                    tally=verdict.tally,
+                    threshold=verdict.threshold,
+                    outcome=str(verdict.outcome),
+                    pillar=Pillar.oracles,
+                    seed=verdict.seed,
+                    dollars_spent=verdict.dollars,
+                    audit_trace={"summary": verdict.audit.summary, **verdict.audit.detail},
+                )
+            )
 
 
 async def run_loop(run_id: RunId, container: Container) -> None:
@@ -108,13 +131,16 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         spec, target_kind, budget_rounds = await _load_context(run_id)
         target = container.get_target(target_kind)
         red = container.red
+        oracles = container.oracles_for(target_kind)
+        last_verdict: Verdict | None = None
 
         for round_index in range(budget_rounds):
-            attack = await red.propose(
-                spec, run_id, round_index, last_verdict=None, white_box=False
-            )
+            attack = await red.propose(spec, run_id, round_index, last_verdict, white_box=False)
             result = await target.submit(attack.payload)
-            await _persist_attack(run_id, attack, result)
+            verdict = (
+                await container.verify(oracles, spec, attack, result.output) if oracles else None
+            )
+            await _persist_round(run_id, attack, result, verdict)
             await sink.emit(
                 run_id,
                 "attack",
@@ -130,6 +156,20 @@ async def run_loop(run_id: RunId, container: Container) -> None:
                 "producer_output",
                 {"attack_id": str(attack.attack_id), "output": dict(result.output)},
             )
+            if verdict is not None:
+                await sink.emit(
+                    run_id,
+                    "verdict",
+                    {
+                        "verdict_id": str(verdict.verdict_id),
+                        "attack_id": str(attack.attack_id),
+                        "outcome": str(verdict.outcome),
+                        "tally": verdict.tally,
+                        "threshold": verdict.threshold,
+                        "summary": verdict.audit.summary,
+                    },
+                )
+                last_verdict = verdict
 
         await _set_status(run_id, RunStatus.complete)
         await sink.emit(run_id, "run_complete", {"run_id": str(run_id), "rounds": budget_rounds})
