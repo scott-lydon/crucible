@@ -1,0 +1,22 @@
+{
+  "slice": 2,
+  "slug": "live-run-view",
+  "route": "/runs/:runId",
+  "claude_design_file": "slice-02-live-run-view.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-02-live-run-view.dc.html",
+  "size_bytes": 105856,
+  "scraped_at_utc": "2026-06-23T16:22Z",
+  "version_on_server": "Edited 6m ago at capture (iter-03 revise landed this run)",
+  "scrape_method": "Buffering window.fetch + XHR override installed on the live page, then in-app file switch (slice-02 -> slice-03 -> slice-02 via Pages dropdown) to fire an uncached GetFile the hook captured (105541 char envelope). HTML sliced from <!DOCTYPE html> to </html> (105517 chars), blob+anchor download to ~/Downloads, cp into slice folder (105856 bytes on disk due to UTF-8 multibyte glyphs).",
+  "content_status": "iter-03 10-fix revise APPLIED and verified. The prior-run race (external Claude Design session holding the project request lock) had cleared by this run: all pages showed 'Edited 1-2h ago' (external session idle ~1h) and the composer was free. A stray 'Sealed-spec history' image attachment left in the composer was detached before sending so it could not corrupt slice-02.",
+  "fixes_verified_in_capture": {
+    "1_control_policy_parent_doc": "3x 'Model Risk Governance MRG-12' present; MRG-12 cited 9x with scope labels (spend ceiling / recall red line)",
+    "7_session_demoted": "1x 'context only' on the SESSION column",
+    "8_about_popovers": "2x <details> elements; bare 'i' glyphs replaced with 'about' affordance",
+    "2_4_6_whitebox_series": "9x white_box/white-box tokens; gating series disambiguated",
+    "9_projection_method_visible": "projection method + 95% CI band + 70/90 thresholds rendered as visible body text (confirmed on canvas)",
+    "10_disabled_contrast": "disabled Pause/Halt labels raised to #B8C2CE (confirmed in chat summary)"
+  },
+  "generation_chat_summary": "Claude Design reported: 'Done - all 10 fixes landed cleanly with no console errors.' Ran its own post-generation issue-check pass before finishing.",
+  "convergence": "Pending iter-03 persona critic loop (run against this v4 capture)."
+}

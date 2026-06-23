@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .diff-add{background:#152821;color:#9BD9B5}
+  .diff-del{background:#1B1518;color:#E5B5B0;text-decoration:line-through}
+</style>
+</helmet>
+
+<div data-screen-label="Sealed Specs · acme-fraud" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">acme-fraud · model-risk</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Canvas.dc.html" style="color:#4FAAC0;text-decoration:none">/specs</a> · <span style="color:#E8EDF3">acme-fraud</span></span>
+      <div style="flex:1"></div>
+      <a href="#" title="propose new draft (gated · model-risk only)" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">+ propose draft</a>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Sealed-spec history</h1>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:4px">acme-fraud · 6 sealed · 1 draft · provenance chain unbroken since 2024-08-11</div>
+      </div>
+      <div style="display:flex;gap:8px"><a href="#" title="signed provenance chain for all 6 sealed specs" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;align-self:center">provenance manifest ↗</a></div>
+    </div>
+
+    <!-- timeline -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:22px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Timeline</span></div>
+      <div style="padding:22px 28px 6px;position:relative">
+        <div style="position:absolute;left:36px;top:18px;bottom:18px;width:1px;background:#2C3744"></div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;padding-bottom:18px;position:relative">
+          <span style="width:14px;height:14px;border-radius:50%;background:#D9A441;border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>
+          <div style="flex:1">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:14px">draft · proposed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">a013ff21 · 2026-06-22 09:12Z · by m.chen</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-top:4px;line-height:1.6">adds DIFF-02 · floating-point tolerance in monetary fields · awaiting 2 acks before seal</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;padding-bottom:18px">
+          <span style="width:14px;height:14px;border-radius:50%;background:#4FAAC0;border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>
+          <div style="flex:1">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:14px">9f2a4c7b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9BD9B5">approved · current</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">sealed 2026-04-01 · 11 patches · 0 overrides</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-top:4px;line-height:1.6">tightened META-INV recall threshold 0.85 → 0.90 · added JUDGE-04 (role-play) family</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;padding-bottom:18px">
+          <span style="width:14px;height:14px;border-radius:50%;background:#3A4654;border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>
+          <div style="flex:1">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:14px">8d11e3a4</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">retired · 2026-04-01</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">sealed 2026-01-12 → retired 2026-04-01 · 9 patches</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-top:4px;line-height:1.6">first DIFF-01 oracle introduced · cost ceiling raised to $25/run</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;padding-bottom:18px">
+          <span style="width:14px;height:14px;border-radius:50%;background:#3A4654;border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>
+          <div style="flex:1">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:14px">7a09b2f1</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">retired</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">sealed 2025-10-04 · 7 patches · 1 override</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-top:4px;line-height:1.6">first version with sealed held-out corpus · single override 2025-12-04 (logged INC-1801)</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:18px;align-items:flex-start;padding-bottom:6px">
+          <span style="width:14px;height:14px;border-radius:50%;background:#3A4654;border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>
+          <div style="flex:1">
+            <div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:14px">6c2418ae</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">retired</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">sealed 2024-08-11 · genesis</span></div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-top:4px;line-height:1.6">genesis spec · METAMORPHIC invariants only · 3 patches · superseded by 7a09b2f1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- diff: 8d11 → 9f2a -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:22px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Diff · 8d11e3a4 → 9f2a4c7b</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">7 additions · 2 removals · approved by 2 reviewers</span></div>
+      <pre style="margin:0;padding:18px 22px;background:#0E141B;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;overflow-x:auto;line-height:1.7">  spec.id = acme-fraud
+  spec.scope = transaction-monitoring
+<span class="diff-del">- spec.recall_threshold = 0.85</span>
+<span class="diff-add">+ spec.recall_threshold = 0.90</span>
+<span class="diff-add">+ spec.debounce_rounds  = 3</span>
+
+  oracles:
+    - held-out
+    - metamorphic
+    - differential        # since 8d11e3a4
+<span class="diff-add">+   - judge.role-play     # JUDGE-04 family</span>
+
+  policies:
+    - MRG-12.4   # halt on recall &lt; threshold
+    - MRG-12.7   # cost ceiling $25 / run
+<span class="diff-del">-   - MRG-9.0    # v↔h gap &lt; 0.10</span>
+<span class="diff-add">+   - MRG-9.0    # v↔h gap &lt; 0.05  (tightened)</span>
+<span class="diff-add">+   - MRG-11.1   # two-person rule on patch apply</span></pre>
+    </div>
+
+    <!-- provenance / signatures -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Signatures · 9f2a4c7b</span></div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#E8EDF3">m.chen · model-risk</span><span style="color:#B8C2CE">2026-04-01 09:02Z · 0x14B0…</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#E8EDF3">a.varga · model-risk</span><span style="color:#B8C2CE">2026-04-01 09:14Z · 0x9D2C…</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#E8EDF3">platform-bot · CI seal</span><span style="color:#B8C2CE">2026-04-01 09:14Z · kms/spec-v3</span></div>
+          <div style="border-top:1px solid #1D2630;padding-top:12px;color:#7C8896;font-size:12px;line-height:1.6">all signatures verified against kms/spec-v3 · key rotates 2026-09-01</div>
+        </div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Provenance chain</span></div>
+        <div style="padding:18px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;line-height:1.85">
+          6c2418ae <span style="color:#7C8896">←</span> 7a09b2f1 <span style="color:#7C8896">←</span> 8d11e3a4 <span style="color:#7C8896">←</span> <span style="color:#E8EDF3">9f2a4c7b</span><br>
+          <span style="color:#7C8896">each link is a hash-pointer signed by both reviewers + CI · last verify 15:38Z · ok</span>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid #1D2630;color:#B8C2CE">
+            previous · <a href="slice-16-spec-history.dc.html" style="color:#4FAAC0">8d11e3a4 ↗</a><br>
+            next (draft) · <a href="slice-16-spec-history.dc.html" style="color:#4FAAC0">a013ff21 ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
