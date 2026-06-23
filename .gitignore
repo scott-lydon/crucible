@@ -43,3 +43,6 @@ examples/targets/*/artifacts/
 *.csv
 *.csv.gz
 *.parquet
+
+# Operator/agent throwaway scripts (run agents misused repo-root instead of session temp)
+scratchpad/
