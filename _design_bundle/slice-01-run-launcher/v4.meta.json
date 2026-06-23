@@ -1,0 +1,17 @@
+{
+  "slice": 1,
+  "slug": "run-launcher",
+  "route": "/",
+  "claude_design_file": "slice-01-run-launcher.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-01-run-launcher.dc.html",
+  "version_on_server": "iteration 4 (final/cap round) \u2014 server edit applied prior run",
+  "scrape_method": "buffering window.fetch override on GetFile (return new Response(buf)) to avoid clone abort race; fresh app instance landed on slice-02 then file-switch to slice-01 (uncached) fired GetFile; blob+anchor download to ~/Downloads then cp",
+  "content_markers_verified": [
+    "as of 14:07:52Z",
+    "fraud_adapter@7c1d",
+    "gate 1 of 4 / 4 gates remaining",
+    "REVIEW ONLY",
+    "valid <!DOCTYPE html> ... </html>"
+  ],
+  "scraped_at_utc": "2026-06-23T12:54:14Z"
+}
