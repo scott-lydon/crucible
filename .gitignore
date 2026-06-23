@@ -5,10 +5,13 @@ node_modules/
 .env
 .env.*
 
-# Ruflo / claude-flow runtime artifacts (local coordination state, not source)
+# Ruflo / claude-flow runtime + scaffolding (local tooling, regenerable via `ruflo init` — not source)
 .claude-flow/
 .swarm/
 ruvector.db
+.claude/
+.mcp.json
+CLAUDE.md
 
 # Python / build artifacts
 __pycache__/
