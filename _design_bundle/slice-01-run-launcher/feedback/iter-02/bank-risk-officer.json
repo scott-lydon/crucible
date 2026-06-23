@@ -1,0 +1,43 @@
+{
+  "persona": "bank-risk-officer",
+  "slice_slug": "run-launcher",
+  "iteration": 2,
+  "new_feedback": [
+    {
+      "element": "Judge-acknowledgment checkbox in HAPPY state right rail (lines 205-208)",
+      "issue": "The acknowledgment checkbox is rendered pre-checked (filled cyan ✓ inside a bordered box) in the static HAPPY mockup. For SR 11-7 informed-consent posture, the acknowledgment of a known model limitation must be an affirmative operator action — pre-checked defaults fail the effective-challenge documentation test because the audit cannot distinguish 'operator read and agreed' from 'operator clicked Start without seeing the disclosure.' Pre-ticked consent UI has been specifically called out by regulators (E.U. Court of Justice Planet49, GAO commentary on attestations) as not constituting acknowledgment.",
+      "change": "Default the checkbox to UNCHECKED in the HAPPY state mockup. The HAPPY state with Start enabled implies the operator has just checked it — show the checkbox checked AND show an inline 'acknowledged 14:07:48Z by j.okafor' caption immediately below the checkbox label so the audit trail of the click is visible. The EMPTY state should show the unchecked default. Disable the Start button until the box is checked (currently the visual coupling is implicit)."
+    },
+    {
+      "element": "'recorded in run-launch payload · audit' micro-line under acknowledgment (line 209)",
+      "issue": "The micro-line claims the acknowledgment is captured to the audit trail, but the captured fields (operator id, timestamp, spec sha at moment of acknowledgment, judge-weight value acknowledged) are not enumerated anywhere. A risk officer cannot rely on a claim that 'something gets logged' without knowing the schema. SR 11-7 effective-challenge documentation requires the audit record's shape to be known before the run, not discovered after.",
+      "change": "Expand the line to a 2-line monospace block: 'audit field: ack.operator=j.okafor · ack.ts=14:07:48Z · ack.spec_sha=9f2a4c7b · ack.judge_weight=1/5' and make 'audit field' a link to the audit-schema documentation. This converts a vague promise into a verifiable contract."
+    },
+    {
+      "element": "SESSION cost meter monthly cap '$61.40 / $250.00 mo' (lines 58, 255, 386)",
+      "issue": "The per-run dollar ceiling carries a policy reference (MRG-12.3) but the workspace monthly cap of $250.00 is presented as a bare number with no policy reference, no approver, and no indication of what happens when the cap is breached (hard stop? notify? approve-to-continue?). A bank examiner asking 'who set $250 and what governs an override?' has no answer from this surface. The progress bar segment under the cap implies enforcement without naming the enforcement rule.",
+      "change": "Add a policy reference next to the monthly cap in all three states: '$61.40 / $250.00 mo · policy MRG-12.4 ↗' as a click target, mirroring the per-run treatment. Add a tooltip or footnote naming the enforcement behavior at 100% (e.g., 'hard stop · risk-approver override required'). Without this the monthly cap is informational decoration rather than a control."
+    },
+    {
+      "element": "Inspect drawer RAW RESPONSE / TOKENS / COST chips (lines 538-552)",
+      "issue": "The validator LLM call is inspected but the model identifier and model version are absent. The drawer header names the call as 'SPEC VALIDATOR CALL' but does not say WHICH model made it (claude-3-5-sonnet? gpt-4o? a fine-tuned variant?), its version, its temperature, its system-prompt hash, or its provider. For SR 11-7 traceability every LLM invocation in the audit chain must name the model + version + provider so a future challenger model swap is detectable. The cost figure '$0.008' without a model is unfalsifiable.",
+      "change": "Add a model-identity strip immediately under the drawer subtitle: 'model: claude-3-5-sonnet-20251022 · provider: anthropic · temperature: 0.0 · system-prompt sha: 4c7b8a9d… · invoked 14:07:47Z'. Make the sha clickable to the prompt-version registry. The token/cost/latency chips at the bottom are fine but become meaningful only with the model identified."
+    },
+    {
+      "element": "Sandbox environment block in right rail (lines 216-223)",
+      "issue": "The image is identified as 'crucible/sandbox:v1.4.2' — a mutable tag, not an immutable digest. Container tags can be re-pushed silently; a tag-only reference does not let a risk officer prove which bytes ran. For sealed-evaluation governance the image must be referenced by content digest (sha256:…) so the run is byte-reproducible. Same concern applies to the cost-model 'v2.1' reference in the EST/RUN chip — version label without commit hash.",
+      "change": "Show the image as 'crucible/sandbox:v1.4.2@sha256:c4f9a2…' (truncated digest) with the digest as a click target into the registry. The 'model v2.1' reference in the cost chip should likewise show 'cost-model v2.1 · commit 4c7b…' as a link (the Estimate drawer already shows the commit; surface it on the chip itself so the audit trail is visible without opening a drawer)."
+    },
+    {
+      "element": "Error-state attempt-id tail (line 404) and Fix & Re-Validate button (line 461)",
+      "issue": "The error tail names attempt id, validator version, and audit-entry path — good — but it does not name the operator who submitted the failed attempt. The remediation button 'Fix & Re-Validate' triggers a re-submission with no visible indication of whether the re-submission will be logged as a new attempt id linked to the failed one, or whether it will overwrite. SR 11-7 requires every validation attempt (including failures) to be a discrete, immutable audit record with operator attribution.",
+      "change": "Extend the attempt-id tail to: 'attempt id: a3f9c2… · operator: j.okafor · validator: spec-validator-v1.4 · audit entry: /audit/attempts/a3f9c2 ↗ · parent of: <next attempt>'. Adjacent to the Fix & Re-Validate button, add a small monospace caption: 'creates new attempt id linked to a3f9c2 · previous attempt remains immutable in audit log.'"
+    },
+    {
+      "element": "Three-state composite layout (states stacked under labeled HAPPY/EMPTY/ERROR separator chips at lines 31, 231, 362)",
+      "issue": "Iter-01 already flagged the composite-page concern. Iter-02 preserves the composite structure unchanged — same three colored separator chips, same stacked vertical arrangement. Calling this out again only to acknowledge the iter-01 item is unresolved; the page still reads as a design-system comp rather than the live operator route. The separator labels even still say 'HAPPY — valid spec, budget set, target picked, judge acknowledged' which is design-comp vocabulary, not operator-facing copy.",
+      "change": "(Carryover, restated only because iter-01's resolution did not land.) Split into three separate artifact files (v2-happy.html, v2-empty.html, v2-error.html) so each screenshot is indistinguishable from the live route. The labeled separators are the most visible giveaway that this is a comp."
+    }
+  ],
+  "approved": false
+}

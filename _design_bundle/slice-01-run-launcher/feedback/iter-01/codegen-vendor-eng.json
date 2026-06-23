@@ -1,0 +1,48 @@
+{
+  "persona": "codegen-vendor-eng",
+  "slice_slug": "run-launcher",
+  "iteration": 1,
+  "new_feedback": [
+    {
+      "element": "Top-right cost meter (EST / RUN $8.40 + SESSION $61.40)",
+      "issue": "Two undifferentiated dollar figures sit at the same visual weight with no unit, period, or scope. In Vercel/Linear the persistent top-right meter shows a primary scalar plus a low-contrast secondary; here both numbers are #E8EDF3 with identical type and weight, so the eye cannot tell which one is the live-accruing counter and which is the forecast. An operator glancing at a second monitor cannot answer 'how close am I to ceiling right now' in one fixation.",
+      "change": "Demote the SESSION value to the muted body color (#B8C2CE) and shrink to 11px, keep EST/RUN at #E8EDF3 13px as the primary. Add a thin progress sliver under SESSION ($61.40 / $250.00 monthly cap or equivalent scope) so the number anchors to a denominator. Add a 'today' or 'mo' suffix so the time window is explicit."
+    },
+    {
+      "element": "Top-right SSE connected pill",
+      "issue": "The dot pulses (box-shadow halo) and the label reads 'SSE connected', which is correct, but the pill sits at the same border treatment and roughly the same width as the cost meter beside it, so the two compete. Datadog/Sentry put the connection indicator a half-step quieter than the cost/quota chip because connection is binary while cost is the scalar the operator actually monitors.",
+      "change": "Remove the border on the SSE pill, drop the background to transparent (or #0E141B), and let the dot + label float. Keep the dot at #57C08A with the halo. Reserve the bordered chip treatment for numerical/quota chrome only."
+    },
+    {
+      "element": "App-bar 'operator' badge next to the Crucible wordmark",
+      "issue": "The bare word 'operator' sitting after a vertical rule reads like a stray breadcrumb, not a role badge. Linear and Vercel both wrap workspace/role tokens in a subtle chip (rounded, low-contrast fill) so it parses as identity, not navigation. As rendered, a new viewer cannot tell whether 'operator' is the username, the workspace, the role, or the page.",
+      "change": "Wrap 'operator' in a 3px-radius chip with background #161E27 and 1px border #232E39, keep the muted color. Or, if the role is implicit, remove it and surface the actual workspace name (e.g., 'acme-fraud · operator') so it earns its slot."
+    },
+    {
+      "element": "YAML code panel in the happy state",
+      "issue": "The pre block has no line numbers but the error state does. Operators who use the inspect/copy/diff flow will want line refs consistent across states — the error-state numbered gutter is the right pattern. As-is, the eye has to recount lines when the panel toggles between valid and invalid renders, and the 'spec.fraud.sealed.yaml · 12 lines' caption is the only line reference.",
+      "change": "Add the same numbered gutter (the 34px right-aligned #5A6573 column the error state uses) to the happy-state pre. Keep the syntax coloring. The two states should differ only in the error row treatment, not in chrome."
+    },
+    {
+      "element": "Judge 'one vote' note on the right rail",
+      "issue": "This is the single most important rule on the screen (the persona spec calls it out: 'LLM judge visibly carries less weight than the four oracles') and it lives in a warning-yellow callout with a ½ glyph. Yellow reads as 'caution, look at me' but the content is structural, not transient — it is the always-true scoring rule, not a warning about this particular run. Painting a permanent design rule in transient-warning color trains the operator to dismiss it.",
+      "change": "Re-skin the callout: keep the ½ glyph and 'one vote' wording, but drop the warning palette. Use a neutral panel (background #161E27, border #2C3744, body text #B8C2CE, the ½ glyph in #4FAAC0 accent). This reads as 'this is how scoring works' rather than 'something is wrong.' Reserve #D9A441 for actual warning states."
+    },
+    {
+      "element": "Three-card target picker (Fraud / Code Agent / Research Agent disabled)",
+      "issue": "The disabled 'Research Agent' card is the same physical footprint as the two live adapters, so a third of the picker's surface area is dedicated to something the operator cannot pick. On a second-monitor dashboard that real-estate cost is real. Linear and Vercel collapse disabled options into a smaller secondary affordance ('+ N more, request access') rather than full-size dead cards.",
+      "change": "Collapse disabled adapters into a single muted row beneath the live cards: '1 adapter disabled · Research Agent — request access'. Keep the live cards at full size with breathing room. If keeping the dead card is required for spec parity, at minimum halve its height so it visually de-prioritizes against the live two."
+    },
+    {
+      "element": "Sealed YAML status pill ('✓ VALID · sealed') vs. error pill ('✕ PARSE ERROR')",
+      "issue": "Both pills carry full bordered chips with bold uppercase mono labels, so structurally they read at the same urgency. The valid case does not need a bordered chip — green-on-dark + check is enough. Promoting both states to chip-level chrome means valid runs look as loud as broken ones, which inverts the alerting hierarchy operators expect from Sentry/Datadog.",
+      "change": "Demote the valid state to a borderless inline mark: green check + 'sealed · valid' at 11px mono in #57C08A, no background, no border. Keep the error pill exactly as-is (bordered, filled, loud). One-vote alerting: only failures get chip chrome."
+    },
+    {
+      "element": "Bottom-of-rail SANDBOX ENVIRONMENT strip with Docker / Python / Linux logos",
+      "issue": "Three muted logos in a row with a 'network-sealed' caption looks like a marketing-page trust-badge band, not operator chrome. The information is real and useful (runtime + isolation guarantee) but the presentation is the GitHub README pattern, not the dashboard pattern. Vercel/Sentry/Datadog never render runtime stack as logo strips in the run UI.",
+      "change": "Replace the logo strip with a key/value mono block: 'runtime  python 3.12 · linux · docker', 'network   sealed (egress=deny)', 'image     crucible/sandbox:v1.4.2'. Drop the logos. The operator wants the version pin and the egress posture, not the brand marks."
+    }
+  ],
+  "approved": false
+}

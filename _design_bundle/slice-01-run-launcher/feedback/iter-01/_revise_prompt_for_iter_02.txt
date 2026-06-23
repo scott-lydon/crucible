@@ -1,0 +1,111 @@
+REVISE slice-01-run-launcher.dc.html in place (do NOT create a new file, do NOT touch Crucible Design System.dc.html or _palette_notes.md). This is iteration 2. Three persona reviewers raised the following concrete changes after iteration 1. Apply every one of them where they do not contradict each other; where they contradict, prefer accessibility and audit-posture rules over visual-density rules.
+
+THESE ARE STATIC HTML MOCKS, not an interactive React app. The reviewers explicitly did NOT flag missing interactivity. Every item below is about static visual, copy, or layout decisions that you can fix in the HTML.
+
+### BANK MODEL RISK OFFICER (SR 11-7 audience) (8 items)
+
+1. ELEMENT: Masthead and HAPPY/EMPTY/ERROR state separators (lines 28-39, 186-191, 300-304)
+   ISSUE: The page renders all three states stacked under explanatory copy ('Three states are shown below...'). This reads as a marketing comp or design-system page, not the operator surface a model risk officer would open to launch a run. A bank examiner reviewing the audit surface would not see one composite of three states; they would see the live route. Composite layouts erode the credibility that this is the actual governance tool rather than a sales mockup.
+   CHANGE: Remove the slice masthead, the three colored state-header chips, and the descriptive paragraph. Show ONE state per artifact (three separate files or three tabs in a state-switcher), so the screenshot in evidence is indistinguishable from the live route at /. If a state-comparison view is needed for design review, it should not be a deliverable layout.
+
+2. ELEMENT: App-bar 'EST / RUN $8.40' and 'SESSION $61.40' cost chips (lines 53-57)
+   ISSUE: Two dollar metrics persist with no timestamp, no run count denominator, and no link to the underlying ledger. SR 11-7 expects every cost figure tied to a model run to be traceable to the invoice line, model_id, and timestamp. A floating '$61.40' for SESSION is exactly the 'single number with no context' that fails the trust test.
+   CHANGE: Add an 'as of HH:MM:SSZ' timestamp under each chip, make the chip a click target labeled with a small caret or 'view ledger' affordance, and label SESSION with the run count it covers (e.g. 'SESSION · 7 runs · $61.40'). EST/RUN needs a tooltip or footnote naming the cost-model version that produced the estimate.
+
+3. ELEMENT: Judge note in right rail (lines 164-167)
+   ISSUE: The amber callout warns that the LLM judge is 'gameable by an adversary that knows the scheme.' For a model risk officer this is the right disclosure, but it is buried as a soft note in the summary rail. SR 11-7 effective-challenge documentation requires the limitation to be acknowledged BEFORE start, and the operator's acknowledgment to be recorded. As drawn, the operator can click Start without ever interacting with this warning.
+   CHANGE: Promote the half-vote disclosure to a required acknowledgment checkbox above the Start button ('I acknowledge the LLM judge carries one of five votes and is adversarially gameable'). The checkbox state must be part of the run-launch payload so the audit log shows acknowledgment was given for this run.
+
+4. ELEMENT: Sealed-spec YAML block (lines 114-129) and target-picker cards (lines 76-99)
+   ISSUE: The spec preview shows obligations and oracles, but there is no spec hash, no spec version, no author, no created-at timestamp, no link to the prior approved spec for this target. The target-picker cards show no model_id, no last-validated date, no model owner. A bank examiner asking 'which exact spec ran' or 'which version of the Fraud adapter was attacked' cannot answer from this surface.
+   CHANGE: Under the spec file label, add 'sha256: <8-char>… · v3.2.1 · author: <user> · created 2026-06-21 14:02Z'. Under each target card, add a small monospace strip with 'model_id · last validated YYYY-MM-DD · owner: <team>'. Make the sha and model_id clickable to provenance.
+
+5. ELEMENT: Attack-budget inputs (lines 138-145)
+   ISSUE: Dollar ceiling is editable free-text with no displayed cap, no approver, no policy reference. A model risk officer needs to see the workspace's policy ceiling and who can approve overrides — otherwise the budget is operator discretion, which fails segregation-of-duties review. The footnote '≈ $0.52 per round · hard stop at $25.00' also lacks a citation to the cost-model that produced $0.52.
+   CHANGE: Show 'workspace ceiling: $X (policy ref MRG-12.3)' adjacent to the dollar-ceiling input; visually distinguish operator entry from policy ceiling. If the entered value exceeds policy, surface an inline 'requires risk approver' affordance rather than allowing free entry. Link '$0.52 per round' to the cost-model card or commit.
+
+6. ELEMENT: Page background and gridless layout overall
+   ISSUE: The body is a single dark panel with no gridlines, no row striping, no column rulers. Bloomberg, internal model-governance portals, and Excel risk dashboards all carry visible grid structure that lets a risk officer scan and reference cells. The current layout reads closer to a developer settings page than an auditable form.
+   CHANGE: Add a subtle 1px grid divider between each form section (target / spec / budget) and a labeled column ruler on the right rail (e.g. tick marks for 0/25/50/75/100% of budget consumed on the EST / RUN chip). Even minimal grid scaffolding signals 'this is a governance surface' rather than 'this is a marketing form.'
+
+7. ELEMENT: Error state 'Spec was not sealed — validation stopped at line 6, column 5' bar (lines 330-334)
+   ISSUE: The error tells the operator where parsing failed but does NOT tell the audit log what was attempted. For SR 11-7 a failed validation is itself a recordable event — the bar should reference the attempt ID, the validator model/version that ran, and where the audit entry lives.
+   CHANGE: Extend the error bar with a monospace tail: 'attempt id: a3f9c2… · validator: spec-validator-v1.4 · audit entry: /audit/attempts/a3f9c2 ↗'. Make the audit-entry path a real link affordance.
+
+8. ELEMENT: Inspect drawer footer 'API keys, DB credentials, and sandbox tokens are redacted — the only values ever hidden.' (lines 470-473)
+   ISSUE: This is the right SR 11-7 posture but it is a single sentence in a 12px muted color. A risk officer skim-reading the drawer for an audit will miss the redaction policy. The redaction guarantee is exactly the kind of claim an examiner will ask the bank to defend in writing.
+   CHANGE: Promote the redaction notice to a small bordered chip at the TOP of the drawer body, not the bottom: 'REDACTION POLICY · only secrets are hidden · policy ref MRG-7.1 ↗'. Make the policy ref clickable. The drawer's whole credibility rests on this guarantee being prominent.
+
+### CODE-GEN AGENT VENDOR ENGINEERING LEAD (GitHub Dark / Linear / Vercel) (8 items)
+
+1. ELEMENT: Top-right cost meter (EST / RUN $8.40 + SESSION $61.40)
+   ISSUE: Two undifferentiated dollar figures sit at the same visual weight with no unit, period, or scope. In Vercel/Linear the persistent top-right meter shows a primary scalar plus a low-contrast secondary; here both numbers are #E8EDF3 with identical type and weight, so the eye cannot tell which one is the live-accruing counter and which is the forecast. An operator glancing at a second monitor cannot answer 'how close am I to ceiling right now' in one fixation.
+   CHANGE: Demote the SESSION value to the muted body color (#B8C2CE) and shrink to 11px, keep EST/RUN at #E8EDF3 13px as the primary. Add a thin progress sliver under SESSION ($61.40 / $250.00 monthly cap or equivalent scope) so the number anchors to a denominator. Add a 'today' or 'mo' suffix so the time window is explicit.
+
+2. ELEMENT: Top-right SSE connected pill
+   ISSUE: The dot pulses (box-shadow halo) and the label reads 'SSE connected', which is correct, but the pill sits at the same border treatment and roughly the same width as the cost meter beside it, so the two compete. Datadog/Sentry put the connection indicator a half-step quieter than the cost/quota chip because connection is binary while cost is the scalar the operator actually monitors.
+   CHANGE: Remove the border on the SSE pill, drop the background to transparent (or #0E141B), and let the dot + label float. Keep the dot at #57C08A with the halo. Reserve the bordered chip treatment for numerical/quota chrome only.
+
+3. ELEMENT: App-bar 'operator' badge next to the Crucible wordmark
+   ISSUE: The bare word 'operator' sitting after a vertical rule reads like a stray breadcrumb, not a role badge. Linear and Vercel both wrap workspace/role tokens in a subtle chip (rounded, low-contrast fill) so it parses as identity, not navigation. As rendered, a new viewer cannot tell whether 'operator' is the username, the workspace, the role, or the page.
+   CHANGE: Wrap 'operator' in a 3px-radius chip with background #161E27 and 1px border #232E39, keep the muted color. Or, if the role is implicit, remove it and surface the actual workspace name (e.g., 'acme-fraud · operator') so it earns its slot.
+
+4. ELEMENT: YAML code panel in the happy state
+   ISSUE: The pre block has no line numbers but the error state does. Operators who use the inspect/copy/diff flow will want line refs consistent across states — the error-state numbered gutter is the right pattern. As-is, the eye has to recount lines when the panel toggles between valid and invalid renders, and the 'spec.fraud.sealed.yaml · 12 lines' caption is the only line reference.
+   CHANGE: Add the same numbered gutter (the 34px right-aligned #5A6573 column the error state uses) to the happy-state pre. Keep the syntax coloring. The two states should differ only in the error row treatment, not in chrome.
+
+5. ELEMENT: Judge 'one vote' note on the right rail
+   ISSUE: This is the single most important rule on the screen (the persona spec calls it out: 'LLM judge visibly carries less weight than the four oracles') and it lives in a warning-yellow callout with a ½ glyph. Yellow reads as 'caution, look at me' but the content is structural, not transient — it is the always-true scoring rule, not a warning about this particular run. Painting a permanent design rule in transient-warning color trains the operator to dismiss it.
+   CHANGE: Re-skin the callout: keep the ½ glyph and 'one vote' wording, but drop the warning palette. Use a neutral panel (background #161E27, border #2C3744, body text #B8C2CE, the ½ glyph in #4FAAC0 accent). This reads as 'this is how scoring works' rather than 'something is wrong.' Reserve #D9A441 for actual warning states.
+
+6. ELEMENT: Three-card target picker (Fraud / Code Agent / Research Agent disabled)
+   ISSUE: The disabled 'Research Agent' card is the same physical footprint as the two live adapters, so a third of the picker's surface area is dedicated to something the operator cannot pick. On a second-monitor dashboard that real-estate cost is real. Linear and Vercel collapse disabled options into a smaller secondary affordance ('+ N more, request access') rather than full-size dead cards.
+   CHANGE: Collapse disabled adapters into a single muted row beneath the live cards: '1 adapter disabled · Research Agent — request access'. Keep the live cards at full size with breathing room. If keeping the dead card is required for spec parity, at minimum halve its height so it visually de-prioritizes against the live two.
+
+7. ELEMENT: Sealed YAML status pill ('✓ VALID · sealed') vs. error pill ('✕ PARSE ERROR')
+   ISSUE: Both pills carry full bordered chips with bold uppercase mono labels, so structurally they read at the same urgency. The valid case does not need a bordered chip — green-on-dark + check is enough. Promoting both states to chip-level chrome means valid runs look as loud as broken ones, which inverts the alerting hierarchy operators expect from Sentry/Datadog.
+   CHANGE: Demote the valid state to a borderless inline mark: green check + 'sealed · valid' at 11px mono in #57C08A, no background, no border. Keep the error pill exactly as-is (bordered, filled, loud). One-vote alerting: only failures get chip chrome.
+
+8. ELEMENT: Bottom-of-rail SANDBOX ENVIRONMENT strip with Docker / Python / Linux logos
+   ISSUE: Three muted logos in a row with a 'network-sealed' caption looks like a marketing-page trust-badge band, not operator chrome. The information is real and useful (runtime + isolation guarantee) but the presentation is the GitHub README pattern, not the dashboard pattern. Vercel/Sentry/Datadog never render runtime stack as logo strips in the run UI.
+   CHANGE: Replace the logo strip with a key/value mono block: 'runtime  python 3.12 · linux · docker', 'network   sealed (egress=deny)', 'image     crucible/sandbox:v1.4.2'. Drop the logos. The operator wants the version pin and the egress posture, not the brand marks.
+
+### PUBLIC-SECTOR AI PROCUREMENT OFFICER (WCAG, NIST audience) (9 items)
+
+1. ELEMENT: Disabled 'Research Agent' adapter card — text color #5A6573 on background #12181E
+   ISSUE: Contrast ratio is roughly 2.6:1, well below the WCAG AA 4.5:1 floor for body text. A procurement reviewer doing a squint test, or any colleague with low vision, cannot perceive the disabled-state label or its explanation. Disabled controls must still meet WCAG 1.4.3 perceivability so the operator understands the system's state, not just its active controls.
+   CHANGE: Raise the disabled-state text and label color to at least #8A95A2 on #12181E (≈4.6:1), and keep the dashed border and reduced opacity for the visual 'disabled' signal. Disabled state should be muted, not invisible.
+
+2. ELEMENT: Empty-state Run Summary values 'not picked', 'not pasted', 'not set' — color #5A6573 on background #0E141B
+   ISSUE: Contrast ratio is roughly 3.3:1, which fails WCAG AA 4.5:1 for normal body text. These three values are the user's primary signal that a step is incomplete. A procurement reviewer or low-vision colleague reading on a 24-inch monitor at modest brightness cannot reliably distinguish them from the label column.
+   CHANGE: Use the same #B8C2CE body color (or at minimum #8A95A2) for the 'not picked / not pasted / not set' values so they pass AA. The semantic 'incomplete' signal can be carried by a small dashed pill or an italic treatment instead of by under-contrasted text.
+
+3. ELEMENT: NotYetMeasuredTile sub-copy 'No estimate until a target and budget are set — never a $0.00 placeholder.' — color #5A6573 on background #0E141B
+   ISSUE: Same 3.3:1 contrast problem as above. This is the tile that exists specifically to teach the operator the discipline of 'no fake zero' — the message itself being hard to read undermines the message it is delivering.
+   CHANGE: Lift this explanatory line to #B8C2CE so it passes AA and reads as authoritative copy rather than as an afterthought.
+
+4. ELEMENT: Inspect button next to the YAML validity badge (line 109–111) — magnifying-glass icon only, meaning conveyed by a 'title' tooltip ('Inspect the validator LLM call')
+   ISSUE: Icon-only control with no visible text label and no rendered affordance other than a hover tooltip. A screen-reader colleague cannot hover, and even a sighted procurement reviewer cannot tell at a glance whether this is 'inspect', 'search', or 'zoom'. The persona's review bar explicitly disallows tooltip-only discovery.
+   CHANGE: Pair the icon with a visible 'Inspect' text label inside the button (icon + word), or render an always-visible secondary text link 'Inspect validator call' next to the green '✓ VALID · sealed' badge. The hover title can remain as a long-form supplement.
+
+5. ELEMENT: Sandbox environment strip — Docker, Python, Linux logos with 'title' tooltips only ('Docker sandbox', 'Python 3.12 runtime', 'Linux · network-sealed')
+   ISSUE: Three icons in a row with no visible text labels. The 'network-sealed' chip at the end provides one piece of context, but the runtime versions and the sandbox technology are only discoverable on hover. A procurement reviewer auditing what the system runs on cannot read the inventory from the screen.
+   CHANGE: Render each icon with a small visible label beneath or beside it ('Docker', 'Python 3.12', 'Linux'), matching the inline-label pattern already used for the target adapter cards.
+
+6. ELEMENT: Top-chrome cost figures 'EST / RUN $8.40' and 'SESSION $61.40', and the per-round breakdown '≈ $0.52 per round · hard stop at $25.00'
+   ISSUE: Monetary projections appear with no provenance or 'About this estimate' affordance. The persona's standing rule is that every metric carries a citation or a clear way to inspect its derivation. A US AI Safety Institute or EU AI Office reviewer will ask how $8.40 was computed and which prior runs informed it.
+   CHANGE: Add a small inline info affordance — a visible '?' or 'about' link with a text label such as 'how this is estimated' — adjacent to the EST / RUN figure and to the '≈ $0.52 per round' line. The affordance opens the same inspect-style drawer pattern already used for the validator call, showing the inputs, the formula, and the source runs.
+
+7. ELEMENT: Slice masthead and copy throughout — terms 'attack run', 'attack budget', 'red agent', 'Start attack run'
+   ISSUE: The vocabulary reads as offensive-security or consumer-AI red-team product copy. A public-sector procurement reviewer expects model-risk-management language closer to NIST AI RMF and SR 11-7: 'adversarial evaluation run', 'evaluation budget', 'adversarial agent', 'Start evaluation'. The current phrasing risks reading as marketing voice rather than as an institutional artifact, and an operator briefing a compliance officer would have to translate every term.
+   CHANGE: Either rename the user-facing labels to 'Evaluation run', 'Evaluation budget', 'Adversarial agent', and 'Start evaluation', or keep the shorter 'attack' wording and surface a one-line gloss in the masthead: 'attack run = adversarial evaluation run, per NIST AI RMF terminology'. Apply the same treatment consistently across the three states.
+
+8. ELEMENT: Top-chrome 'operator' role pill next to the Crucible wordmark
+   ISSUE: The role label has no glossary or 'about roles' affordance. In an institutional setting a reviewer needs to know whether 'operator' has different permissions than 'reviewer', 'auditor', or 'approver', and which role they are seeing the screen as.
+   CHANGE: Make 'operator' a small text link (visible link styling, not hover-only) that opens a short role-definition popover with the permissions this role has and a link to the access-control documentation.
+
+9. ELEMENT: Error state — guidance / progress treatment compared to empty state
+   ISSUE: The empty state shows a helpful 'step 1 of 3 / step 2 of 3 / step 3 of 3' checklist plus a START HERE guidance bar. The error state, which is a higher-stakes moment, drops the checklist entirely and only shows an inline parse-error banner. A colleague who has never used the tool can read the empty state, but the error state assumes prior context.
+   CHANGE: Add an analogous 'remediation checklist' to the error state right rail or top bar: 'Fix line 6 → re-validate → re-seal', with each step rendered as a visible item rather than only described in prose inside the error card. The 'Jump to line 6' button already exists; surface a small ordered list around it so the path back to a runnable state is structurally obvious.
+
+After applying these changes, the file should still be one HTML file at slice-01-run-launcher.dc.html with the three stacked states (happy, empty, error). Keep mounting the Crucible Design System components and palette; do not introduce new colors. Reply with a one-line summary of which items you applied and which you intentionally did not (with one-clause reason each).

@@ -1,0 +1,10 @@
+{
+  "slice": 1,
+  "slug": "run-launcher",
+  "route": "/",
+  "iteration": 1,
+  "claude_design_file": "slice-01-run-launcher.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-01-run-launcher.dc.html",
+  "size_bytes": 43210,
+  "scraped_at_utc": "2026-06-21T05:44:33Z"
+}

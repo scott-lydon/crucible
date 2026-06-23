@@ -1,0 +1,33 @@
+{
+  "persona": "codegen-vendor-eng",
+  "slice_slug": "run-launcher",
+  "iteration": 2,
+  "new_feedback": [
+    {
+      "element": "Top-right cost meter, 'how this is estimated ⓘ' link inside the EST/RUN column",
+      "issue": "The estimate column now stacks four lines of text (label, value, timestamp+model, and an underlined help link), which crowds the primary scalar that operators glance at from a second monitor. The new 'as of 14:07:52Z · model v2.1' line and the underlined 'how this is estimated ⓘ' affordance both sit at 9px directly under the $8.40, so the eye has to skip a small-print band to land on the value, and a second underlined link competes with the 'ledger ▾' button beside it. Vercel/Linear keep the persistent top-right meter at exactly one value + one label; secondary metadata lives in the drawer the chip opens.",
+      "change": "Remove the inline 'as of …' and 'how this is estimated ⓘ' lines from inside the EST/RUN column. Keep only the label ('EST / RUN'), the value ($8.40), and rely on the existing 'ledger ▾' affordance (or a single click on the value) to open the estimate drawer where the timestamp, cost-model version, and formula already live. Mirror the same simplification on the SESSION column — the 'as of 14:07:52Z' belongs in the drawer."
+    },
+    {
+      "element": "Right-rail RUN SUMMARY 'Est. spend' value '$8.40 – $25.00' painted in #57C08A (success green)",
+      "issue": "Spend forecasts should not be colored green. Green in this palette is reserved for positive verdicts (✓ sealed · valid, ✓ within policy, ✓ preserved). Painting the dollar range green semantically reads as 'this is the good outcome,' but the operator's job at this row is to read the numeric range neutrally and decide whether to lower the ceiling. Datadog/Sentry render numeric forecasts in body color and reserve the success hue for status verdicts.",
+      "change": "Render '$8.40 – $25.00' in the standard body color (#E8EDF3) at the same mono treatment as the Rounds / Oracles values directly above it. Keep #57C08A exclusively for status verdicts (the '✓ within policy' line, the '✓ sealed · valid' pill, etc.)."
+    },
+    {
+      "element": "Right-rail BUDGET CONSUMED ruler in the happy state ($0.00 / $25.00, 0% filled)",
+      "issue": "On the launcher (pre-start), the budget ruler always reads 0 / $25.00 with an empty bar because no spend has accrued yet — the run hasn't started. A meter that always shows zero on this screen is chrome with no signal; it teaches the operator's eye to ignore the ruler before they ever see it carry data on the live-run view. The 'as of HH:MM:SSZ' rule applies here too: a zero with no run context is the same failure mode as a $0.00 placeholder estimate, which the empty-state correctly avoids with the 'Not yet measured' tile.",
+      "change": "Drop the BUDGET CONSUMED ruler from the launcher (happy state). Replace it with a single mono line: 'consumed · — / $25.00 (run not started)'. The ruler belongs on the live-run view where it carries a live value. If the ruler must stay for layout reasons, render it with no fill segment and a 'starts at launch' caption so it does not read as a real measurement."
+    },
+    {
+      "element": "Error-state remediation checklist, step 3 ('Re-seal, then start')",
+      "issue": "The three-step list collapses two distinct operator actions ('Re-seal' and 'then start') into one numbered step, which breaks the contract the rest of the checklist sets up (one verb per step). An operator scanning the list under pressure will tick step 3 after re-sealing and miss that Start is a separate decision — exactly the kind of error this remediation panel exists to prevent. Linear's blocker checklists keep one verb per row so the eye can match action-to-checkbox.",
+      "change": "Split step 3 into two rows: '3. Re-seal the spec' and '4. Start evaluation'. Keep the same numbered-circle treatment. Optionally render step 4 in muted text (#7C8896 with the circle in #2C3744) until steps 1–3 are complete, so the operator sees Start as the explicit final action, not a clause."
+    },
+    {
+      "element": "Empty-state 'NotYetMeasured' tile body copy ('No estimate until a target and budget are set — never a $0.00 placeholder.')",
+      "issue": "The trailing clause '— never a $0.00 placeholder' is meta-commentary about the design rule (no fake/stub data), addressed at the design reviewer rather than at the operator looking at the screen. Operators reading this don't need to know what the tile is NOT doing; they need to know what they must do next. This is the same anti-pattern as rationalizing copy ('hence green', 'older format') the project guidance explicitly calls out.",
+      "change": "Rewrite the body to be operator-facing only: 'No estimate yet. Pick a target, paste a spec, and set a budget — the estimate will appear here.' Remove the '— never a $0.00 placeholder' clause. The no-stub-data rule should be invisible to the user; it's only visible when violated."
+    }
+  ],
+  "approved": false
+}

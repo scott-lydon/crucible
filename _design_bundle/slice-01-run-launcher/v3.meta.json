@@ -1,0 +1,13 @@
+{
+  "slice": 1,
+  "slug": "run-launcher",
+  "route": "/",
+  "iteration": 3,
+  "claude_design_file": "slice-01-run-launcher.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-01-run-launcher.dc.html",
+  "size_bytes": 67517,
+  "scraped_at_utc": "2026-06-23T03:43:00Z",
+  "scrape_method": "OmeletteService.GetFile (proto envelope) captured via hooked fetch -> window.__html -> Blob download to ~/Downloads -> read from sandbox mount",
+  "iter3_revise_prompt_sent_utc": "2026-06-23T03:34:12Z",
+  "iter3_design_reply_summary": "Most iter-3 items already landed in iter-2; this pass closed remaining gaps (Proc-1 muted-text #8A95A2 -> #95A1AE everywhere incl icon tints; Proc-2 SANDBOX label 10px -> 11px). Intentionally NOT applied: Bank-7 three-file split (instructions forbid new files), CodeGen-1 remove cost-model chip line (contradicts Bank-5; audit-posture wins per tiebreaker)."
+}
