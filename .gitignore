@@ -20,6 +20,7 @@ __pycache__/
 *.db-journal
 dist/
 build/
+*.egg-info/
 
 # v0 local SQLite databases (data is regenerated; never source of truth)
 *.sqlite
