@@ -1,0 +1,17 @@
+{
+  "slice": 2,
+  "slug": "live-run-view",
+  "route": "/runs/:runId",
+  "claude_design_file": "slice-02-live-run-view.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-02-live-run-view.dc.html",
+  "version_on_server": "iteration 2 (iter-02 16-item revise applied prior run)",
+  "scrape_method": "buffering window.fetch override on GetFile (new Response(buf), no clone abort); fresh tab landed on slice-01 then file-switch to uncached slice-02 fired GetFile; blob+anchor download to ~/Downloads then cp",
+  "content_markers_verified": [
+    "SSE connected",
+    "LIVE LEDGER / spent",
+    "SUBCOMPONENT HEALTH",
+    "red line recall >= 0.90",
+    "valid <!DOCTYPE html> ... </html>"
+  ],
+  "scraped_at_utc": "2026-06-23T12:59:43Z"
+}

@@ -1,0 +1,23 @@
+{
+  "persona": "public-sector-procurement",
+  "slice_slug": "live-run-view",
+  "iteration": 2,
+  "new_feedback": [
+    {
+      "element": "New 'About' metric affordances next to ASR 0.18 and Detection 0.94: circular buttons whose only label is a bare lowercase 'i' glyph, with the definition/unit/source carried entirely in a title= tooltip",
+      "issue": "This resolves the iter-01 'no about affordance' ask but reintroduces two of the persona's hard losses of trust: an icon with no adjacent text label, and a tooltip as the only way to discover meaning. A screen-reader colleague gets only the aria-label; a sighted keyboard or touch user cannot hover to read the title=, so the definition of the headline metric is undiscoverable without a mouse.",
+      "change": "Replace the title= tooltip with a click/focus-activated popover or inline expandable definition (focusable, opens on click and on Enter/Space), and pair the glyph with a short visible word ('about') rather than a bare 'i'. The definition, unit, and data source must be reachable without hover."
+    },
+    {
+      "element": "Cost-projection control in the live ledger ('$8.20 – $9.30 / avg/round × remaining ↗') and the 'THIS RUN' / ceiling progress bars, whose calculation method and amber/danger thresholds live only in title= attributes ('avg $/round × rounds remaining + 95% confidence band · click for calc' and 'cyan <70% · amber 70–90% · danger >90%')",
+      "issue": "The provenance of a financial projection and the meaning of the color-coded budget bar are load-bearing for a procurement reviewer, yet both are hover-only tooltips. Same hover-only / tooltip-only failure as above, applied to money and to a color-only threshold encoding.",
+      "change": "Surface the projection method and the confidence band as visible body text under the figure, and restate the budget-bar thresholds ('warns at 70%, danger at 90%') as visible text near the bar rather than only in title=. Do not let a color band be the sole carrier of the threshold state."
+    },
+    {
+      "element": "Disabled control affordance on the reconnecting state: 'Pause · waiting' / 'Halt run · waiting' buttons rendered in #5A6573 text on #1A222B",
+      "issue": "#5A6573 on #1A222B is roughly 2.5:1, which fails WCAG AA even for the relaxed disabled-control guidance most agencies apply; a reviewer cannot reliably read why the control is unavailable. This is the same #5A6573 low-contrast value flagged in iter-01 for the divider, now resurfaced on disabled buttons in v2.",
+      "change": "Raise disabled-button label text to at least #8A94A2 (≈4.5:1 on #1A222B) and keep the explanatory 'waiting' / disabled reason as visible text, not only in the title= attribute."
+    }
+  ],
+  "approved": false
+}

@@ -1,0 +1,23 @@
+{
+  "persona": "bank-risk-officer",
+  "slice_slug": "live-run-view",
+  "iteration": 2,
+  "new_feedback": [
+    {
+      "element": "Control-policy citations: cost-ledger 'hard stop $25.00 · MRG-12.4' (state 1 ledger) vs halt-certification 'MRG-12.6' cited in the halt banner, halt rationale card, audit shortcut, and halt drawer",
+      "issue": "Two different control identifiers govern the same run (MRG-12.4 for the spend ceiling, MRG-12.6 for the recall red line) with nothing on the page tying them to one policy family. An examiner reading the audit trail cannot tell whether these are sibling clauses of one model-governance policy or two unrelated controls, and the near-identical numbering reads like a typo for the same control.",
+      "change": "Label each citation with what it governs so the relationship is explicit, e.g. 'spend ceiling · MRG-12.4' and 'recall red line · MRG-12.6', and ideally show the parent policy once (e.g. 'Model Risk Governance MRG-12') so both clauses resolve to one document."
+    },
+    {
+      "element": "Halt drawer RULE block (state 3 halt rationale): 'if recall_white_box < 0.90 then halt_certification() ... until recall_held_out >= 0.90'",
+      "issue": "The gate trips on white-box recall but the resume condition is measured on a different metric (held-out recall). Halting on one statistic and lifting on another is a defensibility gap: a run could clear the held-out bar while white-box recall is still below the line, letting certification resume without the adversary that triggered the halt being re-beaten. An examiner will read this as the exit criterion being weaker than the entry criterion.",
+      "change": "Make the gate metric and the resume metric the same series, or state explicitly why they differ and which is the binding control (e.g. 'halt on white_box < 0.90; resume requires white_box >= 0.90 confirmed on a held-out attack set'), so the entry and exit thresholds are the identical measurement on the identical population."
+    },
+    {
+      "element": "State 3 halt round 35: aggregate label 'FAIL · 3 of 4 oracles flipped' alongside the four oracle cards (Held-Out FAIL, Metamorphic FAIL, Differential FAIL, Property Fuzz PASS) plus the separate 'LLM Judge ... weight 1/5'",
+      "issue": "The denominator is ambiguous. The header says '3 of 4 oracles', the cards show four oracles (3 fail / 1 pass), yet the verdict-stream subhead elsewhere states '4 oracles + judge per round' and the judge is shown carrying weight 1/5, implying a 5-vote tally. A reader reconciling the halt evidence cannot tell whether the binding count is 3/4 oracles or 3/5 total votes, which matters because it is the quantitative basis for suspending certification.",
+      "change": "State the exact aggregation arithmetic at the halt, e.g. '3 of 4 deterministic oracles FAIL; LLM judge PASS at weight 1/5; weighted result FAIL' so the count in the header, the cards, and the judge weight all reconcile to one number an examiner can recompute."
+    }
+  ],
+  "approved": false
+}
