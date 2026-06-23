@@ -84,7 +84,9 @@ async def test_blue_recovers_on_real_evasions(
     # Build with every LLM seam neutralized: zero real Sonnet/Opus calls.
     comp = build_components_sparkov(
         threshold=_THRESHOLD,
-        judge_provider=MockProvider(text='{"vote":"pass","reason":"fixture"}'),
+        judge_provider=MockProvider(
+            text='{"per_obligation":[],"independent_finding":"fixture",'
+                 '"vote":"pass","reason":"fixture"}'),
         judge_max_calls=0,
         red_provider=MockProvider(text='{"feature":"amt","new_value":1.0,"rationale":"x"}'),
         red_max_calls=0,

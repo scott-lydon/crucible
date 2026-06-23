@@ -1,3 +1,5 @@
+import dataclasses
+import json
 import os
 import pathlib
 from typing import Protocol
@@ -9,6 +11,7 @@ from shared.types import (
     OracleKind,
     OracleVote,
     Vote,
+    sealed_spec_from_dict,
     sealed_spec_from_yaml,
 )
 from shared.llm import AnthropicApiProvider, MockProvider
@@ -70,8 +73,26 @@ def test_differential_abstains_without_second_opinion() -> None:
     assert v.kind is OracleKind.DIFFERENTIAL and v.vote is Vote.ABSTAIN and v.weight == 0.0
 
 
+# New structured judge payload: per-obligation findings + an independent
+# lane-(b) finding + the final vote/reason.
+_FAIL_JSON = json.dumps({
+    "per_obligation": [{"id": "country_velocity_must_flag", "triggered": True,
+                        "consistent": False}],
+    "independent_finding": "pattern resembles a missed positive",
+    "vote": "fail",
+    "reason": "x",
+})
+_PASS_JSON = json.dumps({
+    "per_obligation": [{"id": "country_velocity_must_flag", "triggered": False,
+                        "consistent": True}],
+    "independent_finding": "nothing suspicious",
+    "vote": "pass",
+    "reason": "looks clean",
+})
+
+
 def test_judge_parses_fail_with_half_weight_and_llm_evidence() -> None:
-    provider = MockProvider(text='{"vote": "fail", "reason": "x"}')
+    provider = MockProvider(text=_FAIL_JSON)
     v = LlmJudgeOracle(provider=provider).vote(MISS_CTX)
     assert v.kind is OracleKind.LLM_JUDGE and v.vote is Vote.FAIL and v.weight == 0.5
     assert v.reason == "x"
@@ -79,13 +100,57 @@ def test_judge_parses_fail_with_half_weight_and_llm_evidence() -> None:
     assert v.evidence.get("model") == "mock"
     assert "input_tokens" in v.evidence and "output_tokens" in v.evidence
     assert "dollars" in v.evidence
+    # Per-obligation findings + the independent lane-(b) finding are kept for audit.
+    assert v.evidence.get("per_obligation") == [
+        {"id": "country_velocity_must_flag", "triggered": True, "consistent": False}]
+    assert v.evidence.get("independent_finding") == "pattern resembles a missed positive"
 
 
 def test_judge_parses_pass_path() -> None:
-    provider = MockProvider(text='{"vote": "pass", "reason": "looks clean"}')
+    provider = MockProvider(text=_PASS_JSON)
     v = LlmJudgeOracle(provider=provider).vote(MISS_CTX)
     assert v.vote is Vote.PASS and v.weight == 0.5
     assert v.reason == "looks clean"
+    assert v.evidence.get("independent_finding") == "nothing suspicious"
+
+
+def test_judge_prompt_is_spec_driven_and_target_agnostic() -> None:
+    # The prompt's target-specificity must come ENTIRELY from the injected spec
+    # (data), never from hardcoded strings in the oracle. Build a tiny spec with
+    # an invented invariant id and prove (1) that id flows into the prompt, and
+    # (2) the oracle adds NO domain words of its own.
+    spec = sealed_spec_from_dict({
+        "target_kind": "anything",
+        "obligations": [],
+        "invariants": [{
+            "name": "test_invariant_xyz",
+            "description": "a generic invented rule",
+            "kind": "must_flag_when",
+            "params": {"all_of": []},
+        }],
+        "metamorphic_relations": [],
+        "holdout_generator_kind": "deterministic_rule",
+    })
+    # A generic sample whose field names carry NO domain words, so any domain
+    # word found in the prompt could only have been injected by the oracle.
+    ctx = VerdictContext(
+        sample=_GenericSample(f0=1.0, f1=0, f2=False),
+        detector_score=0.1, threshold=DETECTOR_THRESHOLD, true_label=False,
+        original_sample=None, original_score=None, spec=spec)
+
+    captured = _PromptSpy(text=_PASS_JSON)
+    LlmJudgeOracle(provider=captured).vote(ctx)  # type: ignore[arg-type]
+
+    assert captured.prompt is not None
+    # (1) spec data flows in: the invented id appears in the prompt.
+    assert "test_invariant_xyz" in captured.prompt
+    # (2) target-agnostic: NONE of the domain words appear in what the ORACLE
+    # contributes. The spec and sample here are scrubbed of domain words, so any
+    # hit would mean the oracle injected a hardcoded domain term.
+    haystack = (captured.prompt + captured.system).lower()
+    for word in ("fraud", "night", "hour", "amt", "amount", "velocity",
+                 "country", "merchant", "category", "distance"):
+        assert word not in haystack, f"oracle leaked domain word {word!r}"
 
 
 class _CountingProvider:
@@ -100,10 +165,34 @@ class _CountingProvider:
         return self._inner.complete(prompt, **kwargs)  # type: ignore[arg-type]
 
 
+class _PromptSpy:
+    """Captures the exact prompt/system passed to the provider for inspection."""
+
+    def __init__(self, text: str) -> None:
+        self._inner = MockProvider(text=text)
+        self.prompt: str | None = None
+        self.system: str = ""
+
+    def complete(self, prompt: str, *, system: str | None = None,
+                 **kwargs: object) -> object:
+        self.prompt = prompt
+        self.system = system or ""
+        return self._inner.complete(prompt, system=system, **kwargs)  # type: ignore[arg-type]
+
+
+@dataclasses.dataclass(frozen=True, slots=True)
+class _GenericSample:
+    """A sample whose field names carry no domain words (for the agnostic test)."""
+
+    f0: float
+    f1: int
+    f2: bool
+
+
 def test_judge_abstains_when_budget_exhausted() -> None:
     # With max_calls=1: first vote hits the provider; second abstains (weight 0)
     # with budget_exhausted evidence and does NOT touch the provider.
-    provider = _CountingProvider(text='{"vote": "fail", "reason": "x"}')
+    provider = _CountingProvider(text=_FAIL_JSON)
     judge = LlmJudgeOracle(provider=provider, max_calls=1)  # type: ignore[arg-type]
 
     first = judge.vote(MISS_CTX)
@@ -119,7 +208,7 @@ def test_judge_abstains_when_budget_exhausted() -> None:
 
 def test_judge_unbounded_by_default() -> None:
     # No max_calls -> unbounded: repeated votes always hit the provider.
-    provider = _CountingProvider(text='{"vote": "pass", "reason": "ok"}')
+    provider = _CountingProvider(text=_PASS_JSON)
     judge = LlmJudgeOracle(provider=provider)  # type: ignore[arg-type]
     for _ in range(3):
         assert judge.vote(MISS_CTX).vote is Vote.PASS
@@ -148,8 +237,7 @@ def test_aggregate_flags_missed_fraud() -> None:
                               InvariantOracle(),
                               DifferentialOracle(second_opinion_is_fraud=lambda s: True),
                               LlmJudgeOracle(
-                                  provider=MockProvider(
-                                      text='{"vote": "fail", "reason": "x"}'))]
+                                  provider=MockProvider(text=_FAIL_JSON))]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
     assert verdict.fail_weight >= FAIL_THRESHOLD
     assert verdict.aggregate_pass is False   # the detector's "clean" decision does NOT stand

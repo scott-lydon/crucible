@@ -68,7 +68,8 @@ async def test_sparkov_real_co_evolution(
     comp = build_components_sparkov(
         threshold=_THRESHOLD,
         judge_provider=MockProvider(
-            text='{"vote":"pass","reason":"loop-mechanics fixture"}'
+            text='{"per_obligation":[],"independent_finding":"loop fixture",'
+                 '"vote":"pass","reason":"loop-mechanics fixture"}'
         ),
         judge_max_calls=0,
         # Zero real Sonnet calls: the LLM red agent's budget is 0, so it returns

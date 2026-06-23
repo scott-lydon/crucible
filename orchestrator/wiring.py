@@ -56,7 +56,9 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
         # Synth UNIT-TEST victim: a deterministic MockProvider test double keeps
         # the synth fixture offline/free. This is honestly the test fixture, not
         # the product — the real Opus judge lives in build_components_sparkov.
-        LlmJudgeOracle(provider=MockProvider(text='{"vote": "fail", "reason": "mock"}')),
+        LlmJudgeOracle(provider=MockProvider(
+            text='{"per_obligation": [], "independent_finding": "mock", '
+                 '"vote": "fail", "reason": "mock"}')),
     ]
     label_fn: Callable[[object], bool] = is_fraud
     return {
