@@ -1,6 +1,7 @@
 import dataclasses
 import pytest
-from shared.types import Transaction, OracleVote, OracleKind, Vote
+from shared.types import OracleVote, OracleKind, Vote
+from examples.targets.fraud_synth import Transaction
 
 def test_transaction_is_frozen_and_slotted() -> None:
     t = Transaction(txn_index=0, amount=10.0, velocity=1, country_mismatch=False,

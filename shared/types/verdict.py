@@ -1,15 +1,16 @@
 from dataclasses import dataclass
-from shared.types.transaction import Transaction
 from shared.types.enums import OracleKind, Vote
+from shared.types.sealed_spec import SealedSpec
 
 @dataclass(frozen=True, slots=True)
 class VerdictContext:
-    txn: Transaction
+    sample: object
     detector_score: float
     threshold: float
     true_label: bool
-    original_txn: Transaction | None
+    original_sample: object | None
     original_score: float | None
+    spec: SealedSpec
 
 @dataclass(frozen=True, slots=True)
 class OracleVote:

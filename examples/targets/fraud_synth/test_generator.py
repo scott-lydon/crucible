@@ -19,7 +19,7 @@ def test_fraud_rate_in_expected_band() -> None:
 
 
 def test_velocity_alone_is_fraud() -> None:
-    from shared.types import Transaction
+    from examples.targets.fraud_synth.transaction import Transaction
     t = Transaction(0, amount=10.0, velocity=99, country_mismatch=False,
                     merchant_risk=0.0, hour_of_day=3)
     assert is_fraud(t) is True

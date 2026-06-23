@@ -1,6 +1,6 @@
 import hashlib
 import random
-from shared.types import Transaction
+from examples.targets.fraud_synth.transaction import Transaction
 from examples.targets.fraud_synth.constants import BATCH_FRAUD_RATE
 
 

@@ -1,17 +1,17 @@
 from collections.abc import Callable
 
-from shared.types import VerdictContext, OracleVote, OracleKind, Vote, Transaction
+from shared.types import VerdictContext, OracleVote, OracleKind, Vote
 
 
 class HeldOutOracle:
     """Independent label authority. Certifies ground truth and grades whether
-    the detector missed a true-fraud case. It does not 'catch' — it judges.
+    the detector missed a true-positive case. It does not 'catch' — it judges.
 
     The ground-truth label function is injected so the harness never depends on
     any particular victim's rule.
     """
 
-    def __init__(self, label_fn: Callable[[Transaction], bool]) -> None:
+    def __init__(self, label_fn: Callable[[object], bool]) -> None:
         self._label_fn = label_fn
 
     @property
@@ -20,7 +20,7 @@ class HeldOutOracle:
 
     def vote(self, ctx: VerdictContext) -> OracleVote:
         cleared = ctx.detector_score < ctx.threshold
-        truly_fraud = self._label_fn(ctx.txn)      # recompute from sealed rule, ignore ctx.true_label
+        truly_fraud = self._label_fn(ctx.sample)   # recompute from sealed rule, ignore ctx.true_label
         missed = cleared and truly_fraud
         return OracleVote(
             kind=self.kind,

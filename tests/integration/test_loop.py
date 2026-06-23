@@ -11,7 +11,7 @@ from orchestrator.wiring import build_components
 from shared.persistence import create_all, make_engine, make_session_factory
 from shared.persistence import repo
 from shared.persistence.models import RunRow
-from shared.types import Transaction
+from shared.types import SealedSpec
 
 
 @pytest.fixture
@@ -49,8 +49,9 @@ async def test_loop_persists_rows_and_completes(
         detector=cast(Detector, comp["detector"]),
         adversary=cast(Adversary, comp["adversary"]),
         oracles=cast(Sequence[Oracle], comp["oracles"]),
-        label_fn=cast(Callable[[Transaction], bool], comp["label_fn"]),
-        generate_fn=cast(Callable[[str, int], list[Transaction]], comp["generate_fn"]),
+        label_fn=cast(Callable[[object], bool], comp["label_fn"]),
+        generate_fn=cast(Callable[[str, int], list[object]], comp["generate_fn"]),
+        spec=cast(SealedSpec, comp["spec"]),
     )
     async with sf() as s:
         run = await repo.get_run(s, run_id)
@@ -86,10 +87,11 @@ async def test_replay_is_byte_equal(sf: async_sessionmaker[AsyncSession]) -> Non
             detector=cast(Detector, comp["detector"]),
             adversary=cast(Adversary, comp["adversary"]),
             oracles=cast(Sequence[Oracle], comp["oracles"]),
-            label_fn=cast(Callable[[Transaction], bool], comp["label_fn"]),
+            label_fn=cast(Callable[[object], bool], comp["label_fn"]),
             generate_fn=cast(
-                Callable[[str, int], list[Transaction]], comp["generate_fn"]
+                Callable[[str, int], list[object]], comp["generate_fn"]
             ),
+            spec=cast(SealedSpec, comp["spec"]),
         )
         async with sf() as s:
             txns = await repo.transactions_for_run(s, rid)

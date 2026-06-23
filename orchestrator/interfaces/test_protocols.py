@@ -1,12 +1,14 @@
-from shared.types import Transaction, VerdictContext, OracleVote, OracleKind, Vote
+from shared.types import VerdictContext, OracleVote, OracleKind, Vote
 from orchestrator.interfaces import Detector, Adversary, Oracle
+from examples.targets.fraud_synth import Transaction
+
 
 class _Det:
-    def score(self, txn: Transaction) -> float:
+    def score(self, sample: object) -> float:
         return 0.0
 
 class _Adv:
-    def mutate(self, txn: Transaction, score: float) -> Transaction | None:
+    def mutate(self, sample: object, score: float) -> object | None:
         return None
 
 class _Ora:

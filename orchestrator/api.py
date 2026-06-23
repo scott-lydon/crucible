@@ -15,7 +15,7 @@ from orchestrator.loop import run_loop
 from orchestrator.wiring import DEFAULT_THRESHOLD, build_components
 from shared.persistence import repo
 from shared.persistence.models import RunRow
-from shared.types import Transaction
+from shared.types import SealedSpec
 from shared.types.enums import OracleKind
 
 
@@ -68,8 +68,9 @@ async def create_run(req: LaunchRequest) -> dict[str, str]:
         detector=cast(Detector, comp["detector"]),
         adversary=cast(Adversary, comp["adversary"]),
         oracles=cast(Sequence[Oracle], comp["oracles"]),
-        label_fn=cast(Callable[[Transaction], bool], comp["label_fn"]),
-        generate_fn=cast(Callable[[str, int], list[Transaction]], comp["generate_fn"]),
+        label_fn=cast(Callable[[object], bool], comp["label_fn"]),
+        generate_fn=cast(Callable[[str, int], list[object]], comp["generate_fn"]),
+        spec=cast(SealedSpec, comp["spec"]),
     )
     return {"run_id": run_id}
 

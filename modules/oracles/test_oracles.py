@@ -1,6 +1,14 @@
+import pathlib
 from typing import Protocol
-from shared.types import Transaction, VerdictContext, OracleKind, OracleVote, Vote
-from examples.targets.fraud_synth import DETECTOR_THRESHOLD, V_THRESH, is_fraud
+
+from shared.types import (
+    VerdictContext,
+    OracleKind,
+    OracleVote,
+    Vote,
+    sealed_spec_from_yaml,
+)
+from examples.targets.fraud_synth import DETECTOR_THRESHOLD, Transaction, is_fraud
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
@@ -12,14 +20,22 @@ from modules.oracles.aggregator import FAIL_THRESHOLD, aggregate
 class _Oracle(Protocol):
     def vote(self, ctx: VerdictContext) -> OracleVote: ...
 
-# a cleared (score < threshold) transaction that is truly fraud (velocity) = a MISS
+
+_SPEC_PATH = (
+    pathlib.Path(__file__).resolve().parents[2] / "specs" / "fraud_v0.yaml"
+)
+SPEC = sealed_spec_from_yaml(_SPEC_PATH.read_text())
+
+# a cleared (score < threshold) transaction that is truly fraud (velocity) = a MISS,
+# whose amount was lowered from a previously-caught variant (R1 evasion).
 MISS_CTX = VerdictContext(
-    txn=Transaction(0, amount=12.0, velocity=12, country_mismatch=True,
-                    merchant_risk=0.2, hour_of_day=4),
+    sample=Transaction(0, amount=12.0, velocity=12, country_mismatch=True,
+                       merchant_risk=0.2, hour_of_day=4),
     detector_score=0.2, threshold=DETECTOR_THRESHOLD, true_label=True,
-    original_txn=Transaction(0, amount=1500.0, velocity=12, country_mismatch=True,
-                             merchant_risk=0.2, hour_of_day=2),
-    original_score=0.8)
+    original_sample=Transaction(0, amount=1500.0, velocity=12, country_mismatch=True,
+                                merchant_risk=0.2, hour_of_day=2),
+    original_score=0.8,
+    spec=SPEC)
 
 
 def test_held_out_fails_on_missed_fraud() -> None:
@@ -33,7 +49,7 @@ def test_metamorphic_detects_amount_lowering_evasion() -> None:
 
 
 def test_invariant_fires_on_country_velocity() -> None:
-    v = InvariantOracle(velocity_threshold=V_THRESH).vote(MISS_CTX)
+    v = InvariantOracle().vote(MISS_CTX)
     assert v.vote is Vote.FAIL and v.weight == 1.0
 
 
@@ -50,9 +66,9 @@ def test_judge_mock_is_half_weight_and_labeled() -> None:
 
 def test_aggregate_flags_missed_fraud() -> None:
     oracles: list[_Oracle] = [HeldOutOracle(label_fn=is_fraud),
-                               MetamorphicOracle(label_fn=is_fraud),
-                               InvariantOracle(velocity_threshold=V_THRESH),
-                               DifferentialStubOracle(), LlmJudgeMockOracle()]
+                              MetamorphicOracle(label_fn=is_fraud),
+                              InvariantOracle(),
+                              DifferentialStubOracle(), LlmJudgeMockOracle()]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
     assert verdict.fail_weight >= FAIL_THRESHOLD
     assert verdict.aggregate_pass is False   # the detector's "clean" decision does NOT stand

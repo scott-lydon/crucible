@@ -1,4 +1,4 @@
-from shared.types import Transaction
+from examples.targets.fraud_synth.transaction import Transaction
 from examples.targets.fraud_synth.detector import FlawedDetector
 from examples.targets.fraud_synth.constants import DETECTOR_THRESHOLD
 

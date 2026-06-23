@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import asdict
+from typing import Any, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -14,10 +15,10 @@ from shared.persistence.models import (
     TransactionRow,
     VerdictRow,
 )
-from shared.types import Transaction, TxnSlice, Origin, VerdictContext
+from shared.types import SealedSpec, TxnSlice, Origin, VerdictContext
 
-LabelFn = Callable[[Transaction], bool]
-GenerateFn = Callable[[str, int], list[Transaction]]
+LabelFn = Callable[[object], bool]
+GenerateFn = Callable[[str, int], list[object]]
 
 
 async def run_loop(
@@ -33,15 +34,19 @@ async def run_loop(
     oracles: Sequence[Oracle],
     label_fn: LabelFn,
     generate_fn: GenerateFn,
+    spec: SealedSpec,
 ) -> None:
     try:
-        batch: list[Transaction] = generate_fn(seed, batch_size)
+        batch: list[object] = generate_fn(seed, batch_size)
         # deterministic split: even indices = validation, odd = holdout
         slices: dict[int, TxnSlice] = {
             i: (TxnSlice.VALIDATION if i % 2 == 0 else TxnSlice.HOLDOUT)
             for i in range(len(batch))
         }
-        current: dict[int, Transaction] = {t.txn_index: t for t in batch}
+        # `txn_index` is a convention shared by harness + victim sample records.
+        current: dict[int, object] = {
+            cast(int, getattr(t, "txn_index")): t for t in batch
+        }
         # track which indices have been mutated (and their pre-mutation score)
         prev_score: dict[int, float] = {}
 
@@ -65,7 +70,7 @@ async def run_loop(
                             run_id=run_id,
                             round_id=round_id,
                             txn_index=idx,
-                            features_json=asdict(txn),
+                            features_json=asdict(cast(Any, txn)),
                             true_label=label_fn(txn),
                             origin=origin.value,
                             txn_slice=slices[idx].value,
@@ -77,7 +82,7 @@ async def run_loop(
                     )
                     await s.commit()
 
-                # adversary acts only on caught true-frauds in the holdout slice
+                # adversary acts only on caught true-positives in the holdout slice
                 if caught and label_fn(txn) and slices[idx] is TxnSlice.HOLDOUT:
                     mutated = adversary.mutate(txn, score)
                     if mutated is not None:
@@ -91,8 +96,8 @@ async def run_loop(
                                     txn_id=txn_row_id,
                                     parent_txn_id=txn_row_id,
                                     mutation_json={
-                                        "from_amount": txn.amount,
-                                        "to_amount": mutated.amount,
+                                        "from_features": asdict(cast(Any, txn)),
+                                        "to_features": asdict(cast(Any, mutated)),
                                     },
                                     pre_score=score,
                                     post_score=post_score,
@@ -105,16 +110,17 @@ async def run_loop(
                         current[idx] = mutated
                         prev_score[idx] = score
 
-                # verdict for transactions the detector let through (not caught)
+                # verdict for samples the detector let through (not caught)
                 if not caught:
-                    original_txn = batch[idx] if idx in prev_score else None
+                    original_sample = batch[idx] if idx in prev_score else None
                     ctx = VerdictContext(
-                        txn=txn,
+                        sample=txn,
                         detector_score=score,
                         threshold=threshold,
                         true_label=label_fn(txn),
-                        original_txn=original_txn,
+                        original_sample=original_sample,
                         original_score=prev_score.get(idx),
+                        spec=spec,
                     )
                     votes = [o.vote(ctx) for o in oracles]
                     verdict = aggregate(votes)

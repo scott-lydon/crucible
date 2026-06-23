@@ -1,12 +1,23 @@
-from shared.types import Transaction
-from modules.red.mutator.mutator import AmountLoweringAdversary
-from examples.targets.fraud_synth import DETECTOR_THRESHOLD, FlawedDetector, is_fraud
+import pathlib
+
+from shared.types import sealed_spec_from_yaml
+from modules.red.mutator.mutator import MetamorphicEvasionAdversary
+from examples.targets.fraud_synth import (
+    DETECTOR_THRESHOLD,
+    FlawedDetector,
+    Transaction,
+    is_fraud,
+)
+
+_SPEC = sealed_spec_from_yaml(
+    (pathlib.Path(__file__).resolve().parents[3] / "specs" / "fraud_v0.yaml").read_text()
+)
 
 
-def _adv() -> AmountLoweringAdversary:
+def _adv() -> MetamorphicEvasionAdversary:
     d = FlawedDetector()
-    return AmountLoweringAdversary(score_fn=d.score, label_fn=is_fraud,
-                                   threshold=DETECTOR_THRESHOLD)
+    return MetamorphicEvasionAdversary(score_fn=d.score, label_fn=is_fraud,
+                                       threshold=DETECTOR_THRESHOLD, spec=_SPEC)
 
 
 def test_mutation_evades_and_preserves_fraud() -> None:
@@ -16,6 +27,7 @@ def test_mutation_evades_and_preserves_fraud() -> None:
     adv = _adv()
     out = adv.mutate(caught, FlawedDetector().score(caught))
     assert out is not None
+    assert isinstance(out, Transaction)
     assert out.velocity == caught.velocity and out.country_mismatch  # signals preserved
     assert is_fraud(out) is True                                     # still real fraud
     assert FlawedDetector().score(out) < DETECTOR_THRESHOLD          # now evades

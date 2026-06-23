@@ -9,6 +9,7 @@ from examples.targets.fraud_synth.constants import (
 from examples.targets.fraud_synth.detector import FlawedDetector
 from examples.targets.fraud_synth.generator import generate_batch
 from examples.targets.fraud_synth.rule import is_fraud
+from examples.targets.fraud_synth.transaction import Transaction
 
 __all__ = [
     "AMOUNT_SCALE",
@@ -18,6 +19,7 @@ __all__ = [
     "MERCHANT_RISK_HIGH",
     "V_THRESH",
     "FlawedDetector",
+    "Transaction",
     "generate_batch",
     "is_fraud",
 ]

@@ -4,7 +4,9 @@ from orchestrator.wiring import build_components
 
 def test_build_components_keys() -> None:
     comp = build_components(threshold=0.5)
-    assert set(comp.keys()) == {"detector", "adversary", "oracles", "label_fn", "generate_fn"}
+    assert set(comp.keys()) == {
+        "detector", "adversary", "oracles", "label_fn", "generate_fn", "spec"
+    }
 
 
 def test_oracles_list_length() -> None:
