@@ -1,0 +1,444 @@
+/*
+ * live.js — additive runtime that binds the Crucible Claude-Design pages to the
+ * live FastAPI backend (same origin). It does NOT touch the dc-runtime React
+ * render path: it waits for #dc-root to populate, then either patches stable
+ * text nodes (dashboard tiles, health) or injects clearly-labelled live panels
+ * (verdict detail, live run feed) as sibling DOM it owns — so React re-renders
+ * never clobber live data, and the design mock stays intact for review.
+ *
+ * Page is selected by the file name; each binder is a no-op on other pages.
+ */
+(function () {
+  "use strict";
+
+  var PAGE = (location.pathname.split("/").pop() || "").toLowerCase();
+  var qs = new URLSearchParams(location.search);
+
+  // ---- tiny fetch helpers ------------------------------------------------
+  function jget(url) {
+    return fetch(url, { headers: { accept: "application/json" } }).then(function (r) {
+      if (!r.ok) throw new Error(url + " -> " + r.status);
+      return r.json();
+    });
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
+  }
+
+  // Run a binder once #dc-root has rendered real content. `reapply` keeps the
+  // binder idempotently re-running on later mutations (the dc-runtime re-fetches
+  // its own template after boot and re-renders, which would otherwise wipe a
+  // one-shot DOM patch on the static pages).
+  function whenRendered(fn, reapply) {
+    var ran = false;
+    function tryRun() {
+      var root = document.getElementById("dc-root");
+      if (!root || !root.firstElementChild) return;
+      if (ran && !reapply) return;
+      ran = true;
+      try { fn(root); } catch (e) { console.error("[live.js] binder error", e); }
+    }
+    var obs = new MutationObserver(tryRun);
+    obs.observe(document.documentElement, { childList: true, subtree: true });
+    tryRun();
+    // Safety: stop observing after a while on one-shot pages.
+    if (!reapply) setTimeout(function () { obs.disconnect(); }, 8000);
+  }
+
+  // =======================================================================
+  // slice-01 · Run Launcher — Start button POSTs /runs, navigates to slice-02
+  // =======================================================================
+  var DEFAULT_SPEC =
+    "spec_id: fraud-demo-v1\n" +
+    "target_kind: fraud\n" +
+    "shape: shape1_ml\n" +
+    "holdout_generator_kind: data_partition\n" +
+    "obligations:\n" +
+    "  - id: catch-fraud\n" +
+    "    description: A transaction labelled fraudulent must score above the decision threshold.\n" +
+    "    check_kind: label_match\n" +
+    "    params: {threshold: 0.5}\n" +
+    "invariants:\n" +
+    "  - id: amount-nonneg\n" +
+    "    description: Transaction amount is non-negative.\n" +
+    '    expression: "amount >= 0"\n';
+
+  function bindLauncher(root) {
+    // The happy-path state (state 1) carries the enabled "Start evaluation" button.
+    var buttons = root.querySelectorAll("button");
+    var startBtn = null;
+    for (var i = 0; i < buttons.length; i++) {
+      var t = (buttons[i].textContent || "").trim();
+      if (!buttons[i].disabled && /^Start evaluation/.test(t)) { startBtn = buttons[i]; break; }
+    }
+    if (!startBtn || startBtn.__liveBound) return;
+    startBtn.__liveBound = true;
+
+    startBtn.addEventListener(
+      "click",
+      function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        // Read the two budget inputs from the same form card (state 1).
+        var card = startBtn.closest("[data-screen-label]") || root;
+        var inputs = card.querySelectorAll("input");
+        var rounds = 48, dollars = 25.0;
+        for (var k = 0; k < inputs.length; k++) {
+          var raw = (inputs[k].value || "").replace(/[^0-9.]/g, "");
+          if (!raw) continue;
+          if (/\$/.test(inputs[k].value) || k === 1) dollars = parseFloat(raw);
+          else rounds = parseInt(raw, 10);
+        }
+        if (!rounds || rounds < 1) rounds = 5;
+        if (!(dollars > 0)) dollars = 25.0;
+
+        startBtn.disabled = true;
+        startBtn.textContent = "Launching…";
+        fetch("/runs", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            target_kind: "fraud",
+            shape: "shape1_ml",
+            spec_yaml: DEFAULT_SPEC,
+            budget_rounds: Math.min(rounds, 200),
+            budget_dollars: dollars,
+          }),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) {
+              if (!r.ok) throw new Error(j.detail || ("HTTP " + r.status));
+              return j;
+            });
+          })
+          .then(function (j) {
+            location.href =
+              "slice-02-live-run-view.dc.html?run=" + encodeURIComponent(j.runId);
+          })
+          .catch(function (e) {
+            startBtn.disabled = false;
+            startBtn.textContent = "Start evaluation →";
+            alert("Launch failed: " + e.message);
+          });
+      },
+      true // capture, so we beat the React onClick no-op
+    );
+  }
+
+  // =======================================================================
+  // slice-02 · Live Run View — EventSource stream into an injected live panel
+  // =======================================================================
+  function bindLiveRun(root) {
+    var runId = qs.get("run");
+    if (!runId) return;
+    if (root.querySelector("#live-run-panel")) return; // already injected
+
+    // Inject a live panel at the very top of the page body so it sits above the
+    // review-only mock states. It owns its DOM; React never re-renders it.
+    var host = root.firstElementChild ? root.firstElementChild.firstElementChild : null;
+    var mount = document.createElement("div");
+    mount.id = "live-run-panel";
+    mount.style.cssText =
+      "border:1px solid #2C3744;border-radius:10px;background:#0E141B;overflow:hidden;margin:0 0 48px";
+    mount.innerHTML =
+      '<div style="background:#11181F;border-bottom:1px solid #1D2630;padding:14px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#B8C2CE">' +
+      '<span id="live-pip" style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>' +
+      '<span id="live-status" style="font-weight:600;letter-spacing:.08em;color:#57C08A">CONNECTING</span>' +
+      "<span>/runs/<span style=\"color:#E8EDF3\">" + esc(runId) + "</span> · LIVE (this run)</span>" +
+      '<span style="margin-left:auto">round <span id="live-round" style="color:#E8EDF3">0</span></span>' +
+      '<span>ASR <span id="live-asr" style="color:#D9A441">0.00</span></span>' +
+      '<span>Detection <span id="live-det" style="color:#4FAAC0">0.00</span></span>' +
+      "</div>" +
+      '<div style="padding:14px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-family:\'IBM Plex Mono\',monospace;font-size:12px">' +
+      '<div><div style="color:#8A94A2;letter-spacing:.08em;margin-bottom:8px">VERDICT STREAM · newest at top</div><div id="live-verdicts" style="display:flex;flex-direction:column;gap:6px"></div></div>' +
+      '<div><div style="color:#8A94A2;letter-spacing:.08em;margin-bottom:8px">ATTACK / TRACE</div><div id="live-trace" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto"></div></div>' +
+      "</div>";
+    if (host) host.insertBefore(mount, host.firstChild);
+    else root.insertBefore(mount, root.firstChild);
+
+    var elStatus = mount.querySelector("#live-status");
+    var elPip = mount.querySelector("#live-pip");
+    var elRound = mount.querySelector("#live-round");
+    var elAsr = mount.querySelector("#live-asr");
+    var elDet = mount.querySelector("#live-det");
+    var elVerdicts = mount.querySelector("#live-verdicts");
+    var elTrace = mount.querySelector("#live-trace");
+
+    var nVerdicts = 0, nCaught = 0; // caught = oracle ensemble caught producer wrongness
+    function refreshRates() {
+      // Detection = share of producer-wrong cases the ensemble caught. With the
+      // available stream we approximate: ASR = clean / total, Detection = caught / total.
+      if (!nVerdicts) return;
+      var det = nCaught / nVerdicts;
+      elDet.textContent = det.toFixed(2);
+      elAsr.textContent = (1 - det).toFixed(2);
+    }
+    function row(html, border) {
+      var d = document.createElement("div");
+      d.style.cssText =
+        "border:1px solid " + (border || "#232E39") +
+        ";border-radius:5px;background:#11181F;padding:7px 10px;color:#B8C2CE;line-height:1.5";
+      d.innerHTML = html;
+      return d;
+    }
+
+    var src = new EventSource("/runs/" + encodeURIComponent(runId) + "/stream");
+
+    src.addEventListener("run_started", function () {
+      elStatus.textContent = "RUNNING";
+    });
+    src.addEventListener("attack", function (e) {
+      var d = JSON.parse(e.data);
+      elRound.textContent = String((d.round || 0) + 1);
+      var r = row(
+        'round <span style="color:#E8EDF3">' + esc((d.round || 0) + 1) + "</span> · tactic <span style=\"color:#4FAAC0\">" +
+          esc(d.tactic) + "</span> · atk " + esc((d.attack_id || "").slice(0, 12))
+      );
+      elTrace.insertBefore(r, elTrace.firstChild);
+    });
+    src.addEventListener("verdict", function (e) {
+      var d = JSON.parse(e.data);
+      nVerdicts++;
+      var caught = d.outcome === "caught";
+      if (caught) nCaught++;
+      refreshRates();
+      var fg = caught ? "#57C08A" : "#E5B5B0";
+      var glyph = caught ? "✓ CAUGHT" : "○ clean";
+      var bd = caught ? "#2A4636" : "#2C3744";
+      var r = row(
+        '<a href="slice-03-verdict-detail.dc.html?verdict=' + esc(d.verdict_id) +
+          '" style="color:#4FAAC0;text-decoration:underline">' + esc((d.verdict_id || "").slice(0, 12)) +
+          '</a> · <span style="color:' + fg + ';font-weight:600">' + glyph + "</span>" +
+          ' · tally <span style="color:#E8EDF3">' + esc(d.tally) + "</span>/" + esc(d.threshold) +
+          (d.summary ? '<div style="color:#8A94A2;margin-top:3px">' + esc(d.summary) + "</div>" : ""),
+        bd
+      );
+      elVerdicts.insertBefore(r, elVerdicts.firstChild);
+    });
+    src.addEventListener("run_complete", function (e) {
+      var d = {};
+      try { d = JSON.parse(e.data); } catch (x) {}
+      elStatus.textContent = "COMPLETE";
+      elStatus.style.color = "#4FAAC0";
+      elPip.style.background = "#4FAAC0";
+      if (d.rounds) elRound.textContent = String(d.rounds);
+      src.close();
+    });
+    src.addEventListener("run_failed", function (e) {
+      elStatus.textContent = "FAILED";
+      elStatus.style.color = "#E5736B";
+      elPip.style.background = "#E5736B";
+      try {
+        var d = JSON.parse(e.data);
+        elTrace.insertBefore(row('<span style="color:#E5736B">' + esc(d.error) + "</span>", "#4A2528"), elTrace.firstChild);
+      } catch (x) {}
+      src.close();
+    });
+    src.onerror = function () {
+      // The stream closes after run_complete; only reflect an error if still open.
+      if (src.readyState === 2 && elStatus.textContent === "CONNECTING") {
+        elStatus.textContent = "DISCONNECTED";
+        elPip.style.background = "#D9A441";
+      }
+    };
+  }
+
+  // =======================================================================
+  // slice-04 · Honest Dashboard — populate the five tiles from /metrics
+  // =======================================================================
+  function fmtTile(name, v) {
+    if (v == null) return "Not yet measured";
+    if (name === "dollars_per_caught_hack") return "$" + Number(v).toFixed(2);
+    return Number(v).toFixed(3);
+  }
+  function bindDashboard(root) {
+    jget("/metrics")
+      .then(function (m) {
+        var t = (m && m.tiles) || {};
+        // Map each design tile (by its big-number node) to an API tile. The
+        // headline node and the four supporting nodes are matched by their
+        // adjacent label text so we never depend on brittle positions.
+        var map = [
+          { label: "undetected-hack rate", key: "undetected_hack_rate" },
+          { label: "val–heldout gap", key: "validation_vs_holdout_gap" },
+          { label: "recall", key: "white_box_catch_rate" },
+          { label: "cost / undetected hack", key: "dollars_per_caught_hack" },
+        ];
+        // Find label spans, then the nearest big-number span within the same card.
+        var spans = root.querySelectorAll("span");
+        function findCardNumber(labelText) {
+          for (var i = 0; i < spans.length; i++) {
+            var txt = (spans[i].textContent || "").trim().toLowerCase();
+            if (txt === labelText) {
+              var card = spans[i].closest("div[style*='border']") || spans[i].parentElement;
+              // big number = the span with the largest font-size in this card
+              var cand = card.querySelectorAll("span");
+              var best = null, bestSize = 0;
+              for (var j = 0; j < cand.length; j++) {
+                var fs = parseFloat((cand[j].style && cand[j].style.fontSize) || "0");
+                // a tile number has no children and is mostly digits/$/.
+                if (fs >= 30 && cand[j].children.length === 0) {
+                  if (fs > bestSize) { bestSize = fs; best = cand[j]; }
+                }
+              }
+              return best;
+            }
+          }
+          return null;
+        }
+        var bound = 0;
+        for (var i = 0; i < map.length; i++) {
+          var node = findCardNumber(map[i].label);
+          if (node) {
+            node.textContent = fmtTile(map[i].key, t[map[i].key]);
+            node.setAttribute("data-live", map[i].key);
+            bound++;
+          }
+        }
+        // Append a small "black-box catch rate" + provenance live strip under the
+        // headline (the design has no dedicated black-box tile).
+        if (!root.querySelector("#live-metrics-strip")) {
+          var strip = document.createElement("div");
+          strip.id = "live-metrics-strip";
+          strip.style.cssText =
+            "margin:0 24px 20px;max-width:1400px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2";
+          strip.innerHTML =
+            "live /metrics · runs " + esc(m.runs_contributing) + " · verdicts " + esc(m.verdicts) +
+            " · black-box catch " + esc(fmtTile("black_box_catch_rate", t.black_box_catch_rate)) +
+            " · white-box catch " + esc(fmtTile("white_box_catch_rate", t.white_box_catch_rate));
+          var body = root.querySelector("h1");
+          if (body && body.parentElement && body.parentElement.parentElement) {
+            body.parentElement.parentElement.insertBefore(strip, body.parentElement.nextSibling);
+          }
+        }
+        console.info("[live.js] dashboard tiles bound:", bound, t);
+      })
+      .catch(function (e) {
+        console.error("[live.js] /metrics failed", e);
+      });
+  }
+
+  // =======================================================================
+  // slice-11 · Health — inject a live /health leaf-status strip
+  // =======================================================================
+  function bindHealth(root) {
+    if (root.querySelector("#live-health")) return;
+    jget("/health").then(function (h) {
+      var color = { green: "#57C08A", amber: "#D9A441", red: "#E5736B" };
+      var names = Object.keys(h).sort();
+      var cells = names
+        .map(function (n) {
+          var s = h[n] || {};
+          var c = color[s.status] || "#7C8896";
+          var detail = "";
+          try { detail = Object.keys(s.detail || {}).slice(0, 3).map(function (k) { return k + "=" + s.detail[k]; }).join(" · "); } catch (e) {}
+          return (
+            '<div style="border:1px solid #232E39;border-radius:7px;background:#11181F;padding:10px 12px">' +
+            '<div style="display:flex;align-items:center;gap:7px;margin-bottom:5px"><span style="width:9px;height:9px;border-radius:50%;background:' +
+            c + '"></span><span style="color:#E8EDF3;font-weight:600;font-size:13px">' + esc(n) + "</span>" +
+            '<span style="margin-left:auto;font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;letter-spacing:.08em;color:' +
+            c + ';text-transform:uppercase">' + esc(s.status) + "</span></div>" +
+            '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#8A94A2;line-height:1.5">' +
+            esc(detail || (s.error ? "error: " + s.error : "ok")) + "</div></div>"
+          );
+        })
+        .join("");
+      var panel = document.createElement("div");
+      panel.id = "live-health";
+      panel.style.cssText =
+        "max-width:1320px;margin:0 auto 24px;padding:18px 24px;border:1px solid #2C3744;border-radius:10px;background:#161E27";
+      panel.innerHTML =
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px"><span style="width:9px;height:9px;border-radius:50%;background:#57C08A"></span>' +
+        '<h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Live /health</h2>' +
+        '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#8A94A2">' + names.length + " leaves · fetched " + new Date().toISOString().slice(11, 19) + "Z</span></div>" +
+        '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">' + cells + "</div>";
+      // Insert at the top of the page content container.
+      var container = root.querySelector("div[style*='max-width']") || root.firstElementChild;
+      if (container) container.insertBefore(panel, container.firstChild);
+      else root.insertBefore(panel, root.firstChild);
+      console.info("[live.js] health leaves bound:", names.length);
+    }).catch(function (e) { console.error("[live.js] /health failed", e); });
+  }
+
+  // =======================================================================
+  // slice-03 · Verdict Detail — inject the five real oracle cards + tally
+  // =======================================================================
+  var ORACLE_LABEL = {
+    held_out: "Held-Out Tests",
+    differential: "Differential",
+    metamorphic: "Metamorphic",
+    property_fuzz: "Property Fuzz",
+    llm_judge: "LLM Judge",
+  };
+  function bindVerdict(root) {
+    var vid = qs.get("verdict");
+    if (!vid) return;
+    if (root.querySelector("#live-verdict")) return;
+    jget("/verdicts/" + encodeURIComponent(vid)).then(function (v) {
+      var caught = v.outcome === "caught";
+      var votes = v.votes || [];
+      var cards = votes
+        .map(function (vote) {
+          var fired = !!vote.fired;
+          var fg = fired ? "#E5736B" : "#57C08A";
+          var bd = fired ? "#4A2528" : "#2A4636";
+          var bg = fired ? "#161217" : "#12191A";
+          var badge = fired ? "✕ FIRED" : "✓ ok";
+          return (
+            '<div style="border:1px solid ' + bd + ";border-radius:8px;background:" + bg +
+            ';padding:14px;display:flex;flex-direction:column;gap:8px">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;font-weight:600;color:#E8EDF3">' +
+            esc(ORACLE_LABEL[vote.oracle] || vote.oracle) + "</span>" +
+            '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:600;color:' + fg +
+            ";border:1px solid " + bd + ';border-radius:4px;padding:2px 7px">' + badge + " · w" + esc(vote.weight) + "</span></div>" +
+            '<div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBLIGATION</div>' +
+            '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#B8C2CE">' + esc(vote.obligation) + "</div></div>" +
+            '<div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBSERVATION</div>' +
+            '<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:' + fg + '">' + esc(vote.observation) + "</div></div>" +
+            '<div><div style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">REASON</div>' +
+            '<div style="font-size:12.5px;color:#B8C2CE;line-height:1.55">' + esc(vote.reason) + "</div></div>" +
+            "</div>"
+          );
+        })
+        .join("");
+
+      var panel = document.createElement("div");
+      panel.id = "live-verdict";
+      panel.style.cssText =
+        "max-width:1240px;margin:24px auto 0;padding:0 24px";
+      panel.innerHTML =
+        '<div style="border:1px solid ' + (caught ? "#4A2528" : "#2A4636") +
+        ';border-radius:10px;background:#0F151C;overflow:hidden">' +
+        '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:16px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#B8C2CE">' +
+        '<span style="font-size:11px;color:#4FAAC0;letter-spacing:.1em">LIVE VERDICT</span>' +
+        "<span style=\"color:#E8EDF3\">" + esc(v.verdictId) + "</span>" +
+        '<span style="font-size:20px;font-weight:700;color:' + (caught ? "#E5B5B0" : "#9BD9B5") + '">' +
+        (caught ? "CAUGHT" : "CLEAN") + "</span>" +
+        '<span>aggregate tally <span style="color:#E8EDF3">' + esc(v.tally) + "</span> / threshold <span style=\"color:#E8EDF3\">" +
+        esc(v.threshold) + "</span></span>" +
+        '<span style="margin-left:auto">producer_output ' + esc(JSON.stringify(v.producer_output)) + "</span>" +
+        "</div>" +
+        '<div style="padding:18px 22px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px">' + cards + "</div>" +
+        (v.attack
+          ? '<div style="padding:0 22px 18px;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#8A94A2">attack tactic <span style="color:#4FAAC0">' +
+            esc(v.attack.tactic) + "</span> · white_box " + esc(v.attack.white_box) +
+            " · " + esc(v.attack.rationale) + "</div>"
+          : "") +
+        "</div>";
+
+      var body = root.querySelector("div[style*='max-width']") || root.firstElementChild;
+      if (body) body.insertBefore(panel, body.firstChild);
+      else root.insertBefore(panel, root.firstChild);
+      console.info("[live.js] verdict cards bound:", votes.length);
+    }).catch(function (e) { console.error("[live.js] /verdicts failed", e); });
+  }
+
+  // ---- dispatch ----------------------------------------------------------
+  if (/slice-01-run-launcher/.test(PAGE)) whenRendered(bindLauncher, true);
+  else if (/slice-02-live-run-view/.test(PAGE)) whenRendered(bindLiveRun, false);
+  else if (/slice-03-verdict-detail/.test(PAGE)) whenRendered(bindVerdict, false);
+  else if (/slice-04-honest-dashboard/.test(PAGE)) whenRendered(bindDashboard, true);
+  else if (/slice-11-health/.test(PAGE)) whenRendered(bindHealth, false);
+})();
