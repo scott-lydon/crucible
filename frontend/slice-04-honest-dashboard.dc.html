@@ -370,12 +370,91 @@
         <div style="flex:1"></div>
         <a href="slice-02-live-run-view.dc.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">all runs →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
-        <span>Run</span><span>Started</span><span>Rounds</span><span>Verdict</span><span>ASR / Det</span><span>Cost</span><span>Mins</span><span>Spec</span>
+
+      <!-- history strip: one cell per run, oldest → newest -->
+      <div style="padding:16px 22px 14px;border-bottom:1px solid #1D2630;background:#11181F">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">
+          <span>Run history · last 60 · oldest → newest</span>
+          <span style="text-transform:none;letter-spacing:0;color:#B8C2CE">
+            <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span style="width:8px;height:8px;background:#57C08A;border-radius:1px"></span>certified</span>
+            <span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span style="width:8px;height:8px;background:#D9A441;border-radius:1px"></span>review-only</span>
+            <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:8px;height:8px;background:#E5736B;border-radius:1px"></span>halted</span>
+          </span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(60,1fr);gap:3px">
+          <span title="r_8eed · certified · 0.18/0.94" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8eee · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8eef · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef0 · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8ef1 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef2 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef3 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef4 · halted · recall 0.86" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8ef5 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef6 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef7 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef8 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8ef9 · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8efa · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8efb · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8efc · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8efd · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8efe · halted · r.117" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8eff · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f00 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f01 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f02 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f03 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f04 · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8f05 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f06 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f07 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f08 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f09 · halted" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8f0a · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f0b · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f0c · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f0d · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f0e · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f0f · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8f10 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f11 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f12 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f13 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f14 · halted" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8f15 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f16 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f17 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f18 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f19 · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8f1a · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f1b · halted · r.131" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8f1c · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f1d · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f1e · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f1f · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.85"></span>
+          <span title="r_8f33 · certified" style="height:22px;background:#57C08A;border-radius:2px;opacity:.95"></span>
+          <span title="r_8f34 · certified" style="height:22px;background:#57C08A;border-radius:2px"></span>
+          <span title="r_8f35 · review-only" style="height:22px;background:#D9A441;border-radius:2px"></span>
+          <span title="r_8f36 · certified" style="height:22px;background:#57C08A;border-radius:2px"></span>
+          <span title="r_8f37 · halted" style="height:22px;background:#E5736B;border-radius:2px"></span>
+          <span title="r_8f38 · certified" style="height:22px;background:#57C08A;border-radius:2px"></span>
+          <span title="r_8f39 · certified" style="height:22px;background:#57C08A;border-radius:2px"></span>
+          <span title="r_8f3a · halted · current" style="height:22px;background:#E5736B;border-radius:2px;outline:2px solid #4FAAC0;outline-offset:1px"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2">
+          <span>May 24</span>
+          <span>Jun 08</span>
+          <span>Jun 22 · r_8f3a</span>
+        </div>
+      </div>
+
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Run</span><span>Started</span><span>Rounds</span><span>Verdict</span><span>ASR / Det</span><span>Cost</span><span>Mins</span><span>Spec</span><span style="text-align:right">Audit</span>
       </div>
 
       <!-- rows -->
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f3a</a>
         <span style="color:#B8C2CE">06-22 14:01Z</span>
         <span style="color:#E8EDF3">35/48</span>
@@ -384,8 +463,9 @@
         <span style="color:#E8EDF3">$14.20</span>
         <span style="color:#B8C2CE">12</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f39</a>
         <span style="color:#B8C2CE">06-22 11:14Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -394,8 +474,9 @@
         <span style="color:#E8EDF3">$8.40</span>
         <span style="color:#B8C2CE">2</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f38</a>
         <span style="color:#B8C2CE">06-22 09:20Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -404,8 +485,9 @@
         <span style="color:#E8EDF3">$7.80</span>
         <span style="color:#B8C2CE">1</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f37</a>
         <span style="color:#B8C2CE">06-21 22:42Z</span>
         <span style="color:#E8EDF3">29/48</span>
@@ -414,8 +496,9 @@
         <span style="color:#E8EDF3">$11.10</span>
         <span style="color:#B8C2CE">14</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f36</a>
         <span style="color:#B8C2CE">06-21 17:08Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -424,8 +507,9 @@
         <span style="color:#E8EDF3">$9.20</span>
         <span style="color:#B8C2CE">2</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f35</a>
         <span style="color:#B8C2CE">06-21 12:55Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -434,8 +518,9 @@
         <span style="color:#E8EDF3">$8.90</span>
         <span style="color:#B8C2CE">6</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f34</a>
         <span style="color:#B8C2CE">06-21 08:11Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -444,8 +529,9 @@
         <span style="color:#E8EDF3">$8.10</span>
         <span style="color:#B8C2CE">1</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
       </div>
-      <div role="row" style="display:grid;grid-template-columns:120px 140px 90px 110px 120px 90px 90px 1fr;gap:14px;padding:11px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 80px 110px 110px 80px 70px 1fr 90px;gap:14px;padding:11px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
         <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:underline">r_8f33</a>
         <span style="color:#B8C2CE">06-20 19:33Z</span>
         <span style="color:#E8EDF3">48/48</span>
@@ -454,6 +540,116 @@
         <span style="color:#E8EDF3">$8.70</span>
         <span style="color:#B8C2CE">2</span>
         <span style="color:#B8C2CE">9f2a4c7b · sealed</span>
+        <a href="slice-05-audit-row-replayer.dc.html" title="open audit row replayer" style="color:#4FAAC0;text-decoration:none;text-align:right;font-size:12px">replay →</a>
+      </div>
+    </div>
+
+    <!-- ============== AUDIT ROW REPLAYS ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Audit row replays</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">last 24h · 47 replays · <span style="color:#9BD9B5">47 matched</span> · <span style="color:#E5B5B0">0 drift</span></span>
+        <div style="flex:1"></div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">nightly audit-bot · 02:00Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">open replayer →</a>
+      </div>
+
+      <!-- 24h replay heat strip -->
+      <div style="padding:14px 22px 8px;border-bottom:1px solid #1D2630;background:#11181F">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">
+          <span>24h replay activity · 1h buckets</span>
+          <span style="text-transform:none;letter-spacing:0;color:#B8C2CE">every replay matched the original row hash</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(24,1fr);gap:3px;align-items:end;height:42px">
+          <span title="09:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="10:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+          <span title="11:00Z · 2" style="height:20%;background:#316E7E;border-radius:2px"></span>
+          <span title="12:00Z · 4" style="height:38%;background:#4FAAC0;border-radius:2px"></span>
+          <span title="13:00Z · 3" style="height:30%;background:#4FAAC0;border-radius:2px"></span>
+          <span title="14:00Z · 6 · r_8f3a halt triage" style="height:56%;background:#4FAAC0;border-radius:2px"></span>
+          <span title="15:00Z · 5" style="height:48%;background:#4FAAC0;border-radius:2px"></span>
+          <span title="16:00Z · 2" style="height:20%;background:#316E7E;border-radius:2px"></span>
+          <span title="17:00Z · 3" style="height:30%;background:#4FAAC0;border-radius:2px"></span>
+          <span title="18:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+          <span title="19:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+          <span title="20:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="21:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+          <span title="22:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="23:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="00:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="01:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="02:00Z · 14 · nightly audit-bot" style="height:96%;background:#57C08A;border-radius:2px"></span>
+          <span title="03:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="04:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="05:00Z · 0" style="height:6%;background:#1D2630;border-radius:2px"></span>
+          <span title="06:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+          <span title="07:00Z · 2" style="height:20%;background:#316E7E;border-radius:2px"></span>
+          <span title="08:00Z · 1" style="height:12%;background:#316E7E;border-radius:2px"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2">
+          <span>09:00Z</span><span>14:00Z</span><span>02:00Z · nightly</span><span>now · 09:32Z</span>
+        </div>
+      </div>
+
+      <!-- table head -->
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Replayed at</span><span>Row</span><span>By</span><span>Reason</span><span>Hash</span><span>Status</span><span></span>
+      </div>
+
+      <!-- rows -->
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-23 02:00:00Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f3a_032_meta_1</a>
+        <span style="color:#E8EDF3">audit-bot · nightly</span>
+        <span style="color:#B8C2CE">halt evidence</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-014.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-22 17:08:54Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f3a_032_meta_1</a>
+        <span style="color:#E8EDF3">audit-bot · scheduled</span>
+        <span style="color:#B8C2CE">4h drift check</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-003.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-22 14:42:09Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f3a_032_meta_1</a>
+        <span style="color:#E8EDF3">s.lydon@acme</span>
+        <span style="color:#B8C2CE">manual triage</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-002.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-22 14:31:02Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f3a_028_oracle_3</a>
+        <span style="color:#E8EDF3">k.osei@acme</span>
+        <span style="color:#B8C2CE">manual triage</span>
+        <span style="color:#E8EDF3">b71d…8a44</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-002.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-22 11:48:11Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f39_041_meta_2</a>
+        <span style="color:#E8EDF3">audit-bot · sample</span>
+        <span style="color:#B8C2CE">1% spot check</span>
+        <span style="color:#E8EDF3">2f0a…cc91</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-001.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:170px 130px 150px 140px 1fr 110px 90px;gap:14px;padding:11px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">06-22 09:23:40Z</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:underline">a_8f38_014_oracle_5</a>
+        <span style="color:#E8EDF3">audit-bot · sample</span>
+        <span style="color:#B8C2CE">1% spot check</span>
+        <span style="color:#E8EDF3">5e88…1d07</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="replay-001.tgz" style="color:#4FAAC0;text-align:right">.tgz ↓</a>
       </div>
     </div>
 
