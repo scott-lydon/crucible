@@ -1,19 +1,12 @@
 # Coding practices
 
-How Crucible is built. This is the **C** of the CATA set (`coding-practices.md`,
-`ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md`) plus the populated
-`QA_ADVERSARY.md`. Every rule here is current and binding. A violation blocks merge; it
-is not "tech debt."
+How Crucible is built. Every rule here is current and binding. A violation blocks merge;
+it is not "tech debt."
 
 Scope: this file says **how** to build, never **what** to build. Functionality lives in
 `ARCHITECTURE.md` (topology, the core bet, out of scope) and `acceptance-tests.md` (user
 stories, behavior). Keep functionality clauses out of this file. A "you may not build X"
 rule hidden among style rules silently vetoes real features, so it does not belong here.
-
-These rules track the governing `CLAUDE.md` files (`~/.claude/CLAUDE.md`,
-`~/Documents/Claude/Projects/Gauntlet/CLAUDE.md`, and the per-repo `CLAUDE.md`) and the
-language style guide. When a `CLAUDE.md` rule changes, update the matching rule here in
-the same pass.
 
 Term definitions for every recurring noun live in
 [`docs/VOCABULARY.md`](docs/VOCABULARY.md). When a sentence uses "model," "retrain,"
@@ -23,8 +16,7 @@ Term definitions for every recurring noun live in
 
 - **Language:** Python 3.12. Forced by the machine-learning targets (LightGBM,
   scikit-learn, autoencoders), the Anthropic Software Development Kit (SDK), and
-  `hypothesis` for property-based fuzzing. Swift cannot host these dependencies; no
-  other language in the team's toolkit can either.
+  `hypothesis` for property-based fuzzing.
 - **Web framework:** FastAPI. Single `POST /runs` endpoint streaming Server-Sent
   Events (SSE).
 - **Persistence:** Postgres 16 (Supabase free tier in development, Render Postgres in
@@ -80,9 +72,7 @@ rules that keep it honest live here.
 ## 3. Transparency-first
 
 Every subcomponent's inner workings, where not a security risk, surface in the
-dashboard. This is the project-level checklist rule in `CLAUDE.md` ("Granular
-transparency of inner workings"), applied as a build practice on every persisted row,
-not as a stretch goal.
+dashboard, on every persisted row.
 
 - **Every LLM call carries a trace card** showing prompt, raw response, parsed output,
   token count, dollar cost. Stored in Postgres `llm_calls` table, surfaced in the
@@ -106,8 +96,8 @@ Hide only what is a real security risk: Anthropic Application Programming Interf
 
 ## 4. Data, never fake
 
-Inherited from the project-level `CLAUDE.md` hard rule ("NO MOCK / STUB / FAKE / REUSED
-DATA").
+Never use mock, stub, placeholder, or reused data, and never present simulated or cached
+output as a real, fresh result.
 
 - Targets train on real datasets. The fraud target uses the Kaggle credit-card fraud
   detection dataset, downloaded at build time and checksummed.
@@ -126,13 +116,8 @@ crashed for the Shape 1 fraud LightGBM classifier, or the agent-configuration di
 failed to apply for the Shape 2 code agent), the dashboard renders a typed error
 explaining the failure, not a sample value.
 
-## 5. Quality non-negotiables
+## 5. Commit and review conventions
 
-- **`vouch` runs on every code change.** The fresh-context Quality Assurance (QA)
-  sub-agent (`~/.claude/agents/vouch.md`) is invoked after every slice's code lands and
-  before the slice is reported done. Briefed against `QA_ADVERSARY.md`.
-- **The submit-gate runs at the end of every assignment-touching response**
-  (`~/.claude/skills/submit-gate/SKILL.md`).
 - **Dual-push to GitHub and GitLab on every commit.** `origin` carries two push URLs
   (GitHub and `labs.gauntletai.com/scottlydon/crucible`); one `git push origin
   <branch>` fans out to both. Verify with `git ls-remote
@@ -144,8 +129,7 @@ explaining the failure, not a sample value.
   `dashboard`.
 - **Separate commits per logical unit.** Never squash unrelated changes into one
   commit.
-- **`Assisted-by: Claude` trailer** on commits Claude wrote, per the project
-  `CLAUDE.md`.
+- **`Assisted-by: Claude` trailer** on commits an AI assistant helped write.
 
 ## 6. Language and style conventions
 
@@ -197,9 +181,6 @@ to hold a function that belongs on `Foo`.
 
 ### Errors must be loud, typed, and self-explaining
 
-This is the project's most load-bearing style rule, from both `CLAUDE.md` files and the
-OpenEMR conventions.
-
 - **Let exceptions propagate.** Catch only where the caller can meaningfully recover.
   Do not catch-log-continue; it hides failures from the orchestrator loop, which is the
   one place that turns a failure into a typed verdict for Measure.
@@ -239,11 +220,9 @@ compound words, code, identifiers, file paths, flags, and numeric ranges are fin
 ## 7. Things any agent must never do
 
 - Catch and swallow exceptions inside business logic (see section 6).
-- Mock the database in integration tests. Inherited from OpenEMR's `CLAUDE.md` hard
-  rule.
+- Mock the database in integration tests.
 - Suppress a `mypy --strict` warning. Fix the underlying type.
-- Ship code that has not been built, deployed, restarted, and behaviorally verified,
-  per the global `CLAUDE.md` "DEPLOY-VERIFY-OR-DIE" rule.
+- Ship code that has not been built, deployed, restarted, and behaviorally verified.
 - Edit `orchestrator/interfaces/` inside a module slice's branch. Interface changes
   ride their own branch through the orchestrator owner.
 - Edit `shared/` and `modules/<x>/` in the same pull request. The pre-merge check
@@ -251,8 +230,7 @@ compound words, code, identifiers, file paths, flags, and numeric ranges are fin
 
 ## 8. Cite the rubric line for any decision that touches a rubric pillar
 
-The Gauntlet capstone is graded on Architecture, Scalability, Security, and Testing
-pillars. Every decision in `ARCHITECTURE.md` that touches one of those names the rubric
-line it advances. This is how `AI_INTERVIEW_PREP.md` later cites back evidence; the
-evidence chain has to exist by the time the rubric is read against the code. The
-rubric-pillar mapping table lives in `acceptance-tests.md` section 5.
+The project is graded on Architecture, Scalability, Security, and Testing pillars. Every
+decision in `ARCHITECTURE.md` that touches one of those names the rubric line it
+advances, so the evidence chain exists by the time the rubric is read against the code.
+The rubric-pillar mapping table lives in `acceptance-tests.md` section 3.

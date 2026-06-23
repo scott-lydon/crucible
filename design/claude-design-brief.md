@@ -1,6 +1,6 @@
 # Claude Design brief, ready-to-paste
 
-Paste the prompt below into <https://claude.ai/design> (Claude Design, the Anthropic Labs design tool; not Claude Sonnet generating HyperText Markup Language (HTML)). Hit Generate. Export the bundle when it is finished and copy the bundle verbatim into `_design_bundle/` per the global `~/.claude/CLAUDE.md` "CLAUDE DESIGN FIDELITY" hard rule.
+Paste the prompt below into <https://claude.ai/design> (Claude Design, the Anthropic Labs design tool; not Claude Sonnet generating HyperText Markup Language (HTML)). Hit Generate. Export the bundle when it is finished and copy it verbatim into `_design_bundle/`. The design files are canonical: copy them as-is, structure and all, rather than re-interpreting them.
 
 Do not paraphrase the prompt before pasting. Do not strip the route list to "save tokens." Claude Design needs the whole spec to keep the dashboard internally consistent across screens.
 
@@ -92,7 +92,7 @@ End of prompt.
 
 1. Export the bundle from Claude Design.
 2. Unzip into `_design_bundle/` at the repo root.
-3. Copy the bundle into `dashboard/src/pages/` verbatim. Same filenames, same directory shape, same content. Do not "re-implement in idiomatic React"; the rule (per global `~/.claude/CLAUDE.md` "CLAUDE DESIGN FIDELITY") is verbatim copy.
+3. Copy the bundle into `dashboard/src/pages/` verbatim. Same filenames, same directory shape, same content. Do not "re-implement in idiomatic React"; copy the structure verbatim too.
 4. Wire each route to the FastAPI endpoints listed in `ARCHITECTURE.md` section 3.
 5. Diff `_design_bundle/` against `dashboard/src/pages/` on every re-export so any drift is immediately visible.
 

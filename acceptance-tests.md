@@ -1,16 +1,14 @@
 # Acceptance tests
 
-What correct behavior is, and the evidence for it. This is the **A** of the CATA set
-(`coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md`). It opens
-with the user stories derived from the proposal, then states acceptance in Given / When
-/ Then form, grouped for grading by the rubric-pillar mapping in section 5. It also
-carries the out-of-scope list and the demo script.
+What correct behavior is, and the evidence for it. It opens with the user stories
+derived from the proposal, then states acceptance in Given / When / Then form, grouped
+for grading by the rubric-pillar mapping in section 3. It also carries the out-of-scope
+list and the demo script.
 
 Each user story names a role, a capability, and an outcome. The Given / When / Then
-block under it is the acceptance test for that story: the thing `vouch` replays and the
-thing that decides "done." The transparency requirements in `coding-practices.md`
-section 3 manifest here as stories with measurable acceptance, not as a vague
-nonfunctional goal.
+block under it is the acceptance test for that story: the thing that decides "done." The
+transparency requirements in `coding-practices.md` section 3 manifest here as stories
+with measurable acceptance, not as a vague nonfunctional goal.
 
 If a behavior is not in this file, it is not in the product, and the answer to "but
 should it" is "open a pull request against this file first."
@@ -19,51 +17,10 @@ Term definitions for every recurring noun live in
 [`docs/VOCABULARY.md`](docs/VOCABULARY.md). When a sentence uses "model," "retrain,"
 "catch," "target," or "producer," that file is the canonical referent.
 
-## 1. Problem statement (one paragraph)
-
-AI systems (classifiers, agents, research pipelines) are graded against a proxy metric,
-and the optimizer that fit the AI system finds the cheapest path to that score. When the
-proxy diverges from the real goal, the optimizer lives in the gap: the AI system scores
-high on the metric and silently fails at the job. Crucible's user is whoever paid for or
-is responsible for that AI system continuing to do what it claims to do. Success is the
-user being able to point at a single number ("we caught X percent of cheats against an
-attacker who knew the verification scheme") and trust it. Success is also the user being
-able to drill into any individual catch-or-miss and see, end to end, exactly what each
-subcomponent did.
-
-### Scope clarification
-
-Crucible verifies AI systems. It does not detect fraud, write code, or perform research
-itself. The fraud-detection LightGBM classifier is one of three example target adapters;
-banks and fintechs run their own production fraud detectors, and Crucible verifies them
-in a lab pass to produce a Supervisory Letter 11-7 model risk report. The same shape
-applies to the code-agent and research-agent adapters. Reading "catch rate" or "catch"
-in this file always means "Crucible's verification correctness against producer
-wrongness," never "the target's production correctness on its own job."
-
-## 2. Customers
-
-Listed in priority order. The first three are who we design the two-week demo around.
-
-1. **A bank's model risk officer** consuming an AI fraud-detection model from a vendor.
-   Subject to United States Federal Reserve Supervisory Letter 11-7 (SR 11-7). Pays for
-   independent verification with a report in SR 11-7 format. The fraud target adapter
-   and the SR 11-7 report exist for this customer.
-2. **A code-generation agent vendor** (a Cursor, Cognition, or GitHub Copilot Business
-   engineering lead) whose enterprise customers ask "does this agent reward-hack our test
-   suite." The code-agent target adapter exists for this customer.
-3. **A public-sector artificial intelligence (AI) procurement officer** (US AI Safety
-   Institute, UK AI Safety Institute, European Union AI Office). The exported
-   seeded-hack corpus and the leaderboard exist for this customer.
-4. AI auditors and red-teaming firms; AI insurance underwriters; frontier labs (for
-   fine-tunes and bug bounties). Out of scope for the two-week build; in scope for the
-   productization roadmap.
-
-## 3. User stories and acceptance tests
+## 1. User stories and acceptance tests
 
 Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, Blue,
-Measure). The owner is responsible for the Given / When / Then acceptance test passing
-in `vouch`.
+Measure). The owner is responsible for the Given / When / Then acceptance test passing.
 
 ### US-1. Submit a target for evaluation
 
@@ -308,7 +265,7 @@ audit row, **so that** I do not have to re-run the full pipeline to test a fix.
 
 **Owner:** Measure. Mock-LLM mode owned by Orchestrator.
 
-## 4. Out of scope for the two-week build
+## 2. Out of scope for the two-week build
 
 Each line carries its one-line reason. The architectural consequences of these
 exclusions are mirrored in `ARCHITECTURE.md` section 12.
@@ -326,12 +283,10 @@ exclusions are mirrored in `ARCHITECTURE.md` section 12.
 - **Mobile responsive dashboard.** Desktop only for the demo.
 - **Multi-tenant isolation.** Single operator account.
 
-## 5. Rubric-pillar mapping
+## 3. Rubric-pillar mapping
 
 The Given / When / Then blocks above are the acceptance tests; this table groups them by
 the rubric pillar each advances and points at the architecture section that backs it.
-`AI_INTERVIEW_PREP.md` cites this table when answering rubric-pillar questions in the AI
-video interview.
 
 | Rubric pillar | User stories that advance it | Architecture section |
 |---|---|---|
@@ -340,7 +295,7 @@ video interview.
 | Security | US-9, US-13, US-14 | `ARCHITECTURE.md` sections 11 and 12 |
 | Testing | US-3, US-4, US-5, US-8, US-10 | `ARCHITECTURE.md` sections 3 and 7 |
 
-## 6. Demo script, 10 minutes, June 29 2026
+## 4. Demo script, 10 minutes, June 29 2026
 
 Same shape as README section 9, refined.
 

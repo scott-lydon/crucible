@@ -1,15 +1,13 @@
 # Architecture
 
 How Crucible gets built. Topology, component breakdown, data flow, decisions,
-trade-offs, the core bet, sequencing. This is the **A** of the CATA set
-(`coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md`). Every
-decision here traces back to an `acceptance-tests.md` user story and a
-`coding-practices.md` rule.
+trade-offs, the core bet, sequencing. Every decision here traces back to an
+`acceptance-tests.md` user story and a `coding-practices.md` rule.
 
 This is the canonical engineering source. The architecture website at
-`website/index.html` renders the same content polished; the dashboard at `frontend/`
-renders the live numbers. If those drift from this file, they are wrong and this file
-is right. There is one architecture document; there is no separate plan.
+`website/index.html` renders the same content polished; the dashboard at `dashboard/`
+renders the live numbers. If those drift from this file, they are wrong and this file is
+right.
 
 ## 1. High-level topology
 
@@ -50,8 +48,7 @@ is right. There is one architecture document; there is no separate plan.
 ```
 
 The polished version of this lives at `website/index.html` with logos and decision
-tables, per the project `CLAUDE.md` "Architecture website per assignment" rule. Update
-both in the same commit.
+tables. Update both in the same commit.
 
 ## 2. Module boundaries (hexagonal layout)
 
@@ -190,7 +187,7 @@ result, surfaced honestly, never papered over.
 | `halt_rule.py` | Polls `metrics.recall_white_box`; if below threshold, sets a Postgres `halted=true` flag the orchestrator checks on new runs | All routes (banner) |
 | `health.py` | Aggregates every module's `/health/<pillar>/<subcomponent>` probe | `/health` |
 
-**Dashboard** (`dashboard/`). React SPA. Routes per `acceptance-tests.md` section 3.
+**Dashboard** (`dashboard/`). React SPA. Routes per `acceptance-tests.md` section 1.
 Each route is a thin client over the FastAPI endpoints above.
 
 **Failure modes.** A metric tile has zero contributing runs: renders the literal text
@@ -327,8 +324,8 @@ team-wide convergence at the end.
   same Render web service under `/app`, the architecture website under `/architecture`.
   Both behind the same origin.
 - **Cache-busting:** Vite content-hashes filenames by default. `index.html` is served
-  with `Cache-Control: no-cache` plus a `?v=<git-sha>` query string on the entry
-  script, per the global `CLAUDE.md` "Static-asset cache poisoning" prevention rule.
+  with `Cache-Control: no-cache` plus a `?v=<git-sha>` query string on the entry script,
+  so a new build cannot be served from a poisoned cache.
 - **Secrets:** Anthropic key, Modal token, Postgres URL stored as Render environment
   variables, never in the repo. Local development reads from `.env` which is
   `.gitignored`.
@@ -373,7 +370,7 @@ out of it are:
 ## 12. Out of scope (architecture)
 
 These exclusions shape the topology, so they live here as well as in
-`acceptance-tests.md` section 4.
+`acceptance-tests.md` section 2.
 
 - **Confidentiality and Availability.** Crucible targets the Integrity pillar of the
   classical information-security triad only. It is not a SQL-injection, secrets, or
@@ -387,4 +384,4 @@ These exclusions shape the topology, so they live here as well as in
   customer; the equivalent governance body for other segments).
 - **Out of scope for the two-week build:** the submission portal, the automated
   specification compiler, and the full verifier tournament. Detail and reasons in
-  `acceptance-tests.md` section 4.
+  `acceptance-tests.md` section 2.

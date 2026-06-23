@@ -18,13 +18,12 @@ The pillar prefix is one of `targets`, `oracles`, `red`, `blue`, `measure`, `sha
 Every slice lands on `main` as exactly one squash-merged commit. The commit message follows Conventional Commits:
 
 ```
-feat(red): slice 11 — search loop with strategy catalog persistence
+feat(red): slice 11: search loop with strategy catalog persistence
 
 Closes US-6. Implements modules/red/search.py and modules/red/catalog.py
 against orchestrator/interfaces/red.py.
 
 Owner: <name>
-Vouch report: tests/qa-reports/RUN_REPORT-slice-11.md (PASS)
 Assisted-by: Claude
 ```
 
@@ -90,24 +89,16 @@ ruff check . && mypy --strict . && pytest -x --no-header
 
 Continuous Integration (CI) at `.github/workflows/ci.yml` runs the same plus coverage, the module-imports check, and the sandbox seal probe.
 
-## 8. The submit-gate and `vouch` are mandatory
+## 8. AI-assistance trailer
 
-- Every code-touching response runs the submit-gate (`~/.claude/skills/submit-gate/SKILL.md`).
-- Every slice that lands code runs `vouch` (`~/.claude/agents/vouch.md` plus this repo's `QA_ADVERSARY.md`) before the slice is reported done.
+Commits an AI assistant helped write carry an `Assisted-by: Claude` trailer.
 
-Reports live in `tests/qa-reports/` and are committed alongside the slice they grade.
+## 9. Pull request template
 
-## 9. AI-assistance trailer
-
-Commits Claude wrote carry `Assisted-by: Claude` as a trailer. The trailer is added automatically by the agent loop checklist's commit step.
-
-## 10. Pull request template
-
-Every pull request body answers four questions:
+Every pull request body answers three questions:
 
 1. **Which `acceptance-tests.md` user story does this advance?** Cite the US-N identifier.
 2. **Which `ARCHITECTURE.md` component does this touch?** Cite the section.
-3. **Which rubric pillar does this advance?** Cite the row of `acceptance-tests.md` section 5.
-4. **What did `vouch` say?** Link the `RUN_REPORT-<slice>.md` file. PASS or named blocking findings.
+3. **Which rubric pillar does this advance?** Cite the row of `acceptance-tests.md` section 3.
 
-A pull request whose body does not answer all four is rejected by the bot, not the human reviewer.
+A pull request whose body does not answer all three is rejected by the bot, not the human reviewer.
