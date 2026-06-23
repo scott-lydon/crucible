@@ -1,0 +1,38 @@
+# SealedSpec for the v0 fraud target.
+# The fraud target declares — as DATA — what it must satisfy. This mirrors the
+# rules the v0 oracles currently hardcode (see spec doc §13). Generalizing the
+# oracles to read from this spec is DEFERRED; this file is the declaration only.
+target_kind: fraud
+
+obligations:
+  - "flag transactions that are truly fraudulent"
+  - "do not be fooled by amount-only evasion"
+
+invariants:
+  # Mirrors v0 InvariantOracle: country_mismatch AND high-velocity must be
+  # flagged regardless of amount (V_THRESH = 5).
+  - name: country_velocity_must_flag
+    description: >-
+      A transaction with country_mismatch true AND velocity greater than 5 must
+      be flagged by the detector, regardless of amount. Fires when such a
+      transaction is cleared.
+    kind: must_flag_when
+    params:
+      all_of:
+        - feature: country_mismatch
+          eq: true
+        - feature: velocity
+          gt: 5
+
+metamorphic_relations:
+  # Mirrors v0 MetamorphicOracle R1: lowering amount alone must not change the
+  # true fraud label.
+  - name: amount_decrease_label_invariance
+    description: >-
+      Lowering the transaction amount must not change the true fraud label. If a
+      transaction is truly fraudulent, decreasing its amount keeps it fraudulent.
+    feature: amount
+    direction: decrease
+    label_must_change: false
+
+holdout_generator_kind: deterministic_rule
