@@ -15,6 +15,8 @@ from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.oracles.held_out.oracle import FraudHeldOutOracle
+from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
+from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
 from modules.red.holdout_fraud import HoldoutFraudRed
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
@@ -100,6 +102,7 @@ def build_container() -> Container:
 
     # Fraud target loads from the trained artifact; if it has not been trained yet the
     # /health leaf reports amber rather than the platform failing to start.
+    fraud: FraudTarget | None = None
     try:
         fraud = FraudTarget.load()
         container.register_target(fraud)
@@ -115,8 +118,7 @@ def build_container() -> Container:
     except FileNotFoundError as exc:
         _log.warning("fraud_data_missing", error=str(exc))
 
-    # Fraud oracles. Differential (IsolationForest) + held-out (ground truth) so far;
-    # metamorphic, property-fuzz and judge append here in slices 6/8/9.
+    # Fraud oracle ensemble (judge appends in slice 9).
     held_out = FraudHeldOutOracle()
     container.register_oracle("fraud", held_out)
     sink.register_health_probe("oracles/fraud/held_out", held_out.health)
@@ -127,6 +129,13 @@ def build_container() -> Container:
     except FileNotFoundError as exc:
         _log.warning("fraud_iso_missing", error=str(exc))
         sink.register_health_probe("oracles/fraud/differential", _untrained_probe(str(exc)))
+    if fraud is not None:
+        metamorphic = FraudMetamorphicOracle(fraud.predict_sync, fraud.feature_names)
+        container.register_oracle("fraud", metamorphic)
+        sink.register_health_probe("oracles/fraud/metamorphic", metamorphic.health)
+        fuzz = FraudPropertyFuzzOracle(fraud.predict_sync, fraud.feature_names)
+        container.register_oracle("fraud", fuzz)
+        sink.register_health_probe("oracles/fraud/property_fuzz", fuzz.health)
 
     return container
 

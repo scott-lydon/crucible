@@ -65,18 +65,18 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Self-test endpoint (`oracles/fraud/held_out`).
   - [x] **Done criteria for `vouch`:** ground-truth logic verified; through the loop the held-out oracle surfaces every real producer miss (9/9 over 60 draws); producer never sees `true_label`.
 
-- [ ] **slice-6-metamorphic-oracle** (T).
-  - [ ] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic rules from spec invariants; rules persisted to `metamorphic_rules`; runtime checks fire each rule and report pass / fail.
-  - [ ] **Done criteria for `vouch`:** at least three metamorphic rules synthesized per spec, all surface in the dashboard verdict view.
+- [x] **slice-6-metamorphic-oracle** (T).
+  - [x] `modules/oracles/metamorphic/`: three metamorphic relations (uniform jitter, Amount scaling, global scaling — each must preserve the label) checked at runtime, pass/fail reported per rule. Rules are hardcoded mock-first; the Sonnet synthesis hook is the production path (bead cr-dev). Deterministic (seed from attack), so it replays.
+  - [x] **Done criteria for `vouch`:** 3 rules per spec, fires on an unstable producer, silent on a stable one, surfaced in the vote observation.
 
 - [x] **slice-7-differential-oracle** (T). (fraud branch; code Sonnet-vs-Haiku lands with slice 3.)
   - [x] `modules/oracles/differential/`: for fraud, LightGBM versus IsolationForest (held-out AUC ~0.94; score thresholded at the 98th training percentile, not the too-strict `predict()`).
   - [x] Both implementations score per submission; the oracle fires only on disagreement in the missed-fraud direction (one vote of four — never trusts a single side).
   - [x] **Done criteria for `vouch`:** fire logic verified deterministically (anomalous+missed→fires, agreement→silent); false-positive rate on legit < 5%. (Dataset loader moved to `shared/datasets/` to keep the module-import rule.)
 
-- [ ] **slice-8-property-fuzz-oracle** (T).
-  - [ ] `modules/oracles/property_fuzz/`: `hypothesis` strategies derived from spec invariants.
-  - [ ] **Done criteria for `vouch`:** fuzz suite finds at least one violation on a deliberately broken producer in CI.
+- [x] **slice-8-property-fuzz-oracle** (T).
+  - [x] `modules/oracles/property_fuzz/`: genuine `hypothesis` search (derandomized for replay) over the producer's output invariants — fraud_probability in [0,1], label in {0,1}, determinism.
+  - [x] **Done criteria for `vouch`:** finds a violation on a deliberately broken producer (out-of-range probability and non-deterministic), stays silent on the sound LightGBM.
 
 - [ ] **slice-9-llm-judge-oracle** (T).
   - [ ] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason.

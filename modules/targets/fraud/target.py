@@ -38,13 +38,24 @@ class FraudTarget:
         meta = json.loads(meta_path(version).read_text(encoding="utf-8"))
         return cls(booster, meta)
 
+    @property
+    def feature_names(self) -> list[str]:
+        return list(self._features)
+
     def _vectorize(self, payload: Mapping[str, Any]) -> list[float]:
         return [float(payload.get(name, 0.0)) for name in self._features]
 
-    async def submit(self, payload: Mapping[str, Any]) -> ProducerResult:
+    def predict_sync(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        """Synchronous score, for oracles that re-query the producer (metamorphic,
+        property-fuzz). Deterministic."""
         proba = cast("Any", self._booster.predict([self._vectorize(payload)]))
         score = float(proba[0])
-        label = int(score >= self._threshold)
+        return {"fraud_probability": score, "label": int(score >= self._threshold)}
+
+    async def submit(self, payload: Mapping[str, Any]) -> ProducerResult:
+        out = self.predict_sync(payload)
+        score = out["fraud_probability"]
+        label = out["label"]
         return ProducerResult(
             output={"fraud_probability": score, "label": label},
             audit=AuditTrace(
