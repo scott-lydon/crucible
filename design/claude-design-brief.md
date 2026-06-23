@@ -93,14 +93,14 @@ End of prompt.
 1. Export the bundle from Claude Design.
 2. Unzip into `_design_bundle/` at the repo root.
 3. Copy the bundle into `dashboard/src/pages/` verbatim. Same filenames, same directory shape, same content. Do not "re-implement in idiomatic React"; the rule (per global `~/.claude/CLAUDE.md` "CLAUDE DESIGN FIDELITY") is verbatim copy.
-4. Wire each route to the FastAPI endpoints listed in `plan.md` section 3.
+4. Wire each route to the FastAPI endpoints listed in `ARCHITECTURE.md` section 3.
 5. Diff `_design_bundle/` against `dashboard/src/pages/` on every re-export so any drift is immediately visible.
 
 ## When the design must be re-exported
 
 Re-run Claude Design (with this same prompt plus a delta paragraph) whenever:
 
-- A new route is added to `spec.md`.
+- A new route is added to `acceptance-tests.md`.
 - A cross-cutting component is added or renamed.
 - A user story changes the layout shape of an existing page.
 - The palette needs revisiting (audience feedback, accessibility audit finding).

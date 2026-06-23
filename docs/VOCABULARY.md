@@ -1,6 +1,6 @@
 # Vocabulary
 
-This file pins down the terms that recur across `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, `QA_ADVERSARY.md`, `README.md`, and the design brief. The same English word can mean different things depending on which target Crucible is running against, which is the single biggest source of misreading on first contact with the docs.
+This file pins down the terms that recur across `coding-practices.md`, `acceptance-tests.md`, `ARCHITECTURE.md`, `tasks.md`, `QA_ADVERSARY.md`, `README.md`, and the design brief. The same English word can mean different things depending on which target Crucible is running against, which is the single biggest source of misreading on first contact with the docs.
 
 If you read a sentence in a foundational artifact and the meaning of "model" or "retrain" is not obvious from the surrounding paragraph, that sentence is a bug. Open a pull request and pin the term to one of the entries below.
 
@@ -34,7 +34,7 @@ For Shape 2, "model" almost always means the agent's prompts and configuration, 
 
 ### Why the distinction matters in the docs
 
-A sentence about "the model" is ambiguous unless the reader knows which shape is in play. Throughout `README.md`, `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, and `QA_ADVERSARY.md`, sentences that apply to only one shape should name it (e.g., "the Shape 1 fraud LightGBM classifier" or "the Shape 2 code agent's prompts and configuration"). Sentences that genuinely apply to both shapes can use "the target" or "the AI system." Sentences that use "the model" without a shape qualifier are bugs and should be tightened.
+A sentence about "the model" is ambiguous unless the reader knows which shape is in play. Throughout `README.md`, `coding-practices.md`, `acceptance-tests.md`, `ARCHITECTURE.md`, `tasks.md`, and `QA_ADVERSARY.md`, sentences that apply to only one shape should name it (e.g., "the Shape 1 fraud LightGBM classifier" or "the Shape 2 code agent's prompts and configuration"). Sentences that genuinely apply to both shapes can use "the target" or "the AI system." Sentences that use "the model" without a shape qualifier are bugs and should be tightened.
 
 ## "Model" — three different referents
 
@@ -42,15 +42,15 @@ The word "model" alone is ambiguous. Use one of these specific terms:
 
 ### The fraud LightGBM classifier
 
-The supervised classifier Crucible attacks in the fraud target adapter. A tree-based gradient-boosting model trained on the Kaggle credit-card fraud dataset, serialized as `artifacts/fraud-vN.lgb` where N is the version integer. Classical machine learning, not a large language model. Defined in `modules/targets/fraud/` per `plan.md` section 3.
+The supervised classifier Crucible attacks in the fraud target adapter. A tree-based gradient-boosting model trained on the Kaggle credit-card fraud dataset, serialized as `artifacts/fraud-vN.lgb` where N is the version integer. Classical machine learning, not a large language model. Defined in `modules/targets/fraud/` per `ARCHITECTURE.md` section 3.
 
 ### The code agent (prompts, guardrails, config)
 
-The code-agent target adapter. It is an agent loop wrapping a vendor language model (Anthropic Sonnet 4.6 via the Anthropic Software Development Kit). The "model" for blue-loop purposes is the agent's prompts, guardrails, and configuration, NOT the vendor language model's weights. Crucible never touches the vendor language model. Defined in `modules/targets/code_agent/` per `plan.md` section 3.
+The code-agent target adapter. It is an agent loop wrapping a vendor language model (Anthropic Sonnet 4.6 via the Anthropic Software Development Kit). The "model" for blue-loop purposes is the agent's prompts, guardrails, and configuration, NOT the vendor language model's weights. Crucible never touches the vendor language model. Defined in `modules/targets/code_agent/` per `ARCHITECTURE.md` section 3.
 
 ### Crucible's internal LLMs
 
-The Anthropic Claude models that Crucible calls for its own reasoning: Sonnet 4.6 for the red and blue inner loops, Opus 4.8 for the judge oracle and the white-box self-test pass. These are infrastructure. They are never targets. Crucible never retrains them. Per `constitution.md` section 1.
+The Anthropic Claude models that Crucible calls for its own reasoning: Sonnet 4.6 for the red and blue inner loops, Opus 4.8 for the judge oracle and the white-box self-test pass. These are infrastructure. They are never targets. Crucible never retrains them. Per `coding-practices.md` section 1.
 
 When you write "the model" in a doc, the reader will most likely assume one of these three. If you do not know which one your sentence means, name it explicitly.
 
@@ -92,29 +92,29 @@ The complement of catch rate. The fraction of producer wrongness Crucible's orac
 
 ## "Verifier recall"
 
-Recall of the oracle ensemble as a verifier. Measured on a seeded-hack corpus where the ground truth (which outputs are producer-wrong) is known. The halt-certification rule reads `metrics.recall_white_box` and refuses new clean verdicts when the value drops below the configured red line. Per `spec.md` US-13.
+Recall of the oracle ensemble as a verifier. Measured on a seeded-hack corpus where the ground truth (which outputs are producer-wrong) is known. The halt-certification rule reads `metrics.recall_white_box` and refuses new clean verdicts when the value drops below the configured red line. Per `acceptance-tests.md` US-13.
 
 ## "Sealed specification" or "sealed spec"
 
-The YAML document the operator pastes into the Run Launcher that defines the target's obligations and invariants. Stored in Postgres `specs` table after submission. "Sealed" means the producer container has no access to it: oracles read the spec through a server-side resolver the producer cannot reach. Per `constitution.md` section 3 and `plan.md` section 3.
+The YAML document the operator pastes into the Run Launcher that defines the target's obligations and invariants. Stored in Postgres `specs` table after submission. "Sealed" means the producer container has no access to it: oracles read the spec through a server-side resolver the producer cannot reach. Per `ARCHITECTURE.md` section 11 (the core bet) and section 3.
 
 A sealed spec is NOT: the user's prompt to the producer at runtime, the producer's training data, or any artifact the producer can introspect.
 
 ## "White-box self-test"
 
-A red-and-blue pass run with the red agent's prompt augmented to include the oracles' protocol descriptions (which checks fire, what relations they check, how the held-out generator is structured). The catch rate the oracles achieve on this pass is the report-card number. A high white-box catch rate means the oracles work because of their design, not because the red agent was uninformed. Per `constitution.md` section 3 and `spec.md` US-14.
+A red-and-blue pass run with the red agent's prompt augmented to include the oracles' protocol descriptions (which checks fire, what relations they check, how the held-out generator is structured). The catch rate the oracles achieve on this pass is the report-card number. A high white-box catch rate means the oracles work because of their design, not because the red agent was uninformed. Per `ARCHITECTURE.md` section 11 and `acceptance-tests.md` US-14.
 
 This term is NOT a synonym for "open-source" or "transparent oracles in general." It is a specific run mode with a specific augmented red prompt.
 
 ## "Held-out attacks"
 
-An attack set defined before the blue pass starts and never seen by the proposer or the retrainer. The held-out validator (`modules/blue/holdout_validator.py`) evaluates the post-retrain producer against this set so the recovered detection rate is not a memorization artifact. Per `plan.md` section 3 Pillar 3.
+An attack set defined before the blue pass starts and never seen by the proposer or the retrainer. The held-out validator (`modules/blue/holdout_validator.py`) evaluates the post-retrain producer against this set so the recovered detection rate is not a memorization artifact. Per `ARCHITECTURE.md` section 3 Pillar 3.
 
-If the proposer or retrainer ever sees the held-out attacks, the orchestrator refuses to apply the patch and returns a typed error. Per `spec.md` US-7.
+If the proposer or retrainer ever sees the held-out attacks, the orchestrator refuses to apply the patch and returns a typed error. Per `acceptance-tests.md` US-7.
 
 ## "Adapter"
 
-A thin wrapper that maps Crucible's `interfaces.Target` Protocol onto one specific kind of target system. Three adapters live in `modules/targets/`: `fraud/`, `code_agent/`, and `research_agent/` (stubbed for the two-week build). Adapters are how "target-agnostic by design" is realized in code. Per `constitution.md` section 2 and `plan.md` section 2.
+A thin wrapper that maps Crucible's `interfaces.Target` Protocol onto one specific kind of target system. Three adapters live in `modules/targets/`: `fraud/`, `code_agent/`, and `research_agent/` (stubbed for the two-week build). Adapters are how "target-agnostic by design" is realized in code. Per `coding-practices.md` section 2 and `ARCHITECTURE.md` section 2.
 
 An adapter is NOT a target type itself. The fraud target is a LightGBM classifier; the adapter is the Python shim that exposes that classifier through the Target Protocol.
 

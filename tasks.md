@@ -2,11 +2,11 @@
 
 Slice-grained checklist. Each slice ends with a running platform, a passing `vouch` report, and a single squash-merged commit on `main`. Tasks are checked off in the same commit that lands the code (the diff makes the slice auditable).
 
-Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequential. Slices 5 onward fan out per `plan.md` section 8. Owners are abbreviated **T** (Targets-and-Oracles), **R** (Red), **B** (Blue), **M** (Measure), **A** (all four).
+Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequential. Slices 5 onward fan out per `ARCHITECTURE.md` section 8. Each slice cites the `acceptance-tests.md` story it satisfies (its "Done criteria"), the `ARCHITECTURE.md` component it touches, and, through `acceptance-tests.md` section 5, the rubric line it advances. Owners are abbreviated **T** (Targets-and-Oracles), **R** (Red), **B** (Blue), **M** (Measure), **A** (all four).
 
 ## Current slice
 
-- [ ] **slice-0-foundation** (A). Foundational artifacts (this file plus four others), repo scaffolding, Continuous Integration (CI) skeleton.
+- [ ] **slice-0-foundation** (A). The CATA docs (this file plus `coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`) and `QA_ADVERSARY.md`, repo scaffolding, Continuous Integration (CI) skeleton.
 
 ## Next slice
 
@@ -17,7 +17,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 ### Critical path (sequential)
 
 - [ ] **slice-0-foundation** (A).
-  - [x] `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, `QA_ADVERSARY.md` at repo root, populated (no template placeholders, grep clean).
+  - [x] `coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md`, `QA_ADVERSARY.md` at repo root, populated (no template placeholders, grep clean).
   - [x] `CONTRIBUTING.md` with squash-per-slice and shared-folder discipline.
   - [x] `design/claude-design-brief.md` ready for paste into claude.ai/design.
   - [ ] `pyproject.toml` with `python = "^3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, Modal, structlog. `ruff` and `mypy --strict` configured.
@@ -80,11 +80,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 - [ ] **slice-9-llm-judge-oracle** (T).
   - [ ] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason.
-  - [ ] Judge gets 0.5 vote weight per `plan.md` section 3.
-  - [ ] Verdict view marks the judge card "one vote" with the tooltip from spec US-4.
+  - [ ] Judge gets 0.5 vote weight per `ARCHITECTURE.md` section 3.
+  - [ ] Verdict view marks the judge card "one vote" with the tooltip from `acceptance-tests.md` US-4.
 
 - [ ] **slice-10-verdict-aggregator** (T).
-  - [ ] `modules/oracles/aggregator.py`: vote tally per `plan.md` section 3.
+  - [ ] `modules/oracles/aggregator.py`: vote tally per `ARCHITECTURE.md` section 3.
   - [ ] Audit trace JSON written to `verdicts.audit_trace`.
   - [ ] Replay determinism: seed capture on every oracle's row.
   - [ ] **Done criteria for `vouch`:** integration test replays a past verdict and asserts byte-equal output.
@@ -133,7 +133,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 - [ ] **slice-19-demo-polish** (A).
   - [ ] 10-minute runbook at `docs/DEFENSE_BREAKOUT_SCRIPT.md`.
-  - [ ] `AI_INTERVIEW_PREP.md` populated against `spec.md` rubric mapping.
+  - [ ] `AI_INTERVIEW_PREP.md` populated against `acceptance-tests.md` rubric mapping.
   - [ ] Architecture website `website/index.html` updated for the as-built numbers.
   - [ ] Render deployment verified end to end per the global CLAUDE.md "DEPLOY-VERIFY-OR-DIE" checklist.
 

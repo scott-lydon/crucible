@@ -1,6 +1,6 @@
 # Contributing
 
-Read `constitution.md` first. This file translates the constitution's architecture and quality rules into the workflow rituals that keep them in force.
+Read `coding-practices.md` first. This file translates the coding-practices architecture and quality rules into the workflow rituals that keep them in force.
 
 ## 1. Branch naming
 
@@ -105,9 +105,9 @@ Commits Claude wrote carry `Assisted-by: Claude` as a trailer. The trailer is ad
 
 Every pull request body answers four questions:
 
-1. **Which `spec.md` user story does this advance?** Cite the US-N identifier.
-2. **Which `plan.md` component does this touch?** Cite the section.
-3. **Which rubric pillar does this advance?** Cite the row of `spec.md` section 5.
+1. **Which `acceptance-tests.md` user story does this advance?** Cite the US-N identifier.
+2. **Which `ARCHITECTURE.md` component does this touch?** Cite the section.
+3. **Which rubric pillar does this advance?** Cite the row of `acceptance-tests.md` section 5.
 4. **What did `vouch` say?** Link the `RUN_REPORT-<slice>.md` file. PASS or named blocking findings.
 
 A pull request whose body does not answer all four is rejected by the bot, not the human reviewer.

@@ -37,20 +37,20 @@ Per-slice subset commands are listed in `tasks.md` under each slice's "Done crit
 
 ## 5. Named bug categories (project hard rules)
 
-The sub-agent treats any of the following as a blocking finding, never a "note." Each maps to a rule in `constitution.md` or a hard rule inherited from `~/.claude/CLAUDE.md`.
+The sub-agent treats any of the following as a blocking finding, never a "note." Each maps to a rule in `coding-practices.md` or `ARCHITECTURE.md`, or a hard rule inherited from `~/.claude/CLAUDE.md`.
 
-1. **Faked or reused data presented as fresh.** Any sample value where a real measurement could exist. Maps to `constitution.md` section 5 and the global "NO MOCK / STUB / FAKE / REUSED DATA" rule.
-2. **Producer container reachable to verification artifacts.** Any path by which the producer can read `held_out_tests`, `differential_runs`, the spec resolver, or any oracle internal. Maps to `constitution.md` section 3.
+1. **Faked or reused data presented as fresh.** Any sample value where a real measurement could exist. Maps to `coding-practices.md` section 4 and the global "NO MOCK / STUB / FAKE / REUSED DATA" rule.
+2. **Producer container reachable to verification artifacts.** Any path by which the producer can read `held_out_tests`, `differential_runs`, the spec resolver, or any oracle internal. Maps to `ARCHITECTURE.md` section 11 (the core bet).
 3. **An oracle's reasoning swallowed in the audit trace.** Audit trace must carry the per-oracle reason verbatim; "ok" or "failed" alone is a finding.
-4. **A module importing from another module's package.** Maps to `constitution.md` section 2 and the pre-merge check.
+4. **A module importing from another module's package.** Maps to `coding-practices.md` section 2 and the pre-merge check.
 5. **`shared/` and `modules/<x>/` in the same pull request.** Pre-merge check rejects it, but `vouch` checks again because the script can be bypassed locally.
 6. **Catch-log-continue inside business logic.** Exceptions must propagate up the orchestrator; the loop reports a typed failure to Measure. Catch sites are allowed only at the FastAPI boundary and at sandbox-job entry.
-7. **`# type: ignore` without a numbered ticket reference.** Maps to `constitution.md` section 1.
+7. **`# type: ignore` without a numbered ticket reference.** Maps to `coding-practices.md` section 1.
 8. **Stale-cache hazard on the dashboard.** Entry HTML must carry `?v=<sha>` and `Cache-Control: no-cache` if filenames are not content-hashed.
 9. **Permission prompts overlapping active feature UI.** Maps to the global CLAUDE.md "OS permission prompt timing" rule.
 10. **Replay non-determinism.** Any persisted action that produces a different output on replay is a blocking finding; the seed-capture column is missing or wrong.
 11. **Halt-certification rule defeated.** Any code path that creates a verdict while `halted=true` is a blocking finding.
-12. **Demo-only fallback paths.** No "if no real data is available, show a sample number." If no data, show "Not yet measured." Maps to spec US-10.
+12. **Demo-only fallback paths.** No "if no real data is available, show a sample number." If no data, show "Not yet measured." Maps to `acceptance-tests.md` US-10.
 
 ## 6. Hot files (from `git diff --name-only HEAD~15..HEAD`)
 
@@ -83,7 +83,7 @@ Expected: exit code 0, non-empty Postgres `verdicts` rows for the run, a non-emp
 - `dashboard/node_modules/`
 - `dashboard/dist/`
 - `artifacts/` (trained model weights; regenerated, not source)
-- `website/index.html` (text-only architecture site; reviewed in the same commit as `plan.md`, not separately)
+- `website/index.html` (architecture site; reviewed in the same commit as `ARCHITECTURE.md`, not separately)
 - `_design_bundle/` if it lands later from `claude.ai/design`
 
 ## 9. Reports
@@ -96,7 +96,7 @@ From Cowork mode, invocation is via the `claude-code-bridge` Model Context Proto
 
 - Repo path: `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
 - Diff range: `main..<current-branch>`
-- Foundational artifacts: `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, this file
+- CATA docs: `coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md`, this file
 - Slice being graded: `<slice-id>` from `tasks.md`
 - Ask: "Run vouch with this QA_ADVERSARY brief. Report Adversary Report only."
 

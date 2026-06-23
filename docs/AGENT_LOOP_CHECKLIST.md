@@ -18,9 +18,9 @@ python3.12 --version                                          # must be 3.12+
 test -f pyproject.toml || echo "WARNING: slice 0 not yet landed"
 
 # 1.2 read the foundational artifacts in order
-cat constitution.md
-cat spec.md
-cat plan.md
+cat coding-practices.md
+cat acceptance-tests.md
+cat ARCHITECTURE.md
 cat tasks.md
 cat QA_ADVERSARY.md
 cat CONTRIBUTING.md
@@ -37,7 +37,7 @@ For every slice, the agent executes these phases. Do not skip phases; the contra
 
 ### 2.1 Read the slice contract
 
-Open `tasks.md`, find the slice. Read every sub-bullet under it. Open `constitution.md` for the rules the slice must respect. Open `spec.md` for the user story the slice advances (named in the slice's owner column). Open `plan.md` for the component(s) the slice touches.
+Open `tasks.md`, find the slice. Read every sub-bullet under it. Open `coding-practices.md` for the rules the slice must respect. Open `acceptance-tests.md` for the user story the slice advances (named in the slice's owner column). Open `ARCHITECTURE.md` for the component(s) the slice touches.
 
 ### 2.2 Branch
 
@@ -96,8 +96,8 @@ git commit -m "$(cat <<'EOF'
 
 <two- or three-sentence summary of what shipped>
 
-Closes US-<N> from spec.md.
-Touches plan.md section <X>.
+Closes US-<N> from acceptance-tests.md.
+Touches ARCHITECTURE.md section <X>.
 Vouch report: tests/qa-reports/RUN_REPORT-slice-<N>.md (pending vouch run).
 
 Assisted-by: Claude
@@ -115,7 +115,7 @@ From Cowork mode, invoke the `claude-code-bridge` Model Context Protocol (MCP) (
 Repo: /Users/scottlydon/Desktop/Clutter/iOS/crucible
 Slice: slice-<N>-<short-title>
 Diff range: main..<current-branch>
-Read first: constitution.md, spec.md, plan.md, tasks.md, QA_ADVERSARY.md
+Read first: coding-practices.md, acceptance-tests.md, ARCHITECTURE.md, tasks.md, QA_ADVERSARY.md
 Ask: Run vouch with this QA_ADVERSARY brief. Report Adversary Report only.
 ```
 
@@ -146,13 +146,13 @@ gh pr create \
   --title "<type>(<pillar>): slice <N> — <short title>" \
   --body "$(cat <<'EOF'
 ## Spec user story
-US-<N> from spec.md
+US-<N> from acceptance-tests.md
 
 ## Plan component
-plan.md section <X>
+ARCHITECTURE.md section <X>
 
 ## Rubric pillar
-<row from spec.md section 5>
+<row from acceptance-tests.md section 5>
 
 ## Vouch
 tests/qa-reports/RUN_REPORT-slice-<N>.md → PASS
@@ -168,7 +168,7 @@ End the response that contains this slice's work by running `~/.claude/skills/su
 
 ## 3. Slice dependency graph (run order)
 
-Slices 0 to 4 are sequential. Slices 5 onward fan out per `plan.md` section 8.
+Slices 0 to 4 are sequential. Slices 5 onward fan out per `ARCHITECTURE.md` section 8.
 
 ```
         ┌─ 5 ─ 6 ─ 7 ─ 8 ─ 9 ─ 10  (Pillar 1, Targets and Oracles)
@@ -252,7 +252,7 @@ rm -rf modules/<pillar>/
 # their replacement.
 ```
 
-This is the deletable-module property `constitution.md` section 2 guarantees.
+This is the deletable-module property `coding-practices.md` section 2 guarantees.
 
 ## 10. End-of-session report (the agent writes this every time it stops)
 
