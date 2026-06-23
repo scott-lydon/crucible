@@ -71,6 +71,11 @@ async def test_sparkov_real_co_evolution(
             text='{"vote":"pass","reason":"loop-mechanics fixture"}'
         ),
         judge_max_calls=0,
+        # Zero real Sonnet calls: the LLM red agent's budget is 0, so it returns
+        # None immediately and the FREE deterministic fallback drives the loop.
+        # The co-evolution assertions below must hold via that fallback alone.
+        red_provider=MockProvider(text='{"feature":"amt","new_value":1.0,"rationale":"x"}'),
+        red_max_calls=0,
     )
     run_id = str(uuid.uuid4())
     async with sf() as s:

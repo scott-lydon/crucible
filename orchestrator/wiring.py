@@ -16,6 +16,9 @@ from examples.targets import fraud_sparkov
 
 from modules.targets.local_model.adapter import LocalModelTarget
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
+from modules.red.llm_red.agent import LlmRedAdversary
+from modules.red.hybrid.adversary import HybridAdversary
+from modules.red.catalog import StrategyCatalog
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
@@ -69,6 +72,8 @@ def build_components_sparkov(
     threshold: float = fraud_sparkov.DETECTOR_THRESHOLD,
     judge_provider: LLMProvider | None = None,
     judge_max_calls: int | None = 25,
+    red_provider: LLMProvider | None = None,
+    red_max_calls: int | None = 20,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
@@ -81,6 +86,15 @@ def build_components_sparkov(
     tests inject a ``MockProvider`` to keep the loop offline/free.
     ``judge_max_calls`` caps the billed judge calls per run (plan §6): the demo
     makes at most 25 real Opus calls, then the judge abstains honestly.
+
+    The adversary is a ``HybridAdversary``: a REAL Sonnet 4.6 LLM red agent
+    (constitution §1: Sonnet on the inner red loop) first, the FREE deterministic
+    metamorphic mutator as fallback. ``red_provider`` defaults to the real Sonnet
+    provider (the demo path); tests inject a ``MockProvider`` (or set
+    ``red_max_calls=0``) to keep the loop offline/free. ``red_max_calls`` caps
+    the billed Sonnet calls per run: the demo makes at most 20 real Sonnet calls,
+    after which the LLM agent returns None and the deterministic fallback drives
+    the loop (bounding spend while keeping co-evolution alive).
     """
     spec = fraud_sparkov.load_spec()
     detector: Detector = LocalModelTarget(
@@ -88,12 +102,25 @@ def build_components_sparkov(
         feature_names=fraud_sparkov.DETECTOR_FEATURES,
     )
     sparkov_is_fraud: Callable[[object], bool] = fraud_sparkov.is_fraud
-    adversary: Adversary = MetamorphicEvasionAdversary(
+    catalog = StrategyCatalog()
+    llm_red = LlmRedAdversary(
+        provider=red_provider
+        if red_provider is not None
+        else AnthropicApiProvider(model="claude-sonnet-4-6"),
+        spec=spec,
+        score_fn=detector.score,
+        label_fn=sparkov_is_fraud,
+        threshold=threshold,
+        max_calls=red_max_calls,
+        catalog=catalog,
+    )
+    deterministic = MetamorphicEvasionAdversary(
         score_fn=detector.score,
         label_fn=sparkov_is_fraud,
         threshold=threshold,
         spec=spec,
     )
+    adversary: Adversary = HybridAdversary(primary=llm_red, fallback=deterministic)
     oracles: list[Oracle] = [
         HeldOutOracle(label_fn=sparkov_is_fraud),
         MetamorphicOracle(label_fn=sparkov_is_fraud),
@@ -119,4 +146,5 @@ def build_components_sparkov(
         "label_fn": sparkov_is_fraud,
         "generate_fn": fraud_sparkov.generate_batch,
         "spec": spec,
+        "catalog": catalog,
     }
