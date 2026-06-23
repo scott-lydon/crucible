@@ -6,7 +6,7 @@ If a behavior is not in this file, it is not in the product, and the answer to "
 
 ## 1. Problem statement (one paragraph)
 
-AI models are graded against a proxy metric, and the optimizer that fit the model finds the cheapest path to that score. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job. Crucible's user is whoever paid for or is responsible for that AI system continuing to do what it claims to do. Success is the user being able to point at a single number ("we caught X percent of cheats against an attacker who knew the verification scheme") and trust it. Success is also the user being able to drill into any individual catch-or-miss and see, end to end, exactly what each subcomponent did.
+AI models are graded against a proxy metric, and the optimizer that fit the model finds the cheapest path to that score. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job. Crucible's user is whoever paid for or is responsible for that AI system continuing to do what it claims to do. Success is the user being able to point at a single number ("we caught X percent of cheats against an attacker who knew the verification scheme") and trust it. Success is also the user being able to drill into any individual catch-or-miss and see, end to end, exactly what each subcomponent did. Crucible is the evaluation harness; the target (the model or agent under evaluation) is the external system being evaluated, brought by the customer or provided as an example in `examples/targets/` — it is not part of the harness.
 
 ## 2. Customers
 
@@ -99,7 +99,7 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 
 ### US-8. See platform health for every subcomponent
 
-**As an** operator, **I want** a `/health` page that lists every module, every sub-module, every external dependency (Postgres, Modal, Anthropic), and shows live pass-fail status with last-self-test timestamp, **so that** when something breaks I see what and where in under five seconds.
+**As an** operator, **I want** a `/health` page that lists every module, every sub-module, every external dependency (Postgres, the sandbox adapter, Anthropic), and shows live pass-fail status with last-self-test timestamp, **so that** when something breaks I see what and where in under five seconds.
 
 - **Given** the platform is running,
 - **When** I open `/health`,
@@ -114,7 +114,7 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 
 - **Given** a run is in progress,
 - **When** I open `/health` and expand the producer sandbox card,
-- **Then** I see (a) the Modal job identifier, (b) the network egress allow-list applied (empty), (c) the environment variable list (no Postgres host, no Modal token, no Anthropic key), (d) a "Run Seal Probe" button that runs an inside-the-sandbox probe trying to reach Postgres, Modal control plane, and the verification bucket; each must time out.
+- **Then** I see (a) the sandbox job identifier, (b) the network egress allow-list applied (empty), (c) the environment variable list (no Postgres host, no sandbox/provider credentials, no Anthropic key), (d) a "Run Seal Probe" button that runs an inside-the-sandbox probe trying to reach Postgres, the sandbox's control plane / host, and the verification bucket; each must time out.
 
 **Owner:** Targets-and-Oracles.
 

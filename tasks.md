@@ -20,7 +20,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, `QA_ADVERSARY.md` at repo root, populated (no template placeholders, grep clean).
   - [x] `CONTRIBUTING.md` with squash-per-slice and shared-folder discipline.
   - [x] `design/claude-design-brief.md` ready for paste into claude.ai/design.
-  - [ ] `pyproject.toml` with `python = "^3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, Modal, structlog. `ruff` and `mypy --strict` configured.
+  - [ ] `pyproject.toml` with `python = "^3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, (sandbox: Docker via the docker CLI; Modal optional), structlog. `ruff` and `mypy --strict` configured.
   - [ ] `orchestrator/interfaces/{target,oracle,red,blue,measure}.py` stub Protocols. No implementations yet.
   - [ ] `shared/types/`: `Attack`, `Verdict`, `AuditTrace`, `TargetSpec`, `OracleVote`, `RunId`, `AttackBudget`, `SealedSpec` as `@dataclass(frozen=True, slots=True)`.
   - [ ] `shared/persistence/`: async SQLAlchemy engine, base session, Alembic `env.py`. Migrations for `runs`, `verdicts`, `attacks`, `llm_calls`, `sandbox_jobs`, `health_probes`.
@@ -45,15 +45,15 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 - [ ] **slice-3-code-agent-target** (T).
   - [ ] `modules/targets/code_agent/`: producer that takes a sealed `code_spec.yaml` and returns Python source via Claude Sonnet 4.6 tool use.
-  - [ ] Producer runs inside the Modal sandbox (per slice 4 wiring).
+  - [ ] Producer runs inside the sandbox adapter (local Docker; per slice 4 wiring).
   - [ ] Self-test endpoint `/health/targets/code_agent` runs a "produce hello world" round trip in under one second.
   - [ ] **Done criteria for `vouch`:** integration test produces real Python code that compiles via `ast.parse`.
 
 - [ ] **slice-4-sealed-spec-and-sandbox** (T).
-  - [ ] `shared/sandbox/`: Modal job wrapper. Strips env vars, denies network egress except to Claude.
+  - [ ] `shared/sandbox/`: sandbox adapter port + local Docker adapter (Modal optional). Strips env vars, denies network egress except to Claude.
   - [ ] `shared/types/sealed_spec.py`: typed `SealedSpec` value object.
   - [ ] Spec sealing: spec stored in Postgres `specs` table, read by oracles through a server-side resolver. Producer container has no Postgres credentials.
-  - [ ] "Seal Probe" fixture under `shared/sandbox/probes/` that, from inside the sandbox, tries to reach Postgres, Modal control plane, and the verification bucket. All three must time out.
+  - [ ] "Seal Probe" fixture under `shared/sandbox/probes/` that, from inside the sandbox, tries to reach Postgres, the sandbox host/control plane, and the verification bucket. All three must time out.
   - [ ] Integration test runs the seal probe and asserts all three probes failed.
   - [ ] **Done criteria for `vouch`:** `tests/integration/test_sandbox_seal.py` passes; the test for "producer can read the spec from Postgres directly" fails as expected.
 

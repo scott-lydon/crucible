@@ -10,7 +10,7 @@ This file is the first of the five foundational artifacts that govern the projec
 - **Web framework:** FastAPI. Single `POST /runs` endpoint streaming Server-Sent Events (SSE).
 - **Persistence:** Postgres 16 (Supabase free tier in development, Render Postgres in production). SQLite is forbidden in code paths shared with the orchestrator; concurrent writes from two pillars will break it.
 - **Object-relational mapping (ORM):** SQLAlchemy 2.x in async mode, with Alembic for migrations. No raw SQL outside `shared/persistence/`.
-- **Producer sandbox:** Modal. The producer container has no environment variables and no network access to Postgres or the verification artifact bucket.
+- **Producer sandbox:** a sandbox adapter behind a Protocol port. Default v1 adapter is a **local Docker/subprocess sandbox** (network-isolated, env-stripped, resource-limited); **Modal** is an optional production adapter. The producer container has no environment variables and no network access to Postgres or the verification artifact bucket.
 - **Large language model (LLM) provider:** Anthropic Claude. Sonnet 4.6 on the inner red and blue loops; Opus 4.8 on the judge oracle and the white-box self-test pass. No other provider; no fallback to OpenAI or Google for "redundancy." Cross-family in the differential oracle is satisfied by the two model families (LightGBM versus IsolationForest for fraud; Sonnet versus Haiku for code), not by mixing vendors.
 - **Dashboard front end:** React 18 plus Vite plus Tailwind, Recharts for plots, React Router 6. Palette is owned by the Claude Design export at `_design_bundle/` and is documented in `_design_bundle/_palette_notes.md` with audience-by-audience rationale. The architecture website at `website/index.html` re-syncs to whatever palette the latest export carries; the constitution does not pin specific hex codes.
 - **Test runner:** pytest 8 with `pytest-asyncio`. Coverage minimum 80% per module, measured by `coverage.py`.
@@ -23,6 +23,7 @@ The hexagonal (ports and adapters) layout is constitutional. The orchestrator ow
 - **Modules import only from `shared/` and `orchestrator/interfaces/`.** No module imports from another module's package. Enforced by a pre-merge check that fails any pull request with `from modules.<x>` inside `modules/<y>/` (x not equal to y).
 - **Interfaces live in `orchestrator/interfaces/`.** Defined as `typing.Protocol`, never as abstract base classes. Per the project preference for protocol-oriented programming.
 - **The orchestrator wires modules via dependency injection at startup.** `orchestrator/wiring.py` is the only file allowed to import both a concrete module class and the interface it satisfies.
+- **Targets (the systems under evaluation) are not harness code.** The harness ships the Target Protocol and generic adapters (`modules/targets/`); concrete targets/victims live in `examples/targets/` (or external repos) and are wired only at the composition root (`orchestrator/wiring.py`). No harness module imports from `examples/` — enforced by the pre-merge import check.
 - **`shared/` contains only data types, cross-cutting infrastructure (persistence client, telemetry, sandbox launcher), and utilities used by two or more pillars.** Anything pillar-specific lives inside the owning module. Enforced by a pre-merge check.
 - **Shared-folder changes ride their own branch, never inside a module slice's squash.** Detail in `CONTRIBUTING.md`.
 - **The orchestrator's `loop.py` contains no business logic.** It calls interfaces in sequence and writes audit rows. If you find yourself adding a conditional inside `loop.py`, the conditional belongs in a module.
@@ -34,7 +35,7 @@ Section 7 of the README and section 8 of the README ("White-box self-test, how t
 Therefore, constitutional:
 
 - **The white-box self-test runs every pass.** Section 8 of the README is mandatory product behavior, not a stretch goal.
-- **The producer sandbox has no path to the verification artifacts.** Held-out test instances, the differential second implementation's outputs, and oracle internals are never readable from inside the producer container. Verified by an integration test that runs a Modal job and asserts the producer cannot resolve the Postgres host.
+- **The producer sandbox has no path to the verification artifacts.** Held-out test instances, the differential second implementation's outputs, and oracle internals are never readable from inside the producer container. Verified by an integration test that runs a sandboxed job (the local Docker adapter today) and asserts the producer cannot reach the verification artifacts (no network egress, no credentials).
 - **Held-out tests are generated after submission, never before.** A static held-out set leaks over time. The held-out oracle generates fresh tests post-submit from the sealed spec.
 - **The same red agent does the black-box and the white-box pass.** The catch-rate gap between the two is the report card. No second adversary.
 
@@ -46,12 +47,12 @@ Concretely:
 
 - **Every LLM call carries a trace card** showing prompt, raw response, parsed output, token count, dollar cost. Stored in Postgres `llm_calls` table, surfaced in the dashboard's verdict detail and run views.
 - **Every oracle vote exposes its reasoning.** "Which spec obligation did I check, what did I observe, why pass or fail." Stored inline in the audit trace JSON on `verdicts.audit_trace`.
-- **Every sandbox execution streams stdout and stderr to the dashboard.** Modal job logs surface live; no swallowed output.
+- **Every sandbox execution streams stdout and stderr to the dashboard.** sandbox job logs (stdout/stderr) surface live; no swallowed output.
 - **Every subcomponent has a `/health` view** that lists its dependencies, last self-test timestamp, and pass-fail status. The dashboard `/health` route aggregates them.
 - **Every action is replayable.** A verdict, a red attack, a blue patch, an oracle vote: each has a "Replay" button in the dashboard. Replay requires deterministic seed capture; the seed is constitutional state on every persisted row.
 - **Cost attribution lives on every row.** Each Postgres row that represents work-done has a `pillar` column and a `dollars_spent` column.
 
-Hide only what is a real security risk: Anthropic Application Programming Interface (API) keys, Postgres credentials, Modal tokens.
+Hide only what is a real security risk: Anthropic Application Programming Interface (API) keys, Postgres credentials, sandbox/provider credentials (e.g. a Modal token if the Modal adapter is used).
 
 ## 5. Data, never fake
 
@@ -83,7 +84,7 @@ If a number cannot be measured for real (the service is down, the dataset failed
 
 ## 8. Things Claude (and any agent) must never do
 
-- Catch and swallow exceptions inside business logic. If the producer sandbox fails to launch, the run fails loud with a typed error pointing at the Modal token and the network egress rule.
+- Catch and swallow exceptions inside business logic. If the producer sandbox fails to launch, the run fails loud with a typed error pointing at the sandbox configuration and the network-egress rule.
 - Mock the database in integration tests. Inherited from OpenEMR's CLAUDE.md hard rule.
 - Suppress a `mypy --strict` warning. Fix the underlying type.
 - Ship code that has not been built, deployed, restarted, and behaviorally verified, per the global CLAUDE.md "DEPLOY-VERIFY-OR-DIE" rule.
