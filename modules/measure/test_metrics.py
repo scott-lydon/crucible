@@ -40,3 +40,25 @@ async def test_metrics_from_rows(sf: async_sessionmaker[AsyncSession]) -> None:
     assert m is not None
     assert m.per_round[0].asr == 1.0
     assert m.per_round[0].detection_rate == 0.0
+
+
+async def test_detection_and_asr_none_when_no_holdout_frauds(sf: async_sessionmaker[AsyncSession]) -> None:
+    # a round with only a NON-fraud holdout txn and no attacks:
+    # detection_rate and asr must be None (the "Not yet measured" empty state), NOT 0.0
+    rid = str(uuid.uuid4())
+    round0 = str(uuid.uuid4())
+    async with sf() as s:
+        s.add(RunRow(id=rid, seed="s", status="complete", n_rounds=1,
+                     batch_size=2, threshold=0.5, params_json={}))
+        s.add(RoundRow(id=round0, run_id=rid, round_index=0))
+        s.add(TransactionRow(id="t1", run_id=rid, round_id=round0, txn_index=1,
+              features_json={}, true_label=False, origin="synthetic",
+              txn_slice="holdout", parent_txn_id=None,
+              detector_score=0.1, caught=False, seed="s"))
+        await s.commit()
+    m = await compute_run_metrics(s, rid)
+    assert m is not None
+    assert m.per_round[0].detection_rate is None  # not 0.0
+    assert m.per_round[0].asr is None
+    assert m.baseline_validation_detection is None  # no validation frauds
+    assert m.gap is None  # gap is None when baseline is None
