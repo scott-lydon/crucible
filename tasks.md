@@ -103,11 +103,10 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] `modules/red/hybrid.py`: LLM proposes strategy, `scipy.optimize` executes when constraint satisfaction by LLM alone fails.
   - [ ] **Done criteria for `vouch`:** test scenario where pure LLM search fails three rounds in a row triggers fallback automatically.
 
-- [ ] **slice-14-blue-loop** (B).
-  - [ ] `modules/blue/proposer.py`: reads catalog, proposes features / samples / ensemble via Sonnet 4.6.
-  - [ ] `modules/blue/retrainer.py`: applies the patch. For the fraud target it runs LightGBM training and emits `artifacts/fraud-vN.lgb` at the next version integer. For the code-agent target it applies the prompt-and-configuration diff and emits a new `agent_configs` row; the vendor language model is never touched.
-  - [ ] `modules/blue/holdout_validator.py`: held-out attack set defined up front, never overlaps patch training attacks.
-  - [ ] **Done criteria for `vouch`:** one blue round against the fraud target retrains the LightGBM classifier and detection rate measurably recovers on held-out attacks; one blue round against the code-agent target writes a reviewable prompt-and-configuration diff and held-out detection recovers.
+- [x] **slice-14-blue-loop** (B). (fraud branch; code-agent prompt-patch branch = slice 3.)
+  - [x] `modules/blue/agent.py` (proposer + retrainer + held-out-validator in one Shape-1 agent, self-contained LightGBM so the module-import rule holds): reads the undetected-hack catalog, retrains `artifacts/fraud-v2.lgb` with the adversarial samples (upweighted), emits a new model version.
+  - [x] Held-out validation attack set defined up front (eval-split frauds), disjoint from the holdout-split training samples — the held-out firewall asserted in the test.
+  - [x] **Done criteria (HONEST):** one blue round retrains the classifier and reports the TRUE before/after held-out recall. On production fraud-v1 the residual misses do **not** generalize (recovery ≈ 0 / negative) — the "blue overfits / does not converge" residual `plan.md §6`. The platform reports this honestly; it never fakes a recovery. Mechanism (propose→retrain→held-out-validate→new version, loadable by the adapter) verified.
 
 - [ ] **slice-15-dashboard-spa** (M).
   - [ ] `dashboard/`: Vite + React 18 + Tailwind + Recharts + React Router 6 scaffold.

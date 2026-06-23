@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy import text
 
+from modules.blue.agent import FraudBlueAgent
 from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
@@ -24,6 +25,7 @@ from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
 from orchestrator.interfaces import (
+    BlueAgent,
     HealthProbe,
     MeasureSink,
     Oracle,
@@ -68,6 +70,7 @@ class Container:
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
     reds: dict[str, RedAgent] = field(default_factory=dict)
+    blues: dict[str, BlueAgent] = field(default_factory=dict)
 
     def register_target(self, target: Target) -> None:
         self.targets[target.kind] = target
@@ -91,6 +94,12 @@ class Container:
 
     def red_for(self, target_kind: str) -> RedAgent:
         return self.reds.get(target_kind, self.default_red)
+
+    def register_blue(self, target_kind: str, agent: BlueAgent) -> None:
+        self.blues[target_kind] = agent
+
+    def blue_for(self, target_kind: str) -> BlueAgent | None:
+        return self.blues.get(target_kind)
 
 
 async def _db_health() -> HealthStatus:
@@ -158,6 +167,11 @@ def build_container() -> Container:
     judge = LLMJudgeOracle(_judge_llm())
     container.register_oracle("fraud", judge)
     sink.register_health_probe("oracles/fraud/llm_judge", judge.health)
+
+    # Blue hardening loop for fraud (retrain on adversarial samples, held-out validate).
+    fraud_blue = FraudBlueAgent(base_version=1)
+    container.register_blue("fraud", fraud_blue)
+    sink.register_health_probe("blue/fraud", fraud_blue.health)
 
     return container
 
