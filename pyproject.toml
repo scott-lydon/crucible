@@ -11,6 +11,9 @@ dependencies = [
   "pydantic>=2.6",
   "structlog>=24.1",
   "pyyaml>=6",
+  "scikit-learn>=1.4",
+  "lightgbm>=4.0",
+  "joblib>=1.3",
 ]
 
 [project.optional-dependencies]
@@ -31,6 +34,12 @@ target-version = "py312"
 python_version = "3.12"
 strict = true
 plugins = []
+
+# Untyped third-party libs (no stubs / py.typed). Scoped overrides keep
+# --strict in force for our own code while tolerating missing stubs here.
+[[tool.mypy.overrides]]
+module = ["joblib.*", "sklearn.*", "lightgbm.*"]
+ignore_missing_imports = true
 
 [build-system]
 requires = ["setuptools>=68"]
