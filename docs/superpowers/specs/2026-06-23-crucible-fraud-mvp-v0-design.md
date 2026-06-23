@@ -186,3 +186,17 @@ Constitution §6 — 80% coverage per module; the database is **never mocked** i
 - `/metrics` for a run with no rows renders "Not yet measured" — never `0.0`.
 - All metrics trace to persisted rows; a determinism replay reproduces byte-equal rows.
 - `ruff check .` clean, `mypy --strict .` clean, `pytest` green.
+
+## 13. Known v0 limitation: oracle target-coupling (documented, deferred)
+
+The loop, the `Detector`/`Adversary`/`Oracle` Protocols, persistence, metrics, the API, and the dashboard are **target-agnostic** — they contain no fraud-specific logic. However, the three substantive oracle *adapters* hardcode fraud-specific rules:
+
+- `InvariantOracle` hardcodes the hard rule `country_mismatch AND velocity > V_THRESH ⇒ must be flagged`.
+- `MetamorphicOracle` hardcodes the amount-lowering relation.
+- `HeldOutOracle` calls the fraud `is_fraud` sealed rule directly.
+
+This is a **deliberate v0 shortcut, not the finished architecture.** In the full design (`plan.md §3`), these oracles are generic *engines* that derive their rules from `SealedSpec.invariants` — i.e., the rules are **data the target declares**, not code baked into the oracle. v0 cut `SealedSpec`, so engine and data are collapsed into one hardcoded file.
+
+**Why defer rather than generalize now:** target-agnosticism cannot be *validated* with a single target; an abstraction designed against one example is likely the wrong one (YAGNI). The seam should be extracted when the second target (`code_agent`, `tasks.md` slice-3) and `SealedSpec` (slice-4) exist to force and test it. The future refactor is "split each oracle into a generic engine + `SealedSpec`-supplied rules" — the loop and interfaces are unaffected.
+
+**Action when generalizing (post-v0):** introduce `SealedSpec.invariants`/`.relations`; have `InvariantOracle`/`MetamorphicOracle`/`HeldOutOracle` consume them as data; the hardcoded fraud rules in v0 become the fraud target's declared spec.
