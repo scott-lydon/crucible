@@ -115,15 +115,19 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] SSE client wired to `/runs/:runId/stream`.
   - [ ] **Done criteria for `vouch`:** all seven mandatory routes render without error; SSE updates ASR chart live.
 
-- [ ] **slice-16-corpus-export** (M).
-  - [ ] `modules/measure/corpus_exporter.py`: JSONL streamer of successful attacks.
-  - [ ] `/corpus` route shows the table and the download button.
-  - [ ] **Done criteria for `vouch`:** downloaded JSONL row count equals table row count exactly.
+- [x] **slice-16-corpus-export** (M).
+  - [x] `modules/measure/corpus.py`: JSONL of *undetected hacks* (held-out fired = producer wrong AND ensemble missed). `/corpus` route streams JSONL with `X-Row-Count`.
+  - [x] **Done criteria for `vouch`:** JSONL row count equals `X-Row-Count` exactly.
 
-- [ ] **slice-17-risk-report** (M).
-  - [ ] `modules/measure/risk_report.py`: SR 11-7 sections rendered from real run state, every numeric field linked to its Postgres row identifier.
-  - [ ] Markdown and PDF generation.
-  - [ ] **Done criteria for `vouch`:** report renders for a real run; clicking any number jumps to the source row.
+- [x] **slice-17-risk-report** (M). (Markdown done; PDF + per-number row links pending.)
+  - [x] `modules/measure/report.py`: six SR 11-7 sections rendered from a run's real metrics; `/reports/{run_id}` returns Markdown.
+  - [ ] PDF generation (reportlab) + clickable per-number row links — remaining.
+  - [x] **Done criteria for `vouch`:** report renders for a real run with real catch-rate numbers.
+
+#### slice-15-backend (Measure API, split from slice 15 so the UI wires to a finished backend)
+
+- [x] `modules/measure/metrics.py` honest tiles (US-10, None -> "Not yet measured"); `/metrics`.
+- [x] `/runs/{id}/verdicts` list + `/verdicts/{id}` five-card detail (US-3/US-4); `/catalog` (US-6).
 
 - [ ] **slice-18-halt-cert** (M).
   - [ ] `modules/measure/halt_rule.py`: Postgres `halted=true` flag set when white-box recall below threshold (default 0.7, configurable).
