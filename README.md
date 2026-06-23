@@ -224,7 +224,7 @@ The LLM's semantic reasoning replaces gradients as the search engine, the design
 
 ## 5. Pillar 3 — Blue: automated hardening
 
-A second LLM reads the strategy catalog and proposes new features, adversarial training samples, or a specialist ensemble. The target is hardened and re-evaluated on held-out attacks so the recovered detection rate is honest. Hardening is target-specific: for the fraud LightGBM classifier it is a literal retrain into a new `artifacts/fraud-vN.lgb` version; for the code agent it is a reviewable patch against the agent's prompts, guardrails, and configuration. The vendor language model the code agent talks to (Sonnet 4.6) is never touched. See [`docs/VOCABULARY.md`](../docs/VOCABULARY.md) under "Retrain — two different operations."
+A second LLM reads the strategy catalog and proposes new features, adversarial training samples, or a specialist ensemble. The target is hardened and re-evaluated on held-out attacks so the recovered detection rate is honest. Hardening is target-specific: for the fraud LightGBM classifier it is a literal retrain into a new `artifacts/fraud-vN.lgb` version; for the code agent it is a reviewable patch against the agent's prompts, guardrails, and configuration. The vendor language model the code agent talks to (Sonnet 4.6) is never touched. See [`docs/VOCABULARY.md`](../docs/VOCABULARY.md) under "Retrain: two different operations."
 
 ```mermaid
 flowchart LR
