@@ -40,6 +40,8 @@ async def test_metrics_from_rows(sf: async_sessionmaker[AsyncSession]) -> None:
     assert m is not None
     assert m.per_round[0].asr == 1.0
     assert m.per_round[0].detection_rate == 0.0
+    assert m.per_round[0].evasion_rate == 1.0
+    assert m.per_round[0].detection_rate + m.per_round[0].evasion_rate == 1.0
 
 
 async def test_detection_and_asr_none_when_no_holdout_frauds(sf: async_sessionmaker[AsyncSession]) -> None:
@@ -59,6 +61,7 @@ async def test_detection_and_asr_none_when_no_holdout_frauds(sf: async_sessionma
     m = await compute_run_metrics(s, rid)
     assert m is not None
     assert m.per_round[0].detection_rate is None  # not 0.0
+    assert m.per_round[0].evasion_rate is None  # not 0.0
     assert m.per_round[0].asr is None
     assert m.baseline_validation_detection is None  # no validation frauds
     assert m.gap is None  # gap is None when baseline is None

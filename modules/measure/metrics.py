@@ -9,6 +9,7 @@ class RoundMetric:
     round_index: int
     asr: float | None
     detection_rate: float | None
+    evasion_rate: float | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,10 +39,11 @@ async def compute_run_metrics(s: AsyncSession, run_id: str) -> RunMetrics | None
                          if t.true_label and t.txn_slice == "holdout"]
         caught = [t for t in holdout_fraud if t.caught]
         detection = len(caught) / len(holdout_fraud) if holdout_fraud else None
+        evasion_rate = (len(holdout_fraud) - len(caught)) / len(holdout_fraud) if holdout_fraud else None
         atks = by_round_atk.get(r.id, [])
         successes = [a for a in atks if a.evaded and a.true_label_preserved]
         asr = len(successes) / len(atks) if atks else None
-        per_round.append(RoundMetric(r.round_index, asr, detection))
+        per_round.append(RoundMetric(r.round_index, asr, detection, evasion_rate))
 
     # baseline validation detection: round 0, validation slice
     first = rounds[0]
