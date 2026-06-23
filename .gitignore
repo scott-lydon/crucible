@@ -4,3 +4,24 @@ node_modules/
 *.log
 .env
 .env.*
+
+# Ruflo / claude-flow runtime artifacts (local coordination state, not source)
+.claude-flow/
+.swarm/
+ruvector.db
+
+# Python / build artifacts
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.db-journal
+dist/
+build/
+
+# v0 local SQLite databases (data is regenerated; never source of truth)
+*.sqlite
+*.sqlite3
+crucible*.db
