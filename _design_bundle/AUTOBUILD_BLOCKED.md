@@ -1,67 +1,75 @@
-# Crucible autobuild — BLOCKED: competing automation still active (3rd consecutive fire)
+# Crucible autobuild — BLOCKED: competing automation finished a divergent 20-page build (4th consecutive fire)
 
-Autonomous fire 2026-06-23 ~13:33Z. The race first documented at 13:13Z is
-STILL active and has now run the external session all the way to slice-10. A
-human must resolve it before any further autobuild fire can make progress. No
-prompt was sent and no HTML/feedback was fabricated this run.
+Autonomous fire 2026-06-23 ~later. The race first documented at 13:13Z is STILL
+the blocker, but it has now escalated: the external session has run the shared
+Claude Design project all the way to a **20-page** build and just completed a
+project-wide restructuring pass (wordmark-to-Canvas links, breadcrumbs, a
+16-tile Canvas contact sheet). No prompt was sent and no HTML/feedback was
+fabricated this run.
 
-## Live evidence this fire (Pages dropdown, project 64f3247e…, read 13:33Z)
+## Live evidence this fire (Pages dropdown + chat thread, project 64f3247e…)
 
-| Page on server | Last edited | Notes |
-|---|---|---|
-| slice-10-whitebox-selftest | 1m ago | PDF-EXCLUDED screen; should NOT be a standalone route |
-| slice-09-coevolution-curves | 2m ago | PDF-EXCLUDED screen; belongs inside Measure dashboard |
-| slice-08-halt-certification | 6m ago | PDF-EXCLUDED screen; belongs inside Measure dashboard + banner |
-| slice-07-blue-patch-review | 8m ago | off-manifest slug |
-| slice-06-strategy-catalog | 13m ago | our manifest slice-04 slug |
-| slice-05-audit-row-replayer | 23m ago | NOT in `_slices.json` at all |
-| slice-04-honest-dashboard | 28m ago | our manifest slice-05 slug |
-| slice-02-live-run-view | 9h ago | OUR target; still untouched |
-| Run Launcher | 9h ago | duplicate, off-manifest naming |
+Chat thread (external session, latest messages):
+- "Wordmark in every slice now links back to Canvas, breadcrumbs in 09-16 point
+  to dashboard/canvas, and Canvas.dc.html is a 16-tile contact sheet grouped by
+  tier with hand-built SVG thumbnails per slice."
+- "Edited 16 files" / "Handoff-ready. Canvas open in your tab."
 
-The 1-to-2-minute-old edits prove the second session is cycling RIGHT NOW and
-has advanced from slice-06 (13:19Z fire) to slice-10 in 14 minutes. slice-02
-still has not been touched in 9 hours, so our iter-03 revise still has not
-landed.
+Pages dropdown (20 pages, all "Edited 2m ago" except Canvas "Edited just now"):
+| Page on server | Notes |
+|---|---|
+| Canvas | NEW 16-tile contact sheet, edited just now |
+| slice-16-spec-history | PDF-EXCLUDED (Sealed-spec history); should NOT be standalone |
+| slice-15-workspace-policy | PDF-EXCLUDED (Workspace/Role/Policy); should NOT be standalone |
+| slice-13-leaderboard-export | off-manifest |
+| slice-12-admin-debug | off-manifest |
+| slice-11-health | off-manifest |
+| slice-10-whitebox-selftest | PDF-EXCLUDED; belongs INSIDE Measure dashboard |
+| slice-09-coevolution-curves | PDF-EXCLUDED; belongs INSIDE Measure dashboard |
+| slice-08-halt-certification | PDF-EXCLUDED; belongs INSIDE Measure dashboard + banner |
+| slice-02 Live Run View, slice-03..07, etc. | rest of the 20 |
 
-## Two compounding problems
+The external session has built EXACTLY the PDF-excluded standalone screens the
+task source-of-truth rule forbids (Workspace/Role/Policy, Sealed-spec history,
+co-evolution, white-box self-test, halt-certification as separate routes).
 
-1. **Active race.** A second automation is editing the shared project chat
-   thread every 1 to 2 minutes. Any prompt I send interleaves with its
-   in-flight request and corrupts both threads. (A "We got interrupted —
-   Resume / Dismiss" banner is showing on the project; I did NOT click Resume,
-   which would resume the external session's work.)
-2. **Source-of-truth violation.** The external session is building
-   slice-08-halt-certification, slice-09-coevolution-curves, and
-   slice-10-whitebox-selftest as STANDALONE routes. The task's source-of-truth
-   rule is explicit: co-evolution, white-box self-test, and halt-certification
-   belong INSIDE the Measure dashboard (/metrics) and the global banner, NOT as
-   separate screens. So the external automation is producing off-plan,
-   PDF-excluded screens that will have to be discarded.
+## Why this fire sent nothing
 
-## NEEDED FROM A HUMAN (unchanged, now urgent across 3 fires)
+1. **Active session.** Canvas was "Edited just now" and the chat was mid
+   "Finishing up." Sending our slice-02 iter-03 revise would interleave with an
+   in-flight request and corrupt both threads.
+2. **Structural divergence is now total.** Our manifest is 11 slices with
+   halt/coevo/whitebox folded into /metrics. The server is 20 standalone pages
+   plus a Canvas contact sheet that wires all 16 slices together. Pushing our
+   slice-02 revise would clobber the external session's wordmark-link and
+   breadcrumb restructuring. The two plans disagree on membership, order, route
+   structure, AND whether PDF-excluded screens get standalone routes.
 
-1. Find and kill the external Claude Design session / scheduled task that is
-   auto-building slices 04 through 10. It is almost certainly a separate
-   scheduled task firing on the same project. Two automations on one project
-   is the entire bug.
-2. Decide the canonical plan: keep `_slices.json` (11 slices, halt/coevo/
-   whitebox folded into /metrics) and ROLL BACK the off-plan server pages, OR
-   formally adopt the external session's plan and rewrite `_slices.json`. They
-   currently disagree on order, membership, AND whether the PDF-excluded
-   screens get standalone routes.
-3. After the race is resolved, the next fire resumes slice-02: send the iter-03
-   revise (10 iter-02 items, incl. MRG-12.4 vs MRG-12.6 control-id unification)
-   and close the route-spec gaps still missing in the capture ("Skip to
-   white-box pass" button, "Not yet measured" empty state, distinct empty-state
-   mock).
+## NEEDED FROM A HUMAN (now decisive, not just urgent)
 
-## Slice status snapshot
+1. **Kill the external Claude Design session / scheduled task.** It is the only
+   thing that has actually advanced this project, and it is building off-plan.
+   Two automations on one project is the entire bug.
+2. **Pick ONE canonical plan and discard the other:**
+   - (A) Keep `_slices.json` (11 slices, PDF-faithful, halt/coevo/whitebox inside
+     /metrics) and ROLL BACK the off-plan server pages (08-16, Canvas), OR
+   - (B) Formally adopt the external session's 20-page build, rewrite
+     `_slices.json` to match, and retire this manifest-driven pipeline so the two
+     stop fighting.
+   They cannot coexist on the same project.
+3. Only after (1) and (2): the manifest pipeline can resume slice-02 (iter-03
+   revise: 10 iter-02 items incl. MRG-12.4 vs MRG-12.6 control-id unification,
+   plus the route-spec gaps "Skip to white-box pass" button, "Not yet measured"
+   empty state, distinct empty-state mock).
+
+## Slice status snapshot (this manifest's pipeline)
 - slice-01-run-launcher: CONVERGED_AT_CAP (v4 final). Done.
-- slice-02-live-run-view: v3 captured (== v2 design). NOT converged. Blocked.
+- slice-02-live-run-view: v3 captured (== v2 design, iter-03 never applied). NOT
+  converged. Blocked.
 - slice-03..11 (this manifest): not built by our pipeline. The server's
-  similarly-numbered pages are the external session's off-plan work, not ours.
+  similarly-numbered and higher-numbered pages are the external session's
+  off-plan work, not ours.
 
-This fire: verified Chrome MCP + claude.ai login, read the live Pages list,
-confirmed the race is active, wrote this report. Sent nothing. Fabricated
-nothing.
+This fire: verified Chrome MCP + claude.ai login, read the live chat thread and
+the 20-page Pages list, confirmed the race is active and has produced a
+divergent completed build, updated this report. Sent nothing. Fabricated nothing.
