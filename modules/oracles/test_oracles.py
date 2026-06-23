@@ -1,0 +1,56 @@
+from typing import Protocol
+from shared.types import Transaction, VerdictContext, OracleKind, OracleVote, Vote
+from modules.targets.synth.constants import DETECTOR_THRESHOLD, FAIL_THRESHOLD
+from modules.oracles.held_out.oracle import HeldOutOracle
+from modules.oracles.metamorphic.oracle import MetamorphicOracle
+from modules.oracles.invariant.oracle import InvariantOracle
+from modules.oracles.differential_stub.oracle import DifferentialStubOracle
+from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
+from modules.oracles.aggregator import aggregate
+
+
+class _Oracle(Protocol):
+    def vote(self, ctx: VerdictContext) -> OracleVote: ...
+
+# a cleared (score < threshold) transaction that is truly fraud (velocity) = a MISS
+MISS_CTX = VerdictContext(
+    txn=Transaction(0, amount=12.0, velocity=12, country_mismatch=True,
+                    merchant_risk=0.2, hour_of_day=4),
+    detector_score=0.2, threshold=DETECTOR_THRESHOLD, true_label=True,
+    original_txn=Transaction(0, amount=1500.0, velocity=12, country_mismatch=True,
+                             merchant_risk=0.2, hour_of_day=2),
+    original_score=0.8)
+
+
+def test_held_out_fails_on_missed_fraud() -> None:
+    v = HeldOutOracle().vote(MISS_CTX)
+    assert v.kind is OracleKind.HELD_OUT and v.vote is Vote.FAIL and v.weight == 1.0
+
+
+def test_metamorphic_detects_amount_lowering_evasion() -> None:
+    v = MetamorphicOracle().vote(MISS_CTX)   # big score drop, label unchanged
+    assert v.vote is Vote.FAIL and v.weight == 1.0
+
+
+def test_invariant_fires_on_country_velocity() -> None:
+    v = InvariantOracle().vote(MISS_CTX)
+    assert v.vote is Vote.FAIL and v.weight == 1.0
+
+
+def test_differential_stub_abstains_with_zero_weight() -> None:
+    v = DifferentialStubOracle().vote(MISS_CTX)
+    assert v.vote is Vote.ABSTAIN and v.weight == 0.0 and "stub" in v.reason.lower()
+
+
+def test_judge_mock_is_half_weight_and_labeled() -> None:
+    v = LlmJudgeMockOracle().vote(MISS_CTX)
+    assert v.kind is OracleKind.LLM_JUDGE_MOCK and v.weight == 0.5
+    assert v.evidence.get("mock") == True  # noqa: E712
+
+
+def test_aggregate_flags_missed_fraud() -> None:
+    oracles: list[_Oracle] = [HeldOutOracle(), MetamorphicOracle(), InvariantOracle(),
+                               DifferentialStubOracle(), LlmJudgeMockOracle()]
+    verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
+    assert verdict.fail_weight >= FAIL_THRESHOLD
+    assert verdict.aggregate_pass is False   # the detector's "clean" decision does NOT stand
