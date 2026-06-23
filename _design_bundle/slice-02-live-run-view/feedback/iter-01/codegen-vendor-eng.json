@@ -1,0 +1,12 @@
+{
+  "persona": "codegen-vendor-eng",
+  "slice_slug": "live-run-view",
+  "iteration": 1,
+  "new_feedback": [
+    {"element":"Judge one-vote weight label: streaming row uses a '½' glyph; halted row says 'weight 1/5'","issue":"Inconsistent across states; '½' reads as one-half and contradicts the 1/5 weighting, making the judge look like it carries half the decision.","change":"Drop the '½' glyph everywhere; use explicit '1/5' (or '1 of 5') identically in all three states."},
+    {"element":"Top-right cost meter THIS RUN / LAST ROUND / SESSION as three equal columns","issue":"Only THIS RUN vs $25.00 ceiling gates a halt, but it has no visual primacy or color shift as $4.18 approaches $25.00.","change":"Give THIS RUN primacy (larger + thin inline progress bar like the right-rail ledger) with an amber>~70% / danger>~90% threshold so the meter warns before the hard stop."},
+    {"element":"Reconnecting-state header swaps SESSION column for 'LAST KNOWN 14:08:32Z'","issue":"A column silently repurposes itself under a new meaning across the streaming→reconnecting transition; positional instability is a trust hazard on a second monitor.","change":"Keep the SESSION column present but explicitly mark it stale (greyed, 'last known' caption) instead of swapping in a different metric."},
+    {"element":"ASR vs Detection chart shares one 0-1 axis for two opposite-meaning series","issue":"Low ASR is good, high Detection is good; only the legend disambiguates which direction is 'bad'.","change":"Add a directional cue per series ('ASR ↓ better', 'Detection ↑ better') or shade the danger zone (ASR above / Detection below 0.90) so 'getting worse' is pre-attentive."}
+  ],
+  "approved": false
+}
