@@ -7,3 +7,4 @@
 2026-06-23T04:18Z | slice-02-live-run-view | v1 CAPTURED (fetch-hook; existing 3h-old server gen) + iter-01 critics run (3/3 returned new findings, none approved) + iter-02 revise SENT (16 items) | 1 of 4 | NOT converged; iter-02 regenerating on server, capture handed to next fire
 2026-06-23T12:56Z | slice-01-run-launcher | v4 CAPTURED (buffering fetch hook) + iter-04 critics run (2/1/2 new, none approved) | 4 of 4 (CAP) | CONVERGED_AT_CAP — v4.html final
 2026-06-23T13:05Z | slice-02-live-run-view | v2 CAPTURED (buffering hook) + iter-02 critics run (3/4/3 new, none approved; iter-01 all resolved) + iter-03 revise SENT (10 items) | 2 of 4 | NOT converged; iter-03 regenerating, capture handed to next fire
+2026-06-23T13:13Z | slice-02-live-run-view | captured v3 (==v2 content, iter-03 NOT applied) | NOT converged | BLOCKED: external session holds project request lock and is building off-manifest slices 03/04/05 | no prompt sent, no critics run, no fabrication

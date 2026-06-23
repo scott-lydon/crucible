@@ -1,51 +1,65 @@
-# slice-02-live-run-view — IN PROGRESS (iter-03 revise SENT, regenerating)
+# slice-02-live-run-view — BLOCKED BY A COMPETING SESSION (race detected)
 
-State as of autonomous run 2026-06-23 (~13:0xZ):
+Autonomous run 2026-06-23 ~13:13Z. Read this before the next fire; do NOT
+re-send anything into the Claude Design composer until the race below is
+resolved by a human.
 
-## Done this run
-- Captured v2.html (109746 bytes on disk) from the Claude Design server, which
-  carried the iter-02 16-item revise applied a prior run. Verified content
-  markers: "SSE connected", "LIVE LEDGER / spent", "SUBCOMPONENT HEALTH",
-  "red line recall >= 0.90", valid <!DOCTYPE html> ... </html>. Method:
-  buffering window.fetch override on GetFile (return new Response(buf), no
-  clone abort race) in a FRESH tab landed on slice-01 then file-switched to the
-  uncached slice-02; blob+anchor download to ~/Downloads then cp. v2.meta.json
-  written.
-- Ran iter-02 critic loop (3 general-purpose persona subagents in parallel
-  against v2.html, prior-feedback = iter-01 union, do-not-repeat). ALL THREE
-  returned NEW findings, none approved. All iter-01 items were resolved in v2.
-  Saved feedback/iter-02/{bank-risk-officer,codegen-vendor-eng,public-sector-procurement}.json
-  (3 + 4 + 3 = 10 new findings; mostly internal-consistency mismatches:
-  MRG-12.4 vs MRG-12.6 control-id, white-box vs held-out recall metric naming
-  on the halt rule/chart, judge weight phrasing "weight 1/5" vs bare "1/5",
-  3-of-4-oracles vs 3-of-5-votes aggregation, ungated SESSION total, tooltip-only
-  "i"/about affordances, color-only budget thresholds, low-contrast disabled
-  buttons).
-- Composed the consolidated 10-item iter-03 revise prompt
-  (feedback/iter-02/_revise_prompt_for_iter_03.txt, 4579 chars, single line with
-  " ; " separators so it does not fire Enter early), inserted it into the
-  ProseMirror composer via execCommand('insertText') (4579 chars confirmed) and
-  SENT it. Generation is RUNNING on the server (tab title flipped to "✶ ..."
-  working state).
+## What this run found (the important part)
 
-## NEXT RUN — capture v3 first, then iter-03 critics
-Do NOT re-send the iter-03 prompt; it is already applied/applying on the server.
-1. Open a FRESH tab, land on a DIFFERENT file (e.g. slice-01), install the
-   buffering fetch hook (see CONVERGED_AT_CAP.md in slice-01 for the exact
-   snippet), then file-switch via the Pages dropdown to the uncached
-   slice-02 -> fires a clean GetFile the buffering hook captures. Save v3.html +
-   v3.meta.json.
-2. Re-run the 3 persona critics against v3.html with prior-feedback = iter-01 +
-   iter-02 union (do-not-repeat). Write feedback/iter-03/*.json.
-3. If all three approve -> CONVERGED.md. Else compose iter-03->iter-04 revise,
-   send, capture v4, iter-04 critics. Cap at 4 rounds; round-4 HTML final ->
-   CONVERGED_AT_CAP.md.
-4. Then commit, append AUTOBUILD_LOG.md, advance to slice-03 (verdict-detail,
-   already generated on server "12h ago" — same capture path).
+A SECOND, external Claude Design session is actively driving THIS SAME project
+(`64f3247e-...`) and holds the per-project request lock. Evidence, all observed
+live this run:
 
-## Why this run stopped here
-Per-run ~10-min hard cap + the no-repeat-sleep guardrail: the iter-03 redesign
-takes several minutes server-side. Server-side progress (revise sent) is the
-valuable async unit; capture is handed to the next fire. slice-01 was finalized
-this run (CONVERGED_AT_CAP). No fake HTML written. Tab left OPEN so generation
-is not paused.
+- The slice-02 chat panel showed "We got interrupted — Claude works right here
+  in your browser, so when this tab closed, the work paused" with Resume/Dismiss.
+  The prior run's claim that the iter-03 revise was "already applied/applying on
+  the server" was WRONG: it was interrupted and never landed.
+- Clicking Resume, then Retry, produced "Your other tab is working on a request.
+  Try again once it finishes." (stacked twice). Something outside this MCP tab
+  group owns the active request. I cannot close it (tabs_close_mcp only reaches
+  tabs in my own group).
+- The project chat thread is no longer revising slice-02 at all. It has moved on
+  to building NEW pages in a DIFFERENT naming/order than our manifest:
+  - `slice-04-honest-dashboard`  — Edited 6-7m ago
+  - `slice-05-audit-row-replayer` — Edited 1-2m ago ("slice-05 · Audit Row
+    Replayer is live")
+  - the thread then asked "One Tier-1 slice left: Strategy Catalog. Want me to go?"
+  Our manifest (`_slices.json`) has slice-04 onward as different slugs. The two
+  automations disagree on the slice plan.
+- Pages dropdown timestamps at capture: slice-05 1m, slice-04 6m, **slice-02 8h**,
+  slice-03 12h. slice-02 has NOT been touched in 8h.
+
+## What this run did (no fabrication, no forcing)
+
+- Did NOT send any generation prompt into slice-02 (would corrupt the parallel
+  session's in-flight work).
+- Captured the CURRENT real slice-02 server HTML as `v3.html` via the buffering
+  fetch hook + in-app file switch. It is byte-identical in design content to
+  `v2.html` (only difference: v2 still had the injected preview harness). So the
+  capture confirms iter-03 never applied. See `v3.meta.json`.
+- Did NOT run the persona critic loop on v3: v3 == v2 content, so re-running would
+  reproduce the iter-02 findings as "no new findings" and FALSELY trigger
+  CONVERGED. Slice-02 is NOT converged.
+
+## NEEDED FROM A HUMAN before the next autobuild fire can make progress
+
+1. Identify and close the external Claude Design tab/session that is auto-building
+   slices 03/04/05 (likely a separately scheduled or manually started autobuild,
+   or the tab a much earlier run left open). Two automations on one project will
+   keep clobbering each other.
+2. Decide the canonical slice plan. The server now has `slice-04-honest-dashboard`
+   and `slice-05-audit-row-replayer`, which do NOT match `_design_bundle/_slices.json`.
+   Either reconcile the manifest to the server's slugs or roll back the off-plan
+   pages. The PDF source-of-truth excludes some screens (Workspace/Role/Policy,
+   Sealed-spec history); verify the external session is not building those.
+3. Then re-run: slice-02 still needs its iter-03 revise (the MRG-12.4 vs MRG-12.6
+   control-id unification + the other 9 iter-02 items) and the route-spec gaps in
+   the current capture (missing "Skip to white-box pass" button, missing
+   "Not yet measured" empty state, no distinct empty-state mock).
+
+## State summary
+- slice-02: v3 captured (== v2 design). NOT converged. Blocked on the race above.
+- slice-03-verdict-detail: exists on server, looks complete (5 oracles, Held-Out
+  PASS 0.98, Judge "1 vote · advisory", sealed spec sha v3.2.1). Not yet captured
+  to disk by this manifest's pipeline.
+- slice-04/05: exist on server under off-manifest slugs (see above).

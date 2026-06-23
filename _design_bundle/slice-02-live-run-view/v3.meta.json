@@ -1,0 +1,14 @@
+{
+  "slice": 2,
+  "slug": "live-run-view",
+  "route": "/runs/:runId",
+  "claude_design_file": "slice-02-live-run-view.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-02-live-run-view.dc.html",
+  "size_bytes": 102430,
+  "scraped_at_utc": "2026-06-23T13:13Z",
+  "version_on_server": "Edited 8h ago (per Pages dropdown timestamp at capture time)",
+  "scrape_method": "Buffering window.fetch override installed on a fresh page load, then in-app file-switch (slice-03 then back to slice-02 via the Pages dropdown) to fire an uncached GetFile the hook captured. HTML extracted from the GetFile envelope by slicing <!DOCTYPE html> ... </html>, then blob+anchor download to ~/Downloads and cp into the slice folder.",
+  "content_status": "UNCHANGED from v2. v3 is byte-identical to v2 except v2 still carried Claude Design's injected preview harness (<style/<script data-omelette-injected>); v3 is the cleaned design HTML. Marker parity confirmed: MRG-12 x6, white-box x4, Reconnect x16 in both.",
+  "iter_03_status": "NOT APPLIED. The iter-03 consolidated 10-item revise prompt that a prior run reported as SENT was in fact interrupted (Claude Design 'We got interrupted, work paused' notice) and never landed on the server. Resume/Retry attempts this run returned 'Your other tab is working on a request' because an external active session holds the project request lock.",
+  "convergence": "NOT converged. slice-02 is still at the v2/iter-02 design, which carries the unresolved iter-02 findings (notably the MRG-12.4 vs MRG-12.6 control-id mismatch, 5x MRG-12.6 + 1x MRG-12.4). Route-spec gaps also still present in this capture: no 'Skip to white-box pass' button string, no 'Not yet measured' empty-state string, no distinct empty-state mock."
+}
