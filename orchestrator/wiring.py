@@ -20,7 +20,7 @@ from modules.oracles.held_out.oracle import FraudHeldOutOracle
 from modules.oracles.llm_judge.oracle import LLMJudgeOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
 from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
-from modules.red.holdout_fraud import HoldoutFraudRed
+from modules.red.llm_hybrid import LLMHybridFraudRed
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
@@ -59,6 +59,23 @@ def _judge_llm() -> LLMClient:
     return ScriptedLLM(
         lambda _system, _prompt: '{"verdict": "ok", "reason": "mock judge: no violation asserted"}',
         model="scripted-judge",
+    )
+
+
+def _red_llm() -> LLMClient:
+    """Real Sonnet (the AI attacker reasons about strategy) when CRUCIBLE_REAL_RED=1;
+    otherwise a deterministic ScriptedLLM that picks the high-gain features. Either way
+    scipy.optimize does the real evasion search."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_RED") == "1" and settings.openrouter_api_key:
+        return make_llm(settings.sonnet_model)
+    return ScriptedLLM(
+        lambda _system, _prompt: (
+            '{"tactic": "margin-drift", "features": ["V14","V12","V10","V17","V4","V3",'
+            '"V7","V11","V16","V18","V9","V21"], "rationale": "perturb the highest-gain '
+            'features to drive the model log-odds below zero"}'
+        ),
+        model="scripted-red",
     )
 
 
@@ -137,12 +154,16 @@ def build_container() -> Container:
         _log.warning("fraud_model_missing", error=str(exc))
         sink.register_health_probe("targets/fraud", _untrained_probe(str(exc)))
 
-    # Fraud red agent: draws real held-out frauds (ground truth in metadata).
-    try:
-        container.register_red("fraud", HoldoutFraudRed.load())
-        sink.register_health_probe("red/fraud/holdout", container.red_for("fraud").health)
-    except FileNotFoundError as exc:
-        _log.warning("fraud_data_missing", error=str(exc))
+    # Fraud red agent: the AI attacker — an LLM reasons about which features to attack,
+    # scipy.optimize crafts the adversarial evasion of a real fraud (true label kept in
+    # metadata for the held-out oracle). Mock LLM by default, real Sonnet on the flag.
+    if fraud is not None:
+        fraud_red = LLMHybridFraudRed(
+            _red_llm(), fraud.predict_sync, fraud.raw_margin,
+            fraud.feature_names, fraud.feature_importances,
+        )
+        container.register_red("fraud", fraud_red)
+        sink.register_health_probe("red/fraud/llm-hybrid", fraud_red.health)
 
     # Fraud oracle ensemble (judge appends in slice 9).
     held_out = FraudHeldOutOracle()

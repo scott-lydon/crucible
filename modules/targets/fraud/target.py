@@ -42,6 +42,13 @@ class FraudTarget:
     def feature_names(self) -> list[str]:
         return list(self._features)
 
+    @property
+    def feature_importances(self) -> dict[str, float]:
+        """Per-feature importance from the trained booster — the red agent reasons over
+        these to decide which features to attack."""
+        raw = cast("Any", self._booster.feature_importance(importance_type="gain"))
+        return {name: float(v) for name, v in zip(self._features, raw, strict=False)}
+
     def _vectorize(self, payload: Mapping[str, Any]) -> list[float]:
         return [float(payload.get(name, 0.0)) for name in self._features]
 
@@ -51,6 +58,13 @@ class FraudTarget:
         proba = cast("Any", self._booster.predict([self._vectorize(payload)]))
         score = float(proba[0])
         return {"fraud_probability": score, "label": int(score >= self._threshold)}
+
+    def raw_margin(self, payload: Mapping[str, Any]) -> float:
+        """The unsquashed log-odds margin (before the sigmoid). Smooth even where the
+        probability is saturated at 0/1 — the red optimizer follows this to craft
+        adversarial evasions."""
+        margin = cast("Any", self._booster.predict([self._vectorize(payload)], raw_score=True))
+        return float(margin[0])
 
     async def submit(self, payload: Mapping[str, Any]) -> ProducerResult:
         out = self.predict_sync(payload)
