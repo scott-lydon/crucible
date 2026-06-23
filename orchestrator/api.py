@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
 
 from modules.measure.corpus import export_corpus
+from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown
 from orchestrator.loop import create_run, run_loop
@@ -59,7 +60,12 @@ class RunAccepted(BaseModel):
 @app.post("/runs", response_model=RunAccepted, status_code=201)
 async def post_runs(req: RunRequest) -> RunAccepted:
     container = get_container()
-    # Halt-certification gate (spec US-13) lands fully in slice 18; the hook is here.
+    # Halt-certification gate (spec US-13): refuse new runs when white-box recall is
+    # below the red line.
+    async with session_scope() as session:
+        halt = await halt_state(session)
+    if halt["halted"]:
+        raise HTTPException(status_code=409, detail=halt["message"])
     try:
         sealed = SealedSpec.from_yaml(req.spec_yaml)
     except Exception as exc:  # bad spec is a typed 422 to the caller, not a crash
@@ -120,7 +126,16 @@ async def stream_run(run_id: str) -> EventSourceResponse:
 async def get_metrics(run_id: str | None = None) -> dict[str, object]:
     """Honest headline tiles (spec US-10). None tiles render 'Not yet measured'."""
     async with session_scope() as session:
-        return await compute_metrics(session, run_id)
+        metrics = await compute_metrics(session, run_id)
+        metrics["halt"] = await halt_state(session)
+    return metrics
+
+
+@app.get("/halt")
+async def get_halt() -> dict[str, object]:
+    """Halt-certification state for the global banner (spec US-13)."""
+    async with session_scope() as session:
+        return await halt_state(session)
 
 
 @app.get("/runs/{run_id}/verdicts")

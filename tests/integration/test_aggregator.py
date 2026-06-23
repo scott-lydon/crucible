@@ -90,13 +90,14 @@ def test_loop_persists_a_verdict_per_round(client: TestClient) -> None:
         time.sleep(0.05)
 
     verdicts = asyncio.run(_fetch_verdicts(run_id))
-    assert len(verdicts) == 3, verdicts
+    # 3 black-box + 3 white-box rounds (spec US-14).
+    assert len(verdicts) == 6, verdicts
     for v in verdicts:
         assert v["threshold"] == 2.0
-        # Only the differential oracle is wired so far (weight 1.0 < 2.0) -> all clean.
-        assert v["outcome"] == "clean"
+        assert v["outcome"] in ("clean", "caught")
         votes = json.loads(v["votes"])
         assert any(vote["oracle"] == "differential" for vote in votes)
+        assert any(vote["oracle"] == "held_out" for vote in votes)
         assert json.loads(v["audit_trace"])["summary"]
 
 

@@ -10,13 +10,14 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from orchestrator.interfaces import Oracle, RedAgent, Target
 from orchestrator.wiring import Container
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
 from shared.persistence.resolver import resolve_spec
 from shared.telemetry.log import get_logger
 from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
-from shared.types.enums import Pillar, RunStatus
+from shared.types.enums import OracleKind, Pillar, RunStatus
 from shared.types.ids import RunId, new_id
 from shared.types.results import ProducerResult
 from shared.types.sealed_spec import SealedSpec
@@ -120,10 +121,45 @@ async def _persist_round(
             )
 
 
+def _held_out_fired(verdict: Verdict) -> bool:
+    return any(v.oracle is OracleKind.held_out and v.fired for v in verdict.votes)
+
+
+async def _run_round(
+    container: Container, spec: SealedSpec, target: Target, red: RedAgent,
+    oracles: list[Oracle], run_id: RunId, round_index: int, white_box: bool,
+    last_verdict: Verdict | None,
+) -> Verdict | None:
+    sink = container.sink
+    attack = await red.propose(spec, run_id, round_index, last_verdict, white_box=white_box)
+    result = await target.submit(attack.payload)
+    verdict = await container.verify(oracles, spec, attack, result.output) if oracles else None
+    await _persist_round(run_id, attack, result, verdict)
+    await sink.emit(run_id, "attack", {
+        "attack_id": str(attack.attack_id), "round": round_index,
+        "tactic": attack.tactic, "white_box": white_box, "payload": dict(attack.payload),
+    })
+    await sink.emit(run_id, "producer_output",
+                    {"attack_id": str(attack.attack_id), "output": dict(result.output)})
+    if verdict is not None:
+        await sink.emit(run_id, "verdict", {
+            "verdict_id": str(verdict.verdict_id), "attack_id": str(attack.attack_id),
+            "white_box": white_box, "outcome": str(verdict.outcome), "tally": verdict.tally,
+            "threshold": verdict.threshold, "summary": verdict.audit.summary,
+        })
+    return verdict
+
+
+async def _set_white_box_recall(run_id: RunId, recall: float) -> None:
+    async with session_scope() as session:
+        run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
+        run.white_box_recall = recall
+
+
 async def run_loop(run_id: RunId, container: Container) -> None:
-    """Drive one run to completion. Exceptions are not swallowed inside the loop body;
-    on failure the run is marked failed with a typed error and re-raised
-    (constitution.md section 8)."""
+    """Drive one run: a black-box red pass, then the white-box self-test pass where the
+    same red agent is told the verification scheme (spec US-14, constitution section 3).
+    Exceptions are not swallowed; on failure the run is marked failed and re-raised."""
     sink = container.sink
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id)})
@@ -132,48 +168,34 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         target = container.get_target(target_kind)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
-        last_verdict: Verdict | None = None
 
-        for round_index in range(budget_rounds):
-            attack = await red.propose(spec, run_id, round_index, last_verdict, white_box=False)
-            result = await target.submit(attack.payload)
-            verdict = (
-                await container.verify(oracles, spec, attack, result.output) if oracles else None
-            )
-            await _persist_round(run_id, attack, result, verdict)
-            await sink.emit(
-                run_id,
-                "attack",
-                {
-                    "attack_id": str(attack.attack_id),
-                    "round": round_index,
-                    "tactic": attack.tactic,
-                    "payload": dict(attack.payload),
-                },
-            )
-            await sink.emit(
-                run_id,
-                "producer_output",
-                {"attack_id": str(attack.attack_id), "output": dict(result.output)},
-            )
-            if verdict is not None:
-                await sink.emit(
-                    run_id,
-                    "verdict",
-                    {
-                        "verdict_id": str(verdict.verdict_id),
-                        "attack_id": str(attack.attack_id),
-                        "outcome": str(verdict.outcome),
-                        "tally": verdict.tally,
-                        "threshold": verdict.threshold,
-                        "summary": verdict.audit.summary,
-                    },
-                )
-                last_verdict = verdict
+        last_verdict: Verdict | None = None
+        for i in range(budget_rounds):
+            last_verdict = await _run_round(
+                container, spec, target, red, oracles, run_id, i, False, last_verdict)
+
+        # White-box self-test pass: same red agent, the oracles' scheme revealed.
+        await sink.emit(run_id, "white_box_started", {"run_id": str(run_id)})
+        wb_caught = wb_wrong = 0
+        for j in range(budget_rounds):
+            verdict = await _run_round(
+                container, spec, target, red, oracles, run_id, budget_rounds + j, True,
+                last_verdict)
+            last_verdict = verdict
+            if verdict is not None and _held_out_fired(verdict):
+                wb_wrong += 1
+                if verdict.caught:
+                    wb_caught += 1
+        if wb_wrong:
+            await _set_white_box_recall(run_id, wb_caught / wb_wrong)
 
         await _set_status(run_id, RunStatus.complete)
-        await sink.emit(run_id, "run_complete", {"run_id": str(run_id), "rounds": budget_rounds})
-        _log.info("run_complete", run_id=str(run_id), rounds=budget_rounds)
+        await sink.emit(run_id, "run_complete", {
+            "run_id": str(run_id), "rounds": budget_rounds,
+            "white_box_recall": (wb_caught / wb_wrong) if wb_wrong else None,
+        })
+        _log.info("run_complete", run_id=str(run_id), rounds=budget_rounds,
+                  white_box_recall=(wb_caught / wb_wrong) if wb_wrong else None)
     except Exception as exc:
         await _set_status(run_id, RunStatus.failed, error=repr(exc))
         await sink.emit(run_id, "run_failed", {"run_id": str(run_id), "error": repr(exc)})

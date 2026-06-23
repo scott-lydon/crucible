@@ -63,8 +63,9 @@ def test_one_round_with_dummy(client: TestClient) -> None:
     assert _poll_complete(client, run_id) == "complete"
 
     attacks = asyncio.run(_fetch_attacks(run_id))
-    assert len(attacks) == 2, attacks
-    assert [a["round_index"] for a in attacks] == [0, 1]
+    # 2 black-box rounds + 2 white-box self-test rounds (spec US-14).
+    assert len(attacks) == 4, attacks
+    assert [a["round_index"] for a in attacks] == [0, 1, 2, 3]
     assert all(a["tactic"] == "static-probe" for a in attacks)
     assert all(a["pillar"] == "red" for a in attacks)
 

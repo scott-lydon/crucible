@@ -69,16 +69,16 @@ async def _fetch_verdicts(run_id: str) -> list[dict[str, Any]]:
 def test_held_out_surfaces_producer_misses_through_loop(client: TestClient) -> None:
     resp = client.post("/runs", json={
         "target_kind": "fraud", "shape": "shape1_ml", "spec_yaml": FRAUD_SPEC_YAML,
-        "budget_rounds": 40, "budget_dollars": 1.0,
+        "budget_rounds": 20, "budget_dollars": 1.0,
     })
     run_id = resp.json()["runId"]
-    for _ in range(200):
+    for _ in range(400):
         if client.get(f"/runs/{run_id}").json()["status"] == "complete":
             break
         time.sleep(0.05)
 
     verdicts = asyncio.run(_fetch_verdicts(run_id))
-    assert len(verdicts) == 40
+    assert len(verdicts) == 40   # 20 black-box + 20 white-box
 
     held_out_fires = 0
     caught = 0
