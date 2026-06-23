@@ -22,7 +22,7 @@ class OracleKind(StrEnum):
     METAMORPHIC = "metamorphic"
     INVARIANT = "invariant"
     DIFFERENTIAL = "differential"
-    LLM_JUDGE_MOCK = "llm_judge_mock"
+    LLM_JUDGE = "llm_judge"
 
 
 class Vote(StrEnum):

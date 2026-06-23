@@ -1,5 +1,8 @@
+import os
 import pathlib
 from typing import Protocol
+
+import pytest
 
 from shared.types import (
     VerdictContext,
@@ -8,12 +11,13 @@ from shared.types import (
     Vote,
     sealed_spec_from_yaml,
 )
+from shared.llm import AnthropicApiProvider, MockProvider
 from examples.targets.fraud_synth import DETECTOR_THRESHOLD, Transaction, is_fraud
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
-from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
+from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from modules.oracles.aggregator import FAIL_THRESHOLD, aggregate
 
 
@@ -66,10 +70,36 @@ def test_differential_abstains_without_second_opinion() -> None:
     assert v.kind is OracleKind.DIFFERENTIAL and v.vote is Vote.ABSTAIN and v.weight == 0.0
 
 
-def test_judge_mock_is_half_weight_and_labeled() -> None:
-    v = LlmJudgeMockOracle().vote(MISS_CTX)
-    assert v.kind is OracleKind.LLM_JUDGE_MOCK and v.weight == 0.5
-    assert v.evidence.get("mock") == True  # noqa: E712
+def test_judge_parses_fail_with_half_weight_and_llm_evidence() -> None:
+    provider = MockProvider(text='{"vote": "fail", "reason": "x"}')
+    v = LlmJudgeOracle(provider=provider).vote(MISS_CTX)
+    assert v.kind is OracleKind.LLM_JUDGE and v.vote is Vote.FAIL and v.weight == 0.5
+    assert v.reason == "x"
+    assert v.evidence.get("llm") is True
+    assert v.evidence.get("model") == "mock"
+    assert "input_tokens" in v.evidence and "output_tokens" in v.evidence
+    assert "dollars" in v.evidence
+
+
+def test_judge_parses_pass_path() -> None:
+    provider = MockProvider(text='{"vote": "pass", "reason": "looks clean"}')
+    v = LlmJudgeOracle(provider=provider).vote(MISS_CTX)
+    assert v.vote is Vote.PASS and v.weight == 0.5
+    assert v.reason == "looks clean"
+
+
+@pytest.mark.skipif(
+    not os.environ.get("ANTHROPIC_API_KEY"),
+    reason="no ANTHROPIC_API_KEY",
+)
+def test_judge_live_opus_one_call() -> None:
+    # The only test here that costs money: ONE real Opus 4.8 call.
+    v = LlmJudgeOracle(provider=AnthropicApiProvider()).vote(MISS_CTX)
+    assert v.kind is OracleKind.LLM_JUDGE and v.weight == 0.5
+    assert v.vote in (Vote.PASS, Vote.FAIL)
+    assert v.evidence.get("llm") is True
+    assert isinstance(v.evidence.get("dollars"), float)
+    assert v.evidence["dollars"] > 0  # type: ignore[operator]
 
 
 def test_aggregate_flags_missed_fraud() -> None:
@@ -79,7 +109,9 @@ def test_aggregate_flags_missed_fraud() -> None:
                               MetamorphicOracle(label_fn=is_fraud),
                               InvariantOracle(),
                               DifferentialOracle(second_opinion_is_fraud=lambda s: True),
-                              LlmJudgeMockOracle()]
+                              LlmJudgeOracle(
+                                  provider=MockProvider(
+                                      text='{"vote": "fail", "reason": "x"}'))]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
     assert verdict.fail_weight >= FAIL_THRESHOLD
     assert verdict.aggregate_pass is False   # the detector's "clean" decision does NOT stand

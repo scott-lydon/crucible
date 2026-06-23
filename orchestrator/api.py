@@ -133,7 +133,7 @@ async def get_verdict(run_id: str, verdict_id: str) -> dict[str, object]:
                     "reason": v.reason,
                     "evidence": v.evidence_json,
                     "abstained": v.vote == Vote.ABSTAIN.value,
-                    "is_mock": v.oracle_kind == OracleKind.LLM_JUDGE_MOCK.value,
+                    "is_llm": v.oracle_kind == OracleKind.LLM_JUDGE.value,
                 }
                 for v in votes
             ],

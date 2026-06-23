@@ -20,7 +20,8 @@ from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
-from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
+from modules.oracles.llm_judge.oracle import LlmJudgeOracle
+from shared.llm import AnthropicApiProvider, MockProvider
 
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
@@ -47,7 +48,10 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
         # Synthetic victim ships no second-family model — the differential
         # oracle honestly ABSTAINS (weight 0), it is not a stub.
         DifferentialOracle(),
-        LlmJudgeMockOracle(),
+        # Synth UNIT-TEST victim: a deterministic MockProvider test double keeps
+        # the synth fixture offline/free. This is honestly the test fixture, not
+        # the product — the real Opus judge lives in build_components_sparkov.
+        LlmJudgeOracle(provider=MockProvider(text='{"vote": "fail", "reason": "mock"}')),
     ]
     label_fn: Callable[[object], bool] = is_fraud
     return {
@@ -91,7 +95,9 @@ def build_components_sparkov(
         # on the real Sparkov data over a richer feature set that includes the
         # night `hour` the amt-reliant target ignores.
         DifferentialOracle(second_opinion_is_fraud=fraud_sparkov.isoforest_is_fraud),
-        LlmJudgeMockOracle(),
+        # REAL Opus 4.8 judge (constitution §1: Opus on the judge). Live provider,
+        # nothing mocked in the demo path.
+        LlmJudgeOracle(provider=AnthropicApiProvider(model="claude-opus-4-8")),
     ]
     return {
         "detector": detector,
