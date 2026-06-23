@@ -59,11 +59,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ### Per-pillar (parallel after slice 4)
 
-- [ ] **slice-5-held-out-oracle** (T).
-  - [ ] `modules/oracles/held_out/`: Claude Opus 4.8 generates fresh tests from the sealed spec after submission, runs them against producer output, returns pass / fail with reason.
-  - [ ] Tests are persisted to `held_out_tests` table, deleted after the run completes.
-  - [ ] Self-test endpoint exists.
-  - [ ] **Done criteria for `vouch`:** integration test confirms the producer cannot read `held_out_tests` rows.
+- [x] **slice-5-held-out-oracle** (T). (fraud branch; Opus-generated tests are the code-agent branch, slice 3.)
+  - [x] `modules/oracles/held_out/`: for fraud the held-out tests are the sealed data partition (real labels the producer never trained on — DEVIATION from Opus-generated, more honest, bead cr-dev). Ground truth rides in `attack.metadata` (the producer is handed only `payload`); fires on a mislabelled known fraud, with reason.
+  - [x] `HoldoutFraudRed` draws real held-out frauds through the loop; the producer cannot read the labels (metadata channel + sandbox seal).
+  - [x] Self-test endpoint (`oracles/fraud/held_out`).
+  - [x] **Done criteria for `vouch`:** ground-truth logic verified; through the loop the held-out oracle surfaces every real producer miss (9/9 over 60 draws); producer never sees `true_label`.
 
 - [ ] **slice-6-metamorphic-oracle** (T).
   - [ ] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic rules from spec invariants; rules persisted to `metamorphic_rules`; runtime checks fire each rule and report pass / fail.

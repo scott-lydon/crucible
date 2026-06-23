@@ -45,6 +45,9 @@ class Attack:
     seed: str
     white_box: bool = False
     hybrid: bool = False
+    # Oracle-side context the producer NEVER sees (the target is given only `payload`).
+    # The held-out oracle reads the ground-truth label from here.
+    metadata: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True, slots=True)

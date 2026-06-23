@@ -43,6 +43,15 @@ class SealedSpec:
     invariants: tuple[Invariant, ...]
     holdout_generator_kind: str   # "data_partition" (Shape 1) | "llm_generated" (Shape 2)
 
+    def obligation_text(self, check_kind: str | None = None) -> str:
+        """The verbatim obligation an oracle cites. Prefers the obligation matching
+        ``check_kind``; falls back to the first declared obligation."""
+        if check_kind is not None:
+            for obligation in self.obligations:
+                if obligation.check_kind == check_kind:
+                    return obligation.description
+        return self.obligations[0].description if self.obligations else "(no obligation declared)"
+
     def to_dict(self) -> dict[str, Any]:
         """Full serialization for the ``specs`` table, so the server-side resolver
         can rehydrate the spec without re-parsing YAML."""

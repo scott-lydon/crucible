@@ -130,7 +130,7 @@ async def run_loop(run_id: RunId, container: Container) -> None:
     try:
         spec, target_kind, budget_rounds = await _load_context(run_id)
         target = container.get_target(target_kind)
-        red = container.red
+        red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         last_verdict: Verdict | None = None
 

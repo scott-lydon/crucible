@@ -14,6 +14,8 @@ from sqlalchemy import text
 from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
+from modules.oracles.held_out.oracle import FraudHeldOutOracle
+from modules.red.holdout_fraud import HoldoutFraudRed
 from modules.red.static import StaticRedAgent
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
@@ -42,10 +44,11 @@ def _untrained_probe(message: str) -> HealthProbe:
 @dataclass
 class Container:
     sink: MeasureSink
-    red: RedAgent
+    default_red: RedAgent
     verify: VerifyFn
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
+    reds: dict[str, RedAgent] = field(default_factory=dict)
 
     def register_target(self, target: Target) -> None:
         self.targets[target.kind] = target
@@ -63,6 +66,12 @@ class Container:
 
     def oracles_for(self, target_kind: str) -> list[Oracle]:
         return self.oracles.get(target_kind, [])
+
+    def register_red(self, target_kind: str, agent: RedAgent) -> None:
+        self.reds[target_kind] = agent
+
+    def red_for(self, target_kind: str) -> RedAgent:
+        return self.reds.get(target_kind, self.default_red)
 
 
 async def _db_health() -> HealthStatus:
@@ -86,7 +95,7 @@ def build_container() -> Container:
     sink.register_health_probe("targets/dummy", dummy.health)
     sink.register_health_probe("red/static", static_red.health)
 
-    container = Container(sink=sink, red=static_red, verify=run_verdict)
+    container = Container(sink=sink, default_red=static_red, verify=run_verdict)
     container.register_target(dummy)
 
     # Fraud target loads from the trained artifact; if it has not been trained yet the
@@ -99,8 +108,18 @@ def build_container() -> Container:
         _log.warning("fraud_model_missing", error=str(exc))
         sink.register_health_probe("targets/fraud", _untrained_probe(str(exc)))
 
-    # Fraud oracles. Differential (IsolationForest) lands in slice 7; the held-out,
-    # metamorphic, property-fuzz and judge oracles append here in slices 5/6/8/9.
+    # Fraud red agent: draws real held-out frauds (ground truth in metadata).
+    try:
+        container.register_red("fraud", HoldoutFraudRed.load())
+        sink.register_health_probe("red/fraud/holdout", container.red_for("fraud").health)
+    except FileNotFoundError as exc:
+        _log.warning("fraud_data_missing", error=str(exc))
+
+    # Fraud oracles. Differential (IsolationForest) + held-out (ground truth) so far;
+    # metamorphic, property-fuzz and judge append here in slices 6/8/9.
+    held_out = FraudHeldOutOracle()
+    container.register_oracle("fraud", held_out)
+    sink.register_health_probe("oracles/fraud/held_out", held_out.health)
     try:
         differential = FraudDifferentialOracle.load()
         container.register_oracle("fraud", differential)

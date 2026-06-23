@@ -19,13 +19,6 @@ from shared.types.results import HealthStatus
 from shared.types.sealed_spec import SealedSpec
 
 
-def _obligation_text(spec: SealedSpec) -> str:
-    for obligation in spec.obligations:
-        if obligation.check_kind == "label_match":
-            return obligation.description
-    return spec.obligations[0].description if spec.obligations else "(no obligation declared)"
-
-
 class FraudDifferentialOracle:
     kind: OracleKind = OracleKind.differential
     weight: float = 1.0
@@ -67,7 +60,7 @@ class FraudDifferentialOracle:
             oracle=self.kind,
             fired=fired,
             weight=self.weight,
-            obligation=_obligation_text(spec),
+            obligation=spec.obligation_text("label_match"),
             observation=(
                 f"anomaly_score={score:.4f} threshold={self._threshold:.4f} "
                 f"diff_label={diff_label} producer_label={producer_label}"
