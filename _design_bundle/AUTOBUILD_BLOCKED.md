@@ -1,4 +1,35 @@
-# Crucible autobuild — BLOCKED: competing automation finished a divergent 20-page build (4th consecutive fire)
+# Crucible autobuild — BLOCKED: divergence is HUMAN-driven, not a competing automation (root cause update)
+
+## ROOT-CAUSE CORRECTION (this fire, supersedes the "competing automation" framing below)
+
+The "external session" prior fires blamed is the USER working the Claude Design
+project MANUALLY in real time. Live evidence this fire, read from the project
+chat thread on `slice-02-live-run-view.dc.html`:
+
+- The latest user message is conversational and human, not a manifest revise
+  prompt: "please link up all tappable navigation ui elements. I just tapped
+  runs strategies audit and health, nothing happened. please finish all
+  interactions appropriate for claude design".
+- A prior human turn produced KPI-card copy edits ("KPI cards now say down
+  better / up better (4 places)") on `slice-04-honest-dashboard.dc.html`.
+- The composer is idle; Send is greyed out; a "We got interrupted — work paused"
+  banner offers Resume / Dismiss. That paused request is the USER's, not ours.
+
+So this was never two automations fighting. The user has taken the shared
+project over by hand and grown it to 20 pages with cross-page navigation wiring.
+Our 11-slice manifest pipeline and the user's manual build are two different
+plans on one project. Firing our robotic slice-02 iter-03 revise would clobber
+the user's in-flight navigation work and corrupt the paused-request state.
+
+DECISION NEEDED FROM THE USER (you): either (A) tell this pipeline to stand down
+permanently on this project since you are driving it by hand now (recommended —
+say "retire the crucible autobuild task"), or (B) stop manual edits and let the
+manifest pipeline finish slices 02-11. Until then every scheduled fire will
+correctly no-op. Nothing was sent, clicked, or fabricated this fire.
+
+---
+
+# (PRIOR) Crucible autobuild — BLOCKED: competing automation finished a divergent 20-page build (4th consecutive fire)
 
 Autonomous fire 2026-06-23 ~later. The race first documented at 13:13Z is STILL
 the blocker, but it has now escalated: the external session has run the shared
