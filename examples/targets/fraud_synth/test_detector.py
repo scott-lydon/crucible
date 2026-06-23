@@ -1,6 +1,6 @@
 from shared.types import Transaction
-from modules.targets.fraud_detector.detector import FlawedDetector
-from modules.targets.synth.constants import DETECTOR_THRESHOLD
+from examples.targets.fraud_synth.detector import FlawedDetector
+from examples.targets.fraud_synth.constants import DETECTOR_THRESHOLD
 
 
 def test_catches_high_amount_fraud() -> None:

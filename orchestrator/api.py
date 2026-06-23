@@ -8,12 +8,11 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from modules.measure.metrics import compute_run_metrics
-from modules.targets.synth.constants import DETECTOR_THRESHOLD
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
-from orchestrator.wiring import build_components
+from orchestrator.wiring import DEFAULT_THRESHOLD, build_components
 from shared.persistence import repo
 from shared.persistence.models import RunRow
 from shared.types import Transaction
@@ -52,12 +51,12 @@ async def create_run(req: LaunchRequest) -> dict[str, str]:
                 status="running",
                 n_rounds=req.n_rounds,
                 batch_size=req.batch_size,
-                threshold=DETECTOR_THRESHOLD,
+                threshold=DEFAULT_THRESHOLD,
                 params_json=req.model_dump(),
             )
         )
         await s.commit()
-    comp = build_components(threshold=DETECTOR_THRESHOLD)
+    comp = build_components(threshold=DEFAULT_THRESHOLD)
     # v0: run synchronously so the demo's numbers are ready on navigation
     await run_loop(
         sf,
@@ -65,7 +64,7 @@ async def create_run(req: LaunchRequest) -> dict[str, str]:
         seed=req.seed,
         n_rounds=req.n_rounds,
         batch_size=req.batch_size,
-        threshold=DETECTOR_THRESHOLD,
+        threshold=DEFAULT_THRESHOLD,
         detector=cast(Detector, comp["detector"]),
         adversary=cast(Adversary, comp["adversary"]),
         oracles=cast(Sequence[Oracle], comp["oracles"]),

@@ -1,5 +1,5 @@
 from shared.types import Transaction
-from modules.targets.synth.constants import V_THRESH, A_HIGH, MERCHANT_RISK_HIGH
+from examples.targets.fraud_synth.constants import V_THRESH, A_HIGH, MERCHANT_RISK_HIGH
 
 
 def is_fraud(txn: Transaction) -> bool:

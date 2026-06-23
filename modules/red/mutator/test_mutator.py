@@ -1,8 +1,6 @@
 from shared.types import Transaction
 from modules.red.mutator.mutator import AmountLoweringAdversary
-from modules.targets.fraud_detector.detector import FlawedDetector
-from modules.targets.synth.rule import is_fraud
-from modules.targets.synth.constants import DETECTOR_THRESHOLD
+from examples.targets.fraud_synth import DETECTOR_THRESHOLD, FlawedDetector, is_fraud
 
 
 def _adv() -> AmountLoweringAdversary:

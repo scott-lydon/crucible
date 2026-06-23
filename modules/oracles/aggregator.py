@@ -1,5 +1,8 @@
 from shared.types import OracleVote, Verdict, Vote
-from modules.targets.synth.constants import FAIL_THRESHOLD
+
+# Oracle-pillar concern: the fail-weight needed to overturn the detector's
+# "clean" decision. This is a harness parameter, not the victim's.
+FAIL_THRESHOLD = 1.0
 
 
 def aggregate(votes: list[OracleVote]) -> Verdict:

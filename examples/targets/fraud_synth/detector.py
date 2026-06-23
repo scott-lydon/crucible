@@ -1,6 +1,6 @@
 import math
 from shared.types import Transaction
-from modules.targets.synth.constants import AMOUNT_SCALE
+from examples.targets.fraud_synth.constants import AMOUNT_SCALE
 
 
 class FlawedDetector:

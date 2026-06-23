@@ -1,12 +1,12 @@
 from typing import Protocol
 from shared.types import Transaction, VerdictContext, OracleKind, OracleVote, Vote
-from modules.targets.synth.constants import DETECTOR_THRESHOLD, FAIL_THRESHOLD
+from examples.targets.fraud_synth import DETECTOR_THRESHOLD, V_THRESH, is_fraud
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential_stub.oracle import DifferentialStubOracle
 from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
-from modules.oracles.aggregator import aggregate
+from modules.oracles.aggregator import FAIL_THRESHOLD, aggregate
 
 
 class _Oracle(Protocol):
@@ -23,17 +23,17 @@ MISS_CTX = VerdictContext(
 
 
 def test_held_out_fails_on_missed_fraud() -> None:
-    v = HeldOutOracle().vote(MISS_CTX)
+    v = HeldOutOracle(label_fn=is_fraud).vote(MISS_CTX)
     assert v.kind is OracleKind.HELD_OUT and v.vote is Vote.FAIL and v.weight == 1.0
 
 
 def test_metamorphic_detects_amount_lowering_evasion() -> None:
-    v = MetamorphicOracle().vote(MISS_CTX)   # big score drop, label unchanged
+    v = MetamorphicOracle(label_fn=is_fraud).vote(MISS_CTX)   # big score drop, label unchanged
     assert v.vote is Vote.FAIL and v.weight == 1.0
 
 
 def test_invariant_fires_on_country_velocity() -> None:
-    v = InvariantOracle().vote(MISS_CTX)
+    v = InvariantOracle(velocity_threshold=V_THRESH).vote(MISS_CTX)
     assert v.vote is Vote.FAIL and v.weight == 1.0
 
 
@@ -49,7 +49,9 @@ def test_judge_mock_is_half_weight_and_labeled() -> None:
 
 
 def test_aggregate_flags_missed_fraud() -> None:
-    oracles: list[_Oracle] = [HeldOutOracle(), MetamorphicOracle(), InvariantOracle(),
+    oracles: list[_Oracle] = [HeldOutOracle(label_fn=is_fraud),
+                               MetamorphicOracle(label_fn=is_fraud),
+                               InvariantOracle(velocity_threshold=V_THRESH),
                                DifferentialStubOracle(), LlmJudgeMockOracle()]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
     assert verdict.fail_weight >= FAIL_THRESHOLD

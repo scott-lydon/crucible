@@ -1,5 +1,5 @@
-from modules.targets.synth.generator import generate_batch
-from modules.targets.synth.rule import is_fraud
+from examples.targets.fraud_synth.generator import generate_batch
+from examples.targets.fraud_synth.rule import is_fraud
 
 
 def test_generation_is_deterministic() -> None:
