@@ -172,7 +172,10 @@ class LlmJudgeOracle:
         resp = self._provider.complete(
             _build_prompt(ctx),
             system=_SYSTEM,
-            max_tokens=512,
+            # The two-lane output (per-obligation array + independent_finding +
+            # reason) is longer than a simple verdict; 512 truncated real Opus
+            # responses and tripped the fail-loud JSON parse. 1024 fits comfortably.
+            max_tokens=1024,
             json_schema=_VOTE_SCHEMA,
         )
         parsed = json.loads(resp.text)  # fail loud on malformed provider output
