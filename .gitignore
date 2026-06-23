@@ -26,3 +26,14 @@ build/
 *.sqlite
 *.sqlite3
 crucible*.db
+
+# Target/victim datasets and trained model artifacts — EXTERNAL INPUTS, never source.
+# The Kaggle credit-card dataset is the TARGET being evaluated, not Crucible code.
+# We commit the fetch+train scripts and a checksum manifest, never the bytes.
+# Path is relocatable via CRUCIBLE_DATA_DIR (defaults to ./data).
+/data/
+/artifacts/
+*.lgb
+*.csv
+*.csv.gz
+*.parquet
