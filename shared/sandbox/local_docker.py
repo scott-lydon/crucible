@@ -17,9 +17,14 @@ from __future__ import annotations
 
 import shutil
 import subprocess
+import time
 import uuid
 
+import structlog
+
 from shared.sandbox.base import SandboxResult
+
+_log = structlog.get_logger(__name__)
 
 _IMAGE = "python:3.12-slim"
 _MEMORY_LIMIT = "256m"
@@ -30,6 +35,11 @@ _USER = "65534:65534"
 # Grace period (seconds) we wait for `docker kill` to reap a timed-out container
 # before giving up. The container is also `--rm`, so it self-removes once killed.
 _KILL_TIMEOUT_S = 10.0
+# When the wall-clock timeout fires, the container may not yet exist (the
+# `docker run` client races to create it). We retry `docker kill` a few times
+# with a short backoff before escalating to `docker rm -f` and logging loudly.
+_KILL_RETRIES = 5
+_KILL_RETRY_DELAY_S = 0.2
 
 
 class DockerUnavailableError(RuntimeError):
@@ -145,17 +155,57 @@ class LocalDockerSandbox:
 
     @staticmethod
     def _kill_container(docker: str, name: str) -> None:
-        """Best-effort reap of a timed-out container; it is also ``--rm``."""
+        """Reap a timed-out container, observably.
+
+        A reap miss is a security event: untrusted code that keeps running past
+        its wall-clock budget. So this is *not* a silent best-effort. We retry
+        ``docker kill`` (the container may not have started yet when the timeout
+        fired), then escalate to ``docker rm -f``, and if everything fails we log
+        loudly rather than swallowing it. The public contract is unchanged: the
+        caller still returns ``SandboxResult(exit_code=124, timed_out=True)``.
+        """
+        last_stderr = ""
+        for attempt in range(_KILL_RETRIES):
+            try:
+                proc = subprocess.run(
+                    [docker, "kill", name],
+                    capture_output=True,
+                    text=True,
+                    timeout=_KILL_TIMEOUT_S,
+                )
+            except (subprocess.TimeoutExpired, OSError) as exc:
+                last_stderr = str(exc)
+            else:
+                if proc.returncode == 0:
+                    return
+                last_stderr = (proc.stderr or proc.stdout).strip()
+            if attempt < _KILL_RETRIES - 1:
+                time.sleep(_KILL_RETRY_DELAY_S)
+
+        # `docker kill` never succeeded. Escalate to a forced remove, which also
+        # reaps containers that exited on their own between the retries.
         try:
-            subprocess.run(
-                [docker, "kill", name],
+            rm = subprocess.run(
+                [docker, "rm", "-f", name],
                 capture_output=True,
                 text=True,
                 timeout=_KILL_TIMEOUT_S,
             )
-        except (subprocess.TimeoutExpired, OSError):
-            # We did our best; `--rm` will clean up when the container dies.
-            pass
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            _log.error(
+                "sandbox.kill_container.failed",
+                container=name,
+                kill_error=last_stderr,
+                rm_error=str(exc),
+            )
+            return
+        if rm.returncode != 0:
+            _log.error(
+                "sandbox.kill_container.failed",
+                container=name,
+                kill_error=last_stderr,
+                rm_error=(rm.stderr or rm.stdout).strip(),
+            )
 
 
 def _coerce(value: str | bytes | None) -> str:
