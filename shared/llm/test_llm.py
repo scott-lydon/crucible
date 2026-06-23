@@ -16,7 +16,7 @@ from typing import Any
 import pytest
 
 from shared.llm import AnthropicApiProvider, LLMProvider, MockProvider
-from shared.llm.anthropic_api import PRICE_IN_PER_TOKEN, PRICE_OUT_PER_TOKEN
+from shared.llm.anthropic_api import _price_for
 
 
 # --- Fakes for the AnthropicApiProvider unit test ---------------------------
@@ -87,9 +87,13 @@ def test_anthropic_provider_with_fake_client() -> None:
     assert resp.raw == {}
 
 
-def test_price_constants_are_per_token() -> None:
-    assert PRICE_IN_PER_TOKEN == 5.0 / 1_000_000
-    assert PRICE_OUT_PER_TOKEN == 25.0 / 1_000_000
+def test_pricing_is_model_aware() -> None:
+    # Per-token ($/token) pricing must reflect the actual model, not Opus for all.
+    assert _price_for("claude-opus-4-8") == (5.0 / 1_000_000, 25.0 / 1_000_000)
+    assert _price_for("claude-sonnet-4-6") == (3.0 / 1_000_000, 15.0 / 1_000_000)
+    assert _price_for("claude-haiku-4-5") == (1.0 / 1_000_000, 5.0 / 1_000_000)
+    # Unknown model falls back to Opus pricing (conservative — never under-reports).
+    assert _price_for("mystery-model") == (5.0 / 1_000_000, 25.0 / 1_000_000)
 
 
 def test_anthropic_provider_passes_json_schema_output_config() -> None:

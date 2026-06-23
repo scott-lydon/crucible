@@ -1,11 +1,12 @@
-"""Production LLM adapter for the Anthropic API (Claude Opus 4.8).
+"""Production LLM adapter for the Anthropic API (Claude Opus 4.8 / Sonnet 4.6).
 
-Opus 4.8 facts baked in here (from the Anthropic API reference — do not deviate):
+Facts baked in here (from the Anthropic API reference — do not deviate):
 
-* Model id is ``claude-opus-4-8``.
-* Opus 4.8 takes adaptive thinking only and **rejects** ``temperature``,
+* The 4.x models take adaptive thinking only and **reject** ``temperature``,
   ``top_p``, ``top_k``, and ``budget_tokens`` with a 400. None are passed.
-* Pricing is $5.00 / 1M input tokens, $25.00 / 1M output tokens.
+* Per-model pricing ($/1M tokens, input/output): Opus 4.x $5/$25, Sonnet 4.6
+  $3/$15, Haiku 4.5 $1/$5, Fable 5 $10/$50. Cost is reported per call so the
+  ``dollars`` figure is HONEST per model — never Opus-priced for a Sonnet call.
 
 The adapter fails loud: anthropic errors (e.g. ``anthropic.APIError``) propagate
 unchanged rather than being swallowed.
@@ -20,16 +21,30 @@ from shared.llm.base import LLMResponse
 
 DEFAULT_MODEL = "claude-opus-4-8"
 
-# Opus 4.8 pricing, expressed per-token so cost is a plain multiply.
-PRICE_IN_PER_TOKEN = 5.0 / 1_000_000
-PRICE_OUT_PER_TOKEN = 25.0 / 1_000_000
+# Per-token pricing ($/token, input, output) keyed by model id prefix.
+# Longest matching prefix wins; unknown models fall back to Opus pricing
+# (conservative — never under-reports cost).
+_PRICING: tuple[tuple[str, float, float], ...] = (
+    ("claude-fable-5", 10.0 / 1_000_000, 50.0 / 1_000_000),
+    ("claude-opus", 5.0 / 1_000_000, 25.0 / 1_000_000),
+    ("claude-sonnet", 3.0 / 1_000_000, 15.0 / 1_000_000),
+    ("claude-haiku", 1.0 / 1_000_000, 5.0 / 1_000_000),
+)
+_FALLBACK_PRICE = (5.0 / 1_000_000, 25.0 / 1_000_000)
 
 
-def _cost(input_tokens: int, output_tokens: int) -> float:
-    return round(
-        input_tokens * PRICE_IN_PER_TOKEN + output_tokens * PRICE_OUT_PER_TOKEN,
-        6,
-    )
+def _price_for(model: str) -> tuple[float, float]:
+    best: tuple[float, float] | None = None
+    best_len = -1
+    for prefix, price_in, price_out in _PRICING:
+        if model.startswith(prefix) and len(prefix) > best_len:
+            best, best_len = (price_in, price_out), len(prefix)
+    return best if best is not None else _FALLBACK_PRICE
+
+
+def _cost(input_tokens: int, output_tokens: int, model: str = DEFAULT_MODEL) -> float:
+    price_in, price_out = _price_for(model)
+    return round(input_tokens * price_in + output_tokens * price_out, 6)
 
 
 class AnthropicApiProvider:
@@ -81,6 +96,6 @@ class AnthropicApiProvider:
             model=str(resp.model),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            dollars=_cost(input_tokens, output_tokens),
+            dollars=_cost(input_tokens, output_tokens, str(resp.model)),
             raw=raw,
         )
