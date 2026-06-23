@@ -12,7 +12,9 @@ from examples.targets.fraud_synth import (
     generate_batch,
     is_fraud,
 )
+from examples.targets import fraud_sparkov
 
+from modules.targets.local_model.adapter import LocalModelTarget
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
@@ -52,5 +54,44 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
         "oracles": oracles,
         "label_fn": label_fn,
         "generate_fn": generate_batch,
+        "spec": spec,
+    }
+
+
+def build_components_sparkov(
+    threshold: float = fraud_sparkov.DETECTOR_THRESHOLD,
+) -> dict[str, object]:
+    """Wire the REAL Sparkov victim into the target-agnostic harness.
+
+    The flawed detector is the serialized LightGBM model loaded via the generic
+    LocalModelTarget over the victim-declared proxy features (amt, cat_risk).
+    All paths resolve from the victim module, so nothing here is environment-
+    dependent. Ground truth + the SealedSpec come from the victim package.
+    """
+    spec = fraud_sparkov.load_spec()
+    detector: Detector = LocalModelTarget(
+        model_path=fraud_sparkov.MODEL_PATH,
+        feature_names=fraud_sparkov.DETECTOR_FEATURES,
+    )
+    sparkov_is_fraud: Callable[[object], bool] = fraud_sparkov.is_fraud
+    adversary: Adversary = MetamorphicEvasionAdversary(
+        score_fn=detector.score,
+        label_fn=sparkov_is_fraud,
+        threshold=threshold,
+        spec=spec,
+    )
+    oracles: list[Oracle] = [
+        HeldOutOracle(label_fn=sparkov_is_fraud),
+        MetamorphicOracle(label_fn=sparkov_is_fraud),
+        InvariantOracle(),
+        DifferentialStubOracle(),
+        LlmJudgeMockOracle(),
+    ]
+    return {
+        "detector": detector,
+        "adversary": adversary,
+        "oracles": oracles,
+        "label_fn": sparkov_is_fraud,
+        "generate_fn": fraud_sparkov.generate_batch,
         "spec": spec,
     }
