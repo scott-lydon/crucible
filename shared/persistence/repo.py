@@ -1,8 +1,9 @@
 from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from shared.persistence.models import (AttackRow, OracleVoteRow, RoundRow,
-                                       RunRow, TransactionRow, VerdictRow)
+from shared.persistence.models import (AttackRow, BlueRoundRow, OracleVoteRow,
+                                       RoundRow, RunRow, TransactionRow,
+                                       VerdictRow)
 
 async def get_run(s: AsyncSession, run_id: str) -> RunRow | None:
     return await s.get(RunRow, run_id)
@@ -28,3 +29,14 @@ async def votes_for_verdict(s: AsyncSession, verdict_id: str) -> Sequence[Oracle
     res = await s.execute(
         select(OracleVoteRow).where(OracleVoteRow.verdict_id == verdict_id))
     return res.scalars().all()
+
+async def add_blue_round(s: AsyncSession, row: BlueRoundRow) -> None:
+    s.add(row)
+    await s.commit()
+
+async def blue_round_for_run(s: AsyncSession, run_id: str) -> BlueRoundRow | None:
+    res = await s.execute(
+        select(BlueRoundRow)
+        .where(BlueRoundRow.run_id == run_id)
+        .order_by(BlueRoundRow.created_at.desc()))
+    return res.scalars().first()

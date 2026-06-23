@@ -13,7 +13,11 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 
 async def test_full_run_tells_the_story(client: AsyncClient) -> None:
-    r = await client.post("/runs", json={"n_rounds": 6, "batch_size": 300, "seed": "story"})
+    r = await client.post(
+        "/runs",
+        json={"target": "synth", "rounds": 5, "batch_size": 200,
+              "seed": "story", "run_blue": False},
+    )
     assert r.status_code == 201
     run_id = r.json()["run_id"]
     body = (await client.get(f"/runs/{run_id}/metrics")).json()

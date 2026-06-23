@@ -85,3 +85,19 @@ class OracleVoteRow(Base):
     reason: Mapped[str] = mapped_column(String)
     evidence_json: Mapped[dict[str, object]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+class BlueRoundRow(Base):
+    """One blue recovery round: the defender's propose->retrain->validate arc."""
+
+    __tablename__ = "blue_rounds"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"))
+    features_added: Mapped[list[str]] = mapped_column(JSON)
+    detection_before: Mapped[float] = mapped_column(Float)
+    detection_after: Mapped[float] = mapped_column(Float)
+    recovered: Mapped[float] = mapped_column(Float)
+    n_holdout: Mapped[int] = mapped_column(Integer)
+    proposer_rationale: Mapped[str] = mapped_column(String)
+    new_model_ref: Mapped[str | None] = mapped_column(String, nullable=True)
+    pillar: Mapped[str] = mapped_column(String, default="blue")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

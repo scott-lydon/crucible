@@ -4,20 +4,32 @@ from collections.abc import Callable, Sequence
 from contextlib import asynccontextmanager
 from typing import AsyncIterator, cast
 
-from fastapi import FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
+from modules.blue.proposer import BlueProposer
 from modules.measure.metrics import compute_run_metrics
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
+from orchestrator.full_run import run_with_blue
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
-from orchestrator.wiring import DEFAULT_THRESHOLD, build_components
+from orchestrator.wiring import (
+    DEFAULT_THRESHOLD,
+    build_components,
+    build_components_sparkov,
+)
 from shared.env import load_env
 from shared.persistence import repo
 from shared.persistence.models import RunRow
 from shared.types import SealedSpec
 from shared.types.enums import OracleKind, Vote
+
+# Test-injection seam. A test may set this to a dict of kwargs forwarded into
+# ``build_components_sparkov`` (e.g. mock providers + budget 0) so a sparkov run
+# makes ZERO real LLM calls. None => the real demo path (live, bounded providers).
+# This is the ONLY way the suite exercises target="sparkov" without billing.
+SPARKOV_TEST_OVERRIDES: dict[str, object] | None = None
 
 
 @asynccontextmanager
@@ -31,9 +43,11 @@ app = FastAPI(title="Crucible Fraud MVP v0", lifespan=_lifespan)
 
 
 class LaunchRequest(BaseModel):
-    n_rounds: int = Field(5, ge=1, le=50)
-    batch_size: int = Field(200, ge=2, le=5000)
+    target: str = Field("sparkov", pattern="^(sparkov|synth)$")
+    rounds: int = Field(3, ge=1, le=5)
+    batch_size: int = Field(40, ge=2, le=200)
     seed: str = "seed-1"
+    run_blue: bool = True
 
 
 @app.get("/health")
@@ -41,8 +55,87 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+async def _execute_run(req: LaunchRequest, run_id: str) -> None:
+    """Build the requested target's components and drive the run to completion.
+
+    Runs as a FastAPI background task. ``run_loop`` / ``run_with_blue`` own the
+    running->complete/failed transitions (and mark failed on exception), so any
+    error here is captured against the run row, never swallowed.
+    """
+    sf = session_factory()
+    if req.target == "sparkov":
+        overrides = SPARKOV_TEST_OVERRIDES or {}
+        build_sparkov = cast(
+            Callable[..., dict[str, object]], build_components_sparkov
+        )
+        comp = build_sparkov(threshold=DEFAULT_THRESHOLD, **overrides)
+    else:
+        comp = build_components(threshold=DEFAULT_THRESHOLD)
+
+    detector = cast(Detector, comp["detector"])
+    adversary = cast(Adversary, comp["adversary"])
+    oracles = cast(Sequence[Oracle], comp["oracles"])
+    label_fn = cast(Callable[[object], bool], comp["label_fn"])
+    generate_fn = cast(Callable[[str, int], list[object]], comp["generate_fn"])
+    spec = cast(SealedSpec, comp["spec"])
+
+    # Blue composition needs the sparkov-only seams; synth has no blue arc.
+    blue_ready = req.run_blue and "blue_proposer" in comp
+    if blue_ready:
+        await run_with_blue(
+            sf,
+            run_id=run_id,
+            seed=req.seed,
+            n_rounds=req.rounds,
+            batch_size=req.batch_size,
+            threshold=DEFAULT_THRESHOLD,
+            detector=detector,
+            adversary=adversary,
+            oracles=oracles,
+            label_fn=label_fn,
+            generate_fn=generate_fn,
+            spec=spec,
+            catalog=comp["catalog"],
+            proposer=cast(BlueProposer, comp["blue_proposer"]),
+            retrain_fn=cast(
+                Callable[[Sequence[str]], object], comp["retrain_fn"]
+            ),
+            available_features=cast(Sequence[str], comp["available_features"]),
+            current_features=cast(Sequence[str], comp["current_features"]),
+        )
+    else:
+        await run_loop(
+            sf,
+            run_id=run_id,
+            seed=req.seed,
+            n_rounds=req.rounds,
+            batch_size=req.batch_size,
+            threshold=DEFAULT_THRESHOLD,
+            detector=detector,
+            adversary=adversary,
+            oracles=oracles,
+            label_fn=label_fn,
+            generate_fn=generate_fn,
+            spec=spec,
+        )
+
+
 @app.post("/runs", status_code=201)
-async def create_run(req: LaunchRequest) -> dict[str, str]:
+async def create_run(
+    req: LaunchRequest, background_tasks: BackgroundTasks
+) -> dict[str, str]:
+    """Launch a Crucible run as a background task; return the run id immediately.
+
+    ``target="sparkov"`` wires the REAL Sparkov victim via
+    ``build_components_sparkov`` with LIVE, BOUNDED providers (Sonnet on the red
+    loop, Opus on the judge, Sonnet on the blue proposer). A real sparkov run
+    therefore makes real (bounded) LLM calls — on the order of ~$0.40 per run.
+    ``target="synth"`` uses the cheap offline synthetic victim (no real calls).
+
+    With ``run_blue=true`` (default) a sparkov run also runs the blue recovery
+    arc and persists a ``BlueRoundRow``; synth has no blue arc and ignores it.
+    Status transitions running -> complete/failed are owned by the loop.
+    """
     run_id = str(uuid.uuid4())
     sf = session_factory()
     async with sf() as s:
@@ -51,29 +144,14 @@ async def create_run(req: LaunchRequest) -> dict[str, str]:
                 id=run_id,
                 seed=req.seed,
                 status="running",
-                n_rounds=req.n_rounds,
+                n_rounds=req.rounds,
                 batch_size=req.batch_size,
                 threshold=DEFAULT_THRESHOLD,
                 params_json=req.model_dump(),
             )
         )
         await s.commit()
-    comp = build_components(threshold=DEFAULT_THRESHOLD)
-    # v0: run synchronously so the demo's numbers are ready on navigation
-    await run_loop(
-        sf,
-        run_id=run_id,
-        seed=req.seed,
-        n_rounds=req.n_rounds,
-        batch_size=req.batch_size,
-        threshold=DEFAULT_THRESHOLD,
-        detector=cast(Detector, comp["detector"]),
-        adversary=cast(Adversary, comp["adversary"]),
-        oracles=cast(Sequence[Oracle], comp["oracles"]),
-        label_fn=cast(Callable[[object], bool], comp["label_fn"]),
-        generate_fn=cast(Callable[[str, int], list[object]], comp["generate_fn"]),
-        spec=cast(SealedSpec, comp["spec"]),
-    )
+    background_tasks.add_task(_execute_run, req, run_id)
     return {"run_id": run_id}
 
 
@@ -114,6 +192,25 @@ async def get_metrics(run_id: str) -> dict[str, object]:
         "baseline_validation_detection": m.baseline_validation_detection,
         "gap": m.gap,
     }
+
+
+@app.get("/runs/{run_id}/blue")
+async def get_blue_round(run_id: str) -> dict[str, object]:
+    """The persisted blue recovery round for this run (404 if none ran)."""
+    async with session_factory()() as s:
+        row = await repo.blue_round_for_run(s, run_id)
+        if row is None:
+            raise HTTPException(404, "no blue round for run")
+        return {
+            "run_id": row.run_id,
+            "features_added": row.features_added,
+            "detection_before": row.detection_before,
+            "detection_after": row.detection_after,
+            "recovered": row.recovered,
+            "n_holdout": row.n_holdout,
+            "proposer_rationale": row.proposer_rationale,
+            "new_model_ref": row.new_model_ref,
+        }
 
 
 @app.get("/runs/{run_id}/verdicts/{verdict_id}")

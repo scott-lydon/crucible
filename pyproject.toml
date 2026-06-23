@@ -31,11 +31,13 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+extend-exclude = ["scratchpad", ".venv"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 plugins = []
+exclude = ["scratchpad/", "\\.venv/"]
 
 # Untyped third-party libs (no stubs / py.typed). Scoped overrides keep
 # --strict in force for our own code while tolerating missing stubs here.
