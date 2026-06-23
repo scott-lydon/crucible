@@ -21,6 +21,11 @@ from examples.targets.fraud_sparkov.loader import (
     verify_checksum,
 )
 from examples.targets.fraud_sparkov.record import SparkovTxn
+from examples.targets.fraud_sparkov.retrain import (
+    AVAILABLE_FEATURES,
+    CURRENT_FEATURES,
+    retrain_with_features,
+)
 from examples.targets.fraud_sparkov.rule import is_fraud
 from examples.targets.fraud_sparkov.second_model import (
     SECOND_MODEL_FEATURES,
@@ -31,7 +36,9 @@ from examples.targets.fraud_sparkov.spec import SPEC_PATH, load_spec
 
 __all__ = [
     "AMT_HIGH",
+    "AVAILABLE_FEATURES",
     "BATCH_FRAUD_RATE",
+    "CURRENT_FEATURES",
     "DETECTOR_FEATURES",
     "DETECTOR_THRESHOLD",
     "MODEL_PATH",
@@ -47,5 +54,6 @@ __all__ = [
     "load_dataframe",
     "load_records",
     "load_spec",
+    "retrain_with_features",
     "verify_checksum",
 ]

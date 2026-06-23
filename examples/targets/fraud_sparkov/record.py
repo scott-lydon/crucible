@@ -27,3 +27,8 @@ class SparkovTxn:
     # Carried for transparency / interpretability of the rule.
     age: int
     city_pop: int
+    # The Step-1 NOISE feature (fraud/legit share an identical distribution):
+    # cardholder<->merchant separation. Carried so the blue loop can honestly
+    # retrain on the full available menu (hour + distance) and we can show that
+    # the RECOVERY comes from the signal feature (hour), not the noise.
+    distance: float = 0.0

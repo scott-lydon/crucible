@@ -45,6 +45,7 @@ def _all_records() -> list[SparkovTxn]:
                 hour=int(row["hour"]),
                 age=int(row["age"]),
                 city_pop=int(row["city_pop"]),
+                distance=round(float(row["distance"]), 4),
             )
         )
     _CACHE[key] = recs
@@ -80,6 +81,7 @@ def generate_batch(seed: str, size: int) -> list[SparkovTxn]:
             hour=r.hour,
             age=r.age,
             city_pop=r.city_pop,
+            distance=r.distance,
         )
         for i, r in enumerate(combined)
     ]

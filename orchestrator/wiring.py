@@ -1,5 +1,5 @@
 import pathlib
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from orchestrator.interfaces import Detector, Adversary, Oracle
 from shared.types import SealedSpec, sealed_spec_from_yaml
@@ -15,6 +15,7 @@ from examples.targets.fraud_synth import (
 from examples.targets import fraud_sparkov
 
 from modules.targets.local_model.adapter import LocalModelTarget
+from modules.blue.proposer import BlueProposer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
 from modules.red.hybrid.adversary import HybridAdversary
@@ -74,6 +75,8 @@ def build_components_sparkov(
     judge_max_calls: int | None = 25,
     red_provider: LLMProvider | None = None,
     red_max_calls: int | None = 20,
+    blue_provider: LLMProvider | None = None,
+    blue_max_calls: int | None = 5,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
@@ -95,6 +98,13 @@ def build_components_sparkov(
     the billed Sonnet calls per run: the demo makes at most 20 real Sonnet calls,
     after which the LLM agent returns None and the deterministic fallback drives
     the loop (bounding spend while keeping co-evolution alive).
+
+    For the blue pillar this also returns ``retrain_fn`` (the victim's
+    ``retrain_with_features`` wrapped to yield a generic ``LocalModelTarget`` over
+    the new feature set), ``available_features``/``current_features``, and a
+    ``BlueProposer`` (real Sonnet 4.6 by default per constitution §1, capped by
+    ``blue_max_calls``; tests inject a ``MockProvider`` or set ``blue_max_calls=0``
+    to use the deterministic fallback).
     """
     spec = fraud_sparkov.load_spec()
     detector: Detector = LocalModelTarget(
@@ -139,6 +149,21 @@ def build_components_sparkov(
             max_calls=judge_max_calls,
         ),
     ]
+    # Blue pillar: the victim's retrain capability, wrapped so the harness gets
+    # back a generic Detector (LocalModelTarget) over the new feature ORDER. The
+    # harness never imports the victim's retrainer — it is injected here, at the
+    # one composition root permitted to see examples/.
+    def retrain_fn(feature_names: Sequence[str]) -> Detector:
+        path = fraud_sparkov.retrain_with_features(list(feature_names))
+        return LocalModelTarget(model_path=path, feature_names=list(feature_names))
+
+    blue_proposer = BlueProposer(
+        provider=blue_provider
+        if blue_provider is not None
+        else AnthropicApiProvider(model="claude-sonnet-4-6"),
+        max_calls=blue_max_calls,
+    )
+
     return {
         "detector": detector,
         "adversary": adversary,
@@ -147,4 +172,8 @@ def build_components_sparkov(
         "generate_fn": fraud_sparkov.generate_batch,
         "spec": spec,
         "catalog": catalog,
+        "retrain_fn": retrain_fn,
+        "available_features": list(fraud_sparkov.AVAILABLE_FEATURES),
+        "current_features": list(fraud_sparkov.DETECTOR_FEATURES),
+        "blue_proposer": blue_proposer,
     }

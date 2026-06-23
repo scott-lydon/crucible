@@ -56,6 +56,11 @@ class LocalModelTarget:
         self._feature_names: tuple[str, ...] = tuple(feature_names)
         self._model: _Estimator | None = None
 
+    @property
+    def model_path(self) -> Path:
+        """The resolved artifact path (read-only; surfaced for blue-loop audit)."""
+        return self._model_path
+
     def _load_model(self) -> _Estimator:
         if self._model is not None:
             return self._model

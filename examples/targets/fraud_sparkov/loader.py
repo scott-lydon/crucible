@@ -9,6 +9,7 @@ input, never source.
 import hashlib
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from examples.targets.fraud_sparkov.constants import (
@@ -79,6 +80,11 @@ def load_dataframe(csv_path: str | Path, limit: int | None = None) -> pd.DataFra
     df["hour"] = dt.dt.hour.astype(int)
     df["age"] = ((dt - dob).dt.days // 365).astype(int)
     df["cat_risk"] = df["category"].isin(RISKY_CATEGORIES).astype(int)
+    # Cardholder<->merchant separation. Step-1 NOISE feature (identical fraud vs
+    # legit distribution); derived here so the full available menu is loadable.
+    df["distance"] = np.sqrt(
+        (df["lat"] - df["merch_lat"]) ** 2 + (df["long"] - df["merch_long"]) ** 2
+    )
     if limit is not None:
         df = df.head(limit)
     return df
@@ -92,6 +98,7 @@ def _row_to_record(idx: int, row: "pd.Series[object]") -> SparkovTxn:
         hour=int(row["hour"]),
         age=int(row["age"]),
         city_pop=int(row["city_pop"]),
+        distance=round(float(row["distance"]), 4),
     )
 
 
