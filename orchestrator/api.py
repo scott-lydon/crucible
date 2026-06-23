@@ -91,6 +91,16 @@ async def get_run(run_id: str) -> dict[str, object]:
         }
 
 
+@app.get("/runs/{run_id}/verdicts")
+async def list_verdicts(run_id: str) -> dict[str, object]:
+    async with session_factory()() as s:
+        verdicts = await repo.verdicts_for_run(s, run_id)
+        return {"verdicts": [
+            {"verdict_id": v.id, "round_id": v.round_id,
+             "aggregate_pass": v.aggregate_pass, "fail_weight": v.fail_weight}
+            for v in verdicts]}
+
+
 @app.get("/runs/{run_id}/metrics")
 async def get_metrics(run_id: str) -> dict[str, object]:
     async with session_factory()() as s:

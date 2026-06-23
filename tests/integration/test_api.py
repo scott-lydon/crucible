@@ -38,3 +38,18 @@ async def test_post_run_then_metrics(client: AsyncClient) -> None:
 async def test_metrics_not_yet_measured(client: AsyncClient) -> None:
     m = await client.get("/runs/does-not-exist/metrics")
     assert m.status_code == 200 and m.json() == {"status": "Not yet measured"}
+
+
+async def test_list_verdicts(client: AsyncClient) -> None:
+    r = await client.post("/runs", json={"n_rounds": 5, "batch_size": 200, "seed": "seed-1"})
+    assert r.status_code == 201
+    run_id = r.json()["run_id"]
+    v = await client.get(f"/runs/{run_id}/verdicts")
+    assert v.status_code == 200
+    body = v.json()
+    verdicts = body["verdicts"]
+    assert isinstance(verdicts, list) and len(verdicts) > 0
+    for item in verdicts:
+        assert "verdict_id" in item
+        assert "aggregate_pass" in item
+        assert "fail_weight" in item

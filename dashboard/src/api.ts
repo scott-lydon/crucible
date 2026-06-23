@@ -20,3 +20,11 @@ export async function getMetrics(runId: string): Promise<Metrics> {
   const r = await fetch(`/api/runs/${runId}/metrics`)
   return (await r.json()) as Metrics
 }
+
+export type VerdictSummary = { verdict_id: string; round_id: string; aggregate_pass: boolean; fail_weight: number }
+export async function getVerdicts(runId: string): Promise<VerdictSummary[]> {
+  const r = await fetch(`/api/runs/${runId}/verdicts`)
+  if (!r.ok) return []
+  const data = (await r.json()) as { verdicts: VerdictSummary[] }
+  return data.verdicts
+}
