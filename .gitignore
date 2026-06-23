@@ -28,9 +28,12 @@ build/
 crucible*.db
 
 # Target/victim datasets and trained model artifacts — EXTERNAL INPUTS, never source.
-# The Kaggle credit-card dataset is the TARGET being evaluated, not Crucible code.
+# A target's dataset is the system being EVALUATED, not Crucible code. Data is
+# scoped to its victim and co-located with it: examples/targets/<victim>/{data,artifacts}/.
 # We commit the fetch+train scripts and a checksum manifest, never the bytes.
-# Path is relocatable via CRUCIBLE_DATA_DIR (defaults to ./data).
+# (CRUCIBLE_DATA_DIR can override paths; /data/ at root is supported but not the convention.)
+examples/targets/*/data/
+examples/targets/*/artifacts/
 /data/
 /artifacts/
 *.lgb
