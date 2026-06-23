@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+  .om-kbd{font-family:'IBM Plex Mono',monospace;font-size:11px;background:#0E141B;border:1px solid #2C3744;border-bottom-width:2px;border-radius:3px;padding:1px 5px;color:#B8C2CE}
+</style>
+</helmet>
+
+<div data-screen-label="Audit Row Replayer · r_8f3a / r.32 / metamorphic" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">acme-fraud · operator</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <a href="slice-05-audit-row-replayer.dc.html" style="color:#4FAAC0;text-decoration:none">/audit</a> ·
+        <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:none">r_8f3a</a> ·
+        <a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0;text-decoration:none">r.32</a> ·
+        <span style="color:#E8EDF3">metamorphic</span>
+      </span>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <span style="width:9px;height:9px;border-radius:50%;background:#3A4654;flex:none"></span>
+        Archived · 2026-06-22 14:13:18Z
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <!-- breadcrumb -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+      <a href="slice-03-verdict-detail.dc.html" style="color:#4FAAC0;text-decoration:underline">← verdict detail</a>
+      <span style="color:#3A4654">·</span>
+      <span>row id <span style="color:#E8EDF3">a_8f3a_032_meta_1</span></span>
+    </div>
+
+    <!-- ============== VERDICT HEADER ============== -->
+    <div style="border:1px solid #4A2528;border-radius:10px;background:#161217;overflow:hidden;margin-bottom:24px">
+      <div style="display:grid;grid-template-columns:minmax(280px,0.9fr) 1.6fr minmax(260px,0.9fr);gap:0">
+        <!-- verdict -->
+        <div style="padding:20px 24px;border-right:1px solid #221A1D;background:#1B1518">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C99B95;letter-spacing:.14em;margin-bottom:6px">ORACLE VERDICT</div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:36px;line-height:1;font-weight:700;color:#E5B5B0;letter-spacing:-0.02em">FAIL</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B">metamorphic · 1/5</span>
+          </div>
+          <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5B5B0">obligation <span style="color:#E8EDF3">META-INV-04</span> violated</div>
+        </div>
+
+        <!-- identifiers -->
+        <div style="padding:20px 24px;background:#161217">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.08em;margin-bottom:10px">PROVENANCE</div>
+          <div style="display:grid;grid-template-columns:max-content 1fr;column-gap:18px;row-gap:5px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+            <span style="color:#B8C2CE">run</span><span style="color:#E8EDF3">r_8f3a · 2026-06-22</span>
+            <span style="color:#B8C2CE">round</span><span style="color:#E8EDF3">32 · 14:13:18Z</span>
+            <span style="color:#B8C2CE">oracle</span><span style="color:#E8EDF3">metamorphic · attempt 1 of 1</span>
+            <span style="color:#B8C2CE">spec</span><span style="color:#E8EDF3">9f2a4c7b · <a href="slice-16-spec-history.dc.html" style="color:#4FAAC0">sealed</a></span>
+            <span style="color:#B8C2CE">verifier</span><span style="color:#E8EDF3">v0.4.2 · sha 7d12…f4a</span>
+            <span style="color:#B8C2CE">corpus</span><span style="color:#E8EDF3">held-out 4,820 · sha 7d12…f4a</span>
+          </div>
+        </div>
+
+        <!-- replay -->
+        <div style="padding:20px 24px;border-left:1px solid #221A1D;background:#161217;display:flex;flex-direction:column;gap:10px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.08em">DETERMINISTIC REPLAY</div>
+          <button style="background:#4FAAC0;color:#0E141B;border:none;border-radius:6px;padding:11px 14px;font-weight:600;font-family:inherit;font-size:13.5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">Replay this row <span class="om-kbd" style="background:#0E141B;color:#4FAAC0;border-color:#316E7E">R</span></button>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;line-height:1.55">
+            re-runs producer + verifier with frozen seeds, model pins, tool versions · expected hash <span style="color:#E8EDF3">9c4b…2e10</span>
+          </div>
+          <div style="display:flex;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+            <a href="#" title="copies the replay command to clipboard" style="color:#4FAAC0;text-decoration:underline">copy curl</a>
+            <span style="color:#3A4654">·</span>
+            <a href="#" title="downloads sealed inputs + outputs + verdict (.tgz)" style="color:#4FAAC0;text-decoration:underline">download bundle</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== INPUTS · CHECK · OUTPUTS ============== -->
+    <div style="display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:18px;margin-bottom:24px">
+
+      <!-- INPUTS -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Inputs · pinned</span>
+          <button class="om-info" aria-label="About inputs" title="Exactly what the producer saw, plus every setting. Permanent — cannot be edited.">i</button>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Producer</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E8EDF3;display:flex;flex-direction:column;gap:3px">
+              <span>claude-3-5-sonnet-20241022</span>
+              <span style="color:#B8C2CE">temperature 0.0 · seed 4815162342</span>
+              <span style="color:#B8C2CE">max_tokens 2048 · top_p 1.0</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Prompt · sha 4a2b…91f</div>
+            <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;white-space:pre-wrap;line-height:1.55">classify the following transaction
+as fraud / not-fraud. respond
+with exactly one token.
+
+txn_id: t_4f8e2a
+amount: 8421.00 USD
+merchant: "ACME WIDGETS"
+country: US → BG
+device: new
+hour_utc: 03:12</pre>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Metamorphic twin · sha 4a2b…920</div>
+            <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;white-space:pre-wrap;line-height:1.55">same txn · merchant casing
+flipped to "acme widgets"</pre>
+            <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">invariance · output must equal original</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Tool versions</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;display:flex;flex-direction:column;gap:2px">
+              <span>crucible-cli <span style="color:#E8EDF3">0.4.2</span></span>
+              <span>verifier <span style="color:#E8EDF3">0.4.2</span></span>
+              <span>oracle/metamorphic <span style="color:#E8EDF3">0.4.2</span></span>
+              <span>python <span style="color:#E8EDF3">3.11.9</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECK FIRED + TRACE -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Check fired · 1 of 4 in this oracle</span>
+          <button class="om-info" aria-label="About checks" title="One specific test the oracle ran. A failure cites the test and the spec rule it enforces.">i</button>
+        </div>
+
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#1B1518;border:1px solid #5A2828;border-radius:8px;padding:14px 16px">
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E5B5B0;font-weight:600">META-INV-04 · casing invariance</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5736B;margin-left:auto">violated</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5B5B0;line-height:1.55">
+              forall t, t' s.t. lower(t.merchant) == lower(t'.merchant): <br/>
+              &nbsp;&nbsp;producer(t) == producer(t')
+            </div>
+            <div style="margin-top:10px;display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5B5B0">
+              <span>observed · producer(t) = <span style="color:#E8EDF3">not-fraud</span></span>
+              <span>observed · producer(t') = <span style="color:#E8EDF3">fraud</span></span>
+              <span>delta · <span style="color:#E5B5B0">labels differ on casing-only twin</span></span>
+            </div>
+          </div>
+
+          <!-- trace timeline -->
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">Execution trace · 0.94s wall</div>
+            <div style="display:flex;flex-direction:column;gap:1px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:6px 8px;border-bottom:1px solid #1D2630;color:#8A94A2">
+                <span>t+ms</span><span>step</span><span style="text-align:right">cost</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;border-bottom:1px solid #1D2630;color:#B8C2CE">
+                <span>0</span><span>oracle.metamorphic.start · seed 4815162342</span><span style="text-align:right;color:#B8C2CE">—</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;border-bottom:1px solid #1D2630;color:#B8C2CE">
+                <span>2</span><span>generate twin · casing flip · sha 4a2b…920</span><span style="text-align:right;color:#B8C2CE">—</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;border-bottom:1px solid #1D2630;color:#B8C2CE">
+                <span>14</span><span>producer.call(t) · claude-3-5-sonnet</span><span style="text-align:right;color:#E8EDF3">$0.0021</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;border-bottom:1px solid #1D2630;color:#B8C2CE">
+                <span>418</span><span>producer.call(t') · claude-3-5-sonnet</span><span style="text-align:right;color:#E8EDF3">$0.0019</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;border-bottom:1px solid #1D2630;color:#B8C2CE">
+                <span>902</span><span>check META-INV-04.evaluate</span><span style="text-align:right;color:#B8C2CE">—</span>
+              </div>
+              <div style="display:grid;grid-template-columns:64px 1fr 80px;padding:7px 8px;color:#E5B5B0;background:#1B1518">
+                <span>936</span><span>oracle.verdict · FAIL · META-INV-04</span><span style="text-align:right;color:#E8EDF3">$0.0040</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OUTPUTS -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Outputs · raw</span>
+          <button class="om-info" aria-label="About outputs" title="Exactly what the producer wrote, byte for byte.">i</button>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:14px">
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">producer(t)</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE">sha 3e1d…774</span>
+            </div>
+            <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#9BD9B5;white-space:pre-wrap">not-fraud</pre>
+            <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE">404ms · 12 input · 1 output tokens</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:5px">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">producer(t')</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE">sha 3e1d…801</span>
+            </div>
+            <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E5B5B0;white-space:pre-wrap">fraud</pre>
+            <div style="margin-top:5px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE">484ms · 12 input · 1 output tokens</div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Diff · normalized</div>
+            <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.5;white-space:pre-wrap"><span style="color:#9BD9B5">- not-fraud</span>
+<span style="color:#E5B5B0">+ fraud</span></pre>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px">Row hash</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#E8EDF3">9c4b9d2a4f01e7a3…2e10</div>
+            <div style="margin-top:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE">inputs + outputs + tool versions, content-addressed</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== REPLAY HISTORY ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:14px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:14px;font-weight:600;color:#E8EDF3">Replay history</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">3 replays · all matched original hash · last 4h</span>
+        <div style="flex:1"></div>
+        <a href="#" title="downloads every replay bundle as a single zip" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">download all bundles →</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:180px 130px 120px 1fr 160px 110px;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Replayed at</span><span>By</span><span>Wall</span><span>Hash</span><span>Status</span><span>Bundle</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:180px 130px 120px 1fr 160px 110px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">2026-06-22 14:13:18Z</span>
+        <span style="color:#E8EDF3">crucible-cli (original)</span>
+        <span style="color:#B8C2CE">0.94s</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>original</span>
+        <a href="#" title="downloads replay bundle (.tgz)" style="color:#4FAAC0;text-decoration:underline">replay-001.tgz</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:180px 130px 120px 1fr 160px 110px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">2026-06-22 14:42:09Z</span>
+        <span style="color:#E8EDF3">s.lydon@acme</span>
+        <span style="color:#B8C2CE">0.91s</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="downloads replay bundle (.tgz)" style="color:#4FAAC0;text-decoration:underline">replay-002.tgz</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:180px 130px 120px 1fr 160px 110px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">2026-06-22 17:08:54Z</span>
+        <span style="color:#E8EDF3">audit-bot · scheduled</span>
+        <span style="color:#B8C2CE">0.97s</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="downloads replay bundle (.tgz)" style="color:#4FAAC0;text-decoration:underline">replay-003.tgz</a>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:180px 130px 120px 1fr 160px 110px;gap:14px;padding:11px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#B8C2CE">2026-06-23 02:00:00Z</span>
+        <span style="color:#E8EDF3">audit-bot · nightly</span>
+        <span style="color:#B8C2CE">0.93s</span>
+        <span style="color:#E8EDF3">9c4b…2e10</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>matched</span>
+        <a href="#" title="downloads replay bundle (.tgz)" style="color:#4FAAC0;text-decoration:underline">replay-004.tgz</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

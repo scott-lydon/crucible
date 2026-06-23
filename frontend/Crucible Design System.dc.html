@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== GLOBAL CHROME (sticky) ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+
+    <!-- Halt-certification banner -->
+    <sc-if value="{{ halt }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;background:#5E1A1A;color:#E5B5B0;padding:9px 20px;font-size:13px;font-weight:500;border-bottom:1px solid #7A2323">
+        <span style="width:8px;height:8px;border-radius:50%;background:#E5B5B0;flex:none"></span>
+        <span style="font-weight:600;letter-spacing:.02em">HALT — CERTIFICATION SUSPENDED</span>
+        <span style="opacity:.85">White-box self-test recall 0.71 is below the 0.90 red line. Runs are blocked until verifier recall recovers.</span>
+      </div>
+    </sc-if>
+
+    <!-- Mock-LLM mode banner -->
+    <sc-if value="{{ mock }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;background:#3A3413;color:#E8C84A;padding:7px 20px;font-size:12.5px;font-weight:500;border-bottom:1px solid #5A4F1E;font-family:'IBM Plex Mono',monospace">
+        <span style="width:7px;height:7px;border-radius:50%;background:#E8C84A;flex:none"></span>
+        MOCK-LLM MODE — every model call is stubbed. No real tokens or dollars are spent. Disable in /admin/debug before any certified run.
+      </div>
+    </sc-if>
+
+    <!-- App bar -->
+    <div style="display:flex;align-items:center;gap:20px;padding:12px 20px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;border-left:1px solid #2C3744;padding-left:10px">operator</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896">/runs/r_8f3a · live run view</span>
+      <div style="flex:1"></div>
+      <!-- Cost meter -->
+      <div style="display:flex;align-items:center;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;background:#161E27;border:1px solid #2C3744;border-radius:7px;padding:6px 12px">
+        <div style="display:flex;flex-direction:column;line-height:1.2">
+          <span style="color:#7C8896;font-size:10px;letter-spacing:.08em">PER-RUN</span>
+          <span style="color:#E8EDF3;font-weight:500">$4.18</span>
+        </div>
+        <div style="width:1px;height:22px;background:#2C3744"></div>
+        <div style="display:flex;flex-direction:column;line-height:1.2">
+          <span style="color:#7C8896;font-size:10px;letter-spacing:.08em">SESSION</span>
+          <span style="color:#E8EDF3;font-weight:500">$61.40</span>
+        </div>
+      </div>
+      <!-- Live connection indicator -->
+      <button onClick="{{ cycleConn }}" title="Click to cycle connection state" style="display:flex;align-items:center;gap:8px;background:#161E27;border:1px solid #2C3744;border-radius:7px;padding:7px 11px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ connColor }};box-shadow:0 0 0 3px {{ connColor }}22;flex:none"></span>
+        {{ connLabel }}
+      </button>
+    </div>
+  </div>
+
+  <!-- chrome toggles -->
+  <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:12px 20px;background:#11181F;border-bottom:1px solid #2C3744;font-size:12px">
+    <span style="font-family:'IBM Plex Mono',monospace;color:#7C8896;letter-spacing:.06em;margin-right:4px">DEMO TOGGLES ·</span>
+    <button onClick="{{ toggleHalt }}" style="background:#161E27;border:1px solid #3A4654;color:#E5B5B0;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px">Halt banner</button>
+    <button onClick="{{ toggleMock }}" style="background:#161E27;border:1px solid #3A4654;color:#E8C84A;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px">Mock-LLM banner</button>
+    <button onClick="{{ cycleConn }}" style="background:#161E27;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;padding:6px 12px;cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px">Cycle connection</button>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1120px;margin:0 auto;padding:48px 24px 120px">
+
+    <!-- Masthead -->
+    <div style="margin-bottom:64px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;letter-spacing:.14em;margin-bottom:14px">CRUCIBLE · OPERATOR DASHBOARD</div>
+      <h1 style="margin:0;font-size:42px;line-height:1.08;font-weight:700;color:#E8EDF3;letter-spacing:-0.01em">Design System</h1>
+      <p style="max-width:680px;margin:18px 0 0;font-size:15px;color:#B8C2CE;line-height:1.6">The canonical visual language for the adversarial-security operator dashboard. The palette is <strong style="color:#E8EDF3;font-weight:600">Graphite Meridian</strong> — a near-dark navy-graphite base with one restrained steel-cyan primary and AAA-tuned semantic accents, built to earn trust from a bank model-risk officer, a code-agent vendor, and a public-sector procurement officer at once. Every per-route slice references these tokens and copies these components verbatim.</p>
+      <div style="display:flex;gap:10px;margin-top:24px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;background:#161E27;border:1px solid #2C3744;border-radius:6px;padding:6px 11px">IBM Plex Sans / Mono</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;background:#161E27;border:1px solid #2C3744;border-radius:6px;padding:6px 11px">14px base · AAA body</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;background:#161E27;border:1px solid #2C3744;border-radius:6px;padding:6px 11px">No gradients · no decorative motion</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;background:#161E27;border:1px solid #2C3744;border-radius:6px;padding:6px 11px">_palette_notes.md</span>
+      </div>
+    </div>
+
+    <!-- ===== 01 COLOR ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">01</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Foundations · Color</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:0 0 12px">SURFACES — graphite-navy, never pure black</div>
+    <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px">
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#0E141B"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">base</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#0E141B</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#161E27"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">surface</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#161E27</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#1D2630"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">surface-2</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#1D2630</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#25303C"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">surface-3</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#25303C</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#2C3744"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">border</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#2C3744</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:60px;background:#3A4654"></div>
+        <div style="padding:10px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">border-strong</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#3A4654</div></div>
+      </div>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:0 0 12px">TEXT — cool off-white, with measured contrast on base</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+      <div style="border:1px solid #2C3744;border-radius:7px;background:#0E141B;padding:16px">
+        <div style="font-size:22px;color:#E8EDF3;font-weight:600">text-hi</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;margin-top:6px">#E8EDF3 · headings &amp; key numbers</div>
+        <div style="display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:5px;padding:3px 8px">14.5:1 · AAA</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;background:#0E141B;padding:16px">
+        <div style="font-size:22px;color:#B8C2CE;font-weight:500">text</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;margin-top:6px">#B8C2CE · body copy</div>
+        <div style="display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:5px;padding:3px 8px">8.6:1 · AAA</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;background:#0E141B;padding:16px">
+        <div style="font-size:22px;color:#7C8896;font-weight:500">text-mut</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896;margin-top:6px">#7C8896 · labels &amp; meta</div>
+        <div style="display:inline-block;margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D9A441;background:#2A2310;border:1px solid #4A3D17;border-radius:5px;padding:3px 8px">4.7:1 · AA</div>
+      </div>
+    </div>
+
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:0 0 12px">PRIMARY &amp; SEMANTIC — restrained, AAA-tuned on base</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:64px;background:#4FAAC0"></div>
+        <div style="padding:11px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">primary</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#4FAAC0</div><div style="font-size:11px;color:#7C8896;margin-top:6px">links · brand · detection line</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:64px;background:#57C08A"></div>
+        <div style="padding:11px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">success</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#57C08A</div><div style="font-size:11px;color:#7C8896;margin-top:6px">oracle PASS · healthy</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:64px;background:#E5736B"></div>
+        <div style="padding:11px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">danger</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#E5736B</div><div style="font-size:11px;color:#7C8896;margin-top:6px">oracle FAIL · destructive</div></div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="height:64px;background:#D9A441"></div>
+        <div style="padding:11px;background:#161E27"><div style="font-size:13px;color:#E8EDF3;font-weight:500">warning</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:3px">#D9A441</div><div style="font-size:11px;color:#7C8896;margin-top:6px">amber health · ASR line</div></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:48px">
+      <div style="display:flex;align-items:center;gap:14px;border:1px solid #7A2323;border-radius:7px;background:#5E1A1A;padding:14px 16px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#E5B5B0"></span>
+        <div><div style="font-size:13px;color:#E5B5B0;font-weight:600">halt banner</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C99B95;margin-top:2px">bg #5E1A1A · text #E5B5B0</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;border:1px solid #5A4F1E;border-radius:7px;background:#3A3413;padding:14px 16px">
+        <span style="width:8px;height:8px;border-radius:50%;background:#E8C84A"></span>
+        <div><div style="font-size:13px;color:#E8C84A;font-weight:600">mock-LLM banner</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C2A93C;margin-top:2px">bg #3A3413 · text #E8C84A</div></div>
+      </div>
+    </div>
+
+    <!-- ===== 02 TYPE ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">02</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Foundations · Type</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:48px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.1em;margin-bottom:18px">IBM PLEX SANS · UI &amp; BODY</div>
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #232E39;padding-bottom:14px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;width:96px;flex:none">display / 42·700</span><span style="font-size:30px;font-weight:700;color:#E8EDF3;letter-spacing:-0.01em">Verified</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #232E39;padding-bottom:14px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;width:96px;flex:none">h1 / 24·600</span><span style="font-size:22px;font-weight:600;color:#E8EDF3">Live Run View</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #232E39;padding-bottom:14px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;width:96px;flex:none">h2 / 16·600</span><span style="font-size:16px;font-weight:600;color:#E8EDF3">Oracle votes</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px;border-bottom:1px solid #232E39;padding-bottom:14px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;width:96px;flex:none">body / 14·400</span><span style="font-size:14px;color:#B8C2CE">The red agent rewards a held-out obligation.</span></div>
+          <div style="display:flex;align-items:baseline;gap:14px"><span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;width:96px;flex:none">label / 12·500</span><span style="font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:#7C8896">Budget remaining</span></div>
+        </div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.1em;margin-bottom:18px">IBM PLEX MONO · CODE · TRACES · DOLLARS</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#B8C2CE;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:16px;line-height:1.7">
+          <div><span style="color:#7C8896">obligation:</span> <span style="color:#E8EDF3">held_out_tests.pass_rate &gt;= 0.95</span></div>
+          <div><span style="color:#7C8896">observed:</span> <span style="color:#E5736B">0.82</span> <span style="color:#7C8896">→</span> <span style="color:#E5736B">FAIL</span></div>
+          <div><span style="color:#7C8896">tokens:</span> <span style="color:#E8EDF3">3,114</span> <span style="color:#7C8896">·</span> <span style="color:#57C08A">$0.041</span></div>
+          <div style="margin-top:8px;color:#7C8896">// every $ amount is mono, always</div>
+        </div>
+        <div style="margin-top:16px;font-size:13px;color:#7C8896;line-height:1.6">Mono carries all dollar amounts, token counts, run IDs, prompts, raw responses, audit JSON, and any aligned numeric column.</div>
+      </div>
+    </div>
+
+    <!-- ===== 03 SPACING / RADIUS ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">03</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Foundations · Spacing &amp; Radius</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:48px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin-bottom:16px">SPACE SCALE · 4px base</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">4</span><div style="height:14px;width:4px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">8</span><div style="height:14px;width:8px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">12</span><div style="height:14px;width:12px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">16</span><div style="height:14px;width:16px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">24</span><div style="height:14px;width:24px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">32</span><div style="height:14px;width:32px;background:#4FAAC0"></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;width:40px">48</span><div style="height:14px;width:48px;background:#4FAAC0"></div></div>
+        </div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin-bottom:16px">RADIUS</div>
+        <div style="display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+          <div style="text-align:center"><div style="width:56px;height:56px;background:#25303C;border:1px solid #3A4654;border-radius:5px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:8px">5 · controls</div></div>
+          <div style="text-align:center"><div style="width:56px;height:56px;background:#25303C;border:1px solid #3A4654;border-radius:7px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:8px">7 · chips</div></div>
+          <div style="text-align:center"><div style="width:56px;height:56px;background:#25303C;border:1px solid #3A4654;border-radius:8px"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:8px">8 · cards</div></div>
+          <div style="text-align:center"><div style="width:56px;height:56px;background:#25303C;border:1px solid #3A4654;border-radius:50%"></div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-top:8px">full · dots</div></div>
+        </div>
+        <div style="margin-top:22px;font-size:13px;color:#7C8896;line-height:1.6">Tight radii throughout — the dashboard reads as an instrument, not a consumer app. Nothing rounder than 8px except status dots.</div>
+      </div>
+    </div>
+
+    <!-- ===== 04 CHARTS ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">04</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Charts · palette colors only</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:48px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;color:#E8EDF3">ASR vs Detection · over rounds</div>
+          <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+            <span style="display:flex;align-items:center;gap:6px;color:#7C8896"><span style="width:14px;height:2px;background:#D9A441"></span>ASR</span>
+            <span style="display:flex;align-items:center;gap:6px;color:#7C8896"><span style="width:14px;height:2px;background:#4FAAC0"></span>Detection</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 420 160" width="100%" height="160" style="display:block">
+          <line x1="34" y1="10" x2="34" y2="134" stroke="#2C3744" stroke-width="1"/>
+          <line x1="34" y1="134" x2="410" y2="134" stroke="#2C3744" stroke-width="1"/>
+          <line x1="34" y1="98" x2="410" y2="98" stroke="#1D2630" stroke-width="1"/>
+          <line x1="34" y1="62" x2="410" y2="62" stroke="#1D2630" stroke-width="1"/>
+          <line x1="34" y1="26" x2="410" y2="26" stroke="#1D2630" stroke-width="1"/>
+          <polyline points="40,40 100,46 160,58 220,52 280,68 340,84 400,104" fill="none" stroke="#D9A441" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <polyline points="40,120 100,112 160,96 220,88 280,72 340,54 400,40" fill="none" stroke="#4FAAC0" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+          <circle cx="400" cy="104" r="3" fill="#D9A441"/>
+          <circle cx="400" cy="40" r="3" fill="#4FAAC0"/>
+          <text x="10" y="30" fill="#7C8896" font-size="9" font-family="'IBM Plex Mono',monospace">1.0</text>
+          <text x="10" y="138" fill="#7C8896" font-size="9" font-family="'IBM Plex Mono',monospace">0.0</text>
+        </svg>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <div style="font-size:13px;font-weight:600;color:#E8EDF3">Verdicts per oracle</div>
+          <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+            <span style="display:flex;align-items:center;gap:6px;color:#7C8896"><span style="width:9px;height:9px;background:#57C08A;border-radius:2px"></span>pass</span>
+            <span style="display:flex;align-items:center;gap:6px;color:#7C8896"><span style="width:9px;height:9px;background:#E5736B;border-radius:2px"></span>fail</span>
+          </div>
+        </div>
+        <svg viewBox="0 0 280 160" width="100%" height="160" style="display:block">
+          <line x1="20" y1="134" x2="272" y2="134" stroke="#2C3744" stroke-width="1"/>
+          <rect x="34" y="48" width="26" height="86" fill="#57C08A"/><rect x="34" y="34" width="26" height="14" fill="#E5736B"/>
+          <rect x="90" y="64" width="26" height="70" fill="#57C08A"/><rect x="90" y="44" width="26" height="20" fill="#E5736B"/>
+          <rect x="146" y="40" width="26" height="94" fill="#57C08A"/><rect x="146" y="32" width="26" height="8" fill="#E5736B"/>
+          <rect x="202" y="74" width="26" height="60" fill="#57C08A"/><rect x="202" y="58" width="26" height="16" fill="#E5736B"/>
+          <text x="30" y="148" fill="#7C8896" font-size="8" font-family="'IBM Plex Mono',monospace">Held</text>
+          <text x="88" y="148" fill="#7C8896" font-size="8" font-family="'IBM Plex Mono',monospace">Meta</text>
+          <text x="142" y="148" fill="#7C8896" font-size="8" font-family="'IBM Plex Mono',monospace">Diff</text>
+          <text x="200" y="148" fill="#7C8896" font-size="8" font-family="'IBM Plex Mono',monospace">Fuzz</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ===== 05 CONTROLS ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 22px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">05</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Controls</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+    <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px;margin-bottom:16px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin-bottom:14px">BUTTONS</div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+        <button style="background:#4FAAC0;color:#0E141B;border:none;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit" style-hover="background:#5FBBD0">Start attack</button>
+        <button style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#25303C">Secondary</button>
+        <button style="background:transparent;color:#4FAAC0;border:1px solid transparent;border-radius:6px;padding:9px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#16242A">Ghost / link</button>
+        <button style="background:transparent;color:#E5736B;border:1px solid #4A2528;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#2A1413">Halt run</button>
+        <button disabled="true" style="background:#1A222B;color:#5A6573;border:1px solid #232E39;border-radius:6px;padding:9px 18px;font-size:13px;font-weight:500;cursor:not-allowed;font-family:inherit">Apply Patch · disabled</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin-bottom:14px">ADAPTER PICKER · segmented</div>
+        <div style="display:inline-flex;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:4px;gap:4px">
+          <span style="background:#25303C;color:#E8EDF3;border-radius:5px;padding:7px 14px;font-size:13px;font-weight:500;border:1px solid #3A4654">Fraud</span>
+          <span style="color:#B8C2CE;border-radius:5px;padding:7px 14px;font-size:13px">Code Agent</span>
+          <span style="color:#5A6573;border-radius:5px;padding:7px 14px;font-size:13px;cursor:not-allowed">Research Agent <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#5A6573">· disabled</span></span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:22px 0 10px">FILTER CHIPS</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <span style="background:#16242A;color:#4FAAC0;border:1px solid #2E5560;border-radius:14px;padding:5px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace">target:fraud ✕</span>
+          <span style="background:#1D2630;color:#B8C2CE;border:1px solid #2C3744;border-radius:14px;padding:5px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace">tactic:reward-hack</span>
+          <span style="background:#1D2630;color:#B8C2CE;border:1px solid #2C3744;border-radius:14px;padding:5px 12px;font-size:12px;font-family:'IBM Plex Mono',monospace">tactic:prompt-inject</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:22px 0 10px">TABS</div>
+        <div style="display:flex;gap:2px;border-bottom:1px solid #2C3744">
+          <span style="color:#E8EDF3;font-size:13px;font-weight:500;padding:8px 14px;border-bottom:2px solid #4FAAC0;margin-bottom:-1px">Overview</span>
+          <span style="color:#7C8896;font-size:13px;padding:8px 14px">Sandbox job</span>
+          <span style="color:#7C8896;font-size:13px;padding:8px 14px">Raw</span>
+        </div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin-bottom:10px">TEXT INPUT</div>
+        <div style="font-size:11px;color:#7C8896;margin-bottom:6px">Attack budget · rounds</div>
+        <input value="48" style="width:100%;background:#0E141B;border:1px solid #2C3744;border-radius:6px;padding:9px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none" style-focus="border-color:#4FAAC0"/>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;margin:18px 0 10px">SEALED SPEC · YAML paste</div>
+        <textarea style="width:100%;height:118px;background:#0E141B;border:1px solid #2C3744;border-radius:6px;padding:12px;color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.6;outline:none;resize:none" style-focus="border-color:#4FAAC0">spec:
+  target: fraud_adapter
+  obligations:
+    - held_out_tests.pass_rate &gt;= 0.95
+    - metamorphic.invariance == true
+  sealed: true</textarea>
+      </div>
+    </div>
+    <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:0;overflow:hidden;margin-bottom:48px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em;padding:18px 20px 10px">SORTABLE TABLE · strategy catalog</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="border-top:1px solid #2C3744;border-bottom:1px solid #2C3744;background:#11181F">
+            <th style="text-align:left;padding:11px 20px;color:#7C8896;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase">Tactic <span style="color:#4FAAC0">▾</span></th>
+            <th style="text-align:left;padding:11px 12px;color:#7C8896;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase">Target</th>
+            <th style="text-align:right;padding:11px 12px;color:#7C8896;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase">Reuse</th>
+            <th style="text-align:right;padding:11px 20px;color:#7C8896;font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase">Avg $ to win</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #1D2630" style-hover="background:#11181F"><td style="padding:12px 20px;color:#E8EDF3">Reward-hack held-out tests</td><td style="padding:12px;color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px">fraud</td><td style="padding:12px;text-align:right;color:#B8C2CE;font-family:'IBM Plex Mono',monospace">17</td><td style="padding:12px 20px;text-align:right;color:#57C08A;font-family:'IBM Plex Mono',monospace">$2.04</td></tr>
+          <tr style="border-bottom:1px solid #1D2630" style-hover="background:#11181F"><td style="padding:12px 20px;color:#E8EDF3">Metamorphic invariance break</td><td style="padding:12px;color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px">code-agent</td><td style="padding:12px;text-align:right;color:#B8C2CE;font-family:'IBM Plex Mono',monospace">9</td><td style="padding:12px 20px;text-align:right;color:#57C08A;font-family:'IBM Plex Mono',monospace">$3.88</td></tr>
+          <tr style-hover="background:#11181F"><td style="padding:12px 20px;color:#E8EDF3">Differential cross-family drift</td><td style="padding:12px;color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px">fraud</td><td style="padding:12px;text-align:right;color:#B8C2CE;font-family:'IBM Plex Mono',monospace">4</td><td style="padding:12px 20px;text-align:right;color:#D9A441;font-family:'IBM Plex Mono',monospace">$11.20</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ===== 06 STANDARDIZED COMPONENTS ===== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 8px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0;letter-spacing:.06em">06</span>
+      <h2 style="margin:0;font-size:13px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:#7C8896">Standardized Components</h2>
+      <div style="flex:1;height:1px;background:#2C3744"></div>
+    </div>
+    <p style="margin:0 0 24px;font-size:13px;color:#7C8896;max-width:680px">Six components copied verbatim into every route. Transparency-first: every one drills into underlying LLM calls, sandbox jobs, or captured seeds. Secrets (API keys, DB creds, sandbox tokens) are the only things ever hidden.</p>
+
+    <!-- InspectButton + ReplayButton -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace">InspectButton</div>
+          <button onClick="{{ openInspect }}" title="Inspect underlying LLM call" style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:#1D2630;border:1px solid #3A4654;border-radius:6px;color:#4FAAC0;cursor:pointer" style-hover="background:#25303C">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.25" stroke="currentColor" stroke-width="1.5"></circle><line x1="9.4" y1="9.4" x2="12.6" y2="12.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></line></svg>
+          </button>
+        </div>
+        <p style="margin:0;font-size:13px;color:#7C8896;line-height:1.6">Magnifier on every reasoning-trace line, oracle card, and producer-output panel. Opens a right drawer with the LLM call (prompt, raw response, parsed output, tokens, dollars) or sandbox job (env, network rules, exit code, stdout, stderr). <button onClick="{{ openInspect }}" style="background:none;border:none;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:13px;padding:0;text-decoration:underline">Open example →</button></p>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace">ReplayButton</div>
+          <button onClick="{{ openReplay }}" title="Replay from captured seed" style="display:inline-flex;align-items:center;gap:7px;background:#1D2630;border:1px solid #3A4654;border-radius:6px;color:#4FAAC0;cursor:pointer;padding:6px 11px;font-size:12px;font-family:'IBM Plex Mono',monospace" style-hover="background:#25303C">
+            <span style="font-size:14px;line-height:1">↺</span> Replay
+          </button>
+        </div>
+        <p style="margin:0;font-size:13px;color:#7C8896;line-height:1.6">Sits next to any action with a captured seed. Opens a drawer showing original output and replay output, diffed line by line — the spine of the audit-row replayer. <button onClick="{{ openReplay }}" style="background:none;border:none;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:13px;padding:0;text-decoration:underline">Open example →</button></p>
+      </div>
+    </div>
+
+    <!-- AuditTraceCard -->
+    <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">AuditTraceCard</div>
+      <p style="margin:0 0 18px;font-size:13px;color:#7C8896">Per-oracle: obligation, observation, reasoning, pass-or-fail. Identical shape on Verdict Detail and the Live Run View. The LLM Judge renders smaller — it is "one vote."</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <!-- PASS -->
+        <div style="border:1px solid #2A4636;border-radius:8px;background:#12191A;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #1E2E24;background:#16241C">
+            <span style="font-size:13px;font-weight:600;color:#E8EDF3">Held-Out Tests</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:5px;padding:3px 9px">✓ PASS</span>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBLIGATION</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">pass_rate &gt;= 0.95</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBSERVED</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#57C08A">0.98 across 220 sealed cases</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">REASONING</div><div style="font-size:12.5px;color:#B8C2CE;line-height:1.55">No held-out case regressed under the candidate patch.</div></div>
+          </div>
+        </div>
+        <!-- FAIL -->
+        <div style="border:1px solid #4A2528;border-radius:8px;background:#161217;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #221A1D;background:#1B1518">
+            <span style="font-size:13px;font-weight:600;color:#E8EDF3">Metamorphic Relations</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#E5736B;background:#1B1518;border:1px solid #4A2528;border-radius:5px;padding:3px 9px">✕ FAIL</span>
+          </div>
+          <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBLIGATION</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">invariance == true</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">OBSERVED</div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B">label flipped on amount-scaled input</div></div>
+            <div><div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:3px">REASONING</div><div style="font-size:12.5px;color:#B8C2CE;line-height:1.55">Scaling the transaction 10× should not change the fraud verdict; it did.</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- LLM Judge one-vote -->
+      <div style="margin-top:14px;border:1px dashed #3A4654;border-radius:8px;background:#131A22;padding:13px 16px;display:flex;align-items:center;gap:14px;opacity:.92">
+        <span style="display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#B8C2CE"><span style="width:18px;height:18px;border-radius:4px;background:#25303C;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#7C8896;font-family:'IBM Plex Mono',monospace">½</span>LLM Judge</span>
+        <span title="One of five votes. Easy to fool — never decides the verdict on its own." style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#D9A441;border:1px solid #4A3D17;background:#221C0C;border-radius:5px;padding:2px 8px;cursor:help">ONE VOTE ⓘ</span>
+        <span style="font-size:12.5px;color:#7C8896;flex:1">Smaller weight than the four independent oracles. Hover the badge for why.</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#57C08A">✓ PASS</span>
+      </div>
+    </div>
+
+    <!-- HealthBadge / CostChip / NotYetMeasured -->
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:16px;margin-bottom:16px">
+      <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+        <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">HealthBadge</div>
+        <p style="margin:0 0 16px;font-size:13px;color:#7C8896">Dot + timestamp + optional error. On /health leaves and inline anywhere a subcomponent is named.</p>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:10px;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 14px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+            <span style="font-size:13px;color:#E8EDF3">Producer Sandbox</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;margin-left:auto">ok · 14:02:11Z</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 14px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#D9A441;flex:none"></span>
+            <span style="font-size:13px;color:#E8EDF3">Oracle: Differential</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D9A441;margin-left:auto">last-good 13:51Z · timeout</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 14px">
+            <span style="width:9px;height:9px;border-radius:50%;background:#E5736B;flex:none"></span>
+            <span style="font-size:13px;color:#E8EDF3">Blue: Patch Trainer</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5736B;margin-left:auto">CUDA OOM at step 1.2k</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+          <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;margin-bottom:4px">CostChip</div>
+          <p style="margin:0 0 14px;font-size:13px;color:#7C8896">Inline dollar amount, tooltip carries pillar + run ID. On every catalog row, blue patch, LLM call.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <span title="pillar: Red · run r_8f3a" style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#57C08A;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:4px 10px;cursor:help">$0.041</span>
+            <span title="pillar: Blue · run r_8f3a" style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#D9A441;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:4px 10px;cursor:help">$2.18</span>
+            <span title="pillar: Measure · run r_7c1d" style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:4px 10px;cursor:help">$0.006</span>
+          </div>
+        </div>
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:24px">
+          <div style="font-size:14px;font-weight:600;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;margin-bottom:14px">NotYetMeasuredTile</div>
+          <div style="border:1px dashed #3A4654;border-radius:8px;background:#0E141B;padding:20px;text-align:center">
+            <div style="font-size:15px;color:#7C8896;font-weight:500">Not yet measured</div>
+            <div style="font-size:12px;color:#5A6573;margin:6px 0 12px">Zero contributing runs · never a 0.0 sample</div>
+            <a href="slice-01-run-launcher.dc.html" style="display:inline-block;font-size:12px;color:#4FAAC0;text-decoration:none;border:1px solid #2E5560;border-radius:6px;padding:6px 14px" style-hover="background:#16242A">Run Launcher →</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ============== INSPECT DRAWER ============== -->
+  <sc-if value="{{ showInspect }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:460px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">INSPECT · LLM CALL</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">Held-Out Tests oracle</div></div>
+        <button onClick="{{ closeDrawer }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div style="display:flex;gap:2px;border-bottom:1px solid #2C3744;padding:0 20px">
+        <span style="color:#E8EDF3;font-size:12.5px;font-weight:500;padding:10px 12px;border-bottom:2px solid #4FAAC0;margin-bottom:-1px">LLM call</span>
+        <span style="color:#7C8896;font-size:12.5px;padding:10px 12px">Sandbox job</span>
+      </div>
+      <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">PROMPT</div>
+          <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6">You are the held-out test oracle. Given the
+producer output and the sealed obligation,
+report pass_rate over the 220 held-out cases.
+Cite each regressed case by id.</pre>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">RAW RESPONSE</div>
+          <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6">{"pass_rate":0.98,"regressed":[],
+ "n":220,"verdict":"pass"}</pre>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">PARSED OUTPUT</div>
+          <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#57C08A">pass_rate = 0.98 → PASS</div>
+        </div>
+        <div style="display:flex;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896">
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">tokens <span style="color:#E8EDF3">3,114</span></span>
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">cost <span style="color:#57C08A">$0.041</span></span>
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">latency <span style="color:#E8EDF3">1.2s</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#7C8896;border-top:1px solid #232E39;padding-top:14px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#7C8896"></span>
+          API keys, DB credentials, and sandbox tokens are redacted — the only values ever hidden.
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============== REPLAY DRAWER ============== -->
+  <sc-if value="{{ showReplay }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:520px;max-width:94vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
+        <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">REPLAY · audit row a_4471</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">Original vs replay</div></div>
+        <button onClick="{{ closeDrawer }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:18px 20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">ORIGINAL</div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">REPLAY · seed 0x91af</div>
+        </div>
+        <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7">
+          <div style="display:grid;grid-template-columns:1fr 1fr">
+            <div style="padding:10px 12px;color:#B8C2CE;border-right:1px solid #232E39">verdict: pass</div>
+            <div style="padding:10px 12px;color:#B8C2CE">verdict: pass</div>
+            <div style="padding:10px 12px;color:#E5736B;background:#161217;border-right:1px solid #232E39">pass_rate: 0.98</div>
+            <div style="padding:10px 12px;color:#57C08A;background:#12191A">pass_rate: 0.97</div>
+            <div style="padding:10px 12px;color:#B8C2CE;border-right:1px solid #232E39">tokens: 3114</div>
+            <div style="padding:10px 12px;color:#B8C2CE">tokens: 3114</div>
+            <div style="padding:10px 12px;color:#B8C2CE;border-right:1px solid #232E39">cost: $0.041</div>
+            <div style="padding:10px 12px;color:#B8C2CE">cost: $0.041</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:12px;color:#D9A441;background:#221C0C;border:1px solid #4A3D17;border-radius:7px;padding:10px 14px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#D9A441"></span>
+          1 field drifted: pass_rate 0.98 → 0.97. Within tolerance; verdict unchanged.
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { halt: false, mock: false, conn: 'connected', drawer: null };
+  renderVals() {
+    const map = {
+      connected:    { color: '#57C08A', label: 'SSE connected' },
+      reconnecting: { color: '#D9A441', label: 'Reconnecting' },
+      offline:      { color: '#E5736B', label: 'Offline' }
+    };
+    const c = map[this.state.conn];
+    return {
+      halt: this.state.halt,
+      mock: this.state.mock,
+      connColor: c.color,
+      connLabel: c.label,
+      showInspect: this.state.drawer === 'inspect',
+      showReplay: this.state.drawer === 'replay',
+      toggleHalt: () => this.setState(s => ({ halt: !s.halt })),
+      toggleMock: () => this.setState(s => ({ mock: !s.mock })),
+      cycleConn: () => this.setState(s => {
+        const order = ['connected', 'reconnecting', 'offline'];
+        return { conn: order[(order.indexOf(s.conn) + 1) % 3] };
+      }),
+      openInspect: () => this.setState({ drawer: 'inspect' }),
+      openReplay: () => this.setState({ drawer: 'replay' }),
+      closeDrawer: () => this.setState({ drawer: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

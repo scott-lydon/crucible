@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div data-screen-label="Health · /health" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Canvas.dc.html" style="color:#4FAAC0;text-decoration:none">/</a> · <span style="color:#E8EDF3">/health</span></span>
+      <div style="flex:1"></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">last poll · 2026-06-22 15:38:11Z · auto-refresh 10s</span>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">System health</h1>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:4px">7 of 9 leaves green · 1 amber · 1 red · overall <span style="color:#D9A441">degraded</span></div>
+      </div>
+      <div style="display:flex;gap:8px"><a href="#" title="GET /health.json — raw component statuses" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">raw /health JSON ↗</a><a href="#" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">incidents (3d) ↗</a></div>
+    </div>
+
+    <!-- overall strip -->
+    <div style="border:1px solid #6E5A1F;background:#2B240E;border-radius:10px;padding:14px 18px;margin-bottom:22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8C84A">
+      <span style="width:9px;height:9px;border-radius:50%;background:#D9A441"></span>
+      <span style="color:#E8C84A;font-weight:600;letter-spacing:.04em">DEGRADED</span>
+      <span style="color:#B8C2CE">judge-pool p95 latency 4.8s (sla 3.0s) · vendor anthropic-claude-3-5 · since 14:52Z</span>
+      <div style="flex:1"></div>
+      <a href="https://status.anthropic.com" target="_blank" rel="noopener" style="color:#4FAAC0;text-decoration:none">vendor status ↗</a>
+    </div>
+
+    <!-- leaves grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px">
+
+      <!-- orchestrator -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3;letter-spacing:-.005em">orchestrator</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3;letter-spacing:-.005em">p95 <span style="color:#E8EDF3">23ms</span> · queue 4</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>12 workers · uptime 99.98%</span>
+          <span>last restart 11d ago</span>
+        </div>
+      </div>
+
+      <!-- oracle-pool -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">oracle-pool</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3">p95 <span style="color:#E8EDF3">412ms</span> · 4 / 4 up</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>held-out · metamorphic</span>
+          <span>differential · fuzz</span>
+        </div>
+      </div>
+
+      <!-- judge-pool · degraded -->
+      <div style="border:1px solid #6E5A1F;border-radius:12px;background:#1F1A0B;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#D9A441;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">judge-pool</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#D9A441;text-transform:uppercase">DEGRADED</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8C84A">p95 <span style="color:#FFE9A8">4.8s</span> <span style="color:#8A94A2;font-size:12px">(sla 3.0s)</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>6.2% timeouts · claude-3.5-sonnet</span>
+          <span>degraded since 14:52Z</span>
+        </div>
+      </div>
+
+      <!-- producer-pool -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">producer-pool</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3">p95 <span style="color:#E8EDF3">1.4s</span> · 0.2% timeouts</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>gpt-4.1 · sonnet-3.5</span>
+          <span>llama-3.1-405</span>
+        </div>
+      </div>
+
+      <!-- artifact-store · cold (red) -->
+      <div style="border:1px solid #4A2528;border-radius:12px;background:#1B1518;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#E5736B;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">artifact-store · cold</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#E5B5B0;text-transform:uppercase">RED</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E5B5B0">read errors <span style="color:#FFE0DC">4.1%</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>s3 us-east-1 · traces &gt;30d may 404</span>
+          <span>investigation <a href="#" title="incident INC-2034" style="color:#4FAAC0;text-decoration:none">INC-2034</a></span>
+        </div>
+      </div>
+
+      <!-- artifact-store · hot -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">artifact-store · hot</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3">p95 <span style="color:#E8EDF3">14ms</span> · 0.02% errors</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>retention 30 days</span>
+          <span>412 GB of 2 TB</span>
+        </div>
+      </div>
+
+      <!-- spec-registry -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">spec-registry</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3"><span style="color:#E8EDF3">114</span> sealed · <span style="color:#E8EDF3">8</span> draft</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>signing key kms/spec-v3</span>
+          <span>rotates 2026-09-01</span>
+        </div>
+      </div>
+
+      <!-- cost-meter -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">cost-meter</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3">drift <span style="color:#E8EDF3">&lt; 0.4%</span></div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>vendor receipts reconciled</span>
+          <span>last reconcile 15:30Z</span>
+        </div>
+      </div>
+
+      <!-- audit-log -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px 22px 20px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>
+          <span style="font-size:14.5px;font-weight:600;color:#E8EDF3">audit-log</span>
+          <span style="flex:1"></span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase">OK</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;color:#E8EDF3"><span style="color:#E8EDF3">1.2M</span> events / 24h</div>
+        <div style="display:flex;flex-direction:column;gap:3px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55">
+          <span>append-only · WORM bucket</span>
+          <span>last fsck clean</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- incidents -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Open & recent incidents</span></div>
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 1fr 130px 90px;gap:14px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>ID</span><span>Opened</span><span>Title</span><span>Component</span><span>State</span></div>
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 1fr 130px 90px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><a href="#" title="incident INC-2034 · open in postmortem tracker" style="color:#4FAAC0">INC-2034</a><span style="color:#B8C2CE">06-22 13:02Z</span><span style="color:#E5B5B0">cold-tier read errors for traces &gt;30d</span><span style="color:#B8C2CE">artifact-store</span><span style="color:#E5B5B0">open</span></div>
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 1fr 130px 90px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><a href="#" title="incident INC-2033 · open in postmortem tracker" style="color:#4FAAC0">INC-2033</a><span style="color:#B8C2CE">06-22 14:52Z</span><span style="color:#E8C84A">judge-pool latency above SLA</span><span style="color:#B8C2CE">judge-pool</span><span style="color:#E8C84A">investigating</span></div>
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 1fr 130px 90px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><a href="#" title="incident INC-2031 · open in postmortem tracker" style="color:#4FAAC0">INC-2031</a><span style="color:#B8C2CE">06-20 09:11Z</span><span style="color:#B8C2CE">orchestrator queue depth spike (auto-resolved)</span><span style="color:#B8C2CE">orchestrator</span><span style="color:#9BD9B5">resolved</span></div>
+      <div role="row" style="display:grid;grid-template-columns:110px 130px 1fr 130px 90px;gap:14px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><a href="#" title="incident INC-2028 · open in postmortem tracker" style="color:#4FAAC0">INC-2028</a><span style="color:#B8C2CE">06-18 22:40Z</span><span style="color:#B8C2CE">producer vendor llama-3.1 elevated 5xx</span><span style="color:#B8C2CE">producer-pool</span><span style="color:#9BD9B5">resolved</span></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

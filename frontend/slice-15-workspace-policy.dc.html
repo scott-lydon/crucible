@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .tab{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;padding:9px 14px;border-bottom:2px solid transparent;cursor:pointer;text-decoration:none;background:none;border-left:0;border-right:0;border-top:0;font:inherit;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+  .tab:hover{color:#E8EDF3}
+  .tab.on{color:#E8EDF3;border-bottom:2px solid #4FAAC0}
+</style>
+</helmet>
+
+<div data-screen-label="Workspace · acme-fraud · Policy" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Canvas.dc.html" style="color:#4FAAC0;text-decoration:none">/workspaces</a> · <span style="color:#E8EDF3">acme-fraud</span></span>
+      <div style="flex:1"></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">you · <span style="color:#E8EDF3">m.chen</span> · model-risk</span>
+    </div>
+    <div style="display:flex;gap:4px;padding:0 22px;border-top:1px solid #1D2630">
+      <a href="#" class="tab" title="workspace overview">Overview</a>
+      <a href="#members" class="tab" title="members · in this view below">Members</a>
+      <a href="#" class="tab on" aria-current="page">Roles &amp; Policy</a>
+      <a href="#ledger" class="tab" title="cost ledger drawer · in this view below">Cost ledger</a>
+      <a href="slice-16-spec-history.dc.html" class="tab">Specs</a>
+      <a href="#" class="tab" title="workspace settings">Settings</a>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:18px">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Roles &amp; policy</h1>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:4px">acme-fraud · 12 members · 5 roles · 14 active policies</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button style="background:#161E27;color:#E8EDF3;border:1px solid #2C3744;border-radius:6px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer">+ invite</button>
+        <button style="background:#316E7E;color:#E8EDF3;border:0;border-radius:6px;padding:8px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer">+ new policy</button>
+      </div>
+    </div>
+
+    <!-- two columns: roles + members -->
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:18px;margin-bottom:22px">
+
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Roles · 5</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>Role</span><span>Can</span><span>Members</span><span>Policies</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">model-risk</span><span style="color:#B8C2CE">seal · lift halt · sign SR 11-7</span><span style="color:#E8EDF3">2</span><span style="color:#E8EDF3">5</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">operator</span><span style="color:#B8C2CE">launch runs · apply patch (4-eyes)</span><span style="color:#E8EDF3">5</span><span style="color:#E8EDF3">4</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">researcher</span><span style="color:#B8C2CE">read all · author strategies</span><span style="color:#E8EDF3">3</span><span style="color:#E8EDF3">2</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">auditor</span><span style="color:#B8C2CE">read · export · cannot launch</span><span style="color:#E8EDF3">1</span><span style="color:#E8EDF3">2</span></div>
+        <div role="row" style="display:grid;grid-template-columns:160px 1fr 90px 90px;gap:10px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E5B5B0">root</span><span style="color:#B8C2CE">/admin/debug · break-glass</span><span style="color:#E8EDF3">1</span><span style="color:#E8EDF3">1</span></div>
+      </div>
+
+      <div id="members" style="scroll-margin-top:110px;border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Members · 12</span></div>
+        <div style="padding:0 0">
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>Member</span><span>Role</span><span>Last seen</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">m.chen <span style="color:#7C8896">· you</span></span><span style="color:#B8C2CE">model-risk</span><span style="color:#B8C2CE">now</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">a.varga</span><span style="color:#B8C2CE">model-risk</span><span style="color:#B8C2CE">2m ago</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">s.lydon</span><span style="color:#B8C2CE">operator</span><span style="color:#B8C2CE">14m ago</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">k.imai</span><span style="color:#B8C2CE">operator</span><span style="color:#B8C2CE">1h ago</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">r.okafor</span><span style="color:#B8C2CE">researcher</span><span style="color:#B8C2CE">3h ago</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">e.duarte</span><span style="color:#B8C2CE">auditor</span><span style="color:#B8C2CE">yesterday</span></div>
+          <div style="display:grid;grid-template-columns:1fr 130px 100px;gap:10px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E5B5B0">platform-bot</span><span style="color:#B8C2CE">root</span><span style="color:#B8C2CE">always</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- policies -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:22px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Active policies · 14</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">enforced on every run · violations halt</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>ID</span><span>Rule</span><span>Applies to</span><span>Updated</span><span>State</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-12.4</span><span style="color:#B8C2CE">recall &gt;= 0.90 over 3-round debounce window</span><span style="color:#B8C2CE">all specs</span><span style="color:#B8C2CE">2026-04-01</span><span style="color:#9BD9B5">on</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-12.7</span><span style="color:#B8C2CE">cost ceiling · $25 / run · soft-warn at $20</span><span style="color:#B8C2CE">all runs</span><span style="color:#B8C2CE">2026-03-10</span><span style="color:#9BD9B5">on</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-11.1</span><span style="color:#B8C2CE">two-person rule on patch apply (4-eyes)</span><span style="color:#B8C2CE">operator+</span><span style="color:#B8C2CE">2026-02-19</span><span style="color:#9BD9B5">on</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-4.2</span><span style="color:#B8C2CE">held-out corpus diffed monthly against training set</span><span style="color:#B8C2CE">all specs</span><span style="color:#B8C2CE">2026-01-04</span><span style="color:#9BD9B5">on</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-9.0</span><span style="color:#B8C2CE">v↔h gap &lt; 0.05 · overfit-flag trips at 0.05</span><span style="color:#B8C2CE">submissions</span><span style="color:#B8C2CE">2026-05-22</span><span style="color:#9BD9B5">on</span></div>
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 150px 110px 80px;gap:12px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">MRG-7.3</span><span style="color:#B8C2CE">judge p95 latency &lt; 3.0s · alert at 4.0s</span><span style="color:#B8C2CE">judge-pool</span><span style="color:#B8C2CE">2026-05-30</span><span style="color:#D9A441">warn</span></div>
+    </div>
+
+    <!-- cost ledger drawer -->
+    <div id="ledger" style="scroll-margin-top:110px;border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Cost ledger · last 24h</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">$184.12 · 47 runs · vendor receipts reconciled 15:30Z</span><div style="flex:1"></div><a href="slice-15-workspace-policy.dc.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">full ledger →</a></div>
+      <div role="row" style="display:grid;grid-template-columns:130px 110px 90px 1fr 90px;gap:12px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>Time</span><span>Run</span><span>Role</span><span>Line item</span><span>Amount</span></div>
+      <div role="row" style="display:grid;grid-template-columns:130px 110px 90px 1fr 90px;gap:12px;padding:10px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#B8C2CE">15:32Z</span><a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0">r_8f3a</a><span style="color:#B8C2CE">producer</span><span style="color:#B8C2CE">gpt-4.1 · 1,402 calls · 8.4M tokens</span><span style="color:#E8EDF3">$22.04</span></div>
+      <div role="row" style="display:grid;grid-template-columns:130px 110px 90px 1fr 90px;gap:12px;padding:10px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#B8C2CE">15:32Z</span><a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0">r_8f3a</a><span style="color:#B8C2CE">judge</span><span style="color:#B8C2CE">sonnet-3.5 · 412 verdicts</span><span style="color:#E8EDF3">$2.71</span></div>
+      <div role="row" style="display:grid;grid-template-columns:130px 110px 90px 1fr 90px;gap:12px;padding:10px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#B8C2CE">14:08Z</span><a href="slice-02-live-run-view.dc.html" style="color:#4FAAC0">r_8f39</a><span style="color:#B8C2CE">producer</span><span style="color:#B8C2CE">claude-3.5 · 1,201 calls · 7.1M tokens</span><span style="color:#E8EDF3">$19.86</span></div>
+      <div role="row" style="display:grid;grid-template-columns:130px 110px 90px 1fr 90px;gap:12px;padding:10px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#B8C2CE">11:52Z</span><a href="slice-10-whitebox-selftest.dc.html" style="color:#4FAAC0">wb_31a</a><span style="color:#B8C2CE">white-box</span><span style="color:#B8C2CE">240 seeded cheats · 6 families</span><span style="color:#E8EDF3">$4.18</span></div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

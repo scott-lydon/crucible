@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+</style>
+</helmet>
+
+<div data-screen-label="Strategy Catalog · acme-fraud" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">acme-fraud · operator</span>
+      </div>
+      <nav aria-label="Primary" style="display:flex;gap:2px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <a href="slice-04-honest-dashboard.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Dashboard</a>
+        <a href="slice-02-live-run-view.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Runs</a>
+        <span style="padding:6px 11px;color:#E8EDF3;background:#19222C;border-radius:5px 5px 0 0;border-bottom:2px solid #4FAAC0">Strategies</span>
+        <a href="slice-05-audit-row-replayer.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Audit</a>
+        <a href="slice-11-health.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Health</a>
+      </nav>
+      <div style="flex:1"></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">scope · <span style="color:#E8EDF3">acme-fraud</span> · spec <span style="color:#E8EDF3">9f2a4c7b</span></span>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1400px;margin:0 auto;padding:32px 24px 96px">
+
+    <!-- header -->
+    <div style="margin-bottom:20px;display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Strategy catalog</h1>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">tactics surfaced by the red agent across 142 runs · sealed-corpus only · 2026-05-24 → 2026-06-22</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a href="#" title="exports filtered strategies as JSON" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;align-self:center">export JSON ↗</a>
+        <button style="background:#4FAAC0;color:#0E141B;border:none;border-radius:5px;padding:8px 14px;font-weight:600;font-family:inherit;font-size:13px;cursor:pointer">Pin to next run</button>
+      </div>
+    </div>
+
+    <!-- summary tiles -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">tactics</span><button class="om-info" aria-label="About tactics count" title="distinct red-team strategies that surfaced at least one undetected hack on the sealed corpus">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">38</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">23 patched · 12 active · 3 superseded</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">hacks surfaced</span><button class="om-info" aria-label="About hacks surfaced" title="undetected hacks before the blue loop patched the corresponding tactic">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">87</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">window total · mean 2.3 per tactic</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">median TTP</span><button class="om-info" aria-label="About TTP" title="median time-to-patch · from first surfacing to a verifier patch that closes the tactic on held-out">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">2.4 <span style="color:#B8C2CE;font-size:18px;font-weight:500">rounds</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">p95 6 rounds · longest 11 (unicode-rtl)</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">cost per tactic</span><button class="om-info" aria-label="About cost per tactic" title="LLM + compute spend per surfaced tactic, mean across the window">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">$48.60</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">$21.30 per hack · lower better</div>
+      </div>
+    </div>
+
+    <!-- search + filters -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:7px 12px;flex:1;min-width:280px;max-width:520px">
+        <span style="color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px">search</span>
+        <input type="text" placeholder="tactic id, name, obligation, class…" style="flex:1;background:none;border:none;outline:none;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px;min-width:0" />
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;background:#161E27;border:1px solid #2C3744;border-radius:3px;padding:1px 6px">/</span>
+      </div>
+
+      <div role="tablist" aria-label="Status filter" style="display:flex;gap:2px;border:1px solid #2C3744;background:#0E141B;border-radius:6px;padding:3px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span role="tab" aria-selected="true" style="background:#19222C;color:#E8EDF3;border-radius:4px 4px 0 0;padding:4px 10px;border-bottom:2px solid #4FAAC0;display:inline-flex;align-items:baseline;gap:6px">All <span style="color:#B8C2CE;font-size:11px">· 38</span></span>
+        <span role="tab" aria-selected="false" style="color:#B8C2CE;border-radius:4px;padding:4px 10px">Active <span style="color:#8A94A2">12</span></span>
+        <span role="tab" aria-selected="false" style="color:#B8C2CE;border-radius:4px;padding:4px 10px">Patched <span style="color:#8A94A2">23</span></span>
+        <span role="tab" aria-selected="false" style="color:#B8C2CE;border-radius:4px;padding:4px 10px">Superseded <span style="color:#8A94A2">3</span></span>
+      </div>
+
+      <div role="group" aria-label="Class filter" style="display:flex;flex-wrap:wrap;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span style="background:#19222C;color:#E8EDF3;border:1px solid #2C3744;border-radius:3px;padding:3px 9px">all classes</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">prompt-injection</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">unicode</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">casing</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">semantic</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">encoding</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">multi-turn</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">numeric</span>
+      </div>
+    </div>
+
+    <!-- table -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow-x:auto">
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:10px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Tactic</span><span>Name</span><span>Oracle</span><span>Obligation</span><span>Class</span><span>Wins ▼</span><span>TTP</span><span>First seen</span><span>Last seen</span><span>Status</span>
+      </div>
+
+      <!-- row 1 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_meta_casing_04" style="color:#4FAAC0;text-decoration:underline">s_meta_casing_04</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Merchant casing flip</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">"acme widgets" vs "ACME WIDGETS"</span></div><span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">metamorphic</span><span style="color:#E8EDF3">META-INV-04</span>
+        <span style="color:#B8C2CE">casing</span>
+        <span style="color:#E8EDF3;text-align:right">11</span>
+        <span style="color:#B8C2CE">2 rds</span>
+        <span style="color:#B8C2CE">06-04 r.17</span>
+        <span style="color:#B8C2CE">06-22 r.32</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+
+      <!-- row 2 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_unicode_rtl_01" style="color:#4FAAC0;text-decoration:underline">s_unicode_rtl_01</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">RTL override in merchant name</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">U+202E flips display</span></div><span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">metamorphic</span><span style="color:#E8EDF3">META-INV-02</span>
+        <span style="color:#B8C2CE">unicode</span>
+        <span style="color:#E8EDF3;text-align:right">9</span>
+        <span style="color:#B8C2CE">11 rds</span>
+        <span style="color:#B8C2CE">05-26 r.04</span>
+        <span style="color:#B8C2CE">06-19 r.41</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>patched</span>
+      </div>
+
+      <!-- row 3 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_inject_role_07" style="color:#4FAAC0;text-decoration:underline">s_inject_role_07</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Role-play preamble injection</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">"you are an auditor…" prefix</span></div><span style="display:inline-flex;align-items:center;background:#2A2517;border:1px solid #4A3D17;color:#E8C84A;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">judge</span><span style="color:#E8EDF3">JUDGE-04</span>
+        <span style="color:#B8C2CE">prompt-injection</span>
+        <span style="color:#E8EDF3;text-align:right">8</span>
+        <span style="color:#B8C2CE">3 rds</span>
+        <span style="color:#B8C2CE">05-29 r.09</span>
+        <span style="color:#B8C2CE">06-21 r.28</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+
+      <!-- row 4 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_num_boundary_02" style="color:#4FAAC0;text-decoration:underline">s_num_boundary_02</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Amount $9,999.99 boundary</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">threshold ±1¢ flips label</span></div><span style="display:inline-flex;align-items:center;background:#16332A;border:1px solid #2B4E3B;color:#9BD9B5;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">differential</span><span style="color:#E8EDF3">DIFF-11</span>
+        <span style="color:#B8C2CE">numeric</span>
+        <span style="color:#E8EDF3;text-align:right">7</span>
+        <span style="color:#B8C2CE">1 rd</span>
+        <span style="color:#B8C2CE">06-08 r.22</span>
+        <span style="color:#B8C2CE">06-18 r.37</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>patched</span>
+      </div>
+
+      <!-- row 5 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_multi_turn_03" style="color:#4FAAC0;text-decoration:underline">s_multi_turn_03</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Two-step refutation rebuttal</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">"are you sure?" reversal</span></div><span style="display:inline-flex;align-items:center;background:#2A2517;border:1px solid #4A3D17;color:#E8C84A;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">judge</span><span style="color:#E8EDF3">JUDGE-09</span>
+        <span style="color:#B8C2CE">multi-turn</span>
+        <span style="color:#E8EDF3;text-align:right">7</span>
+        <span style="color:#B8C2CE">4 rds</span>
+        <span style="color:#B8C2CE">05-31 r.14</span>
+        <span style="color:#B8C2CE">06-22 r.30</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+
+      <!-- row 6 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_encoding_b64_01" style="color:#4FAAC0;text-decoration:underline">s_encoding_b64_01</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Base64-wrapped instruction</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">payload in encoded note field</span></div><span style="display:inline-flex;align-items:center;background:#2A2517;border:1px solid #4A3D17;color:#E8C84A;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">judge</span><span style="color:#E8EDF3">JUDGE-02</span>
+        <span style="color:#B8C2CE">encoding</span>
+        <span style="color:#E8EDF3;text-align:right">6</span>
+        <span style="color:#B8C2CE">2 rds</span>
+        <span style="color:#B8C2CE">06-02 r.11</span>
+        <span style="color:#B8C2CE">06-12 r.24</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>patched</span>
+      </div>
+
+      <!-- row 7 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_sem_synonym_05" style="color:#4FAAC0;text-decoration:underline">s_sem_synonym_05</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Synonym substitution on merchant</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">semantic equiv. broken</span></div><span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">metamorphic</span><span style="color:#E8EDF3">META-INV-07</span>
+        <span style="color:#B8C2CE">semantic</span>
+        <span style="color:#E8EDF3;text-align:right">6</span>
+        <span style="color:#B8C2CE">3 rds</span>
+        <span style="color:#B8C2CE">06-05 r.18</span>
+        <span style="color:#B8C2CE">06-20 r.29</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+
+      <!-- row 8 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_inject_sys_02" style="color:#4FAAC0;text-decoration:underline">s_inject_sys_02</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Fake system-tag injection</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">&lt;system&gt; in user content</span></div><span style="display:inline-flex;align-items:center;background:#2A2517;border:1px solid #4A3D17;color:#E8C84A;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">judge</span><span style="color:#E8EDF3">JUDGE-01</span>
+        <span style="color:#B8C2CE">prompt-injection</span>
+        <span style="color:#E8EDF3;text-align:right">5</span>
+        <span style="color:#B8C2CE">1 rd</span>
+        <span style="color:#B8C2CE">05-25 r.02</span>
+        <span style="color:#B8C2CE">06-09 r.20</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>patched</span>
+      </div>
+
+      <!-- row 9 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_unicode_zwj_03" style="color:#4FAAC0;text-decoration:underline">s_unicode_zwj_03</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Zero-width joiner in country code</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">U+200D · supersedes s_unicode_zwj_01</span></div><span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">metamorphic</span><span style="color:#E8EDF3">META-INV-02</span>
+        <span style="color:#B8C2CE">unicode</span>
+        <span style="color:#E8EDF3;text-align:right">5</span>
+        <span style="color:#B8C2CE">2 rds</span>
+        <span style="color:#B8C2CE">06-10 r.23</span>
+        <span style="color:#B8C2CE">06-22 r.33</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+
+      <!-- row 10 (superseded example) -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px;opacity:.7">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_unicode_zwj_01" style="color:#4FAAC0;text-decoration:underline">s_unicode_zwj_01</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">ZWJ in merchant name</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">superseded by s_unicode_zwj_03 (broader)</span></div><span style="color:#7C8896;font-family:'IBM Plex Mono',monospace;font-size:12px">—</span><span style="color:#7C8896">—</span>
+        <span style="color:#B8C2CE">unicode</span>
+        <span style="color:#E8EDF3;text-align:right">4</span>
+        <span style="color:#B8C2CE">3 rds</span>
+        <span style="color:#B8C2CE">05-27 r.06</span>
+        <span style="color:#B8C2CE">06-09 r.21</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:7px;height:7px;border-radius:50%;background:#7C8896"></span>superseded</span>
+      </div>
+
+      <!-- row 11 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_num_floor_01" style="color:#4FAAC0;text-decoration:underline">s_num_floor_01</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Sub-cent rounding evasion</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">0.004 → 0.00 flip</span></div><span style="display:inline-flex;align-items:center;background:#16332A;border:1px solid #2B4E3B;color:#9BD9B5;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">differential</span><span style="color:#E8EDF3">DIFF-12</span>
+        <span style="color:#B8C2CE">numeric</span>
+        <span style="color:#E8EDF3;text-align:right">4</span>
+        <span style="color:#B8C2CE">1 rd</span>
+        <span style="color:#B8C2CE">06-01 r.10</span>
+        <span style="color:#B8C2CE">06-11 r.23</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#9BD9B5"><span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>patched</span>
+      </div>
+
+      <!-- row 12 -->
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(220px,1.2fr) 110px 130px 130px 70px 80px 100px 100px 110px;gap:14px;padding:13px 18px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <a href="slice-06-strategy-catalog.dc.html" title="strategy s_multi_turn_05" style="color:#4FAAC0;text-decoration:underline">s_multi_turn_05</a>
+        <div style="display:flex;flex-direction:column;gap:2px;font-family:'IBM Plex Sans',sans-serif;line-height:1.4"><span style="color:#E8EDF3;font-size:13.5px">Long-context buried instruction</span><span style="color:#B8C2CE;font-size:12px;font-family:'IBM Plex Mono',monospace">payload at token ~1800</span></div><span style="display:inline-flex;align-items:center;background:#2A2517;border:1px solid #4A3D17;color:#E8C84A;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">judge</span><span style="color:#E8EDF3">JUDGE-12</span>
+        <span style="color:#B8C2CE">multi-turn</span>
+        <span style="color:#E8EDF3;text-align:right">4</span>
+        <span style="color:#B8C2CE">2 rds</span>
+        <span style="color:#B8C2CE">06-12 r.25</span>
+        <span style="color:#B8C2CE">06-22 r.31</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>active</span>
+      </div>
+    </div>
+
+    <!-- table footer -->
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;flex-wrap:wrap;gap:10px">
+      <span>showing 12 of 38 · sorted by wins desc</span>
+      <div style="display:flex;gap:6px">
+        <button style="background:#161E27;border:1px solid #2C3744;color:#B8C2CE;border-radius:5px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer">← prev</button>
+        <span style="padding:5px 10px;color:#E8EDF3">1 / 4</span>
+        <button style="background:#161E27;border:1px solid #2C3744;color:#E8EDF3;border-radius:5px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer">next →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

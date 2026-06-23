@@ -8,8 +8,11 @@ import asyncio
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
@@ -199,3 +202,16 @@ async def get_report(run_id: str) -> Response:
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
     return Response(content=markdown, media_type="text/markdown")
+
+
+@app.get("/")
+async def root() -> RedirectResponse:
+    return RedirectResponse(url="/app/")
+
+
+# Serve the Claude Design front end (PR #1) statically at /app. The pages cross-link
+# relative .dc.html files; support.js renders them in-browser. The JSON API routes
+# above are matched first; this mount is the catch-all for the dashboard.
+_FRONTEND = Path(__file__).resolve().parents[1] / "frontend"
+if _FRONTEND.is_dir():
+    app.mount("/app", StaticFiles(directory=str(_FRONTEND), html=True), name="frontend")
