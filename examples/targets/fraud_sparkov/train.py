@@ -14,6 +14,7 @@ from pathlib import Path
 
 import joblib
 import lightgbm as lgb
+from lightgbm import Booster
 from sklearn.metrics import roc_auc_score
 
 from examples.targets.fraud_sparkov.constants import (
@@ -32,9 +33,6 @@ def train_and_serialize(out_path: Path = MODEL_PATH) -> float:
     train = load_dataframe(TRAIN_CSV, limit=None)
     test = load_dataframe(TEST_CSV, limit=None)
 
-    # Fit on bare numpy arrays (no DataFrame feature names) so the serialized
-    # model scores plain feature vectors from LocalModelTarget without emitting
-    # "X does not have valid feature names" warnings at inference time.
     x_train = train[list(DETECTOR_FEATURES)].to_numpy()
     y_train = train["is_fraud"].to_numpy()
     x_test = test[list(DETECTOR_FEATURES)].to_numpy()
@@ -53,11 +51,21 @@ def train_and_serialize(out_path: Path = MODEL_PATH) -> float:
     )
     clf.fit(x_train, y_train)
 
-    proba = clf.predict_proba(x_test)[:, 1]
+    # Serialize the bare LightGBM Booster, NOT the sklearn LGBMClassifier wrapper.
+    # LightGBM 4.5+ synthesizes feature names ("Column_0", ...) on the wrapper
+    # even when fit on a bare numpy array, so scoring an unnamed array through
+    # LGBMClassifier.predict_proba trips sklearn's "X does not have valid feature
+    # names" UserWarning on every call. The generic LocalModelTarget feeds bare
+    # vectors and falls back to `model.predict([vec])` when there is no
+    # `predict_proba`; for a binary booster `Booster.predict` returns the
+    # positive-class probability directly — identical numbers, no sklearn in the
+    # inference path, no warning. Keeps the adapter fully generic.
+    booster: Booster = clf.booster_
+    proba = booster.predict(x_test)
     auc = float(roc_auc_score(y_test, proba))
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    joblib.dump(clf, out_path)
+    joblib.dump(booster, out_path)
     return auc
 
 

@@ -3,6 +3,16 @@
 # features derived from the real dataset. The declared ground-truth rule lives
 # in rule.py (is_fraud); the invariant + metamorphic relation below are the
 # machine-checkable obligations the oracles evaluate.
+#
+# PRECISION CAVEAT (read before trusting the numbers):
+# The declared rule (rule.py is_fraud) is a DELIBERATELY SIMPLIFIED ground-truth
+# PROXY, not the real fraud labels. It has high recall vs the real labels
+# (~95%) but low precision (~2%): it over-flags night-hour transactions, so its
+# positive set is ~30% real fraud at best. Consequently the co-evolution gap
+# this harness reports measures RECALL LOSS against the DECLARED spec — not
+# catch rate against real fraud. This proxy-imperfection is itself an instance
+# of Crucible's core thesis: the spec is a proxy for intent, and the residual
+# between proxy and intent must be SURFACED, not hidden. See README.md.
 target_kind: fraud
 
 obligations:

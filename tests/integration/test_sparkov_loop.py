@@ -8,6 +8,12 @@ the clean validation baseline and the adversarial holdout is positive.
 
 Skips (rather than fails) when the external CSVs or the trained artifact are
 absent — they are gitignored inputs, not source.
+
+Caveat on the numbers below: the declared rule (rule.py ``is_fraud``) is a
+DELIBERATELY SIMPLIFIED ground-truth PROXY — high recall vs the real labels
+(~95%) but low precision (~2%, it over-flags night-hour transactions). The
+co-evolution gap here measures recall loss against this DECLARED spec, NOT
+catch rate against real fraud. See ``examples/targets/fraud_sparkov/README.md``.
 """
 
 import uuid
@@ -51,12 +57,6 @@ async def sf() -> async_sessionmaker[AsyncSession]:
 
 
 @pytest.mark.skipif(not _DATA_READY, reason=_SKIP_REASON)
-@pytest.mark.filterwarnings(
-    # The generic LocalModelTarget feeds bare feature vectors (lists) to a
-    # LightGBM fitted on numpy; sklearn emits a cosmetic feature-name notice
-    # per score. It does not affect scoring; silence it in this loop test.
-    "ignore:X does not have valid feature names:UserWarning"
-)
 async def test_sparkov_real_co_evolution(
     sf: async_sessionmaker[AsyncSession],
 ) -> None:

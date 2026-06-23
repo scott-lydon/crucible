@@ -9,6 +9,7 @@ flawed detector — the genuine evasion story the analysis confirmed.
 """
 
 import hashlib
+import random
 
 from examples.targets.fraud_sparkov.constants import (
     AMT_HIGH,
@@ -51,8 +52,6 @@ def _all_records() -> list[SparkovTxn]:
 
 
 def generate_batch(seed: str, size: int) -> list[SparkovTxn]:
-    import random
-
     rng = random.Random(_seed_int(seed))
     pool = _all_records()
 

@@ -71,8 +71,11 @@ def load_dataframe(csv_path: str | Path, limit: int | None = None) -> pd.DataFra
     """Read the verified CSV and attach the derived interpretable columns."""
     verify_checksum(csv_path)
     df = pd.read_csv(csv_path)
-    dt = pd.to_datetime(df["trans_date_trans_time"])
-    dob = pd.to_datetime(df["dob"])
+    # Explicit formats: kills pandas' per-call format-inference warning and
+    # speeds the 1.3M-row parse. The Sparkov columns are fixed-shape:
+    # trans_date_trans_time is "YYYY-MM-DD HH:MM:SS", dob is "YYYY-MM-DD".
+    dt = pd.to_datetime(df["trans_date_trans_time"], format="%Y-%m-%d %H:%M:%S")
+    dob = pd.to_datetime(df["dob"], format="%Y-%m-%d")
     df["hour"] = dt.dt.hour.astype(int)
     df["age"] = ((dt - dob).dt.days // 365).astype(int)
     df["cat_risk"] = df["category"].isin(RISKY_CATEGORIES).astype(int)
