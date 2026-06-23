@@ -66,14 +66,28 @@ def _build_prompt(ctx: VerdictContext) -> str:
 class LlmJudgeOracle:
     """LLM-backed judge oracle. One 0.5-weight, labeled vote per sample."""
 
-    def __init__(self, provider: LLMProvider) -> None:
+    def __init__(self, provider: LLMProvider, max_calls: int | None = None) -> None:
         self._provider = provider
+        # Cost bound (plan §6): cap real provider calls per run. ``None`` =
+        # unbounded. Beyond the cap the judge ABSTAINS honestly (weight 0) — it
+        # does not fabricate a vote — and never touches the provider.
+        self._max_calls = max_calls
+        self._calls_made = 0
 
     @property
     def kind(self) -> OracleKind:
         return OracleKind.LLM_JUDGE
 
     def vote(self, ctx: VerdictContext) -> OracleVote:
+        if self._max_calls is not None and self._calls_made >= self._max_calls:
+            return OracleVote(
+                kind=self.kind,
+                vote=Vote.ABSTAIN,
+                weight=0.0,
+                reason=f"LLM judge budget exhausted ({self._max_calls} calls/run)",
+                evidence={"llm": True, "budget_exhausted": True},
+            )
+        self._calls_made += 1
         resp = self._provider.complete(
             _build_prompt(ctx),
             system=_SYSTEM,

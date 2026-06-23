@@ -32,6 +32,7 @@ from shared.types import SealedSpec
 
 from examples.targets import fraud_sparkov
 from modules.measure.metrics import compute_run_metrics
+from shared.llm import MockProvider
 
 _THRESHOLD = 0.5
 _N_ROUNDS = 4
@@ -60,7 +61,17 @@ async def sf() -> async_sessionmaker[AsyncSession]:
 async def test_sparkov_real_co_evolution(
     sf: async_sessionmaker[AsyncSession],
 ) -> None:
-    comp = build_components_sparkov(threshold=_THRESHOLD)
+    # Inject a deterministic mock judge so this loop-mechanics test makes ZERO
+    # real Opus calls. The co-evolution assertions below are judge-independent;
+    # the real judge's correctness is covered by the gated single-call live test
+    # in modules/oracles/test_oracles.py.
+    comp = build_components_sparkov(
+        threshold=_THRESHOLD,
+        judge_provider=MockProvider(
+            text='{"vote":"pass","reason":"loop-mechanics fixture"}'
+        ),
+        judge_max_calls=0,
+    )
     run_id = str(uuid.uuid4())
     async with sf() as s:
         s.add(

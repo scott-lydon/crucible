@@ -88,6 +88,44 @@ def test_judge_parses_pass_path() -> None:
     assert v.reason == "looks clean"
 
 
+class _CountingProvider:
+    """Spy MockProvider: counts provider calls to prove the budget is honored."""
+
+    def __init__(self, text: str) -> None:
+        self._inner = MockProvider(text=text)
+        self.calls = 0
+
+    def complete(self, prompt: str, **kwargs: object) -> object:
+        self.calls += 1
+        return self._inner.complete(prompt, **kwargs)  # type: ignore[arg-type]
+
+
+def test_judge_abstains_when_budget_exhausted() -> None:
+    # With max_calls=1: first vote hits the provider; second abstains (weight 0)
+    # with budget_exhausted evidence and does NOT touch the provider.
+    provider = _CountingProvider(text='{"vote": "fail", "reason": "x"}')
+    judge = LlmJudgeOracle(provider=provider, max_calls=1)  # type: ignore[arg-type]
+
+    first = judge.vote(MISS_CTX)
+    assert first.vote is Vote.FAIL and first.weight == 0.5
+    assert provider.calls == 1
+
+    second = judge.vote(MISS_CTX)
+    assert second.vote is Vote.ABSTAIN and second.weight == 0.0
+    assert second.evidence.get("budget_exhausted") is True
+    assert second.evidence.get("llm") is True
+    assert provider.calls == 1  # provider NOT called again
+
+
+def test_judge_unbounded_by_default() -> None:
+    # No max_calls -> unbounded: repeated votes always hit the provider.
+    provider = _CountingProvider(text='{"vote": "pass", "reason": "ok"}')
+    judge = LlmJudgeOracle(provider=provider)  # type: ignore[arg-type]
+    for _ in range(3):
+        assert judge.vote(MISS_CTX).vote is Vote.PASS
+    assert provider.calls == 3
+
+
 @pytest.mark.skipif(
     not os.environ.get("ANTHROPIC_API_KEY"),
     reason="no ANTHROPIC_API_KEY",

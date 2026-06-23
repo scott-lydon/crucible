@@ -22,6 +22,7 @@ from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
 from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from shared.llm import AnthropicApiProvider, MockProvider
+from shared.llm.base import LLMProvider
 
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
@@ -66,6 +67,8 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
 
 def build_components_sparkov(
     threshold: float = fraud_sparkov.DETECTOR_THRESHOLD,
+    judge_provider: LLMProvider | None = None,
+    judge_max_calls: int | None = 25,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
@@ -73,6 +76,11 @@ def build_components_sparkov(
     LocalModelTarget over the victim-declared proxy features (amt, cat_risk).
     All paths resolve from the victim module, so nothing here is environment-
     dependent. Ground truth + the SealedSpec come from the victim package.
+
+    ``judge_provider`` defaults to the REAL Opus 4.8 provider (the demo path);
+    tests inject a ``MockProvider`` to keep the loop offline/free.
+    ``judge_max_calls`` caps the billed judge calls per run (plan §6): the demo
+    makes at most 25 real Opus calls, then the judge abstains honestly.
     """
     spec = fraud_sparkov.load_spec()
     detector: Detector = LocalModelTarget(
@@ -95,9 +103,14 @@ def build_components_sparkov(
         # on the real Sparkov data over a richer feature set that includes the
         # night `hour` the amt-reliant target ignores.
         DifferentialOracle(second_opinion_is_fraud=fraud_sparkov.isoforest_is_fraud),
-        # REAL Opus 4.8 judge (constitution §1: Opus on the judge). Live provider,
-        # nothing mocked in the demo path.
-        LlmJudgeOracle(provider=AnthropicApiProvider(model="claude-opus-4-8")),
+        # REAL Opus 4.8 judge (constitution §1: Opus on the judge). Live provider
+        # by default, nothing mocked in the demo path; budgeted to bound spend.
+        LlmJudgeOracle(
+            provider=judge_provider
+            if judge_provider is not None
+            else AnthropicApiProvider(model="claude-opus-4-8"),
+            max_calls=judge_max_calls,
+        ),
     ]
     return {
         "detector": detector,
