@@ -1,0 +1,20 @@
+{
+  "persona": "bank-risk-officer",
+  "slice_slug": "live-run-view",
+  "iteration": 3,
+  "new_feedback": [
+    {
+      "element": "State 3 resume control: run-summary Resume button caption 'blocked · needs risk-approver override (recall red line · MRG-12.6)' vs halt-rationale drawer closing line 'The blue loop, not an override, is the path back to certification.'",
+      "issue": "The two surfaces describe contradictory exit criteria for the same suspension. The summary strip tells the operator the halt clears via a risk-approver override; the rationale drawer explicitly says there is no override, only the blue-loop remediation back to recall >= 0.90. An examiner reading the audit trail cannot tell whether the certification suspension is manually overridable or strictly remediation-gated, which is exactly the control-strength question SR 11-7 turns on.",
+      "change": "Pick one model and state it identically in both places. If the only path back is remediation, change the Resume caption to 'blocked · clears only when white-box recall recovers to 0.90 on held-out attack set (no override) · MRG-12.6'. If an override exists, add it to the drawer and name who may grant it and what it logs.",
+      "regression_or_unresolved": false
+    },
+    {
+      "element": "State 3 halt-rationale 'OBSERVED · r.35 = 0.71' tile and chart 'crossed r.32 · 14:13:18Z' vs per-round held-out chips (r.33 'held-out ok · 0.94', r.34 'held-out fail · 0.86')",
+      "issue": "The only observed recall figure shown anywhere is 0.71 at r.35, but the red-line crossing is dated to r.32. Nothing on the page shows a sub-0.90 recall reading at r.32: the per-round chips show held-out recall still at 0.94 at r.33 and not breaching until 0.86 at r.34. An examiner recomputing when the line was first breached cannot reconcile 'crossed r.32' with a 0.94 reading one round later, and the white-box-recall-vs-held-out-recall distinction is not surfaced at r.32 to explain the gap.",
+      "change": "Show the white-box recall value at r.32 (the metric that actually governs the gate) next to the 'crossed r.32' marker, e.g. add an 'OBSERVED · r.32' tile with the white-box recall that first dropped below 0.90, so the crossing round and the binding sub-0.90 reading are the same number an examiner can verify. Keep the r.35 = 0.71 figure as the terminal value, not the crossing value.",
+      "regression_or_unresolved": false
+    }
+  ],
+  "approved": false
+}

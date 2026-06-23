@@ -1,0 +1,24 @@
+{
+  "persona": "public-sector-procurement",
+  "slice_slug": "live-run-view",
+  "iteration": 3,
+  "new_feedback": [
+    {
+      "element": "State-03 (HALTED) chrome budget bar at line 618: the 'THIS RUN · FROZEN' progress bar carries its cyan/amber/danger threshold legend ONLY in a title= attribute ('56.8% of ceiling at halt · cyan <70% · amber 70-90% · danger >90%'), while the visible caption beside it reads only '56.8% · frozen at halt'.",
+      "issue": "The same hover-only / tooltip-only threshold encoding that was fixed in State-01 (where line 53 surfaces 'cyan <70% · amber 70-90% · danger >90%' as visible body text) was left behind in State-03. A reviewer auditing the halted run, the state most likely to be screenshotted into a procurement record, still cannot learn what the colored bar means without a mouse, and a screen-reader colleague gets nothing. The fix is inconsistently applied across the three states.",
+      "change": "Mirror State-01: restate the budget-bar thresholds as visible text next to the bar in State-03 and remove the title= as the sole carrier, OR delete the title= entirely since the legend is no longer load-bearing once the bar is frozen. Apply the same audit to the State-02 stale bar at line 386 which has neither a title= nor a visible legend.",
+      "regression_or_unresolved": true
+    },
+    {
+      "element": "The new <details>/<summary> 'about' popovers (lines 118-119) open a div with role=\"dialog\" but provide no visible close affordance and no keyboard-dismiss cue; dismissal depends on toggling the same summary or clicking elsewhere.",
+      "issue": "A role=\"dialog\" with no labelled close control and no Escape-to-close hint is an accessibility trap for the persona's screen-reader colleague: focus enters the dialog text but there is no in-dialog path back out, and a keyboard user has no signposted way to collapse it. This is the overlay-dismissability concern that also governs the inspect/replay/halt drawers (which DO have an explicit ✕ button at lines 870/920/955).",
+      "change": "Either drop role=\"dialog\" and treat the popover as an inline disclosure (aria-expanded on the summary, plain region content, which native <details> already supports), or add a small text-labelled 'close' control inside the popover and document Escape-to-dismiss. Do not present a dialog role without a reachable exit."
+    },
+    {
+      "element": "Verdict-stream persistent column header row (Round / Time / Oracle / Verdict / Cost) exists only in State-01 (line 172-173). State-02 'buffered' and State-03 'halted' verdict streams render the same per-round verdict cards with no header row at all.",
+      "issue": "The iter-01 ask for plain-language column headers above the verdict chips was resolved for the healthy state but not carried into the degraded and halted states, which are exactly the states a procurement auditor scrutinizes hardest. A reviewer reading the halted run (lines 747-794) sees mono chips with no labeled columns, so the data is no more screen-reader-parseable there than it was in iter-01.",
+      "change": "Add the same persistent labeled header row above the verdict cards in State-02 and State-03, or promote the verdict stream to a semantic table whose <th> headers persist across all three states."
+    }
+  ],
+  "approved": false
+}
