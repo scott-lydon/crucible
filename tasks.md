@@ -78,10 +78,10 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] `modules/oracles/property_fuzz/`: genuine `hypothesis` search (derandomized for replay) over the producer's output invariants — fraud_probability in [0,1], label in {0,1}, determinism.
   - [x] **Done criteria for `vouch`:** finds a violation on a deliberately broken producer (out-of-range probability and non-deterministic), stays silent on the sound LightGBM.
 
-- [ ] **slice-9-llm-judge-oracle** (T).
-  - [ ] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason.
-  - [ ] Judge gets 0.5 vote weight per `plan.md` section 3.
-  - [ ] Verdict view marks the judge card "one vote" with the tooltip from spec US-4.
+- [x] **slice-9-llm-judge-oracle** (T).
+  - [x] `modules/oracles/llm_judge/`: Opus 4.8 reads output + obligation and votes pass/fail with reason (mock-first via ScriptedLLM; real Opus on `CRUCIBLE_REAL_JUDGE=1`, validated live $0.0025/call). Robust JSON + keyword parsing.
+  - [x] Judge gets 0.5 vote weight; `test_judge_half_vote_cannot_decide_alone` proves a lone judge fire stays clean (0.5 < 2.0).
+  - [ ] Verdict view marks the judge card "one vote" — frontend (PR #1 wiring).
 
 - [x] **slice-10-verdict-aggregator** (T).
   - [x] `modules/oracles/aggregator.py`: vote tally per `plan.md` section 3 (4×1.0 + judge 0.5, threshold 2.0; injected into the loop via the `VerifyFn` port so loop.py imports no concrete module).

@@ -7,6 +7,7 @@ container (``build_container``) injecting ScriptedLLM-backed fakes."""
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 
 from sqlalchemy import text
@@ -15,6 +16,7 @@ from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.oracles.held_out.oracle import FraudHeldOutOracle
+from modules.oracles.llm_judge.oracle import LLMJudgeOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
 from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
 from modules.red.holdout_fraud import HoldoutFraudRed
@@ -29,6 +31,9 @@ from orchestrator.interfaces import (
     Target,
     VerifyFn,
 )
+from shared.config import load_settings
+from shared.llm import ScriptedLLM, make_llm
+from shared.llm.client import LLMClient
 from shared.persistence.db import session_scope
 from shared.telemetry.log import get_logger
 from shared.types.results import HealthStatus
@@ -41,6 +46,18 @@ def _untrained_probe(message: str) -> HealthProbe:
         return HealthStatus(status="amber", error=message)
 
     return probe
+
+
+def _judge_llm() -> LLMClient:
+    """Real Opus when CRUCIBLE_REAL_JUDGE=1 and a key is present; otherwise a free,
+    deterministic ScriptedLLM that votes 'ok' (mock mode, spec US-15)."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_JUDGE") == "1" and settings.openrouter_api_key:
+        return make_llm(settings.opus_model)
+    return ScriptedLLM(
+        lambda _system, _prompt: '{"verdict": "ok", "reason": "mock judge: no violation asserted"}',
+        model="scripted-judge",
+    )
 
 
 @dataclass
@@ -136,6 +153,11 @@ def build_container() -> Container:
         fuzz = FraudPropertyFuzzOracle(fraud.predict_sync, fraud.feature_names)
         container.register_oracle("fraud", fuzz)
         sink.register_health_probe("oracles/fraud/property_fuzz", fuzz.health)
+
+    # LLM judge (half vote) — target-agnostic; mock by default, real Opus on demand.
+    judge = LLMJudgeOracle(_judge_llm())
+    container.register_oracle("fraud", judge)
+    sink.register_health_probe("oracles/fraud/llm_judge", judge.health)
 
     return container
 
