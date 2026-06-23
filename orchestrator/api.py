@@ -13,6 +13,7 @@ from orchestrator.db import session_factory
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
 from orchestrator.wiring import DEFAULT_THRESHOLD, build_components
+from shared.env import load_env
 from shared.persistence import repo
 from shared.persistence.models import RunRow
 from shared.types import SealedSpec
@@ -21,6 +22,7 @@ from shared.types.enums import OracleKind
 
 @asynccontextmanager
 async def _lifespan(application: FastAPI) -> AsyncIterator[None]:
+    load_env()
     await init_db()
     yield
 
