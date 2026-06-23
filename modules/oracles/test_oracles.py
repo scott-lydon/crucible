@@ -12,7 +12,7 @@ from examples.targets.fraud_synth import DETECTOR_THRESHOLD, Transaction, is_fra
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
-from modules.oracles.differential_stub.oracle import DifferentialStubOracle
+from modules.oracles.differential.oracle import DifferentialOracle
 from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
 from modules.oracles.aggregator import FAIL_THRESHOLD, aggregate
 
@@ -53,9 +53,17 @@ def test_invariant_fires_on_country_velocity() -> None:
     assert v.vote is Vote.FAIL and v.weight == 1.0
 
 
-def test_differential_stub_abstains_with_zero_weight() -> None:
-    v = DifferentialStubOracle().vote(MISS_CTX)
-    assert v.vote is Vote.ABSTAIN and v.weight == 0.0 and "stub" in v.reason.lower()
+def test_differential_fails_when_cross_family_flags_cleared_fraud() -> None:
+    # A cross-family second opinion that flags fraud the target CLEARED (MISS_CTX
+    # is a cleared, truly-fraud sample) must FAIL with full weight.
+    v = DifferentialOracle(second_opinion_is_fraud=lambda s: True).vote(MISS_CTX)
+    assert v.kind is OracleKind.DIFFERENTIAL and v.vote is Vote.FAIL and v.weight == 1.0
+
+
+def test_differential_abstains_without_second_opinion() -> None:
+    # No second-family model wired -> honest ABSTAIN at weight 0 (not a stub).
+    v = DifferentialOracle().vote(MISS_CTX)
+    assert v.kind is OracleKind.DIFFERENTIAL and v.vote is Vote.ABSTAIN and v.weight == 0.0
 
 
 def test_judge_mock_is_half_weight_and_labeled() -> None:
@@ -65,10 +73,13 @@ def test_judge_mock_is_half_weight_and_labeled() -> None:
 
 
 def test_aggregate_flags_missed_fraud() -> None:
+    # Cross-family second opinion that flags the missed fraud -> differential
+    # now contributes a 1.0 FAIL alongside held_out/metamorphic/invariant.
     oracles: list[_Oracle] = [HeldOutOracle(label_fn=is_fraud),
                               MetamorphicOracle(label_fn=is_fraud),
                               InvariantOracle(),
-                              DifferentialStubOracle(), LlmJudgeMockOracle()]
+                              DifferentialOracle(second_opinion_is_fraud=lambda s: True),
+                              LlmJudgeMockOracle()]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
     assert verdict.fail_weight >= FAIL_THRESHOLD
     assert verdict.aggregate_pass is False   # the detector's "clean" decision does NOT stand

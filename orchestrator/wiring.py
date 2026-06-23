@@ -19,7 +19,7 @@ from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
-from modules.oracles.differential_stub.oracle import DifferentialStubOracle
+from modules.oracles.differential.oracle import DifferentialOracle
 from modules.oracles.llm_judge_mock.oracle import LlmJudgeMockOracle
 
 # The victim's own decision threshold, surfaced for the harness composition
@@ -44,7 +44,9 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
         HeldOutOracle(label_fn=is_fraud),
         MetamorphicOracle(label_fn=is_fraud),
         InvariantOracle(),
-        DifferentialStubOracle(),
+        # Synthetic victim ships no second-family model — the differential
+        # oracle honestly ABSTAINS (weight 0), it is not a stub.
+        DifferentialOracle(),
         LlmJudgeMockOracle(),
     ]
     label_fn: Callable[[object], bool] = is_fraud
@@ -84,7 +86,11 @@ def build_components_sparkov(
         HeldOutOracle(label_fn=sparkov_is_fraud),
         MetamorphicOracle(label_fn=sparkov_is_fraud),
         InvariantOracle(),
-        DifferentialStubOracle(),
+        # REAL cross-family second opinion: an unsupervised sklearn
+        # IsolationForest (different family from the LightGBM target) trained
+        # on the real Sparkov data over a richer feature set that includes the
+        # night `hour` the amt-reliant target ignores.
+        DifferentialOracle(second_opinion_is_fraud=fraud_sparkov.isoforest_is_fraud),
         LlmJudgeMockOracle(),
     ]
     return {

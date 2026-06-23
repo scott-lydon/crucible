@@ -17,7 +17,7 @@ from shared.env import load_env
 from shared.persistence import repo
 from shared.persistence.models import RunRow
 from shared.types import SealedSpec
-from shared.types.enums import OracleKind
+from shared.types.enums import OracleKind, Vote
 
 
 @asynccontextmanager
@@ -132,7 +132,7 @@ async def get_verdict(run_id: str, verdict_id: str) -> dict[str, object]:
                     "weight": v.weight,
                     "reason": v.reason,
                     "evidence": v.evidence_json,
-                    "is_stub": v.oracle_kind == OracleKind.DIFFERENTIAL_STUB.value,
+                    "abstained": v.vote == Vote.ABSTAIN.value,
                     "is_mock": v.oracle_kind == OracleKind.LLM_JUDGE_MOCK.value,
                 }
                 for v in votes

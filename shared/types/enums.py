@@ -21,7 +21,7 @@ class OracleKind(StrEnum):
     HELD_OUT = "held_out"
     METAMORPHIC = "metamorphic"
     INVARIANT = "invariant"
-    DIFFERENTIAL_STUB = "differential_stub"
+    DIFFERENTIAL = "differential"
     LLM_JUDGE_MOCK = "llm_judge_mock"
 
 
