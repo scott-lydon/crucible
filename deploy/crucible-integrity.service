@@ -1,0 +1,16 @@
+[Unit]
+Description=Crucible Integrity research platform (fraud red/verify/harden/measure)
+After=network.target docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/crucible-rebuild
+Environment=DATABASE_URL=postgresql+asyncpg://crucible:crucible@127.0.0.1:55432/crucible
+Environment=CRUCIBLE_HALT_RECALL=0.0
+ExecStart=/home/ubuntu/crucible-rebuild/.venv/bin/python -m uvicorn orchestrator.api:app --host 127.0.0.1 --port 8110
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
