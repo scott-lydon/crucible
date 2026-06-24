@@ -21,7 +21,7 @@ from modules.measure.admin import debug_summary, leaderboard
 from modules.measure.corpus import export_corpus
 from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
-from modules.measure.report import sr_11_7_markdown
+from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
 from modules.red.catalog import build_catalog
 from modules.targets.agent import demo_agent, validate_agent_config
@@ -480,13 +480,21 @@ async def get_catalog(
 
 
 @app.get("/reports/{run_id}")
-async def get_report(run_id: str) -> Response:
-    """SR 11-7 model risk report as Markdown (spec US-12)."""
+async def get_report(run_id: str, format: str = "markdown") -> Response:
+    """SR 11-7 model risk report (spec US-12, cr-f2): Markdown by default, PDF on
+    ?format=pdf for committee distribution."""
     async with session_scope() as session:
         try:
-            markdown = await sr_11_7_markdown(session, run_id)
+            if format == "pdf":
+                pdf = await sr_11_7_pdf(session, run_id)
+            else:
+                markdown = await sr_11_7_markdown(session, run_id)
         except KeyError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if format == "pdf":
+        return Response(
+            content=pdf, media_type="application/pdf",
+            headers={"Content-Disposition": f'attachment; filename="crucible-{run_id}.pdf"'})
     return Response(content=markdown, media_type="text/markdown")
 
 
