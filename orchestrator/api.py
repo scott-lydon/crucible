@@ -27,9 +27,9 @@ from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, VerdictRow
 from shared.telemetry.log import configure_logging
 from shared.types.core import AttackBudget, TargetSpec
-from shared.types.enums import RunStatus
+from shared.types.enums import RunStatus, Shape
 from shared.types.ids import RunId
-from shared.types.sealed_spec import SealedSpec
+from shared.types.sealed_spec import HumanSpec, SealedSpec
 
 # Background loop tasks, kept referenced so they are not garbage-collected mid-run.
 _background: set[asyncio.Task[None]] = set()
@@ -44,10 +44,22 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Crucible", version="0.1.0", lifespan=_lifespan)
 
 
+class HumanSpecModel(BaseModel):
+    """The plain-English spec for a Shape-2 agent run; compiled server-side into
+    obligations (cr-a2/cr-a4). The operator never writes sealed-spec YAML for an agent."""
+
+    task: str
+    failure_conditions: list[str] = Field(default_factory=list)
+    hidden_tests: list[str] = Field(default_factory=list)
+
+
 class RunRequest(BaseModel):
-    target_kind: str = Field(examples=["fraud"])
-    shape: str = Field(examples=["shape1_ml"])
-    spec_yaml: str
+    target_kind: str = Field(examples=["fraud", "agent"])
+    shape: str = Field(examples=["shape1_ml", "shape2_agent"])
+    # Provide exactly one: sealed-spec YAML (Shape 1) OR a plain-English human_spec
+    # (Shape 2 agent, compiled by the wired spec compiler).
+    spec_yaml: str | None = None
+    human_spec: HumanSpecModel | None = None
     budget_rounds: int = Field(default=5, ge=1, le=200)
     budget_dollars: float = Field(default=2.0, ge=0.0)
 
@@ -66,14 +78,37 @@ async def post_runs(req: RunRequest) -> RunAccepted:
         halt = await halt_state(session)
     if halt["halted"]:
         raise HTTPException(status_code=409, detail=halt["message"])
+    if (req.spec_yaml is None) == (req.human_spec is None):
+        raise HTTPException(
+            status_code=422, detail="provide exactly one of spec_yaml or human_spec"
+        )
+
+    source_text: HumanSpec | None = None
+    compiler_name = "yaml"
     try:
-        sealed = SealedSpec.from_yaml(req.spec_yaml)
+        if req.human_spec is not None:
+            source_text = HumanSpec(
+                task=req.human_spec.task,
+                failure_conditions=tuple(req.human_spec.failure_conditions),
+                hidden_tests=tuple(req.human_spec.hidden_tests),
+            )
+            sealed = await container.spec_compiler.compile(
+                source_text, target_kind=req.target_kind, shape=Shape(req.shape)
+            )
+            compiler_name = container.spec_compiler.name
+        else:
+            assert req.spec_yaml is not None  # guarded above
+            sealed = SealedSpec.from_yaml(req.spec_yaml)
+    except HTTPException:
+        raise
     except Exception as exc:  # bad spec is a typed 422 to the caller, not a crash
-        raise HTTPException(status_code=422, detail=f"Invalid sealed spec: {exc}") from exc
+        raise HTTPException(status_code=422, detail=f"Invalid spec: {exc}") from exc
 
     target_spec = TargetSpec(target_kind=req.target_kind, shape=req.shape, artifact_ref="")
     budget = AttackBudget(max_rounds=req.budget_rounds, max_dollars=req.budget_dollars)
-    run_id = await create_run(target_spec, sealed, budget)
+    run_id = await create_run(
+        target_spec, sealed, budget, source_text=source_text, compiler=compiler_name
+    )
 
     task = asyncio.create_task(run_loop(run_id, container))
     _background.add(task)

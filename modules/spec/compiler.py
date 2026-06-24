@@ -32,6 +32,8 @@ _HOLDOUT_KIND = {
 
 @runtime_checkable
 class SpecCompiler(Protocol):
+    name: str
+
     async def compile(
         self, human: HumanSpec, *, target_kind: str, shape: Shape
     ) -> SealedSpec: ...
@@ -83,6 +85,8 @@ def deterministic_compile(
 class DeterministicSpecCompiler:
     """The free, deterministic compiler (mock/CI default)."""
 
+    name: str = "deterministic"
+
     async def compile(
         self, human: HumanSpec, *, target_kind: str, shape: Shape
     ) -> SealedSpec:
@@ -108,6 +112,8 @@ class LLMSpecCompiler:
     """Opus expands the human spec into richer checkable obligations. Falls back to the
     deterministic compiler if the model returns unparseable output (never silently
     produces an empty spec)."""
+
+    name: str = "llm"
 
     def __init__(self, llm: LLMClient) -> None:
         self._llm = llm

@@ -20,7 +20,7 @@ from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
 from shared.types.enums import OracleKind, Pillar, RunStatus
 from shared.types.ids import RunId, new_id
 from shared.types.results import ProducerResult
-from shared.types.sealed_spec import SealedSpec
+from shared.types.sealed_spec import HumanSpec, SealedSpec
 
 _log = get_logger("orchestrator.loop")
 
@@ -29,10 +29,16 @@ async def create_run(
     target_spec: TargetSpec,
     sealed_spec: SealedSpec,
     budget: AttackBudget,
+    *,
+    source_text: HumanSpec | None = None,
+    compiler: str = "deterministic",
 ) -> RunId:
     """Persist a new run and its sealed spec; return the run id. The full spec lives
     in the ``specs`` table, read by oracles through a server-side resolver the producer
-    container cannot reach (constitution.md section 3)."""
+    container cannot reach (constitution.md section 3).
+
+    For a Shape-2 agent run, ``source_text`` is the operator's plain-English spec and
+    ``compiler`` is how it was turned into obligations — persisted for spec history."""
     run_id = RunId(new_id("run"))
     async with session_scope() as session:
         session.add(
@@ -53,6 +59,8 @@ async def create_run(
                 shape=sealed_spec.shape,
                 holdout_generator_kind=sealed_spec.holdout_generator_kind,
                 payload=sealed_spec.to_dict(),
+                compiler=compiler,
+                source_text=source_text.to_dict() if source_text is not None else None,
             )
         )
     _log.info("run_created", run_id=str(run_id), target=target_spec.target_kind)
