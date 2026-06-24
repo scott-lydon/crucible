@@ -26,6 +26,35 @@ class Target(Protocol):
         """
         ...
 
+    @property
+    def display_name(self) -> str:
+        """Human-readable name shown on the dashboard's target picker.
+
+        Owned by the adapter, not a separate catalog, because the adapter is
+        the source of truth for its own identity. Read-only so a plain class
+        attribute or a frozen dataclass field both satisfy the Protocol.
+        """
+        ...
+
+    @property
+    def description(self) -> str:
+        """One-line tagline shown on the dashboard's target card.
+
+        Same ownership and read-only reasoning as ``display_name``.
+        """
+        ...
+
+    @property
+    def artifact_ref(self) -> str:
+        """Stable identity string for the deployed artifact and its version.
+
+        Format ``<adapter>@<version>``, where ``<version>`` is a short stable
+        identifier (model file sha for Shape 1 targets, code-config sha for
+        Shape 2). The launcher renders this verbatim so the operator can see
+        exactly which artifact a run is being launched against.
+        """
+        ...
+
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Run the target on one input and return its output plus a producer audit."""
         ...

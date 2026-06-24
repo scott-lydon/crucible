@@ -73,6 +73,34 @@ class CodeAgentTarget:
     # held-out attacks under the stricter instruction.
     system_prompt: str | None = None
 
+    @property
+    def display_name(self) -> str:
+        """Name shown on the launcher's target picker."""
+        return "Code Agent"
+
+    @property
+    def description(self) -> str:
+        """One-line tagline shown beneath the picker name."""
+        return "Autonomous code-generation agent."
+
+    @property
+    def artifact_ref(self) -> str:
+        """``code_agent@<short-id>`` identifying the model plus optional patch.
+
+        The version is the model name combined with a short sha derived from the
+        blue-loop ``system_prompt`` (the only mutable knob on the agent). An
+        unpatched agent renders as ``code_agent@<model>``; a hardened agent
+        renders as ``code_agent@<model>-<8 sha chars>``, so the launcher always
+        shows which exact agent is being attacked.
+        """
+        suffix = self.model.value
+        if self.system_prompt:
+            import hashlib as _hashlib
+
+            digest = _hashlib.sha256(self.system_prompt.encode("utf-8")).hexdigest()
+            suffix = f"{self.model.value}-{digest[:8]}"
+        return f"code_agent@{suffix}"
+
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Generate Python source for the spec and return it with a validity score."""
         result = await self.llm.call(

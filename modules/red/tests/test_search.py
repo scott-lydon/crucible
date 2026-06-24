@@ -53,6 +53,9 @@ class _FixtureDetector:
 
     score: float = 0.1
     target_type: TargetType = TargetType.FRAUD
+    display_name: str = "Fixture Detector"
+    description: str = "Test fixture detector for the red search agent."
+    artifact_ref: str = "fixture@v0"
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         return TargetOutput(

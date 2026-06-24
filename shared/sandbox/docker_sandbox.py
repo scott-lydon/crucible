@@ -19,7 +19,11 @@ from dataclasses import dataclass
 from shared.sandbox.errors import SandboxLaunchError
 from shared.sandbox.models import SandboxResult
 
-_DEFAULT_IMAGE = "python:3.12-slim"
+# Exported so the dashboard's sandbox panel can surface the actual image the
+# runtime would launch, instead of a hardcoded version string. Renamed from
+# the private `_DEFAULT_IMAGE` so the public `/sandbox/image` route can read
+# the same value the DockerSandbox constructor defaults to.
+DEFAULT_SANDBOX_IMAGE = "python:3.12-slim"
 _DEFAULT_TIMEOUT_SECONDS = 30.0
 
 
@@ -27,7 +31,7 @@ _DEFAULT_TIMEOUT_SECONDS = 30.0
 class DockerSandbox:
     """Executes Python in a sealed container (no network, no host env)."""
 
-    image: str = _DEFAULT_IMAGE
+    image: str = DEFAULT_SANDBOX_IMAGE
     timeout_seconds: float = _DEFAULT_TIMEOUT_SECONDS
 
     async def run_python(self, code: str, args: list[str] | None = None) -> SandboxResult:

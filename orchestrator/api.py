@@ -15,6 +15,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -26,7 +27,7 @@ from fastapi.responses import (
     StreamingResponse,
 )
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
@@ -51,10 +52,12 @@ from shared.persistence.models import (
     FuzzFinding,
     HoldoutRun,
     JudgeVote,
+    LlmCall,
     ModelVersion,
     Run,
 )
 from shared.persistence.models import Verdict as VerdictRow
+from shared.sandbox.docker_sandbox import DEFAULT_SANDBOX_IMAGE
 from shared.telemetry import configure_logging, get_logger
 from shared.types import (
     AttackBudget,
@@ -220,6 +223,198 @@ async def catalog(session: SessionDep) -> list[dict[str, Any]]:
     """
     cat = StrategyCatalog(session=session, jsonl_path=_catalog_jsonl_path())
     return [entry.as_json() for entry in await cat.entries()]
+
+
+@app.get("/me")
+async def me() -> dict[str, Any]:
+    """Caller identity for the dashboard's header chip and audit-trail readout.
+
+    No auth layer ships in slice 19 (the deployed instance has no sign-in), so
+    the route returns the honest anonymous state: a display name of
+    ``anonymous`` and a null role. The launcher's role chip renders the null
+    role as ``no role`` and the audit-trail line as ``no audit identity``, so
+    the operator can see that overrides would not be signed to anyone until
+    auth lands. Replacing the hardcoded ``m.chen`` / ``admin · root`` stub.
+    """
+    return {
+        "display_name": "anonymous",
+        "role": None,
+        "audit_log_target": None,
+    }
+
+
+@app.get("/workspace")
+async def workspace() -> dict[str, Any]:
+    """The active workspace for the dashboard header chip.
+
+    The platform is single-workspace today; the route returns the one workspace
+    that exists, with a null monthly ceiling because no workspace-budget table
+    has been seeded yet. The launcher renders the null ceiling as ``no ceiling
+    set`` rather than a fabricated ``$250.00 mo`` figure.
+    """
+    return {
+        "name": "default",
+        "monthly_ceiling_dollars": None,
+    }
+
+
+@app.get("/spend/current-month")
+async def spend_current_month(session: SessionDep) -> dict[str, Any]:
+    """Sum of LLM dollars spent this calendar month, plus the workspace ceiling.
+
+    The number reads from the real ``llm_calls.dollars_spent`` column, so a
+    fresh database reports ``$0.00`` honestly rather than the hardcoded
+    ``$61.40 / $250.00 mo`` stub the design bundle shipped with. The ceiling
+    field is null until a workspace-budget table is seeded.
+    """
+    now = datetime.now(tz=UTC)
+    month_start = datetime(now.year, now.month, 1, tzinfo=UTC)
+    stmt = select(func.coalesce(func.sum(LlmCall.dollars_spent), 0)).where(
+        LlmCall.created_at >= month_start
+    )
+    total = await session.scalar(stmt)
+    return {
+        "spent_dollars": float(total or 0),
+        "ceiling_dollars": None,
+        "period_start": month_start.isoformat(),
+    }
+
+
+@app.get("/targets/registered")
+async def targets_registered() -> list[dict[str, Any]]:
+    """Every target adapter wired into the registry, with its real identity.
+
+    The launcher's target-picker reads from this list, so adding a target only
+    requires registering it in ``wiring.py``; no design-bundle markup or
+    stubbed JSON needs to change. Each row carries the adapter's own
+    ``display_name``, ``description``, and ``artifact_ref`` (Protocol fields,
+    computed from the real artifact bytes for Shape 1 targets).
+    """
+    registry = get_registry()
+    rows: list[dict[str, Any]] = []
+    for target_type, adapter in registry.targets.items():
+        rows.append(
+            {
+                "type": target_type.value,
+                "display_name": adapter.display_name,
+                "description": adapter.description,
+                "artifact_ref": adapter.artifact_ref,
+            }
+        )
+    return rows
+
+
+@app.get("/oracles/registered")
+async def oracles_registered() -> dict[str, Any]:
+    """Every oracle wired into the registry, with its weight and pass threshold.
+
+    The launcher's right-rail summary reads the oracle count, the judge weight,
+    and the pass threshold from this route, so the ``one of N votes`` phrase is
+    computed from the real weights instead of the hardcoded ``one of five``
+    that contradicts the actual aggregator (US-4). Each oracle carries the
+    ``protocol_description`` it would disclose to the white-box red pass.
+    """
+    registry = get_registry()
+    oracles: list[dict[str, Any]] = [
+        {
+            "name": oracle.name,
+            "weight": float(oracle.weight),
+            "protocol_description": oracle.protocol_description,
+        }
+        for oracle in registry.oracles
+    ]
+    total_weight = sum(float(item["weight"]) for item in oracles)
+    judge: dict[str, Any] | None = next(
+        (item for item in oracles if "judge" in str(item["name"]).lower()),
+        None,
+    )
+    judge_share_text = (
+        f"{judge['weight']} of {total_weight} votes"
+        if judge is not None and total_weight > 0
+        else "no judge weighted"
+    )
+    return {
+        "oracles": oracles,
+        "total_weight": total_weight,
+        "pass_threshold": registry.aggregator.pass_threshold,
+        "judge_share_text": judge_share_text,
+    }
+
+
+@app.get("/estimate")
+async def estimate(
+    target_type: str,
+    rounds: int,
+    session: SessionDep,
+) -> dict[str, Any]:
+    """Estimated cost-per-round and run range, from real prior runs.
+
+    The estimate averages ``attacks.dollars_spent`` across every prior attack
+    against this target type, and reports a low/high band derived from the
+    standard deviation (a one-sigma window scaled by ``sqrt(rounds)``, since
+    independent rounds combine variance). When no prior runs exist the route
+    returns nulls, which the launcher renders as ``not yet measured`` so a
+    fresh deployment never shows a fabricated ``$0.52 per round`` estimate.
+    """
+    if rounds <= 0:
+        raise HTTPException(status_code=422, detail="rounds must be positive")
+    avg_stmt = (
+        select(func.avg(AttackRow.dollars_spent))
+        .join(Run, AttackRow.run_id == Run.id)
+        .where(Run.target_type == target_type)
+    )
+    avg_value = await session.scalar(avg_stmt)
+    cost_per_round = float(avg_value) if avg_value is not None else None
+
+    count_stmt = (
+        select(func.count(AttackRow.id))
+        .join(Run, AttackRow.run_id == Run.id)
+        .where(Run.target_type == target_type)
+    )
+    sample = int(await session.scalar(count_stmt) or 0)
+
+    if cost_per_round is None or sample == 0:
+        return {
+            "target_type": target_type,
+            "rounds": rounds,
+            "cost_per_round_dollars": None,
+            "low_dollars": None,
+            "high_dollars": None,
+            "sample_attacks": sample,
+        }
+
+    stddev_stmt = (
+        select(func.stddev_pop(AttackRow.dollars_spent))
+        .join(Run, AttackRow.run_id == Run.id)
+        .where(Run.target_type == target_type)
+    )
+    stddev = float(await session.scalar(stddev_stmt) or 0.0)
+    total = cost_per_round * rounds
+    spread = stddev * (rounds ** 0.5)
+    return {
+        "target_type": target_type,
+        "rounds": rounds,
+        "cost_per_round_dollars": cost_per_round,
+        "low_dollars": max(0.0, total - spread),
+        "high_dollars": total + spread,
+        "sample_attacks": sample,
+    }
+
+
+@app.get("/sandbox/image")
+async def sandbox_image() -> dict[str, Any]:
+    """The actual Docker image the producer sandbox would launch.
+
+    The launcher's sandbox panel reads the image string from here rather than
+    the hardcoded ``crucible/sandbox:v1.4.2`` the design bundle shipped with,
+    so an image change in ``shared/sandbox/docker_sandbox.py`` shows up in the
+    dashboard the moment it lands.
+    """
+    return {
+        "image": DEFAULT_SANDBOX_IMAGE,
+        "egress_blocked": True,
+        "network": "sealed (egress deny)",
+    }
 
 
 @app.get("/metrics")

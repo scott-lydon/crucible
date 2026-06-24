@@ -56,6 +56,9 @@ class _AmountDetector:
     """
 
     target_type: TargetType = TargetType.FRAUD
+    display_name: str = "Amount Detector"
+    description: str = "Test fixture detector used by the hybrid search tests."
+    artifact_ref: str = "amount@v0"
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> Any:
         raise NotImplementedError  # the hybrid path only calls query_target

@@ -104,11 +104,123 @@
     document.body.insertBefore(bar, document.body.firstChild);
   }
 
+  function money(n) {
+    return n === null || n === undefined ? "—" : "$" + Number(n).toFixed(2);
+  }
+
+  function shortDate(iso) {
+    if (!iso) return "—";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return (
+      d.getUTCFullYear() +
+      "-" +
+      String(d.getUTCMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getUTCDate()).padStart(2, "0")
+    );
+  }
+
+  async function wireLauncher() {
+    // Wire the static stub values on slice-01-run-launcher.dc.html to the real
+    // routes the backend now serves. Every value below previously displayed a
+    // hardcoded stub from the design bundle; now each reads from the source the
+    // route names. Null fields render as em-dash by design, so a fresh deploy
+    // never shows a fabricated figure (no-stub-data rule).
+    var me = await json("/me");
+    if (me) {
+      setText("me.display_name", me.display_name || "—");
+      setText("me.audit_log_target", me.audit_log_target || "no audit identity");
+      setText("me.role_chip", me.role || "no role");
+      setText("me.role_line", "ROLE · " + (me.role || "no role"));
+      setText(
+        "me.identity_line",
+        (me.display_name || "anonymous") + " · default workspace",
+      );
+    }
+    var ws = await json("/workspace");
+    if (ws) {
+      setText("workspace.name", ws.name || "—");
+    }
+    var spend = await json("/spend/current-month");
+    if (spend) {
+      setText("spend.current", money(spend.spent_dollars));
+      setText(
+        "spend.ceiling",
+        spend.ceiling_dollars === null ? "no ceiling" : money(spend.ceiling_dollars),
+      );
+    }
+    var health = await json("/health");
+    if (health) {
+      setText(
+        "health.live_label",
+        "Live · " + (health.database === "connected" ? "connected" : "database " + health.database),
+      );
+    }
+    var targets = await json("/targets/registered");
+    if (Array.isArray(targets)) {
+      var byType = {};
+      targets.forEach(function (t) { byType[t.type] = t; });
+      if (byType.fraud) {
+        setText("targets.fraud.artifact_ref", byType.fraud.artifact_ref);
+      }
+      if (byType.code_agent) {
+        setText("targets.code_agent.artifact_ref", byType.code_agent.artifact_ref);
+      }
+      var disabled = Math.max(0, 3 - targets.length);
+      setText(
+        "targets.disabled_summary",
+        disabled === 0 ? "all adapters registered" : disabled + " adapter(s) disabled",
+      );
+    }
+    var fraudHealth = await json("/health/targets/fraud");
+    if (fraudHealth && fraudHealth.detail && fraudHealth.detail.trained_at) {
+      setText(
+        "targets.fraud.validated_at",
+        "validated " + shortDate(fraudHealth.detail.trained_at),
+      );
+    } else {
+      setText("targets.fraud.validated_at", "not yet validated");
+    }
+    var codeHealth = await json("/health/targets/code_agent");
+    if (codeHealth && codeHealth.status === "green") {
+      setText("targets.code_agent.validated_at", "validated (ready)");
+    } else if (codeHealth) {
+      setText("targets.code_agent.validated_at", "not yet validated");
+    }
+    var oracles = await json("/oracles/registered");
+    if (oracles) {
+      var nonJudge = oracles.oracles.filter(function (o) { return !/judge/i.test(o.name); }).length;
+      var hasJudge = oracles.oracles.some(function (o) { return /judge/i.test(o.name); });
+      setText(
+        "oracles.summary",
+        nonJudge + (hasJudge ? " + judge" : ""),
+      );
+    }
+    // /estimate runs over the page's default 48-round budget against the fraud
+    // target (the selected card on the run launcher). The route returns nulls
+    // when no prior runs exist, which render as em-dash.
+    var est = await json("/estimate?target_type=fraud&rounds=48");
+    if (est) {
+      var perRound =
+        est.cost_per_round_dollars === null
+          ? "not yet measured"
+          : money(est.cost_per_round_dollars) + " per round";
+      setText("estimate.per_round_text", perRound);
+      setText("estimate.projected_text", money(est.high_dollars));
+    }
+    var sandbox = await json("/sandbox/image");
+    if (sandbox) {
+      setText("sandbox.image", sandbox.image);
+    }
+  }
+
   async function wire() {
     await Promise.all([
       wireMetrics(),
       wireHealth(),
       wireList("catalog", "/catalog", catalogRow),
+      wireLauncher(),
     ]);
     wireSse();
   }

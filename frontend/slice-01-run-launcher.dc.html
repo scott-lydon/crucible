@@ -35,8 +35,8 @@
       <div style="display:flex;align-items:center;gap:10px">
         <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
         <span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span>
-        <span style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">acme-fraud</span>
-        <button onClick="{{ openRole }}" style="display:inline-flex;align-items:center;gap:6px;background:#1B1518;border:1px solid #4A2528;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;cursor:pointer">admin · root <span style="color:#7C5258">▾</span></button>
+        <span data-live="workspace.name" style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">acme-fraud</span>
+        <button onClick="{{ openRole }}" style="display:inline-flex;align-items:center;gap:6px;background:#1B1518;border:1px solid #4A2528;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;cursor:pointer"><span data-live="me.role_chip">admin · root</span> <span style="color:#7C5258">▾</span></button>
       </div>
       <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">/ · {{ crumbLabel }}</span>
       <div style="flex:1"></div>
@@ -50,14 +50,14 @@
         <div style="width:1px;background:#2C3744"></div>
         <div style="padding:9px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3;min-width:170px">
           <span style="color:#95A1AE;font-size:11px;letter-spacing:.06em">SESSION</span>
-          <span style="color:#B8C2CE;font-size:12px">$61.40 <span style="color:#95A1AE">/ $250.00 mo</span></span>
+          <span style="color:#B8C2CE;font-size:12px"><span data-live="spend.current">$61.40</span> <span style="color:#95A1AE">/ <span data-live="spend.ceiling">$250.00</span> mo</span></span>
           <div style="height:4px;background:#0E141B;border-radius:2px;overflow:hidden;margin:2px 0"><div style="width:24.6%;height:100%;background:#316E7E"></div></div>
         </div>
       </div>
 
       <a href="slice-12-admin-debug.dc.html" title="open /admin/debug" style="display:inline-flex;align-items:center;gap:7px;padding:6px 10px;background:#161E27;border:1px solid #2C3744;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;text-decoration:none">⚙ /admin/debug</a>
       <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
-        <span class="om-pulse" style="width:9px;height:9px;border-radius:50%;background:#57C08A;box-shadow:0 0 0 3px #57C08A22;flex:none"></span>Live · connected
+        <span class="om-pulse" style="width:9px;height:9px;border-radius:50%;background:#57C08A;box-shadow:0 0 0 3px #57C08A22;flex:none"></span><span data-live="health.live_label">Live · connected</span>
       </div>
     </div>
 
@@ -88,7 +88,7 @@
     <div style="background:#1B1518;border-top:1px solid #4A2528;color:#E5B5B0">
       <div style="max-width:1400px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px">
         <span style="display:inline-flex;align-items:center;gap:7px;font-weight:600;letter-spacing:.04em"><span style="width:8px;height:8px;border-radius:50%;background:#E5736B"></span>ADMIN · ROOT</span>
-        <span style="color:#B8C2CE">overrides act on this run only · all changes signed to <span style="color:#E8EDF3">audit-log/admin</span> as <span style="color:#E8EDF3">m.chen</span></span>
+        <span style="color:#B8C2CE">overrides act on this run only · all changes signed to <span style="color:#E8EDF3" data-live="me.audit_log_target">audit-log/admin</span> as <span style="color:#E8EDF3" data-live="me.display_name">m.chen</span></span>
         <div style="flex:1"></div>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="workspace ceiling $25.00 — admin can lift to $500.00"><button onClick="{{ toggleLiftCeiling }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ liftCeilingBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ liftCeilingKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">lift $ ceiling</span></label>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="workspace cap 500 rounds — admin can lift to 5,000"><button onClick="{{ toggleLiftRounds }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ liftRoundsBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ liftRoundsKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">lift rounds cap</span></label>
@@ -119,8 +119,8 @@
                   <span style="margin-left:auto;width:16px;height:16px;border-radius:50%;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-size:11px;font-weight:700">✓</span>
                 </div>
                 <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:8px">Transaction-fraud classifier adapter</div>
-                <button onClick="{{ openInspect }}" style="background:none;border:none;padding:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline">fraud_adapter@7c1d</button>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE"> · validated 2026-06-19</span>
+                <button onClick="{{ openInspect }}" style="background:none;border:none;padding:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline" data-live="targets.fraud.artifact_ref">fraud_adapter@7c1d</button>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE"> · <span data-live="targets.fraud.validated_at">validated 2026-06-19</span></span>
               </div>
               <div style="flex:1;min-width:200px;background:#161E27;border:1px solid #2C3744;border-radius:8px;padding:17px 18px;cursor:pointer" style-hover="border-color:#3A4654">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
@@ -128,12 +128,12 @@
                   <span style="font-size:14px;font-weight:600;color:#B8C2CE">Code Agent</span>
                 </div>
                 <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:8px">Autonomous code-generation agent</div>
-                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">code_agent@3f9a · validated 2026-06-11</span>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE"><span data-live="targets.code_agent.artifact_ref">code_agent@3f9a</span> · <span data-live="targets.code_agent.validated_at">validated 2026-06-11</span></span>
               </div>
             </div>
             <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px 14px;background:#12181E;border:1px dashed #2C3744;border-radius:7px">
               <span style="width:7px;height:7px;border-radius:50%;background:#3A4654;flex:none"></span>
-              <span style="font-size:12px;color:#95A1AE">1 adapter disabled · <span style="color:#B8C2CE">Research Agent</span></span>
+              <span style="font-size:12px;color:#95A1AE" data-live="targets.disabled_summary">1 adapter disabled · <span style="color:#B8C2CE">Research Agent</span></span>
               <button style="margin-left:auto;background:none;border:none;padding:0;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline;font-family:inherit">request access</button>
             </div>
           </div>
@@ -186,7 +186,7 @@
               <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline">policy MRG-12.3 ↗</button>
               <span style="margin-left:auto;color:{{ policyStatusColor }}">{{ policyStatusText }}</span>
             </div>
-            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">≈ <button onClick="{{ openEstimate }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline">$0.52 per round</button> · hard stop at <span style="color:#B8C2CE">$25.00</span></div>
+            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">≈ <button onClick="{{ openEstimate }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline" data-live="estimate.per_round_text">$0.52 per round</button> · hard stop at <span style="color:#B8C2CE">$25.00</span></div>
           </div>
         </div>
 
@@ -196,7 +196,7 @@
             <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;margin-bottom:12px">RUN SUMMARY</div>
             <div style="display:flex;flex-direction:column;gap:13px">
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Target</span><span style="font-size:13px;color:#E8EDF3;font-weight:500">Fraud</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Oracles</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">4 + judge</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Oracles</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3" data-live="oracles.summary">4 + judge</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Rounds</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EDF3;font-weight:600">{{ rounds }}</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Est. spend</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">{{ estSpendLabel }}</span></div>
             </div>
@@ -223,7 +223,7 @@
             <div style="display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px">
               <div style="display:flex;gap:10px"><span style="color:#95A1AE;width:62px;flex:none">runtime</span><span style="color:#B8C2CE">python 3.12 · linux · docker</span></div>
               <div style="display:flex;gap:10px"><span style="color:#95A1AE;width:62px;flex:none">network</span><span style="color:{{ networkColor }}">{{ networkLabel }}</span></div>
-              <div style="display:flex;gap:10px"><span style="color:#95A1AE;width:62px;flex:none">image</span><span style="color:#B8C2CE">crucible/sandbox:v1.4.2</span></div>
+              <div style="display:flex;gap:10px"><span style="color:#95A1AE;width:62px;flex:none">image</span><span style="color:#B8C2CE" data-live="sandbox.image">crucible/sandbox:v1.4.2</span></div>
             </div>
           </div>
         </div>
@@ -361,7 +361,7 @@
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px">
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">last round</span><span style="color:#B8C2CE">$0.21</span></div>
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">avg / round</span><span style="color:#B8C2CE">$0.19</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">projected</span><span style="color:#B8C2CE">$9.12</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">projected</span><span style="color:#B8C2CE" data-live="estimate.projected_text">$9.12</span></div>
           </div>
         </div>
 
@@ -452,7 +452,7 @@
           </div>
           <div style="border-top:1px solid #1D2630;padding-top:11px;display:flex;flex-direction:column;gap:5px">
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">egress</span><span style="color:#57C08A">denied · 0 attempts</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">image</span><span style="color:#B8C2CE">crucible/sandbox:v1.4.2</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">image</span><span style="color:#B8C2CE" data-live="sandbox.image">crucible/sandbox:v1.4.2</span></div>
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">worker</span><span style="color:#B8C2CE">w_3 · us-east-1</span></div>
           </div>
         </div>
@@ -873,7 +873,7 @@
   <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
   <div style="position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
-      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;letter-spacing:.08em">ROLE · admin · root</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">m.chen · acme-fraud workspace</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;letter-spacing:.08em"><span data-live="me.role_line">ROLE · admin · root</span></div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px"><span data-live="me.identity_line">m.chen · acme-fraud workspace</span></div></div>
       <button onClick="{{ close }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
     </div>
     <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">

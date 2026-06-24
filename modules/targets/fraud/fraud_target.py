@@ -68,6 +68,30 @@ class FraudTarget:
 
     target_type: TargetType = TargetType.FRAUD
 
+    @property
+    def display_name(self) -> str:
+        """Name shown on the launcher's target picker."""
+        return "Fraud"
+
+    @property
+    def description(self) -> str:
+        """One-line tagline shown beneath the picker name."""
+        return "Transaction-fraud classifier adapter (LightGBM)."
+
+    @property
+    def artifact_ref(self) -> str:
+        """``fraud_adapter@<short-sha>`` derived from the committed model bytes.
+
+        The version is the first 8 chars of the LightGBM model file's sha256,
+        so the string changes whenever the model artifact does. Falls back to
+        ``unknown`` when the model file is missing (the self_test reports the
+        missing-model case in detail; the launcher just shows ``unknown``).
+        """
+        if not self.artifact_path.exists():
+            return "fraud_adapter@unknown"
+        digest = hashlib.sha256(self.artifact_path.read_bytes()).hexdigest()
+        return f"fraud_adapter@{digest[:8]}"
+
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Score a transaction and return its fraud probability."""
         probability = await self.query_target(attack_input)
