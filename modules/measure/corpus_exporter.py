@@ -2,7 +2,8 @@
 
 A corpus entry is one SUCCESSFUL attack — one that both ``evaded`` the detector
 AND stayed ``true_label_preserved`` (genuinely positive). Each entry carries the
-attack id, the target type, the tactic (which feature the red agent moved and in
+attack id, the target type (the run's declared target under evaluation, e.g.
+``"sparkov"``/``"synth"``), the tactic (which feature the red agent moved and in
 which direction), the mutated prompt/features, the oracle audit trace for the
 re-scored sample, the dollars at stake, and the capture timestamp.
 
@@ -28,6 +29,8 @@ class CorpusEntry:
     """One successful-evasion corpus row, ready to serialize as a JSONL line."""
 
     attack_id: str
+    # The run's declared target under evaluation (run.params_json["target"]),
+    # e.g. "sparkov"/"synth"; "unknown" only when genuinely absent.
     target_type: str
     tactic: str
     prompt: dict[str, object]
@@ -90,6 +93,7 @@ def _entry(
     attack: AttackRow,
     txn: TransactionRow | None,
     verdict: VerdictRow | None,
+    target_type: str,
 ) -> CorpusEntry:
     mutation = cast(dict[str, object], attack.mutation_json or {})
     prompt = cast(dict[str, object], mutation.get("to_features") or {})
@@ -101,7 +105,7 @@ def _entry(
         dollars = _dollars_from_features(txn.features_json)
     return CorpusEntry(
         attack_id=attack.id,
-        target_type=attack.pillar,
+        target_type=target_type,
         tactic=_tactic_from_mutation(mutation),
         prompt=prompt,
         audit_trace=audit,
@@ -131,6 +135,14 @@ async def corpus_entries(
         verdicts = await repo.all_verdicts(s)
 
     successful = [a for a in attacks if a.evaded and a.true_label_preserved]
+    # Resolve each distinct run's declared target (run.params_json["target"], the
+    # value passed to POST /runs). "unknown" ONLY when the run or its target is
+    # genuinely absent — honest, never fabricated.
+    target_by_run: dict[str, str] = {}
+    for rid in {a.run_id for a in successful}:
+        run = await repo.get_run(s, rid)
+        params = (run.params_json if run is not None else None) or {}
+        target_by_run[rid] = str(params.get("target", "unknown"))
     # Map the attack's evaded lineage -> the re-scored mutated transaction's
     # verdict (matched by txn_index within the same run).
     txn_by_id = {t.id: t for t in txns}
@@ -150,7 +162,9 @@ async def corpus_entries(
                 if v is not None:
                     verdict = v
                     break
-        entries.append(_entry(a, parent, verdict))
+        entries.append(
+            _entry(a, parent, verdict, target_by_run.get(a.run_id, "unknown"))
+        )
     return entries
 
 

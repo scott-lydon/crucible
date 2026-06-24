@@ -67,7 +67,7 @@ async def test_only_successful_evasions(sf: async_sessionmaker[AsyncSession]) ->
     assert len(entries) == 1  # the failed attack a2 is excluded
     e = entries[0]
     assert e.attack_id == "a1"
-    assert e.target_type == "red"
+    assert e.target_type == "sparkov"  # the run's declared target, not attack.pillar
     assert e.tactic == "amt:down"
     assert e.dollars == 240.0
     assert e.audit_trace == {"tally": {"FAIL": 0.9}}
