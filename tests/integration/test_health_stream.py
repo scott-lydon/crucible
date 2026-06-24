@@ -12,6 +12,7 @@ All in-memory SQLite, zero real LLM calls, no Postgres, no Docker required.
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from typing import Any
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -19,6 +20,7 @@ from httpx import ASGITransport, AsyncClient
 import orchestrator.api as api
 from modules.measure.health import HealthInputs
 from orchestrator.api import app, init_db
+from orchestrator.db import session_factory
 
 
 class _StubOracle:
@@ -64,7 +66,7 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
     # Inject deterministic health inputs: stub in-process components + a
     # token-free anthropic ping that returns True. No Docker, no real LLM.
     api.HEALTH_TEST_INPUTS = HealthInputs(
-        session_factory=api.session_factory(),
+        session_factory=session_factory(),
         detector=_StubDetector(),
         adversary=_StubAdversary(),
         oracles=[_StubOracle(k) for k in _ORACLE_KINDS],
@@ -79,8 +81,8 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
         api.HEALTH_TEST_INPUTS = None
 
 
-def _all_leaves(body: dict) -> dict[str, dict]:
-    out: dict[str, dict] = {}
+def _all_leaves(body: Any) -> dict[str, dict[str, object]]:
+    out: dict[str, dict[str, object]] = {}
     for p in body["pillars"]:
         for m in p["modules"]:
             for c in m["subcomponents"]:
@@ -153,7 +155,7 @@ async def test_seal_probe_honest_when_no_sandbox(client: AsyncClient) -> None:
 async def test_anthropic_check_is_token_free(client: AsyncClient) -> None:
     # With ping=False the anthropic leg goes red WITHOUT any network call.
     api.HEALTH_TEST_INPUTS = HealthInputs(
-        session_factory=api.session_factory(),
+        session_factory=session_factory(),
         oracles=[_StubOracle(k) for k in _ORACLE_KINDS],
         anthropic_ping=lambda: False,
     )
@@ -161,11 +163,13 @@ async def test_anthropic_check_is_token_free(client: AsyncClient) -> None:
     assert leaves["dep.anthropic"]["state"] == "red"
 
 
-async def _collect_sse(client: AsyncClient, run_id: str) -> list[tuple[str, dict]]:
+async def _collect_sse(
+    client: AsyncClient, run_id: str
+) -> list[tuple[str, dict[str, object]]]:
     """Consume the SSE stream into a list of (event, data) until `complete`."""
     import json
 
-    events: list[tuple[str, dict]] = []
+    events: list[tuple[str, dict[str, object]]] = []
     async with client.stream("GET", f"/runs/{run_id}/stream") as resp:
         assert resp.status_code == 200
         assert resp.headers["content-type"].startswith("text/event-stream")

@@ -3,7 +3,8 @@ from collections.abc import AsyncGenerator
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from orchestrator.api import app, init_db, session_factory
+from orchestrator.api import app, init_db
+from orchestrator.db import session_factory
 from shared.persistence import repo
 
 
