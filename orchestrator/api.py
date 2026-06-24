@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
 
 from modules.measure.admin import debug_summary, leaderboard
+from modules.measure.budget import budget_status, global_spend
 from modules.measure.corpus import export_corpus
 from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
@@ -27,6 +28,7 @@ from modules.red.catalog import build_catalog
 from modules.targets.agent import demo_agent, validate_agent_config
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
+from shared.config import load_settings
 from shared.persistence.db import session_scope
 from shared.persistence.models import (
     AgentConfigRow,
@@ -110,6 +112,15 @@ async def post_runs(req: RunRequest) -> RunAccepted:
         halt = await halt_state(session)
     if halt["halted"]:
         raise HTTPException(status_code=409, detail=halt["message"])
+    # Budget gate (cr-f4): refuse a new run once the global real-LLM cap is reached, so a
+    # public endpoint can never spend without bound.
+    global_cap = load_settings().global_budget_dollars
+    async with session_scope() as session:
+        spent = await global_spend(session)
+    if global_cap > 0 and spent >= global_cap:
+        raise HTTPException(
+            status_code=402,
+            detail=f"Global LLM budget reached: ${spent:.4f} of ${global_cap:.2f}")
     if (req.spec_yaml is None) == (req.human_spec is None):
         raise HTTPException(
             status_code=422, detail="provide exactly one of spec_yaml or human_spec"
@@ -247,6 +258,23 @@ async def get_metrics(run_id: str | None = None) -> dict[str, object]:
         metrics["halt"] = await halt_state(session)
         metrics["trust"] = await compute_trust(session, run_id)
     return metrics
+
+
+@app.get("/budget")
+async def get_budget(run_id: str | None = None) -> dict[str, object]:
+    """Real-LLM cost meter + caps (cr-f4): global spend vs the global cap, and a run's
+    spend vs its per-run cap. The hard guard that makes a public real-Claude run safe."""
+    settings = load_settings()
+    per_run_cap = 0.0
+    async with session_scope() as session:
+        if run_id is not None:
+            run = (
+                await session.execute(select(Run).where(Run.id == run_id))
+            ).scalar_one_or_none()
+            per_run_cap = run.budget_dollars if run is not None else 0.0
+        return await budget_status(
+            session, run_id=run_id, per_run_cap=per_run_cap,
+            global_cap=settings.global_budget_dollars)
 
 
 @app.get("/trust")

@@ -20,6 +20,7 @@ class Settings:
     sonnet_model: str   # inner red/blue loops (constitution.md section 1)
     opus_model: str     # judge oracle + white-box self-test pass
     halt_recall_threshold: float
+    global_budget_dollars: float  # hard ceiling on total real-LLM spend across all runs
 
 
 def _read_key_file(path: str) -> str | None:
@@ -41,4 +42,5 @@ def load_settings() -> Settings:
         sonnet_model=os.environ.get("CRUCIBLE_SONNET_MODEL", "anthropic/claude-sonnet-4.6"),
         opus_model=os.environ.get("CRUCIBLE_OPUS_MODEL", "anthropic/claude-opus-4.8"),
         halt_recall_threshold=float(os.environ.get("CRUCIBLE_HALT_RECALL", "0.7")),
+        global_budget_dollars=float(os.environ.get("CRUCIBLE_GLOBAL_BUDGET", "25.0")),
     )

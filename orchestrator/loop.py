@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
+from modules.measure.budget import global_spend, run_spend, should_halt
 from orchestrator.interfaces import (
     ConfigurableBlue,
     Oracle,
@@ -19,6 +20,7 @@ from orchestrator.interfaces import (
     Target,
 )
 from orchestrator.wiring import Container
+from shared.config import load_settings
 from shared.llm import LLMCallRecord, drain_records, record_into, record_llm_call
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
@@ -88,11 +90,35 @@ async def _set_status(run_id: RunId, status: RunStatus, *, error: str | None = N
             run.error = error
 
 
-async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int, str | None]:
+async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int, float, str | None]:
     async with session_scope() as session:
         run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
         spec = await resolve_spec(session, run_id)
-        return spec, run.target_kind, run.budget_rounds, run.agent_config_id
+        return (spec, run.target_kind, run.budget_rounds, run.budget_dollars,
+                run.agent_config_id)
+
+
+class _BudgetHaltError(Exception):
+    """Raised mid-run when a real-LLM budget cap is reached (cr-f4); caught to mark the
+    run halted (not failed) so the spend stops cleanly."""
+
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
+async def _enforce_budget(run_id: RunId, per_run_cap: float) -> None:
+    """Update the run's dollar spend from llm_calls and raise _BudgetHaltError if the per-run or
+    global cap is reached. A no-op in mock mode (every call costs $0)."""
+    global_cap = load_settings().global_budget_dollars
+    async with session_scope() as session:
+        spent = await run_spend(session, str(run_id))
+        total = await global_spend(session)
+        run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
+        run.dollars_spent = spent
+    reason = should_halt(spent, per_run_cap, total, global_cap)
+    if reason is not None:
+        raise _BudgetHaltError(reason)
 
 
 async def _resolve_target(
@@ -215,7 +241,8 @@ async def run_loop(run_id: RunId, container: Container) -> None:
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id)})
     try:
-        spec, target_kind, budget_rounds, agent_config_id = await _load_context(run_id)
+        spec, target_kind, budget_rounds, budget_dollars, agent_config_id = (
+            await _load_context(run_id))
         target = await _resolve_target(container, target_kind, agent_config_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
@@ -241,6 +268,7 @@ async def run_loop(run_id: RunId, container: Container) -> None:
             for i in range(budget_rounds):
                 last_verdict = await _run_round(
                     container, spec, target, red, oracles, run_id, i, False, last_verdict)
+                await _enforce_budget(run_id, budget_dollars)
 
             # White-box self-test pass: same red agent, the oracles' scheme revealed.
             await sink.emit(run_id, "white_box_started", {"run_id": str(run_id)})
@@ -254,6 +282,7 @@ async def run_loop(run_id: RunId, container: Container) -> None:
                     wb_wrong += 1
                     if verdict.caught:
                         wb_caught += 1
+                await _enforce_budget(run_id, budget_dollars)
             if wb_wrong:
                 await _set_white_box_recall(run_id, wb_caught / wb_wrong)
 
@@ -264,6 +293,10 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         })
         _log.info("run_complete", run_id=str(run_id), rounds=budget_rounds,
                   white_box_recall=(wb_caught / wb_wrong) if wb_wrong else None)
+    except _BudgetHaltError as halt:
+        await _set_status(run_id, RunStatus.halted, error=halt.reason)
+        await sink.emit(run_id, "budget_exceeded", {"run_id": str(run_id), "reason": halt.reason})
+        _log.warning("run_budget_halt", run_id=str(run_id), reason=halt.reason)
     except Exception as exc:
         await _set_status(run_id, RunStatus.failed, error=repr(exc))
         await sink.emit(run_id, "run_failed", {"run_id": str(run_id), "error": repr(exc)})
@@ -308,7 +341,7 @@ async def run_coevolution(
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id), "mode": "coevolution"})
     try:
-        spec, target_kind, _, agent_config_id = await _load_context(run_id)
+        spec, target_kind, _, budget_dollars, agent_config_id = await _load_context(run_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         blue = container.blue_for(target_kind)
@@ -392,6 +425,7 @@ async def run_coevolution(
                     "safe_before": patch.holdout_detection_before,
                     "safe_after": patch.holdout_detection_after, "validated": patch.validated})
                 current_config = new_config
+                await _enforce_budget(run_id, budget_dollars)
 
         await _set_status(run_id, RunStatus.complete)
         await sink.emit(run_id, "run_complete", {
@@ -399,6 +433,10 @@ async def run_coevolution(
             "final_config_version": current_config.version})
         _log.info("coevolution_complete", run_id=str(run_id), rounds=coevo_rounds,
                   final_version=current_config.version)
+    except _BudgetHaltError as halt:
+        await _set_status(run_id, RunStatus.halted, error=halt.reason)
+        await sink.emit(run_id, "budget_exceeded", {"run_id": str(run_id), "reason": halt.reason})
+        _log.warning("coevolution_budget_halt", run_id=str(run_id), reason=halt.reason)
     except Exception as exc:
         await _set_status(run_id, RunStatus.failed, error=repr(exc))
         await sink.emit(run_id, "run_failed", {"run_id": str(run_id), "error": repr(exc)})
