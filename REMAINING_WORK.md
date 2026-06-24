@@ -231,7 +231,7 @@ real from a backend route or rendered as em-dash.
 
 ### C3 — slice-06 strategy catalog (2 stubs)
 
-- [ ] **DONE-CRITERION** Zero raw stubs; `data-live-list="catalog"` host
+- [x] **DONE-CRITERION** Zero raw stubs; `data-live-list="catalog"` host
   is present and live.js's existing `wireList("catalog", "/catalog", catalogRow)`
   populates it.
 - **FILE/PATH** `frontend/slice-06-strategy-catalog.dc.html`
