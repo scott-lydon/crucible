@@ -1,146 +1,117 @@
-# Crucible — handoff
+# Crucible handoff (2026-06-24)
 
-Branch `feat/crucible-build`, HEAD **`8391dd3`** (local == GitHub == GitLab, verified
-via `git ls-remote`). Slices 0 through 19 are built; the only open item is the
-live Render instance, which is blocked on Render credentials (none exist on this
-machine). Everything else is done, gated, committed, and dual-pushed.
+Snapshot of the `REMAINING_WORK.md` push. This supersedes the earlier handoff.
 
-## State of the gates (all green at 8391dd3)
+## Coordinates
 
-```
-uv run ruff check .                       # clean
-uv run mypy .                             # clean (141 source files)
-uv run python scripts/check_module_imports.py   # clean (no cross-module / no shared/types co-edit)
-uv run pytest -q                          # 134 passed, 7 skipped (opt-in live/slow)
-```
+- **Repo:** `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
+- **Branch:** `feat/crucible-build` (dual-pushed: GitHub `scott-lydon/crucible` + GitLab `labs.gauntletai.com/scottlydon/crucible`, same hash)
+- **Live:** https://crucible-zaag.onrender.com (Render service `srv-d8trfn9o3t8c73bvp470`, runs `MOCK_LLM=true`)
+- **PR (do not merge):** https://github.com/scott-lydon/crucible/pull/3
+- **State file:** `REMAINING_WORK.md` (the authoritative checklist; the doc is the state, not chat)
+- **Removed UI log:** `REMOVED_UI.md` (out-of-PRD design sections taken out, with re-add conditions)
 
-Opt-in proofs that have passed live (set the env var to re-run):
-- `CRUCIBLE_RUN_LLM_TESTS=1` — `test_white_box_live.py` (real Opus white-box red,
-  oracle scheme injected, no refusal), `test_hybrid_live.py` (real Sonnet sweep +
-  scipy against the committed fraud model).
-- `CRUCIBLE_RUN_SLOW_TESTS=1` — `test_blue_fraud_recovery.py` (real Kaggle retrain;
-  detection on held-out missed frauds recovers from 0.0).
+## Status: 25 of 27 done, all live and verified
 
-## What each slice delivered
+Every Tier A, B1 to B5, all 13 Tier C, and D1/D3/D4 are checked and verified on
+the live service. Two items are open (see "Remaining").
 
-- **12 white-box red:** `modules/red/white_box.py` builds the disclosed oracle
-  scheme from each oracle's `protocol_description`; `RedSearchAgent` injects it and
-  runs the informed pass on Opus. Red is wired into `orchestrator/loop.py` (black-box
-  then white-box pass). `/metrics` reports black-box vs white-box catch rate + gap
-  (`modules/measure/metrics.py`).
-- **13 hybrid fallback:** `modules/red/hybrid.py` — after 3 caught rounds, an LLM
-  picks a sensitivity-analysis sweep and `scipy.optimize.differential_evolution`
-  runs it (async target scored from a worker thread via `run_coroutine_threadsafe`).
-  Reframed to benign sweep language because the model refuses an "evasion-region"
-  ask (see `crucible-adversarial-llm-refusal` memory).
-- **14 blue loop:** `modules/blue/` proposer + retrainer (`fraud-vN.lgb` / versioned
-  `agent_configs`) + held-out validator (`HoldoutContamination` guard). Tables
-  `blue_patches`, `model_versions`, `holdout_runs`, `agent_configs`.
-- **15 dashboard wiring:** the verbatim Claude Design bundle in `frontend/` is served
-  at `/app/*` with a `live.js` sidecar injected at serve time (UI byte-identical,
-  only stubbed DATA swapped via `data-live` hooks + SSE). Real routes: `POST
-  /runs/:id/start`, `GET /runs`, `GET /runs/:id`, `GET /runs/:id/verdicts/:vid`,
-  `GET /blue/:patchId`, real SSE `GET /runs/:id/stream`. Per-oracle tables
-  `judge_votes`, `fuzz_findings`, `differential_runs` populated by the loop.
-- **16 corpus export:** `GET /corpus` + `GET /corpus.jsonl` (line count == table count).
-- **17 SR 11-7 report:** `GET /reports/:runId` (Markdown, numbers link to row routes)
-  + `GET /reports/:runId.pdf` (dependency-free `modules/measure/pdf.py`).
-- **18 halt-cert:** `modules/measure/halt_rule.py` sets the `halt_state` flag when
-  white-box recall < 0.7; `POST /runs` returns 409; `GET /halt` + the `live.js`
-  banner on every route.
-- **19 demo polish:** `docs/DEFENSE_BREAKOUT_SCRIPT.md`, `AI_INTERVIEW_PREP.md`,
-  `website/index.html` as-built; `Dockerfile` + `render.yaml` + `.dockerignore`.
+### The headline (Tier A real-LLM proof)
 
-## The one open item: a live Render instance
+One real-LLM end-to-end run drove the deployed fraud target with every LLM call
+on real models (`scripts/run_e2e_real_llms.py`), run locally (authenticated
+`claude` CLI on Claude Max) writing to the production Postgres. Result, committed
+to `artifacts/e2e_run_summary.json` and verified live:
 
-Verified blocker: `render whoami` says "run `render login`"; no `~/.render`,
-`~/Library/Application Support/render`, or `~/.config/render`; no `RENDER_API_KEY`
-in the environment. The CLI cannot reach a Render account, so no deploy is possible
-from here, and a fabricated URL is not acceptable.
+- run `a279028d`, 32 rounds, **$11.28** on Max, 64 calls (17 Sonnet, 47 Opus)
+- the Sonnet/Opus red agent **evaded the detector on 31 of 32 attempts**, so
+  black-box and white-box catch rate are a measured **0.00** (an honest result:
+  the model has real blind spots an adaptive LLM adversary exploits)
+- one blue round hardened on the missed frauds: **v1 global recall 0.898 to v2
+  0.965** (delta +0.067) over all 492 Kaggle frauds; `artifacts/fraud-v2.lgb`
+  committed
+- certification **auto-halted** (white-box recall 0.0 below the 0.7 red line);
+  `POST /runs` now returns 409 on the live service
 
-The deploy artifact is proven locally end to end: the 859MB `crucible:deploy` image
-was built, run against a fresh Postgres, applied all nine migrations from scratch,
-booted, served `/health` `/metrics` `/halt` and the verbatim `/app` pages, and drove
-a full run to `complete` under `MOCK_LLM`.
+Verified live: `/metrics` non-null, `/runs` has the complete fraud run,
+`/corpus.jsonl` + `/catalog` hold 31 real undetected attacks, `/reports/{run}`
+renders, `/blue/{patch}` resolves, `/halt` returns halted.
 
-### To go live (pick one)
+### The one architecture decision worth knowing
 
-1. **Render Dashboard Blueprint (browser):** `dashboard.render.com` -> New ->
-   Blueprint -> connect `github.com/scott-lydon/crucible`, branch
-   `feat/crucible-build`. It reads the committed `render.yaml` (Docker web service +
-   free Postgres; migrations run on container start). Then `curl <url>/health`.
-2. **Render API key (fully scriptable):** create a key at
-   `dashboard.render.com/u/settings#api-keys`, then drive the Render REST API to
-   create the Postgres + web service from `render.yaml`'s spec and poll the deploy.
-3. **CLI login (interactive):** `render login`, set a workspace, then create the
-   service (`render services create`) and a managed Postgres; wire `DATABASE_URL`.
-   Note: the v2 CLI has no one-shot `blueprint launch`, so paths 1 or 2 are simpler.
+The proposal splits verification by domain: the four independent oracles verify
+the **code** domain; a scored model (the fraud detector) is measured by its own
+`query_target` score (attack-success-rate), not the code oracles. The loop used
+to force every target through the code-oracle ensemble, which abstains on a
+numeric artifact, so no fraud attack could ever be recorded as undetected and
+the catch-rate collapsed to a structural 100%/0. Fixed with a target-agnostic
+`Target.oracle_verified` property (True for code/dummy, False for the fraud
+model); the loop, metrics, and halt rule read the domain-appropriate undetected
+signal off `attacks.succeeded`. No bespoke fraud oracle was added (the model's
+own score is the ground-truth signal the proposal prescribes). See commit
+`fix(verify): a scored model's evasion is its own query_target miss`.
 
-### Verify once live
+A second real bug the live run caught: `feature_row` crashed on a real proposal
+that set a feature to `null` (`float(None)`); now a null or non-numeric feature
+is an absent signal (0.0). Mock runs could not surface this.
 
-```bash
-curl -s https://<service>.onrender.com/health     # {"status":"ok","database":"connected"}
-curl -s https://<service>.onrender.com/metrics
-curl -s -o /dev/null -w '%{http_code}\n' https://<service>.onrender.com/app/slice-04-dashboard.dc.html
-# confirm the deployed commit matches 8391dd3 (Render dashboard "Deploys" tab)
-```
+## Remaining (2 items, both need a decision)
 
-### Render caveats to watch
+### B6 — code-agent end-to-end recovery (in flight / impractical at scale)
 
-- The Claude CLI is not on Render, so the service runs `MOCK_LLM=true`; the dashboard
-  and every read route serve real persisted data and SSE, but a live red/blue
-  walk-through is a local-only demo (the local `claude` CLI is authenticated).
-- The 144MB `data/creditcard.csv` is gitignored and absent on Render, so blue
-  **retrain** is local-only; the committed `artifacts/fraud-v1.lgb` ships in the image.
-- `render.yaml` wires `DATABASE_URL` from the managed Postgres `connectionString`
-  (internal, no SSL param needed for asyncpg); `Dockerfile` installs `libgomp1` for
-  LightGBM.
+`scripts/run_e2e_code_agent.py` drives the code-agent target through the FULL
+oracle ensemble in Docker (the catch-rate story the fraud target structurally
+cannot show). It works and is not a dead end, but it is pathologically slow: the
+app shells out to the `claude` CLI for every LLM call, and the CLI boots the
+whole agent (~30 to 90s overhead) per call. A 6-round run made ~110 calls and
+ran past 2.5 hours still inside the loop. A trimmed `--rounds 2` re-run is the
+practical attempt (full ensemble, ~45 calls). If it lands, flip B6 with the
+real before/after pass-rate; if it caps, record B6 as "real but impractical at
+scale over the claude CLI" (consistent with `tasks.md`: reliably eliciting and
+catching a code reward-hack in a fast run is the open problem). Docker must be
+running. Uses the LOCAL Postgres (`localhost:5434/crucible`), not prod.
 
-## Run locally
+### D2 — weekly CI runs on cron (blocked on a merge)
 
-```bash
-docker compose up -d --wait
-uv run alembic upgrade head
-uv run uvicorn orchestrator.api:app --port 8000
-# http://localhost:8000/app  (redirects to the Run Launcher)
-```
+`.github/workflows/ci-llm-weekly.yml` is shipped and correct (cron + dispatch,
+both opt-in flags, fail-loud, log artifact). But a GitHub `schedule`/`dispatch`
+workflow only runs from the **default branch `main`**, and `main` is 90 commits
+behind under the do-not-merge constraint. D2 activates the moment the PR reaches
+`main`; adding the file to `main` alone would only test stale code. Not touched.
 
-Full demo walk-through: `docs/DEFENSE_BREAKOUT_SCRIPT.md`.
+## Operational runbook
 
-## Submit-gate status
+- **Per-slice ritual:** `uv run ruff check . && uv run mypy . && uv run python
+  scripts/check_module_imports.py && uv run pytest -q`, then a conventional
+  commit with `--trailer "Assisted-by: Claude"`, `git push origin
+  feat/crucible-build` (fans to GitHub + GitLab), then deploy.
+- **Auto-deploy (D1):** a push to `feat/crucible-build` now triggers a Render
+  deploy automatically via `.github/workflows/deploy.yml`, which calls the
+  Render deploy API with the `RENDER_API_KEY` GitHub repo secret (set this
+  session). No manual REST call needed. Manual fallback still works: see the
+  curl in `REMAINING_WORK.md`.
+- **Re-running the fraud e2e against prod:** it needs the external prod Postgres
+  connection string in the gitignored `.env` as `CRUCIBLE_PROD_DATABASE_URL`
+  (fetch via the Render API `connection-info` endpoint) AND your egress IP added
+  to the `crucible-db` ipAllowList (I added then REMOVED `194.195.93.157/32`
+  this session, so the allowlist is empty again). Run:
+  `CRUCIBLE_RUN_LLM_TESTS=1 uv run python scripts/run_e2e_real_llms.py --real
+  --target fraud --rounds 16 --budget 15 --db prod --api-base
+  https://crucible-zaag.onrender.com`. The deployed read endpoints use the
+  internal DB connection, so the empty allowlist does not affect the live site.
+- **The prod is currently halted** (recall 0.0 from the real run), so `POST
+  /runs` on the live service returns 409 by design. Lifting it requires recall
+  back above 0.7, i.e. a hardened model behind the live target.
 
-READY. Hosted instance answers on the deployed hash.
+## Gotchas
 
-Live URL: `https://crucible-zaag.onrender.com`
-Service: `srv-d8trfn9o3t8c73bvp470` (Render workspace `tea-cv93i1jtq21c7395gje0`)
-Postgres: `crucible-db` (`dpg-d8trep3sq97s73cgd8ng-a`), free plan, oregon
-Deploy: `dep-d8trfnho3t8c73bvp4g0` at commit `ec2c8af` (build to live in 100 seconds)
-
-Curl evidence (2026-06-24, captured against the deployed hash):
-
-```
-GET /health
-  -> 200 {"status":"ok","database":"connected"}
-GET /halt
-  -> 200 {"halted":false,"recall":null,"threshold":0.7,"message":""}
-GET /metrics
-  -> 200 {"black_box_catch_rate":{...},"white_box_catch_rate":{...},"catch_rate_gap":null}
-GET /app/slice-04-dashboard.dc.html
-  -> 200, 58471 bytes (verbatim Claude Design bundle + injected live.js)
-POST /runs  (dummy target, sum-two-ints spec, budget 3 / $1)
-  -> 201 {"run_id":"267e609e7a0e433ba97e6133dcab3e52","status":"pending"}
-POST /runs/{id}/start
-  -> 202 {"run_id":"...","status":"running"}
-GET /runs/{id}
-  -> 200 {"status":"complete", attacks:[6 rows, both black-box and white-box passes]}
-```
-
-Render env vars set: `MOCK_LLM=true`, `HALT_RECALL_THRESHOLD=0.7`,
-`DATABASE_URL=<crucible-db internal connection string>`.
-
-Caveats re-stated for the reviewer:
-- Service runs under `MOCK_LLM=true` because the local `claude` CLI is not
-  available on Render; the dashboard and every read route serve real persisted
-  data, and the local demo runs the live red/blue walk-through.
-- Blue retrain is local only on Render (the 144MB `data/creditcard.csv` is
-  gitignored); the committed `artifacts/fraud-v1.lgb` ships in the image.
+- The `claude`-CLI-per-call overhead is the main scaling limit for any
+  multi-call run (fraud ~64 calls is fine; the code-agent ensemble is not).
+- An external sync process (the global graphify auto-update agent) has been
+  renaming files (slice-04-honest-dashboard to slice-04-dashboard, with all
+  references updated consistently), rewriting docs, and holding git
+  `index.lock` mid-session. Stage only the specific files you own; clear a stale
+  lock with `python3 -c "import os; os.remove('.git/index.lock')"` after
+  confirming no git process is running.
+- Stray files seen in the working tree from the code-agent run / sync process
+  (`solution.py`, `frontend/live 2.js`) are untracked junk; do not commit them.
