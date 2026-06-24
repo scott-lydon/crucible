@@ -18,6 +18,7 @@ from modules.blue.agent import FraudBlueAgent
 from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.oracle import FraudDifferentialOracle
+from modules.oracles.held_out.agent import AgentHeldOutOracle
 from modules.oracles.held_out.oracle import FraudHeldOutOracle
 from modules.oracles.llm_judge.oracle import LLMJudgeOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
@@ -274,6 +275,15 @@ def build_container() -> Container:
     agent_red = LLMAgentRed(RecordingLLM(_agent_red_llm(), "red"))
     container.register_red(AGENT_KIND, agent_red)
     sink.register_health_probe(f"red/{AGENT_KIND}/llm", agent_red.health)
+
+    # Held-out oracle for agents (cr-c2): hidden checks generated from the spec, evaluated
+    # for free in mock mode; real Opus generation on CRUCIBLE_REAL_HELDOUT=1.
+    agent_held_out = AgentHeldOutOracle(
+        RecordingLLM(_judge_llm(), "oracles"),
+        use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1",
+    )
+    container.register_oracle(AGENT_KIND, agent_held_out)
+    sink.register_health_probe(f"oracles/{AGENT_KIND}/held_out", agent_held_out.health)
 
     # Judge is target-agnostic; the same instance grades agent outputs too.
     container.register_oracle(AGENT_KIND, judge)
