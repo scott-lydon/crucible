@@ -222,7 +222,7 @@ real from a backend route or rendered as em-dash.
 
 ### C2 — slice-04 honest dashboard (80 stubs, 1 hook)
 
-- [ ] **DONE-CRITERION** Same as C1, on this file.
+- [x] **DONE-CRITERION** Same as C1, on this file.
 - **FILE/PATH** `frontend/slice-04-honest-dashboard.dc.html`
 - **VERIFY**
   ```bash

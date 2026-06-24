@@ -41,6 +41,29 @@
     setText("catch_gap", pct(m.catch_rate_gap));
     setText("black_box_judged", m.black_box_catch_rate.judged);
     setText("white_box_judged", m.white_box_catch_rate.judged);
+    // Undetected-hack rate (dashboard headline) is the complement of the
+    // white-box catch rate: the share of attacks that got past the verifier.
+    var wb = m.white_box_catch_rate.rate;
+    setText("undetected_rate", wb === null || wb === undefined ? "—" : pct(1 - wb));
+  }
+
+  function runRow(r) {
+    var div = document.createElement("div");
+    div.setAttribute("data-live-row", "runs");
+    div.style.cssText =
+      "display:flex;gap:16px;padding:11px 22px;border-bottom:1px solid #1D2630;" +
+      "font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE";
+    var rid = document.createElement("a");
+    rid.href = "slice-02-live-run-view.dc.html?run=" + encodeURIComponent(r.run_id);
+    rid.style.cssText = "color:#4FAAC0;text-decoration:underline;min-width:90px";
+    rid.textContent = (r.run_id || "").slice(0, 8);
+    var meta = document.createElement("span");
+    meta.textContent =
+      shortDate(r.created_at) + " · " + r.target_type + " · " + r.status +
+      " · " + (r.spec_title || "");
+    div.appendChild(rid);
+    div.appendChild(meta);
+    return div;
   }
 
   async function wireHealth() {
@@ -458,6 +481,7 @@
       wireReport(),
       wireBluePatch(),
       wireHealthGrid(),
+      wireList("runs", "/runs", runRow),
       wireLauncher(),
     ]);
     wireSse();

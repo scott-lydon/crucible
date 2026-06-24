@@ -32,3 +32,5 @@ listed below.
 | slice-11 health | Incident log (INC-2034 etc.) | No incident-tracking backend; out of PRD scope | an incidents route exists |
 | slice-09 (whole page) | Co-evolution curves (red↔blue over N rounds) | PRD STRETCH goal, no backend route; REMAINING_WORK C6 sanctions removal | a /coevolution route is built |
 | slice-13 (whole page) | Leaderboard export | PRD STRETCH goal, no backend route; REMAINING_WORK C10 sanctions removal | a /leaderboard route is built |
+| slice-04 dashboard | ASR/detection time-series curve, co-evolution panel, cost-per-hack histogram | No time-series/co-evolution backend (co-evolution is the removed slice-09); only point /metrics exists | a time-series metrics route exists |
+| slice-04 dashboard | 60-cell run-history sparkline strip + audit-row-replay preview | Fabricated run rows; real runs come from /runs (wired) and the audit replayer is slice-05 | n/a (replaced by real /runs list) |
