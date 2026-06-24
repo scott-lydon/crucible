@@ -395,10 +395,16 @@ async def get_spec_history(run_id: str | None = None, limit: int = 50) -> list[d
 
 
 @app.get("/leaderboard")
-async def get_leaderboard() -> list[dict[str, object]]:
-    """Per-run scoreboard (cr-e4, spec US-13): agents ranked by residual leakiness."""
+async def get_leaderboard(format: str = "json") -> Response:
+    """Per-run scoreboard (cr-e4/cr-f3, spec US-13): agents ranked by residual leakiness.
+    JSON by default; ?format=jsonl exports the downloadable benchmark."""
     async with session_scope() as session:
-        return await leaderboard(session)
+        rows = await leaderboard(session)
+    if format == "jsonl":
+        body = "\n".join(json.dumps(row) for row in rows)
+        return Response(content=body, media_type="application/x-ndjson",
+                        headers={"X-Row-Count": str(len(rows))})
+    return Response(content=json.dumps(rows), media_type="application/json")
 
 
 @app.get("/debug")
