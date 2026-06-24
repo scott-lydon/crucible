@@ -9,6 +9,7 @@ that yields one scoped session per request.
 from __future__ import annotations
 
 from collections.abc import AsyncIterator
+from typing import Any
 
 from sqlalchemy import NullPool, text
 from sqlalchemy.ext.asyncio import (
@@ -78,15 +79,27 @@ async def ping(session: AsyncSession) -> None:
     await session.execute(text("SELECT 1"))
 
 
-def reset_engine_for_tests(url: str) -> None:
-    """Rebuild the engine and sessionmaker against a test database URL.
+def use_database(url: str, *, connect_args: dict[str, Any] | None = None) -> None:
+    """Point the process-wide engine and sessionmaker at `url`.
 
-    Test-only hook: lets the integration suite point the singletons at the
-    ephemeral test database without importing private globals. Uses NullPool
-    so no connection is pooled across pytest-asyncio's per-test event loops
-    (a pooled asyncpg connection reused on a later loop raises "Event loop is
-    closed" at teardown).
+    The sanctioned hook for code outside a FastAPI request to drive the same
+    engine the app uses: the integration suite aims it at the ephemeral test
+    database, and the e2e real-LLM script aims it at the external production
+    Postgres (passing ``connect_args={"ssl": "require"}`` for the TLS the
+    managed host demands). Uses NullPool so no connection is pooled across
+    pytest-asyncio's per-test event loops (a pooled asyncpg connection reused on
+    a later loop raises "Event loop is closed" at teardown).
     """
     global _engine, _sessionmaker
-    _engine = create_async_engine(_normalize_async_url(url), echo=False, poolclass=NullPool)
+    _engine = create_async_engine(
+        _normalize_async_url(url),
+        echo=False,
+        poolclass=NullPool,
+        connect_args=connect_args or {},
+    )
     _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
+
+
+def reset_engine_for_tests(url: str) -> None:
+    """Backwards-compatible alias used by the integration harness."""
+    use_database(url)

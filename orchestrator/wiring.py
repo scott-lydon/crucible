@@ -21,7 +21,7 @@ from modules.targets.dummy import DummyTarget
 from modules.targets.fraud import FraudTarget
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.interfaces import Oracle, RedAgent, Target
-from shared.llm import get_llm_client
+from shared.llm import LlmClient, get_llm_client
 from shared.sandbox import DockerSandbox
 from shared.types import TargetType
 
@@ -59,14 +59,16 @@ class Registry:
         )
 
 
-def build_registry() -> Registry:
+def build_registry(llm: LlmClient | None = None) -> Registry:
     """Build a fresh registry.
 
     Wires the DummyTarget (slice 1) and the CodeAgentTarget (slice 3) on the
     configured LLM client. The fraud target and the other pillars are added to
-    this function as their slices land.
+    this function as their slices land. ``llm`` overrides the configured client
+    (the e2e script injects a spend-tracking wrapper so it can total the real
+    dollars across red, oracles, and the judge).
     """
-    llm = get_llm_client()
+    llm = llm if llm is not None else get_llm_client()
     return Registry(
         targets={
             TargetType.DUMMY: DummyTarget(),

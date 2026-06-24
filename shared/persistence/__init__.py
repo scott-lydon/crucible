@@ -13,6 +13,7 @@ from .engine import (
     get_sessionmaker,
     ping,
     reset_engine_for_tests,
+    use_database,
 )
 from .spec_resolver import SpecNotFoundError, SpecResolver
 
@@ -26,4 +27,5 @@ __all__ = [
     "get_sessionmaker",
     "ping",
     "reset_engine_for_tests",
+    "use_database",
 ]
