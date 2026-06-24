@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from modules.oracles.held_out import HeldOutOracle
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
+from modules.targets.fraud import FraudTarget
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.interfaces import Oracle, Target
 from shared.llm import get_llm_client
@@ -62,6 +63,7 @@ def build_registry() -> Registry:
         targets={
             TargetType.DUMMY: DummyTarget(),
             TargetType.CODE_AGENT: CodeAgentTarget(llm=llm),
+            TargetType.FRAUD: FraudTarget(),
         },
         oracles=(HeldOutOracle(llm=llm, sandbox=DockerSandbox()),),
     )

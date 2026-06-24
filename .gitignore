@@ -7,6 +7,10 @@ node_modules/
 # Keep the checked-in template even though .env.* is ignored.
 !.env.example
 
+# Raw datasets (large, license-bound). Trained model artifacts under artifacts/
+# ARE committed; the raw creditcard.csv is not.
+data/
+
 # Python
 .venv/
 __pycache__/

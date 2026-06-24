@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-2-fraud-target** (T). Unblocked: the Kaggle token is in place. Real dataset download, LightGBM trainer, serialized artifact, `FraudTarget`, `/health/targets/fraud`.
+- [ ] **slice-6-metamorphic-oracle** (T). Sonnet synthesizes metamorphic relations from spec invariants; runtime checks fire each.
 
 ## Next slice
 
-- [ ] **slice-6-metamorphic-oracle** (T). Sonnet synthesizes metamorphic relations from spec invariants; runtime checks fire each.
+- [ ] **slice-7-differential-oracle** (T). LightGBM versus IsolationForest (fraud), Sonnet versus Haiku (code); flag disagreement.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -18,6 +18,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-2-fraud-target** (T). Real Kaggle creditcard model: `scripts/fetch_fraud_dataset.py` downloads the dataset, `train.py` fits LightGBM (held-out ROC-AUC 0.86, the best of the configs tried; defaults give 0.84 and more capacity gives 0.85), committed as `artifacts/fraud-v1.lgb`. `FraudTarget` scores transactions; `/health/targets/fraud` returns 200 green with checksum and AUC. Done-criterion test passes on the committed model.
 - [x] **slice-5-held-out-oracle** (T). `HeldOutOracle` (Opus generates fresh asserts from the sealed spec post-submit, run against the producer output in the sealed sandbox, votes pass or fail) plus the `specs` table and server-side `SpecResolver`. Live proof: real Opus passes a correct implementation and catches a wrong one. Done-criterion test confirms a sandboxed producer cannot read `held_out_tests`. Oracle health route `/health/oracles/{name}`.
 - [x] **slice-4-sealed-spec-and-sandbox** (T). `shared/sandbox` Docker runner (`--network none`, no host env) plus the seal probe. Live seal test passes: from inside the sandbox both Postgres and the internet are unreachable, so the producer cannot read the verification artifacts. The `specs` table and resolver move to slice 5 (their consumer).
 - [x] **slice-3-code-agent-target** (T). `CodeAgentTarget` produces Python from a sealed spec via the LLM, scored by `ast.parse` validity; `/health/targets/{type}` self-test route; registered in wiring. Unit tests via the scripted client; live done-criterion test passes (real Claude emits ast-parseable Python).
@@ -49,11 +50,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Integration test exercises one loop round end to end with `DummyTarget` (`orchestrator/loop.py`).
   - [x] **Done criteria:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
 
-- [ ] **slice-2-fraud-target** (T).
-  - [ ] `modules/targets/fraud/`: Kaggle credit-card dataset downloader (`scripts/fetch_fraud_dataset.py`), LightGBM trainer (`train.py`), serialized model under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation.
-  - [ ] Self-test endpoint `/health/targets/fraud` returns model file checksum and last training timestamp.
-  - [ ] Integration test with real data: `pytest tests/integration/test_fraud_target.py`.
-  - [ ] **Done criteria:** model trained on real Kaggle data (not a stub), AUC against the held-out portion at or above 0.85, health endpoint returns 200.
+- [x] **slice-2-fraud-target** (T).
+  - [x] `modules/targets/fraud/`: Kaggle credit-card dataset downloader (`scripts/fetch_fraud_dataset.py`), LightGBM trainer (`train.py`), serialized model committed under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation.
+  - [x] Self-test route `/health/targets/fraud` returns the model checksum, training timestamp, and held-out AUC.
+  - [x] Integration test with real data: `tests/integration/test_fraud_target.py` (runs against the committed model, no re-download).
+  - [x] **Done criteria:** model trained on real Kaggle data (284,807 rows, 492 frauds), held-out ROC-AUC 0.86 (at or above 0.85), health endpoint returns 200.
 
 - [x] **slice-3-code-agent-target** (T).
   - [x] `modules/targets/code_agent/`: producer takes a sealed spec and returns Python source via Claude Sonnet 4.6 through the local Claude Max CLI (not the metered API).

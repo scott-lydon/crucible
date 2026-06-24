@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ml = ["lightgbm>=4.5", "scikit-learn>=1.5", "pandas>=2.2", "numpy>=2.1", "scipy>=1.14"]
+ml = ["lightgbm>=4.5", "scikit-learn>=1.5", "pandas>=2.2", "numpy>=2.1", "scipy>=1.14", "kaggle>=1.6"]
 llm = ["anthropic>=0.40"]
 fuzz = ["hypothesis>=6.115"]
 sandbox = ["modal>=0.66"]
@@ -65,7 +65,15 @@ exclude = ["shared/persistence/migrations/"]
 # Third-party packages that ship no type stubs. Listed explicitly so a new
 # untyped import is a conscious decision, never a silent ignore-all.
 [[tool.mypy.overrides]]
-module = ["lightgbm.*", "sklearn.*", "sse_starlette.*", "modal.*", "asyncpg.*"]
+module = [
+    "lightgbm.*",
+    "sklearn.*",
+    "sse_starlette.*",
+    "modal.*",
+    "asyncpg.*",
+    "pandas.*",
+    "kaggle.*",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
