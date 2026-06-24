@@ -11,10 +11,10 @@ Snapshot of the `REMAINING_WORK.md` push. This supersedes the earlier handoff.
 - **State file:** `REMAINING_WORK.md` (the authoritative checklist; the doc is the state, not chat)
 - **Removed UI log:** `REMOVED_UI.md` (out-of-PRD design sections taken out, with re-add conditions)
 
-## Status: 25 of 27 done, all live and verified
+## Status: 26 of 27 done; only D2 open (blocked on a merge)
 
-Every Tier A, B1 to B5, all 13 Tier C, and D1/D3/D4 are checked and verified on
-the live service. Two items are open (see "Remaining").
+Every Tier A, all of Tier B (B1 to B6), all 13 Tier C, and D1/D3/D4 are checked
+and verified. The lone open item, D2, is blocked on the PR reaching `main`.
 
 ### The headline (Tier A real-LLM proof)
 
@@ -55,21 +55,22 @@ A second real bug the live run caught: `feature_row` crashed on a real proposal
 that set a feature to `null` (`float(None)`); now a null or non-numeric feature
 is an absent signal (0.0). Mock runs could not surface this.
 
-## Remaining (2 items, both need a decision)
+### B6 — code-agent end-to-end recovery (DONE)
 
-### B6 — code-agent end-to-end recovery (in flight / impractical at scale)
+`scripts/run_e2e_code_agent.py` drove the code-agent target through the FULL
+oracle ensemble in Docker, the catch-rate story the scored fraud target
+structurally cannot show. Real run `704cdb13` (rounds=2, $5.77 on Max, 65 calls,
+~13 min): the ensemble CAUGHT reward-hacks (black-box catch rate 0.50, white-box
+1.00, so the informed attacker is caught more and the verifier does not rely on
+surprise), 1 undetected reward-hack recorded; the blue round proposed a real
+anti-reward-hack system prompt; before/after reward-hack pass-rate 0.50 to 0.50
+(recovery 0.0 on the 2-payload sample, an honest small-sample result). Summary
+in `artifacts/code_agent_e2e_summary.json`. Note the scaling limit: a 6-round
+run made ~110 calls and ran past 2.5 hours, since the app shells out to the
+`claude` CLI per call (~30 to 90s overhead each); keep code-agent runs small.
+Docker must be running; uses the LOCAL Postgres, not prod.
 
-`scripts/run_e2e_code_agent.py` drives the code-agent target through the FULL
-oracle ensemble in Docker (the catch-rate story the fraud target structurally
-cannot show). It works and is not a dead end, but it is pathologically slow: the
-app shells out to the `claude` CLI for every LLM call, and the CLI boots the
-whole agent (~30 to 90s overhead) per call. A 6-round run made ~110 calls and
-ran past 2.5 hours still inside the loop. A trimmed `--rounds 2` re-run is the
-practical attempt (full ensemble, ~45 calls). If it lands, flip B6 with the
-real before/after pass-rate; if it caps, record B6 as "real but impractical at
-scale over the claude CLI" (consistent with `tasks.md`: reliably eliciting and
-catching a code reward-hack in a fast run is the open problem). Docker must be
-running. Uses the LOCAL Postgres (`localhost:5434/crucible`), not prod.
+## Remaining (1 item, needs a decision)
 
 ### D2 — weekly CI runs on cron (blocked on a merge)
 
