@@ -9,13 +9,13 @@ lands in slice 4; this slice only produces.
 
 from __future__ import annotations
 
-import ast
 import json
 import shutil
 from dataclasses import dataclass
 from typing import Any
 
 from shared.llm import LlmClient, LlmModel, ScriptedLlmClient
+from shared.source import extract_python_source, is_valid_python
 from shared.types import (
     AuditStep,
     AuditTrace,
@@ -27,31 +27,6 @@ from shared.types import (
     TargetOutput,
     TargetType,
 )
-
-
-def extract_python_source(text: str) -> str:
-    """Pull Python source out of a model response, fenced or not.
-
-    The producer is told to return bare source, but models sometimes wrap it
-    in a ```python fence anyway, so this strips the first fenced block when
-    present and otherwise returns the trimmed text.
-    """
-    stripped = text.strip()
-    if "```" in stripped:
-        block = stripped.split("```", 2)[1]
-        if block.startswith("python"):
-            block = block[len("python") :]
-        return block.strip()
-    return stripped
-
-
-def is_valid_python(source: str) -> bool:
-    """True when the source parses as Python (the slice-3 done-criterion check)."""
-    try:
-        ast.parse(source)
-    except (SyntaxError, ValueError):
-        return False
-    return True
 
 
 def _build_prompt(spec: SealedSpec, attack_input: dict[str, Any]) -> str:
