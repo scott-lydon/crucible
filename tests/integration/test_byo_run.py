@@ -104,3 +104,16 @@ def test_unknown_demo_agent_is_422(client: TestClient) -> None:
         "demo_agent": "does-not-exist",
     })
     assert resp.status_code == 422
+
+
+def test_runs_list_returns_recent_newest_first(client: TestClient) -> None:
+    first = _run(client, {"target_kind": "agent", "shape": "shape2_agent",
+                          "human_spec": _HUMAN, "budget_rounds": 1, "demo_agent": "coder"})
+    second = _run(client, {"target_kind": "agent", "shape": "shape2_agent",
+                           "human_spec": _HUMAN, "budget_rounds": 1, "demo_agent": "support-bot"})
+    runs = client.get("/runs", params={"limit": 10}).json()
+    ids = [r["runId"] for r in runs]
+    assert first in ids and second in ids
+    # Newest first: the second run precedes the first.
+    assert ids.index(second) < ids.index(first)
+    assert all("status" in r and "target_kind" in r for r in runs)

@@ -569,10 +569,152 @@
       '" style="' + inCss() + '"></label>';
   }
 
+  // =======================================================================
+  // Shared live-panel helpers (cr-e3) — every screen injects a labelled panel
+  // it owns above the design mock, fetching from the API.
+  // =======================================================================
+  function mkPanel(root, id, title) {
+    var host = root.firstElementChild || root;
+    var box = document.createElement("div");
+    box.id = id;
+    box.style.cssText =
+      "border:1px solid #2C3744;border-radius:10px;background:#0E141B;margin:0 0 40px;" +
+      "color:#B8C2CE;font-family:'IBM Plex Sans',sans-serif";
+    box.innerHTML =
+      '<div style="background:#11181F;border-bottom:1px solid #1D2630;padding:12px 20px;' +
+      "font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:.08em;color:#57C08A\">" +
+      esc(title) + "</div>" +
+      '<div class="lp-body" style="padding:16px 20px;font-size:13px;overflow:auto"></div>';
+    host.insertBefore(box, host.firstChild);
+    return { box: box, body: box.querySelector(".lp-body") };
+  }
+  function th(s) { return '<th style="padding:6px 8px;font-weight:600">' + esc(s) + "</th>"; }
+  function td(s) { return '<td style="padding:6px 8px;color:#E8EDF3">' + esc(s) + "</td>"; }
+  function note(s) { return '<div style="color:#8A94A2">' + esc(s) + "</div>"; }
+  function kv(k, v) {
+    return "<span>" + esc(k) + ': <span style="color:#E8EDF3">' + esc(v) + "</span></span>";
+  }
+  function pct(x) { return x == null ? "—" : Math.round(x * 100) + "%"; }
+  function bar(v, color) {
+    var w = Math.round((v || 0) * 100);
+    return '<div style="background:#1A2430;border-radius:3px;height:8px;width:110px;display:' +
+      'inline-block;vertical-align:middle"><div style="background:' + color +
+      ";height:8px;border-radius:3px;width:" + w + '%"></div></div>';
+  }
+  function logErr(u) { return function (e) { console.error("[live.js] " + u + " failed", e); }; }
+  function currentRun() {
+    var q = qs.get("run");
+    if (q) return Promise.resolve(q);
+    return jget("/runs?limit=50").then(function (runs) {
+      return runs && runs.length ? runs[0].runId : null;
+    });
+  }
+
+  // slice-06 · Strategy Catalog — the attacker's distilled tactics across runs
+  function bindCatalog(root) {
+    if (document.getElementById("live-catalog")) return;
+    jget("/catalog").then(function (rows) {
+      var p = mkPanel(root, "live-catalog", "LIVE · STRATEGY CATALOG · all runs");
+      if (!rows.length) { p.body.innerHTML = note("No tactics yet — run an evaluation."); return; }
+      var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+        '<tr style="color:#8A94A2;text-align:left">' + th("Tactic") + th("Uses") + th("Runs") +
+        th("Detection") + th("Confirmed hacks") + th("White-box") + "</tr>";
+      rows.forEach(function (r) {
+        html += '<tr style="border-top:1px solid #1D2630">' + td(r.tactic) + td(r.n_uses) +
+          td(r.n_runs) + td(pct(r.detection_rate)) + td(r.confirmed_hacks) +
+          td(r.white_box ? "yes" : "—") + "</tr>";
+      });
+      p.body.innerHTML = html + "</table>";
+    }).catch(logErr("/catalog"));
+  }
+
+  // slice-09 · Co-evolution Curves — ASR/detection per round from /coevolution
+  function bindCoevolution(root) {
+    if (document.getElementById("live-coevo")) return;
+    currentRun().then(function (run) {
+      if (!run) return null;
+      return jget("/coevolution/" + encodeURIComponent(run)).then(function (rounds) {
+        var p = mkPanel(root, "live-coevo", "LIVE · CO-EVOLUTION · run " + run.slice(0, 12));
+        if (!rounds.length) {
+          p.body.innerHTML = note("No rounds — launch a run in co-evolution mode."); return;
+        }
+        var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+          '<tr style="color:#8A94A2;text-align:left">' + th("Round") + th("Agent") +
+          th("ASR — attacks that worked") + th("Detection") + th("Blue safe-rate") +
+          th("Patch") + "</tr>";
+        rounds.forEach(function (r) {
+          html += '<tr style="border-top:1px solid #1D2630">' + td(r.round) + td("v" + r.config_version) +
+            '<td style="padding:6px 8px">' + bar(r.asr, "#D9A441") + " " + pct(r.asr) + "</td>" +
+            '<td style="padding:6px 8px">' + bar(r.detection, "#4FAAC0") + " " + pct(r.detection) + "</td>" +
+            td((r.safe_before == null ? "—" : pct(r.safe_before)) + " → " +
+               (r.safe_after == null ? "—" : pct(r.safe_after))) +
+            "<td style=\"padding:6px 8px\">" + (r.patch_id
+              ? '<a href="slice-07-blue-patch-review.dc.html?patch=' + encodeURIComponent(r.patch_id) +
+                '" style="color:#4FAAC0">' + (r.validated ? "validated" : "applied") + "</a>"
+              : "—") + "</td></tr>";
+        });
+        p.body.innerHTML = html + "</table>";
+      });
+    }).catch(logErr("/coevolution"));
+  }
+
+  // slice-07 · Blue Patch Review — the rewritten system prompt + before/after
+  function bindBluePatch(root) {
+    if (document.getElementById("live-patch")) return;
+    var patch = qs.get("patch");
+    var prom = patch ? Promise.resolve(patch) : currentRun().then(function (run) {
+      if (!run) return null;
+      return jget("/coevolution/" + encodeURIComponent(run)).then(function (rs) {
+        for (var i = rs.length - 1; i >= 0; i--) { if (rs[i].patch_id) return rs[i].patch_id; }
+        return null;
+      });
+    });
+    prom.then(function (pid) {
+      if (!pid) return;
+      return jget("/blue/" + encodeURIComponent(pid)).then(function (d) {
+        var p = mkPanel(root, "live-patch", "LIVE · BLUE PATCH " + pid.slice(0, 14));
+        p.body.innerHTML =
+          '<div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:14px;' +
+          "font-family:'IBM Plex Mono',monospace;font-size:12px\">" +
+          kv("Held-out safe-rate", (d.safe_before == null ? "—" : pct(d.safe_before)) + " → " +
+             (d.safe_after == null ? "—" : pct(d.safe_after))) +
+          kv("Validated", d.validated ? "yes" : "no") +
+          kv("Version", "v" + d.base_version + " → v" + d.new_version) + "</div>" +
+          '<div style="color:#8A94A2;font-size:11px;letter-spacing:.06em;margin-bottom:6px">' +
+          "REWRITTEN SYSTEM PROMPT · vendor model unchanged</div>" +
+          '<pre style="white-space:pre-wrap;background:#0A0F15;border:1px solid #1D2630;' +
+          'border-radius:6px;padding:12px;color:#E8EDF3;font-size:12px">' +
+          esc(d.new_system_prompt || "(none)") + "</pre>";
+      });
+    }).catch(logErr("/blue"));
+  }
+
+  // slice-10 · White-box Self-test — white_box_recall from /runs/:id
+  function bindWhitebox(root) {
+    if (document.getElementById("live-wb")) return;
+    currentRun().then(function (run) {
+      if (!run) return null;
+      return jget("/runs/" + encodeURIComponent(run)).then(function (d) {
+        var p = mkPanel(root, "live-wb", "LIVE · WHITE-BOX SELF-TEST · run " + run.slice(0, 12));
+        p.body.innerHTML =
+          "<div style=\"font-family:'IBM Plex Mono',monospace;font-size:13px\">" +
+          kv("White-box recall", d.white_box_recall == null ? "not measured"
+            : pct(d.white_box_recall)) + "</div>" +
+          '<div style="color:#8A94A2;margin-top:8px;font-size:12px">The same attacker, told ' +
+          "the checker panel's scheme, re-attacks the agent. Recall = of the held-out-confirmed " +
+          "failures it produced, the fraction the panel still caught.</div>";
+      });
+    }).catch(logErr("/runs"));
+  }
+
   // ---- dispatch ----------------------------------------------------------
   if (/slice-01-run-launcher/.test(PAGE)) { whenRendered(bindAgentLauncher, true); whenRendered(bindLauncher, true); }
   else if (/slice-02-live-run-view/.test(PAGE)) whenRendered(bindLiveRun, false);
   else if (/slice-03-verdict-detail/.test(PAGE)) whenRendered(bindVerdict, false);
   else if (/slice-04-honest-dashboard/.test(PAGE)) whenRendered(bindDashboard, true);
   else if (/slice-11-health/.test(PAGE)) whenRendered(bindHealth, false);
+  else if (/slice-06-strategy-catalog/.test(PAGE)) whenRendered(bindCatalog, false);
+  else if (/slice-07-blue-patch-review/.test(PAGE)) whenRendered(bindBluePatch, false);
+  else if (/slice-09-coevolution-curves/.test(PAGE)) whenRendered(bindCoevolution, false);
+  else if (/slice-10-whitebox-selftest/.test(PAGE)) whenRendered(bindWhitebox, false);
 })();

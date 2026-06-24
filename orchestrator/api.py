@@ -185,6 +185,25 @@ async def get_health() -> dict[str, object]:
     }
 
 
+@app.get("/runs")
+async def list_runs(limit: int = 25) -> list[dict[str, object]]:
+    """Recent runs, newest first — lets every screen default to the latest run when no
+    ?run= is given (cr-e3)."""
+    async with session_scope() as session:
+        rows = (
+            await session.execute(
+                select(Run).order_by(Run.created_at.desc()).limit(max(1, min(limit, 200))))
+        ).scalars().all()
+    return [
+        {
+            "runId": r.id, "status": r.status, "target_kind": r.target_kind,
+            "shape": r.shape, "created_at": r.created_at.isoformat(),
+            "white_box_recall": r.white_box_recall, "agent_config_id": r.agent_config_id,
+        }
+        for r in rows
+    ]
+
+
 @app.get("/runs/{run_id}")
 async def get_run(run_id: str) -> dict[str, object]:
     async with session_scope() as session:
