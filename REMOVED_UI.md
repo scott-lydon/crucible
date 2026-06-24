@@ -37,3 +37,5 @@ listed below.
 | slice-15 policy | Cost-ledger table (24h spend, per-run line items) | No cost-ledger backend; LLM spend is per-call (llm_calls), not a workspace ledger | a cost-ledger route exists |
 | slice-15 policy | Hardcoded MRG-* policy list + role member counts | Replaced by the real operative policy from /policy; the platform's enforced rule is the halt threshold | a policy-rules table is seeded |
 | slice-12 admin | Hardcoded override audit entries + feature-flag table | Replaced by the real /admin/overrides log (empty until an override is recorded); flag table has no backend | a feature-flag route exists |
+
+<!-- D1 autoDeploy probe: 2901527 -->
