@@ -518,6 +518,8 @@ sequenceDiagram
           <tr><td><b>Hard constraints</b></td><td>Hybrid: LLM proposes, constrained search executes</td><td>Pure LLM search</td><td>Graceful degradation when constraint satisfaction fails, instead of failing outright.</td></tr>
           <tr><td><b>Patch validation</b></td><td>A held-out attack set defined up front</td><td>The attacks used to build the patch</td><td>Prevents the blue loop from overfitting to known attacks.</td></tr>
           <tr><td><b>Stop rule</b></td><td>Halt certification at a residual red line</td><td>Ship regardless of residual</td><td>Capability-threshold gating in the spirit of a Responsible Scaling Policy.</td></tr>
+          <tr><td><b>LLM access</b></td><td>Local Claude CLI on the Claude Max subscription</td><td>Metered Anthropic API key</td><td>The subscription is already paid, so local runs and the demo cost nothing per token; the CLI still reports per-call cost for the dashboard. A metered key is the server-deploy fallback.</td></tr>
+          <tr><td><b>Producer sandbox</b></td><td>Docker with network egress denied, first; Modal as the hosted target</td><td>nsjail</td><td>Docker is already on the dev machine and seals egress with no new account; Modal becomes the hosted path once a token is added.</td></tr>
         </tbody>
       </table>
     </div>
@@ -618,8 +620,9 @@ sequenceDiagram
       <div class="chip"><img src="https://cdn.simpleicons.org/postgresql/4FAAC0" alt="PostgreSQL"/><div><div class="t">Postgres 16</div><div class="d">persistence, SQLAlchemy async</div></div></div>
       <div class="chip"><div class="mono" style="background:#9ACD32">LGB</div><div><div class="t">LightGBM</div><div class="d">fraud-detector target</div></div></div>
       <div class="chip"><img src="https://cdn.simpleicons.org/scikitlearn/F7931E" alt="scikit-learn"/><div><div class="t">scikit-learn</div><div class="d">IsolationForest, AE / GMM / DAGMM path</div></div></div>
-      <div class="chip"><img src="https://cdn.simpleicons.org/anthropic/D4A373" alt="Anthropic"/><div><div class="t">Claude (Sonnet 4.6, Opus 4.8)</div><div class="d">red, blue, judge, white-box engines</div></div></div>
-      <div class="chip"><img src="https://cdn.simpleicons.org/modal/7FEE64" alt="Modal"/><div><div class="t">Modal</div><div class="d">producer sandbox</div></div></div>
+      <div class="chip"><img src="https://cdn.simpleicons.org/anthropic/D4A373" alt="Anthropic"/><div><div class="t">Claude (Sonnet 4.6, Opus 4.8)</div><div class="d">red, blue, judge, white-box, via local Max CLI</div></div></div>
+      <div class="chip"><img src="https://cdn.simpleicons.org/docker/4FAAC0" alt="Docker"/><div><div class="t">Docker</div><div class="d">producer sandbox, egress denied (initial)</div></div></div>
+      <div class="chip"><img src="https://cdn.simpleicons.org/modal/7FEE64" alt="Modal"/><div><div class="t">Modal</div><div class="d">producer sandbox (hosted target)</div></div></div>
       <div class="chip"><img src="https://cdn.simpleicons.org/react/5FBBD0" alt="React"/><div><div class="t">React 18 + Vite</div><div class="d">dashboard SPA, Recharts</div></div></div>
       <div class="chip"><img src="https://cdn.simpleicons.org/render/4FAAC0" alt="Render"/><div><div class="t">Render</div><div class="d">production hosting</div></div></div>
       <div class="chip"><img src="https://cdn.simpleicons.org/pytest/57C08A" alt="pytest"/><div><div class="t">pytest 8</div><div class="d">test runner, 80% coverage floor</div></div></div>

@@ -251,7 +251,8 @@ Postgres via the SSE backend.
 | Patch validation | Held-out attack set defined up front | Validate on patch's training attacks | Prevents the blue loop from overfitting to known attacks. | Testing |
 | Stop rule | Halt certification at residual red line | Ship regardless of residual | Capability-threshold gating, per Responsible Scaling Policy spirit. | Security |
 | Persistence | Postgres 16 | SQLite | Concurrent writes from pillars break SQLite. | Scalability |
-| Sandbox | Modal | Docker on Render, nsjail | Fastest path to "producer cannot reach verification artifacts" inside two weeks. | Security |
+| LLM access | Local `claude` CLI on the Claude Max subscription | Metered Anthropic API key | The subscription is already paid, so local runs and the demo cost nothing per token; the CLI still reports per-call cost for the dashboard. A metered key is the server-deploy fallback. | Scalability |
+| Sandbox | Docker (`--network none`) first, Modal as the hosted target | nsjail | Docker is already on the dev machine and seals egress with no new account; Modal becomes the hosted path once a token is added. | Security |
 | Dashboard SPA stack | React 18 + Vite + Tailwind + Recharts + Router | Next.js, Streamlit | Existing architecture site palette and the team's React familiarity. | Scalability |
 | Producer sandbox to oracle communication | Output written to a write-only Postgres row by the orchestrator after the sandbox returns; oracles read from Postgres | Direct pipe sandbox to oracles | Direct pipe would require the sandbox to know oracle endpoints. | Security |
 
@@ -326,9 +327,13 @@ team-wide convergence at the end.
 - **Cache-busting:** Vite content-hashes filenames by default. `index.html` is served
   with `Cache-Control: no-cache` plus a `?v=<git-sha>` query string on the entry script,
   so a new build cannot be served from a poisoned cache.
-- **Secrets:** Anthropic key, Modal token, Postgres URL stored as Render environment
-  variables, never in the repo. Local development reads from `.env` which is
-  `.gitignored`.
+- **Secrets:** LLM access runs through the local `claude` CLI on the operator's Claude
+  Max subscription, so local development and the live demo need no Anthropic key. A
+  metered `ANTHROPIC_API_KEY` is a deploy-time fallback only, for a server with no
+  Claude CLI session. The Postgres URL is required everywhere. The Modal token is
+  required only once the sandbox moves from local Docker to hosted Modal. All real
+  secrets live in Render environment variables or the `.gitignored` local `.env`,
+  never in the repo.
 
 ## 10. Operational
 

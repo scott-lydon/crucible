@@ -31,6 +31,12 @@ Term definitions for every recurring noun live in
   No other provider; no fallback to OpenAI or Google for "redundancy." Cross-family in
   the differential oracle is satisfied by the two model families (LightGBM versus
   IsolationForest for fraud; Sonnet versus Haiku for code), not by mixing vendors.
+- **LLM access path:** calls go through the local `claude` command-line interface
+  (CLI), authenticated with the operator's Claude Max subscription, with the model
+  chosen per call via `--model`. Local development and the live demo need no metered
+  Anthropic key; the CLI still reports `total_cost_usd` per call, which feeds the
+  `dollars_spent` transparency column. A metered `ANTHROPIC_API_KEY` is a deploy-time
+  fallback only, for a server that has no Claude CLI session.
 - **Dashboard front end:** React 18 plus Vite plus Tailwind, Recharts for plots, React
   Router 6. Palette is owned by the Claude Design export at `_design_bundle/` and is
   documented in `_design_bundle/_palette_notes.md` with audience-by-audience rationale.
