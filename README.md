@@ -58,28 +58,11 @@ The diagrams below render natively on GitHub. A polished interactive version, wi
 
 ## System overview
 
-One picture, 26 components, hand-routed feedback edges so the long control loops curve around the perimeter and cross nothing. The 8 whiteboard-pass nodes carry an amber accent border with a subtle glow; the other 18 nodes use muted tier-colored borders so the eye finds the structural backbone first.
-
 ![Crucible system overview](docs/diagrams/crucible-overview-handauthored.svg)
 
-How to read it. The solid arrows trace one round in order: Red Agent's `query_target()` hits the Target Protocol; the Target's output (sealed from the spec) flows up to the oracle ensemble; the five oracles (held-out, metamorphic, differential, property-fuzz, LLM judge) vote; the Aggregator sums PASS-weights against the 2.0 threshold and returns its verdict to Red Agent's reasoning step. The data routes that feed the rest of the system are also solid arrows: Aggregator to Strategy Catalog (log undetected), Aggregator to traces (every verdict feeds Measure), Strategy Catalog to the three Blue Loop proposer feeds. Dashed arrows are the cross-round feedback edges: the Red Agent's inner score-iterate loop, the Blue Loop's retrain-or-patch landing back on the Target Protocol, and the Halt-certification's "blocks new POST /runs" control edge that gates the next launch.
+Top row is one round of verification, left to right: Red Agent submits, Target Protocol processes, the Oracle ensemble (5 non-colluding checks) votes, the Aggregator decides pass-or-caught, and the verdict arcs back to Red Agent above. Bottom row is the cross-round infrastructure: Aggregator branches off to Strategy Catalog (log undetected) and to Measure Dashboard (every verdict); Catalog feeds Blue Loop (reuse tactics); Measure feeds Halt-certification (when recall fails). The two dashed arrows close the loop across rounds: Blue Loop retrains or patches the Target, Halt-certification blocks the next launch if recall stays below the red line.
 
-The amber accent on the 8 foundational nodes (Red Agent reason, Target Protocol, Aggregator, Strategy Catalog, Retrainer, Held-out validator, Dashboard, Halt-certification) marks the boxes a candidate would draw on a whiteboard within five minutes; the other 18 nodes are the extra-credit deep-dive components an interviewer would only probe on a follow-up. Logos via Simple Icons indicate the technology each node uses: Anthropic on Red Agent reason, code-agent adapter, differential oracle, LLM judge; Python on fraud adapter and Retrainer; scipy on hybrid fallback; yaml on Sealed Spec.
-
-The diagram is a hand-authored SVG (`docs/diagrams/crucible-overview-handauthored.svg`, source at `scripts/build_crucible_svg.py`), because a 26-node 5-cluster graph with multiple cross-cluster feedback loops cannot be auto-laid-out without edge crossings under any topology engine. Node positions and edge paths are explicit so the perimeter feedback arcs do not collide with the inner forward path.
-
-Deep dives. Each foundational box expands into a per-pillar diagram later in the document:
-
-- **Red Agent** opens up at section 4 (Pillar 2): the inner reason-propose-query loop, white-box mode, hybrid fallback against constrained search.
-- **Target Protocol** opens up at section 3 (Pillar 1): the three thin adapters (fraud LightGBM, code-agent Sonnet 4.6, research stub) behind one common Protocol.
-- **Oracle ensemble** opens up at section 3 (Pillar 1): the five non-colluding oracles by name and weight (held-out, metamorphic, differential, property-fuzz at 1.0; LLM judge at 0.5).
-- **Aggregator** opens up at sections 3 and 7: PASS-weight sum against the 2.0 threshold, plus the sealed verification boundary.
-- **Strategy Catalog** opens up at section 4: persistent winning tactics across runs.
-- **Blue Loop** opens up at section 5 (Pillar 3): the three proposer feeds (features, samples, ensemble), the retrainer, the held-out validator.
-- **Measure Dashboard** opens up at section 6 (Pillar 4): the trace store, dashboard tiles, co-evolution curves, audit traces, artifacts.
-- **Halt-certification** opens up at section 6 plus section 8: the capability-threshold gate that refuses new runs when white-box recall is below the red line.
-
-Why the master diagram is 8 nodes and not 30. A picture that crams every per-pillar internal into one frame is the artifact I tried first and it was unreadable. The right shape, per the architecture-interview literature the skill encodes, is one foundational sketch plus per-pillar zooms. The 8 foundational nodes are exactly the boxes you would draw on a whiteboard in five minutes; the per-pillar diagrams are exactly what you would draw if the interviewer asked "go deeper on this one."
+The per-pillar deep dives (sections 3 through 6) zoom inside each named node. Source for this SVG is at `scripts/build_crucible_svg.py`.
 
 ---
 ## Threat model
