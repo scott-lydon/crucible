@@ -492,6 +492,246 @@
     }
   }
 
+  function postJson(path, body) {
+    // POST helper for the two write routes the launcher drives (create run,
+    // start run). Resolves to the parsed body on 2xx; rejects with an Error
+    // carrying the route, status, and the backend's curated `detail` message so
+    // a failed launch surfaces exactly what to fix rather than a silent no-op.
+    return fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      return r
+        .json()
+        .catch(function () { return null; })
+        .then(function (data) {
+          if (r.ok) return data;
+          var detail = data && data.detail ? data.detail : r.statusText;
+          throw new Error("POST " + path + " failed (" + r.status + "): " + detail);
+        });
+    });
+  }
+
+  // Launcher interaction state. The design ships the Fraud card pre-selected, so
+  // that is the initial selection; clicking a card moves the selection and
+  // re-renders the sealed-spec panel, run-summary target, and the Run button's
+  // launch target. No markup is authored here (design-fidelity rule): the
+  // sidecar finds the design's own nodes by their stable content and rewrites
+  // only the data they carry.
+  var launcherSelection = { target_type: "fraud", artifact_refs: {}, displayNames: {} };
+
+  function cardsRow() {
+    // Lowest common ancestor of the two target cards' artifact-ref nodes is the
+    // flex row that holds both cards. Found by node identity, never by style
+    // string, so it survives React re-serializing inline styles (e.g.
+    // "min-width:200px" rendered back as "min-width: 200px").
+    var a = document.querySelector('[data-live="targets.fraud.artifact_ref"]');
+    var b = document.querySelector('[data-live="targets.code_agent.artifact_ref"]');
+    if (!a || !b) return null;
+    var ancestors = [];
+    for (var n = a; n; n = n.parentElement) ancestors.push(n);
+    for (var m = b; m; m = m.parentElement) {
+      if (ancestors.indexOf(m) >= 0) return m;
+    }
+    return null;
+  }
+
+  function findTargetCard(targetType) {
+    var ref = document.querySelector(
+      '[data-live="targets.' + targetType + '.artifact_ref"]'
+    );
+    var row = cardsRow();
+    if (!ref || !row) return null;
+    // The card is the direct child of the cards row that contains this ref.
+    var node = ref;
+    while (node && node.parentElement && node.parentElement !== row) {
+      node = node.parentElement;
+    }
+    return node && node.parentElement === row ? node : null;
+  }
+
+  function styleCardSelected(card, selected) {
+    if (!card) return;
+    card.style.background = selected ? "#16242A" : "#161E27";
+    card.style.borderColor = selected ? "#2E5560" : "#2C3744";
+    var badge = card.querySelector("[data-live-selected-badge]");
+    if (selected && !badge) {
+      // Append the ✓ chip to the card's header row (its first element child),
+      // which holds the icon + name; no style-string matching needed.
+      var header = card.firstElementChild || card;
+      badge = document.createElement("span");
+      badge.setAttribute("data-live-selected-badge", "1");
+      badge.style.cssText =
+        "margin-left:auto;width:16px;height:16px;border-radius:50%;background:#4FAAC0;" +
+        "display:flex;align-items:center;justify-content:center;color:#0E141B;" +
+        "font-size:11px;font-weight:700";
+      badge.textContent = "✓";
+      header.appendChild(badge);
+    } else if (!selected && badge) {
+      badge.remove();
+    }
+  }
+
+  async function renderSealedSpec(targetType) {
+    // Replace the design's hardcoded fraud YAML with the real sealed spec the
+    // backend will seal this run under (GET /targets/{type}/default-spec).
+    var header = Array.prototype.find.call(
+      document.querySelectorAll("div,span"),
+      function (el) { return /\.sealed\.yaml/.test(el.textContent || "") && el.children.length <= 1; }
+    );
+    if (!header) return;
+    var spec = await json("/targets/" + targetType + "/default-spec");
+    if (!spec || !spec.yaml) return;
+    header.lastChild.textContent =
+      " spec." + targetType + ".sealed.yaml · " + spec.yaml.split("\n").length + " lines";
+    // The code body is the header's next sibling inside the bordered panel.
+    var body = header.nextElementSibling;
+    if (!body) return;
+    body.innerHTML = "";
+    spec.yaml.split("\n").forEach(function (line, i) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex";
+      row.innerHTML =
+        '<span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;' +
+        'border-right:1px solid #1D2630"></span>' +
+        '<span style="padding:0 14px;color:#B8C2CE"></span>';
+      row.children[0].textContent = String(i + 1);
+      row.children[1].textContent = line;
+      body.appendChild(row);
+    });
+  }
+
+  function setRunSummaryTarget(displayName) {
+    var label = Array.prototype.find.call(
+      document.querySelectorAll("span"),
+      function (el) { return (el.textContent || "").trim() === "Target" && el.nextElementSibling; }
+    );
+    if (label && label.nextElementSibling) {
+      label.nextElementSibling.textContent = displayName;
+    }
+  }
+
+  function readBudgetInputs() {
+    var inputs = Array.prototype.slice.call(document.querySelectorAll("input"));
+    var roundsEl = inputs.find(function (i) { return !String(i.value).includes("$"); });
+    var ceilingEl = inputs.find(function (i) { return String(i.value).includes("$"); });
+    var rounds = roundsEl ? parseInt(String(roundsEl.value).replace(/[^0-9]/g, ""), 10) : NaN;
+    var ceiling = ceilingEl
+      ? parseFloat(String(ceilingEl.value).replace(/[^0-9.]/g, ""))
+      : NaN;
+    return {
+      rounds: Number.isFinite(rounds) && rounds > 0 ? rounds : 48,
+      ceiling: Number.isFinite(ceiling) && ceiling > 0 ? ceiling : 25,
+    };
+  }
+
+  function findRunButton() {
+    return Array.prototype.find.call(
+      document.querySelectorAll("button"),
+      function (b) { return /run evaluation/i.test(b.textContent || ""); }
+    );
+  }
+
+  function showLauncherError(message) {
+    var btn = findRunButton();
+    if (!btn) return;
+    var box = document.getElementById("crucible-launch-error");
+    if (!box) {
+      box = document.createElement("div");
+      box.id = "crucible-launch-error";
+      box.style.cssText =
+        "margin-top:10px;padding:10px 12px;background:#2A1517;border:1px solid #5A2A2C;" +
+        "border-radius:6px;color:#E5B5B0;font-family:'IBM Plex Mono',monospace;font-size:11.5px;" +
+        "line-height:1.5;white-space:pre-wrap";
+      btn.parentElement.insertBefore(box, btn.nextSibling);
+    }
+    box.textContent = message;
+  }
+
+  function clearLauncherError() {
+    var box = document.getElementById("crucible-launch-error");
+    if (box) box.remove();
+  }
+
+  async function launchRun() {
+    var btn = findRunButton();
+    if (!btn || btn.dataset.launching === "1") return;
+    clearLauncherError();
+    var targetType = launcherSelection.target_type;
+    var artifactRef = launcherSelection.artifact_refs[targetType];
+    if (!artifactRef) {
+      showLauncherError(
+        "Cannot launch: no registered artifact for target '" + targetType +
+        "'. The target is not wired into the registry (GET /targets/registered)."
+      );
+      return;
+    }
+    var originalText = btn.textContent;
+    btn.dataset.launching = "1";
+    btn.disabled = true;
+    btn.textContent = "Launching…";
+    try {
+      var specResp = await json("/targets/" + targetType + "/default-spec");
+      if (!specResp || !specResp.spec) {
+        throw new Error("GET /targets/" + targetType + "/default-spec returned no spec");
+      }
+      var budget = readBudgetInputs();
+      var created = await postJson("/runs", {
+        target_type: targetType,
+        artifact_ref: artifactRef,
+        spec: specResp.spec,
+        budget: { max_attempts: budget.rounds, max_dollars: budget.ceiling },
+      });
+      if (!created || !created.run_id) {
+        throw new Error("POST /runs returned no run_id");
+      }
+      await postJson("/runs/" + created.run_id + "/start", {});
+      location.href =
+        "slice-02-live-run-view.dc.html?run=" + encodeURIComponent(created.run_id);
+    } catch (err) {
+      btn.dataset.launching = "0";
+      btn.disabled = false;
+      btn.textContent = originalText;
+      showLauncherError(String(err && err.message ? err.message : err));
+    }
+  }
+
+  async function selectTarget(targetType) {
+    if (!launcherSelection.artifact_refs[targetType]) return;
+    launcherSelection.target_type = targetType;
+    var types = Object.keys(launcherSelection.artifact_refs);
+    types.forEach(function (t) {
+      styleCardSelected(findTargetCard(t), t === targetType);
+    });
+    setRunSummaryTarget(launcherSelection.displayNames[targetType] || targetType);
+    await renderSealedSpec(targetType);
+  }
+
+  async function wireLauncherActions() {
+    // Only the Run Launcher carries the target cards + Run button; on every
+    // other page these selectors find nothing and this is a no-op.
+    var targets = await json("/targets/registered");
+    if (!Array.isArray(targets)) return;
+    var launchable = targets.filter(function (t) {
+      return t.type === "fraud" || t.type === "code_agent";
+    });
+    if (launchable.length === 0) return;
+    launchable.forEach(function (t) {
+      launcherSelection.artifact_refs[t.type] = t.artifact_ref;
+      launcherSelection.displayNames[t.type] = t.display_name || t.type;
+      var card = findTargetCard(t.type);
+      if (card) {
+        card.style.cursor = "pointer";
+        card.addEventListener("click", function () { selectTarget(t.type); });
+      }
+    });
+    var btn = findRunButton();
+    if (btn) btn.addEventListener("click", function (e) { e.preventDefault(); launchRun(); });
+    // Render the real sealed spec for the initially-selected target.
+    await selectTarget(launcherSelection.target_type);
+  }
+
   async function wire() {
     await Promise.all([
       wireMetrics(),
@@ -507,6 +747,7 @@
       wireList("overrides", "/admin/overrides", overrideRow),
       wireLauncher(),
     ]);
+    await wireLauncherActions();
     wireSse();
   }
 

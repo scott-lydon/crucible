@@ -43,6 +43,7 @@ from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
 from orchestrator.wiring import get_registry
 from shared.config import get_settings
+from shared.types.default_specs import default_spec_payload, default_spec_yaml
 from shared.persistence import get_session, get_sessionmaker, ping
 from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import (
@@ -306,6 +307,24 @@ async def targets_registered() -> list[dict[str, Any]]:
             }
         )
     return rows
+
+
+@app.get("/targets/{target_type}/default-spec")
+async def target_default_spec(target_type: str) -> dict[str, Any]:
+    """The canonical sealed spec a launchable target is sealed under by default.
+
+    The browser Run Launcher fetches this so the spec it seals and shows is the
+    backend's single source of truth, never a value hardcoded in the frontend.
+    Returns the ``SealedSpec.from_payload``-shaped ``spec`` plus a ``yaml``
+    rendering for the sealed-spec panel. 422 (via the domain handler) names the
+    launchable set when the target has no default spec.
+    """
+    parsed = _parse_target_type(target_type)
+    return {
+        "target_type": parsed.value,
+        "spec": default_spec_payload(parsed),
+        "yaml": default_spec_yaml(parsed),
+    }
 
 
 @app.get("/oracles/registered")

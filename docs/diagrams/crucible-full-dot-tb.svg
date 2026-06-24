@@ -1,0 +1,505 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0.00 0.00 2266.00 1614.00" role="img" aria-labelledby="t d">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e2e8f0" /></marker><style>
+  /* Box fills are pale pastels; text is solid #0d0d0d for maximum legibility
+     regardless of the host theme (light or dark). We do NOT use the
+     --text-primary CSS variable here because in a dark theme it can resolve
+     to a near-white that then sits on top of a near-white pastel fill and
+     becomes unreadable. The pastels are constants, so the text color can be
+     a constant too. */
+  .box        { fill: var(--bg-200, #f3f3f0); stroke: var(--border, #d6d3cf); stroke-width: 1.2; }
+  .accent     { fill: var(--accent-100, #e8e6e1); stroke: var(--border, #a59f96); stroke-width: 2.0; }
+  .tier-data         { fill: #dde7f0; stroke: #6b8aab; }
+  .tier-compute      { fill: #e0ecd9; stroke: #75986a; }
+  .tier-control      { fill: #ecdff0; stroke: #9b6fa7; }
+  .tier-observability{ fill: #f5dcdc; stroke: #a96f6f; }
+  .tier-storage      { fill: #f5ecd0; stroke: #a98947; }
+  .tier-parallel     { fill: #dde7f0; stroke: #6b8aab; }
+  .tier-kernel       { fill: #e0ecd9; stroke: #75986a; }
+  .tier-decode       { fill: #ecdff0; stroke: #9b6fa7; }
+  .tier-output       { fill: #f5ecd0; stroke: #a98947; }
+  /* Foundational nodes — present in the Basic Interview Sketch (the simplest
+     diagram that would pass 90% of technical interviews) AND echoed in
+     exhaustive diagrams. The accent border + outer drop-shadow glow lets a
+     reader sweeping the deep-dive diagrams instantly see which boxes carry
+     the whiteboard answer and which are extra-credit material. The selectors
+     below have higher specificity than the .tier-* rules above (class.class
+     beats single class), so they win on stroke. The filter is applied at the
+     node-level &lt;g&gt; so the glow sits behind the box and its text. */
+  .node.foundational &gt; path,
+  .node.foundational &gt; polygon,
+  .node.foundational &gt; ellipse,
+  .node.foundational &gt; rect {
+    stroke: #c2410c;
+    stroke-width: 3.2;
+  }
+  .node.foundational {
+    filter: drop-shadow(0 0 3px rgba(194, 65, 12, 0.55));
+  }
+  /* Solid dark text for legibility on pastel fills. Accent ellipses get an
+     extra weight + size bump because their text otherwise looks small inside
+     a large oval. */
+  .node text         { fill: #0d0d0d; font: 700 13px system-ui, sans-serif; }
+  .node.accent text  { fill: #0d0d0d; font: 800 14px system-ui, sans-serif; letter-spacing: 0.1px; }
+  /* High-contrast edges that read on BOTH dark and light backgrounds.
+     The previous edge stroke (#4a4a48) disappeared on dark themes because
+     the chat surface is near-black. A bright slate stroke (#e2e8f0) at width
+     2.2, with a matching arrowhead fill and labels carrying a dark halo via
+     paint-order: stroke, is visible on dark backgrounds and still readable
+     on top of the pale pastel box fills in light mode. The marker fill in
+     style_svg below was bumped to the same #e2e8f0 for the same reason. */
+  .edge path, .edge polyline {
+    fill: none; stroke: #e2e8f0; stroke-width: 2.2;
+  }
+  .edge polygon { fill: #e2e8f0; stroke: #e2e8f0; }
+  .edge-ctrl path, .edge-ctrl polyline {
+    fill: none; stroke: #e2e8f0; stroke-width: 2.0;
+    stroke-dasharray: 6 4;
+  }
+  .edge-ctrl polygon { fill: #e2e8f0; stroke: #e2e8f0; }
+  .edge text, .edge-ctrl text {
+    fill: #f1f5f9; font: 700 12px system-ui, sans-serif;
+    paint-order: stroke; stroke: rgba(15, 23, 42, 0.85); stroke-width: 3px;
+  }
+</style></defs><title id="t">Crucible · combined system overview</title><desc id="d">All components named; foundational nodes outlined</desc><g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(43.2 1571.13)">
+<g id="clust1" class="cluster">
+<path stroke-dasharray="5,2" d="M1592,-415.15C1592,-415.15 2037,-415.15 2037,-415.15 2043,-415.15 2049,-421.15 2049,-427.15 2049,-427.15 2049,-1507.93 2049,-1507.93 2049,-1513.93 2043,-1519.93 2037,-1519.93 2037,-1519.93 1592,-1519.93 1592,-1519.93 1586,-1519.93 1580,-1513.93 1580,-1507.93 1580,-1507.93 1580,-427.15 1580,-427.15 1580,-421.15 1586,-415.15 1592,-415.15" />
+<text xml:space="preserve" text-anchor="start" x="1786.38" y="-1504.58" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#c0584f">Red side</text>
+</g>
+<g id="clust2" class="cluster">
+<path d="M1610,-990.92C1610,-990.92 1823,-990.92 1823,-990.92 1829,-990.92 1835,-996.92 1835,-1002.92 1835,-1002.92 1835,-1365.52 1835,-1365.52 1835,-1371.52 1829,-1377.52 1823,-1377.52 1823,-1377.52 1610,-1377.52 1610,-1377.52 1604,-1377.52 1598,-1371.52 1598,-1365.52 1598,-1365.52 1598,-1002.92 1598,-1002.92 1598,-996.92 1604,-990.92 1610,-990.92" />
+<text xml:space="preserve" text-anchor="start" x="1606.25" y="-1362.17" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#c0584f">Red Agent  ·  LLM semantic search</text>
+</g>
+<g id="clust3" class="cluster">
+<path stroke-dasharray="5,2" d="M186,-825.26C186,-825.26 702,-825.26 702,-825.26 708,-825.26 714,-831.26 714,-837.26 714,-837.26 714,-1081.45 714,-1081.45 714,-1087.45 708,-1093.45 702,-1093.45 702,-1093.45 186,-1093.45 186,-1093.45 180,-1093.45 174,-1087.45 174,-1081.45 174,-1081.45 174,-837.26 174,-837.26 174,-831.26 180,-825.26 186,-825.26" />
+<text xml:space="preserve" text-anchor="start" x="351.38" y="-1078.1" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#94a3b8">Producer Zone  ·  sandboxed</text>
+</g>
+<g id="clust4" class="cluster">
+<path stroke-dasharray="5,2" d="M734,-553.06C734,-553.06 1560,-553.06 1560,-553.06 1566,-553.06 1572,-559.06 1572,-565.06 1572,-565.06 1572,-926.29 1572,-926.29 1572,-932.29 1566,-938.29 1560,-938.29 1560,-938.29 734,-938.29 734,-938.29 728,-938.29 722,-932.29 722,-926.29 722,-926.29 722,-565.06 722,-565.06 722,-559.06 728,-553.06 734,-553.06" />
+<text xml:space="preserve" text-anchor="start" x="996.62" y="-922.94" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#8b7fd4">Sealed Verification Zone  ·  no producer path in</text>
+</g>
+<g id="clust5" class="cluster">
+<path stroke-dasharray="5,2" d="M1335,-8C1335,-8 1787,-8 1787,-8 1793,-8 1799,-14 1799,-20 1799,-20 1799,-367.4 1799,-367.4 1799,-373.4 1793,-379.4 1787,-379.4 1787,-379.4 1335,-379.4 1335,-379.4 1329,-379.4 1323,-373.4 1323,-367.4 1323,-367.4 1323,-20 1323,-20 1323,-14 1329,-8 1335,-8" />
+<text xml:space="preserve" text-anchor="start" x="1450.38" y="-364.05" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#6366f1">Blue Loop  ·  automated hardening</text>
+</g>
+<g id="clust6" class="cluster">
+<path stroke-dasharray="5,2" d="M783,-136.91C783,-136.91 1286,-136.91 1286,-136.91 1292,-136.91 1298,-142.91 1298,-148.91 1298,-148.91 1298,-505.31 1298,-505.31 1298,-511.31 1292,-517.31 1286,-517.31 1286,-517.31 783,-517.31 783,-517.31 777,-517.31 771,-511.31 771,-505.31 771,-505.31 771,-148.91 771,-148.91 771,-142.91 777,-136.91 783,-136.91" />
+<text xml:space="preserve" text-anchor="start" x="908.12" y="-501.96" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="13.00" fill="#94a3b8">Measure  ·  scoreboard + flight recorder</text>
+</g>
+
+<g id="node1" class="node tier-compute foundational">
+<path d="M1736.34,-1344.02C1736.34,-1344.02 1621.66,-1344.02 1621.66,-1344.02 1615.66,-1344.02 1609.66,-1338.02 1609.66,-1332.02 1609.66,-1332.02 1609.66,-1294.11 1609.66,-1294.11 1609.66,-1288.11 1615.66,-1282.11 1621.66,-1282.11 1621.66,-1282.11 1736.34,-1282.11 1736.34,-1282.11 1742.34,-1282.11 1748.34,-1288.11 1748.34,-1294.11 1748.34,-1294.11 1748.34,-1332.02 1748.34,-1332.02 1748.34,-1338.02 1742.34,-1344.02 1736.34,-1344.02" />
+<image xlink:href="/tmp/icons/anthropic.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1627.5" y="-1331.94" />
+<text xml:space="preserve" text-anchor="start" x="1672" y="-1316.49" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1678" y="-1316.49" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">reason</text>
+<text xml:space="preserve" text-anchor="start" x="1655.5" y="-1296.44" font-family="Helvetica,sans-Serif" font-size="9.00">why was I caught?</text>
+</g>
+
+<g id="node2" class="node tier-compute">
+<path d="M1704.46,-1202.74C1704.46,-1202.74 1631.54,-1202.74 1631.54,-1202.74 1625.54,-1202.74 1619.54,-1196.74 1619.54,-1190.74 1619.54,-1190.74 1619.54,-1165.58 1619.54,-1165.58 1619.54,-1159.58 1625.54,-1153.58 1631.54,-1153.58 1631.54,-1153.58 1704.46,-1153.58 1704.46,-1153.58 1710.46,-1153.58 1716.46,-1159.58 1716.46,-1165.58 1716.46,-1165.58 1716.46,-1190.74 1716.46,-1190.74 1716.46,-1196.74 1710.46,-1202.74 1704.46,-1202.74" />
+<text xml:space="preserve" text-anchor="start" x="1646.25" y="-1183.21" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">propose</text>
+<text xml:space="preserve" text-anchor="start" x="1635.38" y="-1174.11" font-family="Helvetica,sans-Serif" font-size="9.00">minimal change</text>
+<text xml:space="preserve" text-anchor="start" x="1637.62" y="-1165.11" font-family="Helvetica,sans-Serif" font-size="9.00">preserve intent</text>
+</g>
+
+<g id="edge1" class="edge">
+<path d="M1676.5,-1281.91C1674.77,-1261 1672.47,-1233.17 1670.7,-1211.75" />
+<polygon points="1673.33,-1211.77 1670.1,-1204.51 1668.1,-1212.2 1673.33,-1211.77" />
+</g>
+
+<g id="node23" class="node tier-observability">
+<path d="M1080.84,-477.81C1080.84,-477.81 983.16,-477.81 983.16,-477.81 977.16,-477.81 971.16,-471.81 971.16,-465.81 971.16,-465.81 971.16,-449.65 971.16,-449.65 971.16,-443.65 977.16,-437.65 983.16,-437.65 983.16,-437.65 1080.84,-437.65 1080.84,-437.65 1086.84,-437.65 1092.84,-443.65 1092.84,-449.65 1092.84,-449.65 1092.84,-465.81 1092.84,-465.81 1092.84,-471.81 1086.84,-477.81 1080.84,-477.81" />
+<text xml:space="preserve" text-anchor="start" x="987" y="-458.28" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">agent step traces</text>
+<text xml:space="preserve" text-anchor="start" x="1002.38" y="-449.18" font-family="Helvetica,sans-Serif" font-size="9.00">+ every verdict</text>
+</g>
+
+<g id="edge40" class="edge">
+<path d="M1609.26,-1310.26C1291.95,-1301.58 0,-1261.23 0,-1179.16 0,-1179.16 0,-1179.16 0,-594.64 0,-513.3 647.55,-529.31 728,-517.31 808.85,-505.25 900.94,-486.84 962.37,-473.89" />
+<polygon points="962.56,-476.53 969.35,-472.41 961.47,-471.39 962.56,-476.53" />
+<text xml:space="preserve" text-anchor="middle" x="22.12" y="-864.16" font-family="Helvetica,sans-Serif" font-size="9.00">step traces</text>
+</g>
+
+<g id="node3" class="node tier-compute">
+<path d="M1708.96,-1043.08C1708.96,-1043.08 1627.04,-1043.08 1627.04,-1043.08 1621.04,-1043.08 1615.04,-1037.08 1615.04,-1031.08 1615.04,-1031.08 1615.04,-1014.92 1615.04,-1014.92 1615.04,-1008.92 1621.04,-1002.92 1627.04,-1002.92 1627.04,-1002.92 1708.96,-1002.92 1708.96,-1002.92 1714.96,-1002.92 1720.96,-1008.92 1720.96,-1014.92 1720.96,-1014.92 1720.96,-1031.08 1720.96,-1031.08 1720.96,-1037.08 1714.96,-1043.08 1708.96,-1043.08" />
+<text xml:space="preserve" text-anchor="start" x="1630.88" y="-1023.55" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">query_target()</text>
+<text xml:space="preserve" text-anchor="start" x="1641.75" y="-1014.45" font-family="Helvetica,sans-Serif" font-size="9.00">score, iterate</text>
+</g>
+
+<g id="edge2" class="edge">
+<path d="M1668,-1153.22C1668,-1125.89 1668,-1081.22 1668,-1052.22" />
+<polygon points="1670.63,-1052.41 1668,-1044.91 1665.38,-1052.41 1670.63,-1052.41" />
+</g>
+
+<g id="edge3" class="edge">
+<path stroke-dasharray="5,2" d="M1682.23,-1043.23C1698.45,-1066.47 1724.02,-1107.42 1734,-1147.2 1740.7,-1173.89 1746.66,-1184.68 1734,-1209.11 1721.24,-1233.74 1696.49,-1220.87 1683,-1245.11 1678.36,-1253.44 1676.28,-1263.28 1675.6,-1272.83" />
+<polygon points="1672.98,-1272.74 1675.38,-1280.31 1678.22,-1272.89 1672.98,-1272.74" />
+<text xml:space="preserve" text-anchor="middle" x="1752.67" y="-1174.48" font-family="Helvetica,sans-Serif" font-size="9.00">score</text>
+</g>
+
+<g id="node10" class="node tier-compute foundational">
+<path d="M683.59,-892.42C683.59,-892.42 590.41,-892.42 590.41,-892.42 584.41,-892.42 578.41,-886.42 578.41,-880.42 578.41,-880.42 578.41,-855.26 578.41,-855.26 578.41,-849.26 584.41,-843.26 590.41,-843.26 590.41,-843.26 683.59,-843.26 683.59,-843.26 689.59,-843.26 695.59,-849.26 695.59,-855.26 695.59,-855.26 695.59,-880.42 695.59,-880.42 695.59,-886.42 689.59,-892.42 683.59,-892.42" />
+<text xml:space="preserve" text-anchor="start" x="596.5" y="-872.89" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Target Protocol</text>
+<text xml:space="preserve" text-anchor="start" x="594.25" y="-863.79" font-family="Helvetica,sans-Serif" font-size="9.00">submit, query_target,</text>
+<text xml:space="preserve" text-anchor="start" x="620.12" y="-854.79" font-family="Helvetica,sans-Serif" font-size="9.00">self_test</text>
+</g>
+
+<g id="edge31" class="edge">
+<path d="M1614.66,-1021.78C1438.41,-1020.37 876.71,-1010.21 713,-938.29 693.81,-929.86 676.25,-914.57 662.86,-900.49" />
+<polygon points="664.9,-898.83 657.9,-895.07 661.03,-902.38 664.9,-898.83" />
+<text xml:space="preserve" text-anchor="middle" x="782.42" y="-947.49" font-family="Helvetica,sans-Serif" font-size="9.00">submit / query</text>
+</g>
+
+<g id="node4" class="node tier-control">
+<path d="M1724.46,-1480.43C1724.46,-1480.43 1633.54,-1480.43 1633.54,-1480.43 1627.54,-1480.43 1621.54,-1474.43 1621.54,-1468.43 1621.54,-1468.43 1621.54,-1443.27 1621.54,-1443.27 1621.54,-1437.27 1627.54,-1431.27 1633.54,-1431.27 1633.54,-1431.27 1724.46,-1431.27 1724.46,-1431.27 1730.46,-1431.27 1736.46,-1437.27 1736.46,-1443.27 1736.46,-1443.27 1736.46,-1468.43 1736.46,-1468.43 1736.46,-1474.43 1730.46,-1480.43 1724.46,-1480.43" />
+<text xml:space="preserve" text-anchor="start" x="1637.38" y="-1460.9" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">white-box mode</text>
+<text xml:space="preserve" text-anchor="start" x="1642.62" y="-1451.8" font-family="Helvetica,sans-Serif" font-size="9.00">scheme revealed,</text>
+<text xml:space="preserve" text-anchor="start" x="1644.12" y="-1442.8" font-family="Helvetica,sans-Serif" font-size="9.00">instances hidden</text>
+</g>
+
+<g id="edge4" class="edge">
+<path stroke-dasharray="5,2" d="M1679,-1430.97C1679,-1409.73 1679,-1378.26 1679,-1353.32" />
+<polygon points="1681.63,-1353.48 1679,-1345.98 1676.38,-1353.48 1681.63,-1353.48" />
+<text xml:space="preserve" text-anchor="middle" x="1714.62" y="-1386.72" font-family="Helvetica,sans-Serif" font-size="9.00">augments prompt</text>
+</g>
+
+<g id="node5" class="node tier-control">
+<path d="M1981.46,-1209.11C1981.46,-1209.11 1858.54,-1209.11 1858.54,-1209.11 1852.54,-1209.11 1846.54,-1203.11 1846.54,-1197.11 1846.54,-1197.11 1846.54,-1159.2 1846.54,-1159.2 1846.54,-1153.2 1852.54,-1147.2 1858.54,-1147.2 1858.54,-1147.2 1981.46,-1147.2 1981.46,-1147.2 1987.46,-1147.2 1993.46,-1153.2 1993.46,-1159.2 1993.46,-1159.2 1993.46,-1197.11 1993.46,-1197.11 1993.46,-1203.11 1987.46,-1209.11 1981.46,-1209.11" />
+<image xlink:href="/tmp/icons/scipy.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1864.38" y="-1197.03" />
+<text xml:space="preserve" text-anchor="start" x="1892.38" y="-1181.58" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1898.38" y="-1181.58" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">hybrid fallback</text>
+<text xml:space="preserve" text-anchor="start" x="1905.12" y="-1161.53" font-family="Helvetica,sans-Serif" font-size="9.00">scipy.optimize</text>
+</g>
+
+<g id="edge5" class="edge">
+<path stroke-dasharray="5,2" d="M1846.99,-1146.76C1793.91,-1124.51 1730.41,-1097.52 1725,-1093.45 1709.39,-1081.72 1695.42,-1064.85 1685.21,-1050.68" />
+<polygon points="1687.55,-1049.44 1681.1,-1044.79 1683.25,-1052.45 1687.55,-1049.44" />
+<text xml:space="preserve" text-anchor="middle" x="1780.09" y="-1102.65" font-family="Helvetica,sans-Serif" font-size="9.00">executes</text>
+</g>
+
+<g id="node6" class="node tier-data foundational">
+<path d="M1705.71,-482.31C1705.71,-482.31 1610.29,-482.31 1610.29,-482.31 1604.29,-482.31 1598.29,-476.31 1598.29,-470.31 1598.29,-470.31 1598.29,-445.15 1598.29,-445.15 1598.29,-439.15 1604.29,-433.15 1610.29,-433.15 1610.29,-433.15 1705.71,-433.15 1705.71,-433.15 1711.71,-433.15 1717.71,-439.15 1717.71,-445.15 1717.71,-445.15 1717.71,-470.31 1717.71,-470.31 1717.71,-476.31 1711.71,-482.31 1705.71,-482.31" />
+<text xml:space="preserve" text-anchor="start" x="1614.12" y="-462.78" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Strategy Catalog</text>
+<text xml:space="preserve" text-anchor="start" x="1620.5" y="-453.68" font-family="Helvetica,sans-Serif" font-size="9.00">persistent memory</text>
+<text xml:space="preserve" text-anchor="start" x="1634.38" y="-444.68" font-family="Helvetica,sans-Serif" font-size="9.00">across runs</text>
+</g>
+
+<g id="edge6" class="edge">
+<path stroke-dasharray="5,2" d="M1717.88,-474.45C1801.2,-498.11 1942,-545.38 1942,-594.64 1942,-797.01 1942,-797.01 1942,-797.01 1942,-955.64 1995.59,-989.32 2011,-1147.2 2013.67,-1174.59 2027.32,-1186.96 2011,-1209.11 1980.73,-1250.19 1845.56,-1281.93 1757.3,-1298.73" />
+<polygon points="1757.02,-1296.12 1750.14,-1300.08 1757.99,-1301.28 1757.02,-1296.12" />
+<text xml:space="preserve" text-anchor="middle" x="1985.68" y="-864.16" font-family="Helvetica,sans-Serif" font-size="9.00">reuse tactics</text>
+</g>
+
+<g id="node18" class="node tier-compute">
+<path d="M1769.21,-339.9C1769.21,-339.9 1694.79,-339.9 1694.79,-339.9 1688.79,-339.9 1682.79,-333.9 1682.79,-327.9 1682.79,-327.9 1682.79,-315.9 1682.79,-315.9 1682.79,-309.9 1688.79,-303.9 1694.79,-303.9 1694.79,-303.9 1769.21,-303.9 1769.21,-303.9 1775.21,-303.9 1781.21,-309.9 1781.21,-315.9 1781.21,-315.9 1781.21,-327.9 1781.21,-327.9 1781.21,-333.9 1775.21,-339.9 1769.21,-339.9" />
+<text xml:space="preserve" text-anchor="start" x="1698.62" y="-318.45" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">new features</text>
+</g>
+
+<g id="edge35" class="edge">
+<path d="M1671.23,-432.8C1684.45,-408.89 1704.7,-372.28 1718.14,-347.97" />
+<polygon points="1720.35,-349.39 1721.68,-341.56 1715.76,-346.85 1720.35,-349.39" />
+<text xml:space="preserve" text-anchor="middle" x="1731.38" y="-388.6" font-family="Helvetica,sans-Serif" font-size="9.00">discovered tactics</text>
+</g>
+
+<g id="node19" class="node tier-compute">
+<path d="M1464.96,-339.9C1464.96,-339.9 1353.04,-339.9 1353.04,-339.9 1347.04,-339.9 1341.04,-333.9 1341.04,-327.9 1341.04,-327.9 1341.04,-315.9 1341.04,-315.9 1341.04,-309.9 1347.04,-303.9 1353.04,-303.9 1353.04,-303.9 1464.96,-303.9 1464.96,-303.9 1470.96,-303.9 1476.96,-309.9 1476.96,-315.9 1476.96,-315.9 1476.96,-327.9 1476.96,-327.9 1476.96,-333.9 1470.96,-339.9 1464.96,-339.9" />
+<text xml:space="preserve" text-anchor="start" x="1356.88" y="-318.45" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">adversarial samples</text>
+</g>
+
+<g id="edge36" class="edge">
+<path d="M1602.71,-432.8C1570.7,-418.38 1529.95,-399.05 1495,-379.4 1476.36,-368.92 1456.36,-355.9 1440.34,-344.99" />
+<polygon points="1442.19,-343.08 1434.52,-341 1439.22,-347.41 1442.19,-343.08" />
+</g>
+
+<g id="node20" class="node tier-compute">
+<path d="M1635.21,-339.9C1635.21,-339.9 1524.79,-339.9 1524.79,-339.9 1518.79,-339.9 1512.79,-333.9 1512.79,-327.9 1512.79,-327.9 1512.79,-315.9 1512.79,-315.9 1512.79,-309.9 1518.79,-303.9 1524.79,-303.9 1524.79,-303.9 1635.21,-303.9 1635.21,-303.9 1641.21,-303.9 1647.21,-309.9 1647.21,-315.9 1647.21,-315.9 1647.21,-327.9 1647.21,-327.9 1647.21,-333.9 1641.21,-339.9 1635.21,-339.9" />
+<text xml:space="preserve" text-anchor="start" x="1528.62" y="-318.45" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">specialist ensemble</text>
+</g>
+
+<g id="edge37" class="edge">
+<path d="M1644.06,-432.8C1630.12,-408.89 1608.78,-372.28 1594.61,-347.97" />
+<polygon points="1596.91,-346.7 1590.87,-341.54 1592.37,-349.34 1596.91,-346.7" />
+</g>
+
+<g id="node7" class="node tier-storage">
+<path d="M320.09,-1053.95C320.09,-1053.95 203.91,-1053.95 203.91,-1053.95 197.91,-1053.95 191.91,-1047.95 191.91,-1041.95 191.91,-1041.95 191.91,-1004.04 191.91,-1004.04 191.91,-998.04 197.91,-992.04 203.91,-992.04 203.91,-992.04 320.09,-992.04 320.09,-992.04 326.09,-992.04 332.09,-998.04 332.09,-1004.04 332.09,-1004.04 332.09,-1041.95 332.09,-1041.95 332.09,-1047.95 326.09,-1053.95 320.09,-1053.95" />
+<image xlink:href="/tmp/icons/python.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="209.75" y="-1041.87" />
+<text xml:space="preserve" text-anchor="start" x="237.75" y="-1026.42" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="243.75" y="-1026.42" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">fraud adapter</text>
+<text xml:space="preserve" text-anchor="start" x="247.12" y="-1006.37" font-family="Helvetica,sans-Serif" font-size="9.00">LightGBM .lgb</text>
+</g>
+
+<g id="edge7" class="edge">
+<path d="M332.53,-993.19C400.73,-965.33 503.3,-923.44 570.2,-896.12" />
+<polygon points="570.83,-898.7 576.78,-893.43 568.85,-893.84 570.83,-898.7" />
+</g>
+
+<g id="node8" class="node tier-storage">
+<path d="M527.47,-1053.95C527.47,-1053.95 380.53,-1053.95 380.53,-1053.95 374.53,-1053.95 368.53,-1047.95 368.53,-1041.95 368.53,-1041.95 368.53,-1004.04 368.53,-1004.04 368.53,-998.04 374.53,-992.04 380.53,-992.04 380.53,-992.04 527.47,-992.04 527.47,-992.04 533.47,-992.04 539.47,-998.04 539.47,-1004.04 539.47,-1004.04 539.47,-1041.95 539.47,-1041.95 539.47,-1047.95 533.47,-1053.95 527.47,-1053.95" />
+<image xlink:href="/tmp/icons/anthropic.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="386.375" y="-1041.87" />
+<text xml:space="preserve" text-anchor="start" x="414.38" y="-1026.42" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="420.38" y="-1026.42" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">code-agent adapter</text>
+<text xml:space="preserve" text-anchor="start" x="426.75" y="-1006.37" font-family="Helvetica,sans-Serif" font-size="9.00">Sonnet 4.6 endpoint</text>
+</g>
+
+<g id="edge8" class="edge">
+<path d="M490.15,-991.74C522.54,-964.63 569.74,-925.13 601.82,-898.28" />
+<polygon points="603.2,-900.55 607.26,-893.72 599.83,-896.52 603.2,-900.55" />
+</g>
+
+<g id="node9" class="node tier-storage">
+<path d="M684.09,-1043.08C684.09,-1043.08 587.91,-1043.08 587.91,-1043.08 581.91,-1043.08 575.91,-1037.08 575.91,-1031.08 575.91,-1031.08 575.91,-1014.92 575.91,-1014.92 575.91,-1008.92 581.91,-1002.92 587.91,-1002.92 587.91,-1002.92 684.09,-1002.92 684.09,-1002.92 690.09,-1002.92 696.09,-1008.92 696.09,-1014.92 696.09,-1014.92 696.09,-1031.08 696.09,-1031.08 696.09,-1037.08 690.09,-1043.08 684.09,-1043.08" />
+<text xml:space="preserve" text-anchor="start" x="591.75" y="-1023.55" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">research adapter</text>
+<text xml:space="preserve" text-anchor="start" x="627.38" y="-1014.45" font-family="Helvetica,sans-Serif" font-size="9.00">stub</text>
+</g>
+
+<g id="edge9" class="edge">
+<path d="M636.13,-1002.6C636.29,-977.18 636.59,-932.22 636.79,-901.5" />
+<polygon points="639.41,-901.88 636.83,-894.37 634.16,-901.85 639.41,-901.88" />
+</g>
+
+<g id="node12" class="node tier-kernel">
+<path d="M831.84,-748.76C831.84,-748.76 752.16,-748.76 752.16,-748.76 746.16,-748.76 740.16,-742.76 740.16,-736.76 740.16,-736.76 740.16,-711.6 740.16,-711.6 740.16,-705.6 746.16,-699.6 752.16,-699.6 752.16,-699.6 831.84,-699.6 831.84,-699.6 837.84,-699.6 843.84,-705.6 843.84,-711.6 843.84,-711.6 843.84,-736.76 843.84,-736.76 843.84,-742.76 837.84,-748.76 831.84,-748.76" />
+<text xml:space="preserve" text-anchor="start" x="756" y="-729.23" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">held-out tests</text>
+<text xml:space="preserve" text-anchor="start" x="757.12" y="-720.12" font-family="Helvetica,sans-Serif" font-size="9.00">fresh post-submit</text>
+<text xml:space="preserve" text-anchor="start" x="771" y="-711.12" font-family="Helvetica,sans-Serif" font-size="9.00">weight 1.0</text>
+</g>
+
+<g id="edge32" class="edge">
+<path d="M682.49,-825.26C692.62,-816 703.63,-805.94 714.64,-795.88" />
+<polygon points="716,-798.19 719.77,-791.19 712.46,-794.31 716,-798.19" />
+<text xml:space="preserve" text-anchor="middle" x="748.02" y="-792.33" font-family="Helvetica,sans-Serif" font-size="9.00">output, sealed</text>
+</g>
+
+<g id="node11" class="node tier-data">
+<path d="M1195.46,-898.79C1195.46,-898.79 1084.54,-898.79 1084.54,-898.79 1078.54,-898.79 1072.54,-892.79 1072.54,-886.79 1072.54,-886.79 1072.54,-848.88 1072.54,-848.88 1072.54,-842.88 1078.54,-836.88 1084.54,-836.88 1084.54,-836.88 1195.46,-836.88 1195.46,-836.88 1201.46,-836.88 1207.46,-842.88 1207.46,-848.88 1207.46,-848.88 1207.46,-886.79 1207.46,-886.79 1207.46,-892.79 1201.46,-898.79 1195.46,-898.79" />
+<image xlink:href="/tmp/icons/yaml.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1090.38" y="-886.71" />
+<text xml:space="preserve" text-anchor="start" x="1118.75" y="-871.26" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1124.75" y="-871.26" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Sealed Spec</text>
+<text xml:space="preserve" text-anchor="start" x="1118.38" y="-851.21" font-family="Helvetica,sans-Serif" font-size="9.00">YAML obligations</text>
+</g>
+
+<g id="edge10" class="edge">
+<path d="M1072.13,-840.05C1015.74,-817.68 933.47,-784.78 862,-755.13 858.86,-753.83 855.65,-752.49 852.41,-751.12" />
+<polygon points="853.64,-748.8 845.71,-748.3 851.6,-753.63 853.64,-748.8" />
+<text xml:space="preserve" text-anchor="middle" x="983.74" y="-792.33" font-family="Helvetica,sans-Serif" font-size="9.00">derives</text>
+</g>
+
+<g id="node13" class="node tier-kernel">
+<path d="M1017.71,-748.76C1017.71,-748.76 892.28,-748.76 892.28,-748.76 886.28,-748.76 880.28,-742.76 880.28,-736.76 880.28,-736.76 880.28,-711.6 880.28,-711.6 880.28,-705.6 886.28,-699.6 892.28,-699.6 892.28,-699.6 1017.71,-699.6 1017.71,-699.6 1023.71,-699.6 1029.71,-705.6 1029.71,-711.6 1029.71,-711.6 1029.71,-736.76 1029.71,-736.76 1029.71,-742.76 1023.71,-748.76 1017.71,-748.76" />
+<text xml:space="preserve" text-anchor="start" x="896.12" y="-729.23" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">metamorphic relations</text>
+<text xml:space="preserve" text-anchor="start" x="899.5" y="-720.12" font-family="Helvetica,sans-Serif" font-size="9.00">invariants under transforms</text>
+<text xml:space="preserve" text-anchor="start" x="934" y="-711.12" font-family="Helvetica,sans-Serif" font-size="9.00">weight 1.0</text>
+</g>
+
+<g id="edge11" class="edge">
+<path d="M1100.31,-836.45C1068.63,-812.18 1024.51,-778.4 993.22,-754.44" />
+<polygon points="995.1,-752.58 987.55,-750.1 991.91,-756.75 995.1,-752.58" />
+</g>
+
+<g id="node14" class="node tier-kernel">
+<path d="M1201.84,-755.13C1201.84,-755.13 1078.16,-755.13 1078.16,-755.13 1072.16,-755.13 1066.16,-749.13 1066.16,-743.13 1066.16,-743.13 1066.16,-705.22 1066.16,-705.22 1066.16,-699.22 1072.16,-693.22 1078.16,-693.22 1078.16,-693.22 1201.84,-693.22 1201.84,-693.22 1207.84,-693.22 1213.84,-699.22 1213.84,-705.22 1213.84,-705.22 1213.84,-743.13 1213.84,-743.13 1213.84,-749.13 1207.84,-755.13 1201.84,-755.13" />
+<image xlink:href="/tmp/icons/anthropic.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1084" y="-743.05" />
+<text xml:space="preserve" text-anchor="start" x="1122.88" y="-727.6" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1128.88" y="-727.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">differential</text>
+<text xml:space="preserve" text-anchor="start" x="1112" y="-707.55" font-family="Helvetica,sans-Serif" font-size="9.00">Haiku vs Sonnet, 1.0</text>
+</g>
+
+<g id="edge12" class="edge">
+<path d="M1140,-836.45C1140,-815.34 1140,-787.04 1140,-764.26" />
+<polygon points="1142.63,-764.53 1140,-757.03 1137.38,-764.53 1142.63,-764.53" />
+</g>
+
+<g id="node15" class="node tier-kernel">
+<path d="M1373.96,-748.76C1373.96,-748.76 1262.04,-748.76 1262.04,-748.76 1256.04,-748.76 1250.04,-742.76 1250.04,-736.76 1250.04,-736.76 1250.04,-711.6 1250.04,-711.6 1250.04,-705.6 1256.04,-699.6 1262.04,-699.6 1262.04,-699.6 1373.96,-699.6 1373.96,-699.6 1379.96,-699.6 1385.96,-705.6 1385.96,-711.6 1385.96,-711.6 1385.96,-736.76 1385.96,-736.76 1385.96,-742.76 1379.96,-748.76 1373.96,-748.76" />
+<text xml:space="preserve" text-anchor="start" x="1265.88" y="-729.23" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">property-based fuzz</text>
+<text xml:space="preserve" text-anchor="start" x="1283.88" y="-720.12" font-family="Helvetica,sans-Serif" font-size="9.00">random samples</text>
+<text xml:space="preserve" text-anchor="start" x="1297" y="-711.12" font-family="Helvetica,sans-Serif" font-size="9.00">weight 1.0</text>
+</g>
+
+<g id="edge13" class="edge">
+<path d="M1178.19,-836.45C1208.54,-812.29 1250.76,-778.69 1280.85,-754.74" />
+<polygon points="1282.42,-756.85 1286.65,-750.12 1279.15,-752.74 1282.42,-756.85" />
+</g>
+
+<g id="node16" class="node tier-kernel">
+<path d="M1541.96,-755.13C1541.96,-755.13 1434.04,-755.13 1434.04,-755.13 1428.04,-755.13 1422.04,-749.13 1422.04,-743.13 1422.04,-743.13 1422.04,-705.22 1422.04,-705.22 1422.04,-699.22 1428.04,-693.22 1434.04,-693.22 1434.04,-693.22 1541.96,-693.22 1541.96,-693.22 1547.96,-693.22 1553.96,-699.22 1553.96,-705.22 1553.96,-705.22 1553.96,-743.13 1553.96,-743.13 1553.96,-749.13 1547.96,-755.13 1541.96,-755.13" />
+<image xlink:href="/tmp/icons/anthropic.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1439.88" y="-743.05" />
+<text xml:space="preserve" text-anchor="start" x="1471.62" y="-727.6" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1477.62" y="-727.6" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">LLM judge</text>
+<text xml:space="preserve" text-anchor="start" x="1467.88" y="-707.55" font-family="Helvetica,sans-Serif" font-size="9.00">Opus, weight 0.5</text>
+</g>
+
+<g id="edge14" class="edge">
+<path d="M1207.92,-839.19C1267.08,-815.1 1352.69,-780.26 1413.66,-755.43" />
+<polygon points="1414.37,-757.98 1420.32,-752.72 1412.39,-753.12 1414.37,-757.98" />
+</g>
+
+<g id="node17" class="node tier-control foundational">
+<path d="M1152.84,-620.22C1152.84,-620.22 1061.16,-620.22 1061.16,-620.22 1055.16,-620.22 1049.16,-614.22 1049.16,-608.22 1049.16,-608.22 1049.16,-583.06 1049.16,-583.06 1049.16,-577.06 1055.16,-571.06 1061.16,-571.06 1061.16,-571.06 1152.84,-571.06 1152.84,-571.06 1158.84,-571.06 1164.84,-577.06 1164.84,-583.06 1164.84,-583.06 1164.84,-608.22 1164.84,-608.22 1164.84,-614.22 1158.84,-620.22 1152.84,-620.22" />
+<text xml:space="preserve" text-anchor="start" x="1077" y="-600.69" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Aggregator</text>
+<text xml:space="preserve" text-anchor="start" x="1068.75" y="-591.59" font-family="Helvetica,sans-Serif" font-size="9.00">PASS-weight ≥ 2.0</text>
+<text xml:space="preserve" text-anchor="start" x="1065" y="-582.59" font-family="Helvetica,sans-Serif" font-size="9.00">=&gt; pass; else caught</text>
+</g>
+
+<g id="edge15" class="edge">
+<path d="M844.3,-700.6C850.26,-698.09 856.25,-695.58 862,-693.22 922.16,-668.49 991.12,-641.42 1040.52,-622.25" />
+<polygon points="1041.44,-624.71 1047.48,-619.55 1039.54,-619.81 1041.44,-624.71" />
+</g>
+
+<g id="edge16" class="edge">
+<path d="M983.59,-699.37C1008.56,-678.59 1044.91,-648.33 1071.69,-626.03" />
+<polygon points="1073.03,-628.33 1077.12,-621.52 1069.67,-624.3 1073.03,-628.33" />
+</g>
+
+<g id="edge17" class="edge">
+<path d="M1132.1,-692.87C1127.07,-673.59 1120.57,-648.66 1115.44,-629" />
+<polygon points="1118,-628.43 1113.57,-621.84 1112.92,-629.76 1118,-628.43" />
+</g>
+
+<g id="edge18" class="edge">
+<path d="M1278.31,-699.37C1243.06,-678.23 1191.48,-647.3 1154.14,-624.91" />
+<polygon points="1155.95,-622.93 1148.17,-621.33 1153.25,-627.44 1155.95,-622.93" />
+</g>
+
+<g id="edge19" class="edge">
+<path d="M1421.57,-699.29C1415.64,-697.22 1409.72,-695.17 1404,-693.22 1325.08,-666.32 1233.82,-636.89 1173.51,-617.68" />
+<polygon points="1174.59,-615.27 1166.65,-615.49 1173,-620.27 1174.59,-615.27" />
+</g>
+
+<g id="edge33" class="edge">
+<path d="M1048.82,-597.78C834.16,-602.74 99,-626.78 99,-723.18 99,-1179.16 99,-1179.16 99,-1179.16 99,-1255.25 1278.22,-1299.06 1599.18,-1309.58" />
+<polygon points="1598.72,-1312.19 1606.3,-1309.81 1598.89,-1306.94 1598.72,-1312.19" />
+<text xml:space="preserve" text-anchor="middle" x="127.5" y="-947.49" font-family="Helvetica,sans-Serif" font-size="9.00">verdict + audit</text>
+</g>
+
+<g id="edge34" class="edge">
+<path d="M1165.18,-580.29C1267.67,-555.01 1479.86,-502.67 1589.34,-475.67" />
+<polygon points="1589.88,-478.24 1596.53,-473.89 1588.62,-473.14 1589.88,-478.24" />
+<text xml:space="preserve" text-anchor="middle" x="1412.88" y="-526.51" font-family="Helvetica,sans-Serif" font-size="9.00">log undetected</text>
+</g>
+
+<g id="edge39" class="edge">
+<path d="M1093.76,-570.65C1080.63,-546.86 1060.55,-510.47 1046.88,-485.69" />
+<polygon points="1049.33,-484.71 1043.41,-479.41 1044.74,-487.24 1049.33,-484.71" />
+<text xml:space="preserve" text-anchor="middle" x="1099.87" y="-526.51" font-family="Helvetica,sans-Serif" font-size="9.00">every verdict</text>
+</g>
+
+<g id="node21" class="node tier-compute foundational">
+<path d="M1588.09,-219.82C1588.09,-219.82 1465.91,-219.82 1465.91,-219.82 1459.91,-219.82 1453.91,-213.82 1453.91,-207.82 1453.91,-207.82 1453.91,-160.16 1453.91,-160.16 1453.91,-154.16 1459.91,-148.16 1465.91,-148.16 1465.91,-148.16 1588.09,-148.16 1588.09,-148.16 1594.09,-148.16 1600.09,-154.16 1600.09,-160.16 1600.09,-160.16 1600.09,-207.82 1600.09,-207.82 1600.09,-213.82 1594.09,-219.82 1588.09,-219.82" />
+<image xlink:href="/tmp/icons/python.png" width="24px" height="24px" preserveAspectRatio="xMinYMin meet" x="1471.75" y="-207.74" />
+<text xml:space="preserve" text-anchor="start" x="1513.62" y="-192.29" font-family="Helvetica,sans-Serif" font-size="11.00">  </text>
+<text xml:space="preserve" text-anchor="start" x="1519.62" y="-192.29" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Retrainer</text>
+<text xml:space="preserve" text-anchor="start" x="1505.38" y="-172.24" font-family="Helvetica,sans-Serif" font-size="9.00">LightGBM.fit() OR</text>
+<text xml:space="preserve" text-anchor="start" x="1499.75" y="-162.49" font-family="Helvetica,sans-Serif" font-size="9.00">agent_configs patch</text>
+</g>
+
+<g id="edge20" class="edge">
+<path d="M1705.62,-303.41C1675.89,-283.7 1626.6,-251.02 1587.32,-224.98" />
+<polygon points="1589.07,-222.99 1581.37,-221.03 1586.17,-227.37 1589.07,-222.99" />
+</g>
+
+<g id="edge21" class="edge">
+<path d="M1424.18,-303.41C1440.87,-284.19 1468.26,-252.64 1490.58,-226.94" />
+<polygon points="1492.51,-228.72 1495.44,-221.34 1488.54,-225.28 1492.51,-228.72" />
+</g>
+
+<g id="edge22" class="edge">
+<path d="M1573.18,-303.41C1565.85,-284.6 1553.9,-253.98 1544,-228.58" />
+<polygon points="1546.45,-227.64 1541.28,-221.61 1541.56,-229.55 1546.45,-227.64" />
+</g>
+
+<g id="node22" class="node tier-storage foundational">
+<path d="M1503.21,-75.16C1503.21,-75.16 1398.79,-75.16 1398.79,-75.16 1392.79,-75.16 1386.79,-69.16 1386.79,-63.16 1386.79,-63.16 1386.79,-38 1386.79,-38 1386.79,-32 1392.79,-26 1398.79,-26 1398.79,-26 1503.21,-26 1503.21,-26 1509.21,-26 1515.21,-32 1515.21,-38 1515.21,-38 1515.21,-63.16 1515.21,-63.16 1515.21,-69.16 1509.21,-75.16 1503.21,-75.16" />
+<text xml:space="preserve" text-anchor="start" x="1404.12" y="-55.63" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Held-out validator</text>
+<text xml:space="preserve" text-anchor="start" x="1419.88" y="-46.53" font-family="Helvetica,sans-Serif" font-size="9.00">fixed attack set,</text>
+<text xml:space="preserve" text-anchor="start" x="1402.62" y="-37.53" font-family="Helvetica,sans-Serif" font-size="9.00">never seen by proposer</text>
+</g>
+
+<g id="edge23" class="edge">
+<path d="M1506.63,-147.77C1494.96,-127.6 1480.44,-102.49 1469.16,-82.98" />
+<polygon points="1471.48,-81.75 1465.46,-76.58 1466.94,-84.38 1471.48,-81.75" />
+</g>
+
+<g id="edge38" class="edge">
+<path stroke-dasharray="5,2" d="M1386.51,-55.55C1198.32,-68 663,-109.83 663,-182.99 663,-725.18 663,-725.18 663,-725.18 663,-755.94 657,-789.85 650.76,-816.77" />
+<polygon points="648.27,-815.88 649.08,-823.79 653.38,-817.1 648.27,-815.88" />
+<text xml:space="preserve" text-anchor="middle" x="690.75" y="-454.05" font-family="Helvetica,sans-Serif" font-size="9.00">retrain / patch</text>
+</g>
+
+<g id="node24" class="node tier-observability foundational">
+<path d="M909.47,-350.98C909.47,-350.98 800.53,-350.98 800.53,-350.98 794.53,-350.98 788.53,-344.98 788.53,-338.98 788.53,-338.98 788.53,-304.82 788.53,-304.82 788.53,-298.82 794.53,-292.82 800.53,-292.82 800.53,-292.82 909.47,-292.82 909.47,-292.82 915.47,-292.82 921.47,-298.82 921.47,-304.82 921.47,-304.82 921.47,-338.98 921.47,-338.98 921.47,-344.98 915.47,-350.98 909.47,-350.98" />
+<text xml:space="preserve" text-anchor="start" x="826.12" y="-331.45" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Dashboard</text>
+<text xml:space="preserve" text-anchor="start" x="811.88" y="-322.35" font-family="Helvetica,sans-Serif" font-size="9.00">undetected-hack rate</text>
+<text xml:space="preserve" text-anchor="start" x="817.12" y="-313.35" font-family="Helvetica,sans-Serif" font-size="9.00">val-vs-heldout gap</text>
+<text xml:space="preserve" text-anchor="start" x="804.38" y="-304.35" font-family="Helvetica,sans-Serif" font-size="9.00">cost/hack, human-min/1k</text>
+</g>
+
+<g id="edge24" class="edge">
+<path d="M1006.26,-437.27C978.33,-416.15 933.23,-382.05 899.52,-356.57" />
+<polygon points="901.29,-354.61 893.72,-352.18 898.12,-358.8 901.29,-354.61" />
+</g>
+
+<g id="node25" class="node tier-observability">
+<path d="M1267.71,-346.48C1267.71,-346.48 1154.29,-346.48 1154.29,-346.48 1148.29,-346.48 1142.29,-340.48 1142.29,-334.48 1142.29,-334.48 1142.29,-309.32 1142.29,-309.32 1142.29,-303.32 1148.29,-297.32 1154.29,-297.32 1154.29,-297.32 1267.71,-297.32 1267.71,-297.32 1273.71,-297.32 1279.71,-303.32 1279.71,-309.32 1279.71,-309.32 1279.71,-334.48 1279.71,-334.48 1279.71,-340.48 1273.71,-346.48 1267.71,-346.48" />
+<text xml:space="preserve" text-anchor="start" x="1158.12" y="-326.95" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Co-evolution curves</text>
+<text xml:space="preserve" text-anchor="start" x="1180.62" y="-317.85" font-family="Helvetica,sans-Serif" font-size="9.00">ASR, detection</text>
+<text xml:space="preserve" text-anchor="start" x="1173.5" y="-308.85" font-family="Helvetica,sans-Serif" font-size="9.00">red ↔ blue rounds</text>
+</g>
+
+<g id="edge25" class="edge">
+<path d="M1058.03,-437.27C1087.9,-414.94 1137.21,-378.07 1171.75,-352.25" />
+<polygon points="1173.24,-354.41 1177.67,-347.82 1170.09,-350.21 1173.24,-354.41" />
+</g>
+
+<g id="node26" class="node tier-observability">
+<path d="M1094.34,-341.98C1094.34,-341.98 969.66,-341.98 969.66,-341.98 963.66,-341.98 957.66,-335.98 957.66,-329.98 957.66,-329.98 957.66,-313.82 957.66,-313.82 957.66,-307.82 963.66,-301.82 969.66,-301.82 969.66,-301.82 1094.34,-301.82 1094.34,-301.82 1100.34,-301.82 1106.34,-307.82 1106.34,-313.82 1106.34,-313.82 1106.34,-329.98 1106.34,-329.98 1106.34,-335.98 1100.34,-341.98 1094.34,-341.98" />
+<text xml:space="preserve" text-anchor="start" x="973.5" y="-322.45" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Audit trace per verdict</text>
+<text xml:space="preserve" text-anchor="start" x="1005" y="-313.35" font-family="Helvetica,sans-Serif" font-size="9.00">1-click replay</text>
+</g>
+
+<g id="edge26" class="edge">
+<path d="M1032,-437.27C1032,-414.67 1032,-377.2 1032,-351.34" />
+<polygon points="1034.63,-351.4 1032,-343.9 1029.38,-351.4 1034.63,-351.4" />
+</g>
+
+<g id="node27" class="node tier-data">
+<path d="M1066.21,-213.07C1066.21,-213.07 997.78,-213.07 997.78,-213.07 991.78,-213.07 985.78,-207.07 985.78,-201.07 985.78,-201.07 985.78,-166.91 985.78,-166.91 985.78,-160.91 991.78,-154.91 997.78,-154.91 997.78,-154.91 1066.21,-154.91 1066.21,-154.91 1072.21,-154.91 1078.21,-160.91 1078.21,-166.91 1078.21,-166.91 1078.21,-201.07 1078.21,-201.07 1078.21,-207.07 1072.21,-213.07 1066.21,-213.07" />
+<text xml:space="preserve" text-anchor="start" x="1009.5" y="-193.54" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Artifacts</text>
+<text xml:space="preserve" text-anchor="start" x="1001.62" y="-184.44" font-family="Helvetica,sans-Serif" font-size="9.00">seeded corpus</text>
+<text xml:space="preserve" text-anchor="start" x="1006.88" y="-175.44" font-family="Helvetica,sans-Serif" font-size="9.00">leaderboard</text>
+<text xml:space="preserve" text-anchor="start" x="1002.75" y="-166.44" font-family="Helvetica,sans-Serif" font-size="9.00">SR 11-7 report</text>
+</g>
+
+<g id="edge28" class="edge">
+<path d="M892.11,-292.41C920.07,-270.93 958.52,-241.41 988.03,-218.75" />
+<polygon points="989.39,-221.02 993.74,-214.37 986.2,-216.85 989.39,-221.02" />
+</g>
+
+<g id="node28" class="node tier-control foundational">
+<path d="M915.09,-208.57C915.09,-208.57 800.91,-208.57 800.91,-208.57 794.91,-208.57 788.91,-202.57 788.91,-196.57 788.91,-196.57 788.91,-171.41 788.91,-171.41 788.91,-165.41 794.91,-159.41 800.91,-159.41 800.91,-159.41 915.09,-159.41 915.09,-159.41 921.09,-159.41 927.09,-165.41 927.09,-171.41 927.09,-171.41 927.09,-196.57 927.09,-196.57 927.09,-202.57 921.09,-208.57 915.09,-208.57" />
+<text xml:space="preserve" text-anchor="start" x="814.5" y="-189.04" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="11.00">Halt-certification</text>
+<text xml:space="preserve" text-anchor="start" x="826.5" y="-179.94" font-family="Helvetica,sans-Serif" font-size="9.00">recall &lt; red line</text>
+<text xml:space="preserve" text-anchor="start" x="804.75" y="-170.94" font-family="Helvetica,sans-Serif" font-size="9.00">=&gt; refuse new POST /runs</text>
+</g>
+
+<g id="edge27" class="edge">
+<path d="M855.63,-292.41C856.11,-270.65 856.77,-240.64 857.27,-217.87" />
+<polygon points="859.9,-217.98 857.44,-210.42 854.65,-217.86 859.9,-217.98" />
+</g>
+
+<g id="edge29" class="edge">
+<path d="M1179.41,-296.91C1150.86,-275.24 1108.53,-243.09 1076.54,-218.81" />
+<polygon points="1078.24,-216.8 1070.68,-214.36 1075.06,-220.98 1078.24,-216.8" />
+</g>
+
+<g id="edge30" class="edge">
+<path d="M1032,-301.43C1032,-280.81 1032,-247.77 1032,-222.14" />
+<polygon points="1034.63,-222.44 1032,-214.94 1029.38,-222.44 1034.63,-222.44" />
+</g>
+
+<g id="edge41" class="edge edge-ctrl">
+<path stroke-dasharray="5,2" d="M925.75,-209C939.59,-213.18 954.15,-217.06 968,-219.82 1151.76,-256.43 1640.63,-208.6 1808,-292.82 2288.55,-534.64 2006.17,-478.26 2038,-553.06 2158.62,-836.51 2276.64,-1040.78 2047,-1246.11 2005.24,-1283.45 1852.49,-1300.42 1757.41,-1307.52" />
+<polygon points="1757.48,-1304.88 1750.19,-1308.04 1757.86,-1310.11 1757.48,-1304.88" />
+<text xml:space="preserve" text-anchor="middle" x="2151.6" y="-720.5" font-family="Helvetica,sans-Serif" font-size="9.00">blocks launch</text>
+</g>
+</g>
+</svg>

@@ -60,7 +60,7 @@ The diagrams below render natively on GitHub. A polished interactive version, wi
 
 One picture, eight foundational nodes, true cycle topology, zero edge crossings. This is the whiteboard-pass-bar view: the simplest diagram that captures Crucible end-to-end. Each node here is the foundational box that the per-pillar deep dives (sections 3 through 6) zoom inside.
 
-![Crucible system overview](docs/diagrams/crucible-overview-handauthored.svg)
+![Crucible system overview](docs/diagrams/crucible-basic-v2.svg)
 
 How to read it. The solid arrows trace one round in order: Red Agent submits or queries the Target Protocol, the Target's output (sealed from the spec) flows to the Oracle ensemble, the five oracles vote, the Aggregator decides pass-or-caught and returns the verdict to red. The single feedback edge from Aggregator to the Strategy Catalog records undetected hacks for future runs. The Strategy Catalog feeds the Blue Loop, which retrains or patches the Target across runs (dashed because it crosses rounds, not within one). The Measure Dashboard reads every verdict and drives the Halt-certification kill switch, which blocks new run starts when white-box recall falls below the red line (dashed control edge).
 

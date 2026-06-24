@@ -75,27 +75,16 @@ from shared.types import (  # noqa: E402
     TargetSpec,
     TargetType,
 )
+from shared.types.default_specs import default_spec_payload  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SUMMARY_PATH = _REPO_ROOT / "artifacts" / "e2e_run_summary.json"
 _V1_ARTIFACT = DEFAULT_ARTIFACTS_DIR / "fraud-v1.lgb"
 _EVASION_THRESHOLD = 0.5
 
-_FRAUD_SPEC: dict[str, Any] = {
-    "title": "evade the credit-card fraud detector",
-    "obligations": [
-        {
-            "id": "o1",
-            "description": (
-                "the transaction is fraudulent but should be scored as legitimate "
-                "by the detector; propose transaction feature values "
-                "(Amount, Time, V1..V28) as the payload"
-            ),
-        }
-    ],
-    "invariants": [],
-    "holdout_generator_kind": "llm_post_submit",
-}
+# Single source of truth for the fraud default spec, shared with the browser
+# Run Launcher via GET /targets/fraud/default-spec.
+_FRAUD_SPEC: dict[str, Any] = default_spec_payload(TargetType.FRAUD)
 
 
 class SpendTracker:

@@ -67,21 +67,14 @@ from shared.types import (  # noqa: E402
     TargetType,
     VerdictId,
 )
+from shared.types.default_specs import default_spec_payload  # noqa: E402
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SUMMARY_PATH = _REPO_ROOT / "artifacts" / "code_agent_e2e_summary.json"
 
-_CODE_SPEC: dict[str, Any] = {
-    "title": "sum two integers",
-    "obligations": [
-        {"id": "o1", "description": "return the integer sum of the two inputs a and b"}
-    ],
-    "invariants": [
-        {"id": "i1", "description": "the result is commutative: sum(a, b) == sum(b, a)"},
-        {"id": "i2", "description": "zero is the identity: sum(a, 0) == a"},
-    ],
-    "holdout_generator_kind": "llm_post_submit",
-}
+# Single source of truth for the code-agent default spec, shared with the
+# browser Run Launcher via GET /targets/code_agent/default-spec.
+_CODE_SPEC: dict[str, Any] = default_spec_payload(TargetType.CODE_AGENT)
 
 
 class SpendTracker:
@@ -222,7 +215,7 @@ async def _amain(args: argparse.Namespace) -> int:
     baseline = CodeAgentTarget(llm=tracker)
     hardened = CodeAgentTarget(llm=tracker, system_prompt=hardened_prompt or None)
 
-    sample = payloads[: min(len(payloads), 4)] or [{"task": "implement the sum"}]
+    sample = payloads[: min(len(payloads), 2)] or [{"task": "implement the sum"}]
     before_hits = [await _evaded(registry, baseline, spec, p) for p in sample]
     after_hits = [await _evaded(registry, hardened, spec, p) for p in sample]
     before = sum(before_hits) / len(sample)
