@@ -45,7 +45,7 @@ from orchestrator.interfaces import (
     VerifyFn,
 )
 from shared.config import load_settings
-from shared.llm import ScriptedLLM, make_llm
+from shared.llm import RecordingLLM, ScriptedLLM, make_llm
 from shared.llm.client import LLMClient
 from shared.persistence.db import session_scope
 from shared.telemetry.log import get_logger
@@ -224,7 +224,7 @@ def build_container() -> Container:
     # metadata for the held-out oracle). Mock LLM by default, real Sonnet on the flag.
     if fraud is not None:
         fraud_red = LLMHybridFraudRed(
-            _red_llm(), fraud.predict_sync, fraud.raw_margin,
+            RecordingLLM(_red_llm(), "red"), fraud.predict_sync, fraud.raw_margin,
             fraud.feature_names, fraud.feature_importances,
         )
         container.register_red("fraud", fraud_red)
@@ -250,7 +250,7 @@ def build_container() -> Container:
         sink.register_health_probe("oracles/fraud/property_fuzz", fuzz.health)
 
     # LLM judge (half vote) — target-agnostic; mock by default, real Opus on demand.
-    judge = LLMJudgeOracle(_judge_llm())
+    judge = LLMJudgeOracle(RecordingLLM(_judge_llm(), "oracles"))
     container.register_oracle("fraud", judge)
     sink.register_health_probe("oracles/fraud/llm_judge", judge.health)
 
@@ -263,13 +263,15 @@ def build_container() -> Container:
     # behind a system prompt. Mock LLM by default (free); real Sonnet on CRUCIBLE_REAL_AGENT.
     # The AI attacker (Milestone B) and agent oracle panel (Milestone C) plug in over this;
     # until then a natural-language static red and the target-agnostic judge run end to end.
-    agent = AgentTarget(_agent_llm(), demo_agent("support-bot"), kind=AGENT_KIND)
+    agent = AgentTarget(
+        RecordingLLM(_agent_llm(), "targets"), demo_agent("support-bot"), kind=AGENT_KIND
+    )
     container.register_target(agent)
     sink.register_health_probe(f"targets/{AGENT_KIND}", agent.health)
 
     # The AI attacker (cr-b1): an LLM reads the obligations and crafts adversarial inputs,
     # adapting when caught. Mock attacker by default (free); real Sonnet on CRUCIBLE_REAL_RED.
-    agent_red = LLMAgentRed(_agent_red_llm())
+    agent_red = LLMAgentRed(RecordingLLM(_agent_red_llm(), "red"))
     container.register_red(AGENT_KIND, agent_red)
     sink.register_health_probe(f"red/{AGENT_KIND}/llm", agent_red.health)
 

@@ -12,13 +12,14 @@ from sqlalchemy import select
 
 from orchestrator.interfaces import Oracle, Primable, RedAgent, SchemeAware, Target
 from orchestrator.wiring import Container
+from shared.llm import LLMCallRecord, drain_records, record_into, record_llm_call
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
 from shared.persistence.resolver import resolve_spec
 from shared.telemetry.log import get_logger
 from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
 from shared.types.enums import OracleKind, Pillar, RunStatus
-from shared.types.ids import RunId, new_id
+from shared.types.ids import AttackId, RunId, new_id
 from shared.types.results import ProducerResult
 from shared.types.sealed_spec import HumanSpec, SealedSpec
 
@@ -133,6 +134,21 @@ def _held_out_fired(verdict: Verdict) -> bool:
     return any(v.oracle is OracleKind.held_out and v.fired for v in verdict.votes)
 
 
+async def _persist_llm_calls(
+    run_id: RunId, attack_id: AttackId, records: list[LLMCallRecord]
+) -> None:
+    """Persist this round's LLM calls (cr-b4) so the Inspect button has its rows. Each is
+    tagged with the run and the attack it belongs to (parent_action_id)."""
+    if not records:
+        return
+    async with session_scope() as session:
+        for rec in records:
+            await record_llm_call(
+                session, rec.result, system=rec.system, prompt=rec.prompt,
+                pillar=rec.pillar, run_id=str(run_id), parent_action_id=str(attack_id),
+            )
+
+
 async def _run_round(
     container: Container, spec: SealedSpec, target: Target, red: RedAgent,
     oracles: list[Oracle], run_id: RunId, round_index: int, white_box: bool,
@@ -143,6 +159,9 @@ async def _run_round(
     result = await target.submit(attack.payload)
     verdict = await container.verify(oracles, spec, attack, result.output) if oracles else None
     await _persist_round(run_id, attack, result, verdict)
+    # Persist every LLM call this round made (red + target + oracles) for the Inspect
+    # button (cr-b4); the recorder buffers them task-locally during the round.
+    await _persist_llm_calls(run_id, attack.attack_id, drain_records())
     await sink.emit(run_id, "attack", {
         "attack_id": str(attack.attack_id), "round": round_index,
         "tactic": attack.tactic, "white_box": white_box, "payload": dict(attack.payload),
@@ -191,25 +210,28 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         if isinstance(red, SchemeAware):
             red.note_scheme([str(o.kind) for o in oracles])
 
-        last_verdict: Verdict | None = None
-        for i in range(budget_rounds):
-            last_verdict = await _run_round(
-                container, spec, target, red, oracles, run_id, i, False, last_verdict)
+        # Bind a task-local sink so every LLM call the round makes is recorded (cr-b4).
+        call_sink: list[LLMCallRecord] = []
+        with record_into(call_sink):
+            last_verdict: Verdict | None = None
+            for i in range(budget_rounds):
+                last_verdict = await _run_round(
+                    container, spec, target, red, oracles, run_id, i, False, last_verdict)
 
-        # White-box self-test pass: same red agent, the oracles' scheme revealed.
-        await sink.emit(run_id, "white_box_started", {"run_id": str(run_id)})
-        wb_caught = wb_wrong = 0
-        for j in range(budget_rounds):
-            verdict = await _run_round(
-                container, spec, target, red, oracles, run_id, budget_rounds + j, True,
-                last_verdict)
-            last_verdict = verdict
-            if verdict is not None and _held_out_fired(verdict):
-                wb_wrong += 1
-                if verdict.caught:
-                    wb_caught += 1
-        if wb_wrong:
-            await _set_white_box_recall(run_id, wb_caught / wb_wrong)
+            # White-box self-test pass: same red agent, the oracles' scheme revealed.
+            await sink.emit(run_id, "white_box_started", {"run_id": str(run_id)})
+            wb_caught = wb_wrong = 0
+            for j in range(budget_rounds):
+                verdict = await _run_round(
+                    container, spec, target, red, oracles, run_id, budget_rounds + j, True,
+                    last_verdict)
+                last_verdict = verdict
+                if verdict is not None and _held_out_fired(verdict):
+                    wb_wrong += 1
+                    if verdict.caught:
+                        wb_caught += 1
+            if wb_wrong:
+                await _set_white_box_recall(run_id, wb_caught / wb_wrong)
 
         await _set_status(run_id, RunStatus.complete)
         await sink.emit(run_id, "run_complete", {

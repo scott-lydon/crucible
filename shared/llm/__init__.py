@@ -11,13 +11,23 @@ from shared.llm.client import (
     ScriptedLLM,
     record_llm_call,
 )
+from shared.llm.recording import (
+    LLMCallRecord,
+    RecordingLLM,
+    drain_records,
+    record_into,
+)
 
 __all__ = [
+    "LLMCallRecord",
     "LLMClient",
     "LLMResult",
     "OpenRouterClient",
+    "RecordingLLM",
     "ScriptedLLM",
+    "drain_records",
     "make_llm",
+    "record_into",
     "record_llm_call",
 ]
 

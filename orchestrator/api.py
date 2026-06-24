@@ -25,7 +25,7 @@ from modules.red.catalog import build_catalog
 from orchestrator.loop import create_run, run_loop
 from orchestrator.wiring import get_container
 from shared.persistence.db import session_scope
-from shared.persistence.models import AttackRow, Run, VerdictRow
+from shared.persistence.models import AttackRow, LLMCallRow, Run, VerdictRow
 from shared.telemetry.log import configure_logging
 from shared.types.core import AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
@@ -187,6 +187,27 @@ async def list_verdicts(run_id: str) -> list[dict[str, object]]:
             "fired": [vote["oracle"] for vote in v.votes if vote.get("fired")],
         }
         for v in rows
+    ]
+
+
+@app.get("/runs/{run_id}/llm_calls")
+async def list_llm_calls(run_id: str, attack_id: str | None = None) -> list[dict[str, object]]:
+    """Every Anthropic call a run made — prompt, response, tokens, cost — for the dashboard
+    Inspect button (cr-b4, spec US-5). Filter by attack_id to inspect one round's calls."""
+    async with session_scope() as session:
+        query = select(LLMCallRow).where(LLMCallRow.run_id == run_id)
+        if attack_id is not None:
+            query = query.where(LLMCallRow.parent_action_id == attack_id)
+        rows = (await session.execute(query.order_by(LLMCallRow.created_at))).scalars().all()
+    return [
+        {
+            "id": c.id, "pillar": c.pillar, "model": c.model,
+            "prompt": c.prompt, "response": c.raw_response, "parsed_output": c.parsed_output,
+            "prompt_tokens": c.prompt_tokens, "completion_tokens": c.completion_tokens,
+            "dollars": c.dollars, "attackId": c.parent_action_id,
+            "created_at": c.created_at.isoformat(),
+        }
+        for c in rows
     ]
 
 
