@@ -333,3 +333,58 @@ class HoldoutRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+# The per-oracle detail tables the slice-10 reconciliation deferred until a
+# renderer existed (this slice is that renderer). Each is one row per relevant
+# oracle vote on a verdict; the aggregated `verdicts.votes` stays the single
+# tally source, while these carry the oracle-specific drill-down the verdict view
+# expands. Detail the oracle reports beyond the vote rides `detail` / `reason`.
+
+
+class JudgeVote(Base):
+    """The LLM judge's half-weight vote behind a verdict (US-4 card)."""
+
+    __tablename__ = "judge_votes"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    verdict_id: Mapped[str] = mapped_column(ForeignKey("verdicts.id"), nullable=False)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
+    decision: Mapped[str] = mapped_column(String(16), nullable=False)
+    weight: Mapped[float] = mapped_column(Float, nullable=False, default=0.5)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class FuzzFinding(Base):
+    """One property-fuzz outcome behind a verdict: the decision and counterexample."""
+
+    __tablename__ = "fuzz_findings"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    verdict_id: Mapped[str] = mapped_column(ForeignKey("verdicts.id"), nullable=False)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
+    decision: Mapped[str] = mapped_column(String(16), nullable=False)
+    counterexample: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class DifferentialRun(Base):
+    """One differential-oracle comparison behind a verdict: the disagreement detail."""
+
+    __tablename__ = "differential_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    verdict_id: Mapped[str] = mapped_column(ForeignKey("verdicts.id"), nullable=False)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
+    decision: Mapped[str] = mapped_column(String(16), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

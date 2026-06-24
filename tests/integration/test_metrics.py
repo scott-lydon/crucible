@@ -25,12 +25,16 @@ from sqlalchemy import delete
 
 from shared.persistence import get_sessionmaker
 from shared.persistence.models import Attack as AttackRow
-from shared.persistence.models import Run
+from shared.persistence.models import DifferentialRun, FuzzFinding, JudgeVote, Run
 from shared.persistence.models import Verdict as VerdictRow
 
 
 async def _clear() -> None:
     async with get_sessionmaker()() as session:
+        # Per-oracle detail rows reference verdicts, so they go first.
+        await session.execute(delete(JudgeVote))
+        await session.execute(delete(FuzzFinding))
+        await session.execute(delete(DifferentialRun))
         await session.execute(delete(VerdictRow))
         await session.execute(delete(AttackRow))
         await session.commit()

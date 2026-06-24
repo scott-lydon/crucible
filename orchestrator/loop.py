@@ -20,6 +20,7 @@ sequence without reshaping it.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
 from pathlib import Path
@@ -31,7 +32,7 @@ from modules.red import StrategyCatalog, compose_white_box_brief
 from orchestrator.errors import RunNotFoundError
 from orchestrator.wiring import Registry
 from shared.persistence.models import Attack as AttackRow
-from shared.persistence.models import Run
+from shared.persistence.models import DifferentialRun, FuzzFinding, JudgeVote, Run
 from shared.persistence.models import Verdict as VerdictRow
 from shared.telemetry import get_logger
 from shared.types import (
@@ -58,6 +59,35 @@ _REPO_ROOT = Path(__file__).resolve().parents[1]
 def _default_catalog_jsonl() -> Path:
     """The append-only strategy-catalog discovery log on disk (US-6)."""
     return _REPO_ROOT / "data" / "strategy_catalog.jsonl"
+
+
+def _oracle_detail_row(
+    run_id: str, verdict_id: str, vote: OracleVote
+) -> JudgeVote | FuzzFinding | DifferentialRun | None:
+    """Route one oracle vote to its named per-oracle detail row, or None.
+
+    The judge, property-fuzz, and differential oracles each get a dedicated table
+    (the slice-10 deferral); other oracles ride only the aggregated votes. The
+    structured finding the oracle reported rides its vote reason today, so the
+    counterexample / disagreement is the reason text until the oracle emits a
+    typed detail (a future shared/types change tracked in tasks.md).
+    """
+    common = {"id": uuid.uuid4().hex, "verdict_id": verdict_id, "run_id": run_id}
+    if vote.oracle_name == "llm_judge":
+        return JudgeVote(
+            **common, decision=vote.decision.value, weight=vote.weight, reason=vote.reason
+        )
+    if vote.oracle_name == "property_fuzz":
+        return FuzzFinding(
+            **common, decision=vote.decision.value, counterexample=vote.reason,
+            reason=vote.reason,
+        )
+    if vote.oracle_name == "differential":
+        return DifferentialRun(
+            **common, decision=vote.decision.value, reason=vote.reason,
+            detail={"reason": vote.reason},
+        )
+    return None
 
 
 @dataclass(frozen=True, slots=True)
@@ -156,9 +186,23 @@ class Loop:
         self.session.add(self._attack_row(run, attack, succeeded=verdict.passed, output=output))
         await self.session.flush()  # parent before child: verdict FK -> attacks.id
         self.session.add(self._verdict_row(run, attack.attack_id, verdict))
+        await self.session.flush()  # verdict before its per-oracle detail rows
+        self._persist_oracle_details(run.id, verdict)
 
         if verdict.passed:
             await catalog.record_success(attack, target_type)
+
+    def _persist_oracle_details(self, run_id: str, verdict: Verdict) -> None:
+        """Write the per-oracle drill-down rows the verdict view renders (slice 15).
+
+        One row per relevant oracle vote, routed to its named table by oracle
+        name. The aggregated `verdicts.votes` stays the single tally source; this
+        is the expandable detail the verdict view opens (the slice-10 deferral).
+        """
+        for vote in verdict.votes:
+            row = _oracle_detail_row(run_id, verdict.verdict_id.value, vote)
+            if row is not None:
+                self.session.add(row)
 
     def _attack_row(
         self,

@@ -77,8 +77,8 @@
       <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
         <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Comparison</span></div>
         <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:13px">
-          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">held-out recall <span style="color:#7C8896">· producer in the dark</span></span><span style="color:#E8EDF3">0.93</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">white-box recall <span style="color:#7C8896">· producer tipped off</span></span><span style="color:#E8EDF3">0.92</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">held-out recall <span style="color:#7C8896">· producer in the dark</span></span><span style="color:#E8EDF3" data-live="black_box_rate">0.93</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">white-box recall <span style="color:#7C8896">· producer tipped off</span></span><span style="color:#E8EDF3" data-live="white_box_rate">0.92</span></div>
           <div style="border-top:1px solid #1D2630;padding-top:12px;display:flex;justify-content:space-between"><span style="color:#B8C2CE">gap</span><span style="color:#9BD9B5">−0.01 · within CI</span></div>
           <div style="color:#7C8896;font-size:12px;line-height:1.6;padding-top:6px">A small gap is healthy. It means the verifier isn't relying on surprise — telling the producer what to try doesn't help it much. A big gap (white-box ≪ held-out) would mean the verifier only catches cheats it has already seen.</div>
         </div>
