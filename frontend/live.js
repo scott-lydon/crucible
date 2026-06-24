@@ -120,6 +120,27 @@
     return wrap;
   }
 
+  async function wireReport() {
+    // slice-14 renders the SR 11-7 report for a real run from /reports/{runId}
+    // when a ?run=<id> URL parameter is present, else "no run selected". The
+    // backend returns the report as Markdown (numbers linked to their real
+    // verdict/attack rows); the design bundle's fabricated KPI grid and static
+    // sections are replaced by this real rendered report.
+    var host = document.querySelector('[data-live="report"]');
+    if (!host) return;
+    var runId = new URLSearchParams(location.search).get("run");
+    if (!runId) { host.textContent = "no run selected"; return; }
+    var r = await json("/reports/" + encodeURIComponent(runId));
+    if (!r || !r.markdown) { host.textContent = "no report for run " + runId; return; }
+    var pre = document.createElement("pre");
+    pre.style.cssText =
+      "white-space:pre-wrap;font-family:'IBM Plex Mono',monospace;font-size:12.5px;" +
+      "color:#1A2330;margin:0;line-height:1.6";
+    pre.textContent = r.markdown;
+    host.innerHTML = "";
+    host.appendChild(pre);
+  }
+
   function wireSse() {
     var runId = new URLSearchParams(location.search).get("run");
     if (!runId) return;
@@ -331,6 +352,7 @@
       wireHalt(),
       wireList("catalog", "/catalog", catalogRow),
       wireList("specs_history", "/specs/history", specHistoryRow),
+      wireReport(),
       wireLauncher(),
     ]);
     wireSse();

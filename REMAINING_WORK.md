@@ -332,7 +332,7 @@ real from a backend route or rendered as em-dash.
 
 ### C11 — slice-14 SR 11-7 report (1 stub)
 
-- [ ] **DONE-CRITERION** The page renders the SR 11-7 report for a real
+- [x] **DONE-CRITERION** The page renders the SR 11-7 report for a real
   run via `/reports/{runId}` when a `?run=<id>` URL parameter is present,
   and shows `no run selected` otherwise.
 - **FILE/PATH** `frontend/slice-14-sr-117-report.dc.html`

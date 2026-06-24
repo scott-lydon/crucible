@@ -29,106 +29,18 @@
   <div class="no-print" style="position:sticky;top:0;z-index:40;background:#1A2330;border-bottom:1px solid #2C3744;color:#E8EDF3">
     <div style="display:flex;align-items:center;gap:16px;padding:12px 22px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px">
       <span style="font-weight:600">Crucible · SR 11-7 export preview</span>
-      <span style="color:#B8C2CE">acme-fraud · spec 9f2a4c7b · 2026-Q2</span>
+      <span style="color:#B8C2CE">SR 11-7 model risk report</span>
       <div style="flex:1"></div>
       <button style="background:#4FAAC0;color:#0E141B;border:0;font:inherit;font-weight:600;padding:7px 14px;border-radius:5px;cursor:pointer">print / save PDF</button>
-      <a href="#" title="downloads MR-2026Q2-0118.pdf" style="color:#4FAAC0;text-decoration:none">download .pdf</a>
+      <a href="#" title="downloads the report PDF" style="color:#4FAAC0;text-decoration:none">download .pdf</a>
       <a href="#" title="report manifest with signatures + hash chain" style="color:#4FAAC0;text-decoration:none">manifest.json</a>
     </div>
   </div>
 
   <!-- printable page -->
   <div class="page" style="max-width:880px;margin:24px auto;background:#FFFFFF;padding:60px 64px 80px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid #E0DBD2">
-
-    <!-- header -->
-    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px;border-bottom:2px solid #1A2330;padding-bottom:18px;margin-bottom:24px">
-      <div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#5C6A7A;text-transform:uppercase">Model Risk Report</div>
-        <h1 style="margin:6px 0 4px;font-size:22px;font-weight:700;letter-spacing:-0.01em">acme-fraud · Q2 2026</h1>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5C6A7A">SR 11-7 / OCC 2011-12 alignment · sealed spec 9f2a4c7b</div>
-      </div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5C6A7A;text-align:right;line-height:1.7">
-        Report id · MR-2026Q2-0118<br>
-        Generated · 2026-06-22 15:42Z<br>
-        Author · m.chen (model-risk)<br>
-        Signatures · 2 of 2 affixed
-      </div>
-    </div>
-
-    <!-- exec summary -->
-    <h2 style="margin:24px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A">1 · Executive summary</h2>
-    <p style="margin:0 0 14px">The acme-fraud detection system has converged on its sealed held-out corpus in Q2 2026 with measured recall <strong>0.93</strong> and attack-success rate <strong>0.07</strong>, against a regulatory red line of recall <strong>≥ 0.90</strong>. One halt event (h_19c4) was triggered intra-quarter and is currently <strong>active</strong>; lift conditions are partially satisfied and four downstream runs are blocked. No untracked overrides occurred.</p>
-
-    <!-- KPI grid -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0 26px">
-      <div style="border:1px solid #E0DBD2;background:#FAF7F1;padding:14px 16px;border-radius:4px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#5C6A7A;text-transform:uppercase">recall (sealed)</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#1A2330;margin-top:6px">0.93</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3E7A4F;margin-top:2px">≥ 0.90 · pass</div>
-      </div>
-      <div style="border:1px solid #E0DBD2;background:#FAF7F1;padding:14px 16px;border-radius:4px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#5C6A7A;text-transform:uppercase">ASR</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#1A2330;margin-top:6px">0.07</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5C6A7A;margin-top:2px">peak 0.41 at r.18</div>
-      </div>
-      <div style="border:1px solid #E0DBD2;background:#FAF7F1;padding:14px 16px;border-radius:4px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#5C6A7A;text-transform:uppercase">val ↔ heldout gap</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#1A2330;margin-top:6px">0.02</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#3E7A4F;margin-top:2px">≤ 0.05 · no overfit</div>
-      </div>
-      <div style="border:1px solid #E0DBD2;background:#FAF7F1;padding:14px 16px;border-radius:4px">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.06em;color:#5C6A7A;text-transform:uppercase">white-box recall</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#1A2330;margin-top:6px">0.92</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#5C6A7A;margin-top:2px">CI [0.881, 0.946]</div>
-      </div>
-    </div>
-
-    <!-- 2 governance -->
-    <h2 style="margin:24px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A">2 · Governance & controls</h2>
-    <table style="width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:18px">
-      <thead><tr style="border-bottom:1px solid #1A2330;text-align:left;color:#5C6A7A;font-weight:500"><th style="padding:6px 0">Control</th><th style="padding:6px 0">Policy</th><th style="padding:6px 0">State</th></tr></thead>
-      <tbody style="vertical-align:top">
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">sealed spec, append-only</td><td>MRG-1.0</td><td style="color:#3E7A4F">in force</td></tr>
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">held-out corpus never trained on</td><td>MRG-4.2</td><td style="color:#3E7A4F">attested · monthly diff</td></tr>
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">two-person rule on patch apply</td><td>MRG-11.1 (4-eyes)</td><td style="color:#3E7A4F">11 / 11 patches</td></tr>
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">halt on recall &lt; 0.90 (3-round debounce)</td><td>MRG-12.4</td><td style="color:#B07A1F">1 active halt</td></tr>
-        <tr><td style="padding:8px 0">cost ceiling · $25/run</td><td>MRG-12.7</td><td style="color:#3E7A4F">0 breaches Q2</td></tr>
-      </tbody>
-    </table>
-
-    <!-- 3 halt -->
-    <h2 style="margin:24px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A">3 · Halt event h_19c4</h2>
-    <p style="margin:0 0 10px">Halt h_19c4 fired at 2026-06-22 14:14:02Z when held-out recall fell to 0.86 across three consecutive rounds (r.32, r.33, r.34). Cause: META-INV-04 (case-folding) regression. Four runs are blocked. Blue patch p_2a17 is proposed and awaiting verification; 0 of 2 reviewer acks affixed. No override was issued.</p>
-
-    <!-- 4 model lineage -->
-    <h2 style="margin:24px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A">4 · Model lineage</h2>
-    <table style="width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:18px">
-      <thead><tr style="border-bottom:1px solid #1A2330;text-align:left;color:#5C6A7A;font-weight:500"><th style="padding:6px 0">Spec</th><th>Sealed</th><th>Range</th><th>Patches</th><th>Final recall</th></tr></thead>
-      <tbody>
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">9f2a4c7b</td><td>2026-04-01</td><td>r.00 → r.46</td><td>11</td><td>0.93</td></tr>
-        <tr style="border-bottom:1px solid #E0DBD2"><td style="padding:8px 0">8d11e3a4</td><td>2026-01-12</td><td>r.00 → r.38</td><td>9</td><td>0.91</td></tr>
-        <tr><td style="padding:8px 0">7a09b2f1</td><td>2025-10-04</td><td>r.00 → r.29</td><td>7</td><td>0.88</td></tr>
-      </tbody>
-    </table>
-
-    <!-- 5 sign-off -->
-    <h2 style="margin:24px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A">5 · Sign-off</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;font-family:'IBM Plex Mono',monospace;font-size:12px;margin-top:8px">
-      <div style="border:1px solid #E0DBD2;padding:14px 16px;border-radius:4px">
-        <div style="color:#5C6A7A;letter-spacing:.06em;font-size:11px;text-transform:uppercase">Model owner</div>
-        <div style="margin-top:8px;font-style:italic;color:#1A2330">s. lydon</div>
-        <div style="color:#5C6A7A">2026-06-22 15:39Z · key 0xA3F2…</div>
-      </div>
-      <div style="border:1px solid #E0DBD2;padding:14px 16px;border-radius:4px">
-        <div style="color:#5C6A7A;letter-spacing:.06em;font-size:11px;text-transform:uppercase">Model risk</div>
-        <div style="margin-top:8px;font-style:italic;color:#1A2330">m. chen</div>
-        <div style="color:#5C6A7A">2026-06-22 15:41Z · key 0x14B0…</div>
-      </div>
-    </div>
-
-    <div style="margin-top:34px;padding-top:14px;border-top:1px solid #E0DBD2;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5C6A7A;display:flex;justify-content:space-between">
-      <span>MR-2026Q2-0118 · crucible · acme-fraud</span><span>page 1 of 1</span>
-    </div>
+    <div data-live="report" style="white-space:pre-wrap;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#1A2330">no run selected</div>
+  
   </div>
 </div>
 </x-dc>

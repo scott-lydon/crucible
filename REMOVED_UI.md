@@ -26,3 +26,4 @@ listed below.
 | slice-10 whitebox | Per-family seeded-corpus recall table (6 families × 40) | No per-family recall backend; `/metrics` gives a single white-box recall | a per-family recall route exists |
 | slice-10 whitebox | Recall headline per-family bars + Wilson CI + "221 of 240" | Same: no per-family/seeded-corpus counts in the backend | a seeded-corpus route exists |
 | slice-10 whitebox | Signed disclosure-manifest line (run id, reviewer, date) | No disclosure-manifest backend; out of PRD scope | a manifest route exists |
+| slice-14 SR-report | Fabricated KPI grid + static report sections (exec summary, governance, halt, lineage, sign-off) | Replaced by the real `/reports/{runId}` Markdown render; the backend produces the report from real run rows, not a static design | structured per-section report route exists |
