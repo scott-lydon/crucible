@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from orchestrator.interfaces import Oracle, Primable, RedAgent, Target
+from orchestrator.interfaces import Oracle, Primable, RedAgent, SchemeAware, Target
 from orchestrator.wiring import Container
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
@@ -185,6 +185,11 @@ async def run_loop(run_id: RunId, container: Container) -> None:
             red.prime(known)
             if known:
                 await sink.emit(run_id, "red_primed", {"n_tactics": len(known)})
+
+        # Scheme-aware white-box (cr-b3): tell the attacker which checkers are actually in
+        # the panel, so its white-box pass tries to beat the real ensemble.
+        if isinstance(red, SchemeAware):
+            red.note_scheme([str(o.kind) for o in oracles])
 
         last_verdict: Verdict | None = None
         for i in range(budget_rounds):

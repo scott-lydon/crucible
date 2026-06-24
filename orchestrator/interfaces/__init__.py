@@ -8,7 +8,7 @@ from __future__ import annotations
 from orchestrator.interfaces.blue import BlueAgent
 from orchestrator.interfaces.measure import HealthProbe, MeasureSink
 from orchestrator.interfaces.oracle import Oracle, VerifyFn
-from orchestrator.interfaces.red import Primable, RedAgent, TacticLoader
+from orchestrator.interfaces.red import Primable, RedAgent, SchemeAware, TacticLoader
 from orchestrator.interfaces.target import Target
 
 __all__ = [
@@ -18,6 +18,7 @@ __all__ = [
     "Oracle",
     "Primable",
     "RedAgent",
+    "SchemeAware",
     "TacticLoader",
     "Target",
     "VerifyFn",

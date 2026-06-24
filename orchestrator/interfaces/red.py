@@ -41,3 +41,11 @@ class Primable(Protocol):
     """A red agent that can be seeded with prior-run tactics before a run (cr-b2)."""
 
     def prime(self, known_tactics: Sequence[str]) -> None: ...
+
+
+@runtime_checkable
+class SchemeAware(Protocol):
+    """A red agent that can be told which checkers are in the verification panel, so its
+    white-box pass tries to beat the actual ensemble, not a guess (cr-b3)."""
+
+    def note_scheme(self, checkers: Sequence[str]) -> None: ...

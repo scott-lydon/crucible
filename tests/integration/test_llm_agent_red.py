@@ -83,6 +83,30 @@ def test_white_box_injects_verification_scheme() -> None:
     assert "held-out" in system and "metamorphic" in system
 
 
+def test_white_box_lists_only_active_checkers() -> None:
+    red, llm = _red('{"tactic": "t", "input": "x", "rationale": "r"}')
+    red.note_scheme(["llm_judge", "held_out"])
+    asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=True))
+    system = llm.calls[-1][0]
+    assert "llm_judge" in system and "held_out" in system
+    # Checkers NOT in the wired panel are not described.
+    assert "differential" not in system
+    assert "property_fuzz" not in system
+
+
+def test_note_scheme_only_affects_white_box_pass() -> None:
+    red, llm = _red('{"tactic": "t", "input": "x", "rationale": "r"}')
+    red.note_scheme(["llm_judge"])
+    asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=False))
+    assert "WHITE-BOX" not in llm.calls[-1][0]  # black-box pass stays scheme-blind
+
+
+def test_llm_agent_red_is_scheme_aware() -> None:
+    from orchestrator.interfaces import SchemeAware
+    red, _ = _red("{}")
+    assert isinstance(red, SchemeAware)
+
+
 def test_falls_back_to_seed_on_unparseable_output() -> None:
     red, _ = _red("I refuse to help with that.")
     attack = asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=False))
