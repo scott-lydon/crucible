@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from modules.oracles.held_out import HeldOutOracle
+from modules.oracles.metamorphic import MetamorphicOracle
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
 from modules.targets.fraud import FraudTarget
@@ -65,7 +66,10 @@ def build_registry() -> Registry:
             TargetType.CODE_AGENT: CodeAgentTarget(llm=llm),
             TargetType.FRAUD: FraudTarget(),
         },
-        oracles=(HeldOutOracle(llm=llm, sandbox=DockerSandbox()),),
+        oracles=(
+            HeldOutOracle(llm=llm, sandbox=DockerSandbox()),
+            MetamorphicOracle(llm=llm, sandbox=DockerSandbox()),
+        ),
     )
 
 

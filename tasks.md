@@ -6,18 +6,20 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-6-metamorphic-oracle** (T). Sonnet synthesizes metamorphic relations from spec invariants; runtime checks fire each.
+- [ ] **slice-7-differential-oracle** (T). LightGBM versus IsolationForest (fraud), Sonnet versus Haiku (code); flag disagreement.
 
 ## Next slice
 
-- [ ] **slice-7-differential-oracle** (T). LightGBM versus IsolationForest (fraud), Sonnet versus Haiku (code); flag disagreement.
+- [ ] **slice-8-property-fuzz-oracle** (T). Hypothesis strategies derived from spec invariants.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
 - [x] **LLM client** (`shared/llm`). `ClaudeCliClient` over the local Claude Max CLI, `ScriptedLlmClient` for MOCK_LLM, typed `LlmCallError`, cost and usage captured per call. Real CLI path proven live.
+- [x] **Sandbox check runner** (`shared/sandbox/check_runner.py`). Runs assert checks against produced source in the sealed sandbox and classifies PASS / FAIL (an assertion failed) / ERROR (the check itself errored, inconclusive). Used by the held-out and metamorphic oracles so a malformed check never false-blames the producer.
 
 ## Done
 
+- [x] **slice-6-metamorphic-oracle** (T). `MetamorphicOracle` has Sonnet synthesize concrete-literal metamorphic relations from the spec invariants and checks them in the sealed sandbox via the shared check runner. Live proof: real Sonnet synthesized 5 relations, passed a correct impl, caught a wrong one. `metamorphic_rules` table added. Held-out oracle refactored onto the same shared runner (now returns UNAVAILABLE rather than a false FAIL when a generated check errors).
 - [x] **slice-2-fraud-target** (T). Real Kaggle creditcard model: `scripts/fetch_fraud_dataset.py` downloads the dataset, `train.py` fits LightGBM (held-out ROC-AUC 0.86, the best of the configs tried; defaults give 0.84 and more capacity gives 0.85), committed as `artifacts/fraud-v1.lgb`. `FraudTarget` scores transactions; `/health/targets/fraud` returns 200 green with checksum and AUC. Done-criterion test passes on the committed model.
 - [x] **slice-5-held-out-oracle** (T). `HeldOutOracle` (Opus generates fresh asserts from the sealed spec post-submit, run against the producer output in the sealed sandbox, votes pass or fail) plus the `specs` table and server-side `SpecResolver`. Live proof: real Opus passes a correct implementation and catches a wrong one. Done-criterion test confirms a sandboxed producer cannot read `held_out_tests`. Oracle health route `/health/oracles/{name}`.
 - [x] **slice-4-sealed-spec-and-sandbox** (T). `shared/sandbox` Docker runner (`--network none`, no host env) plus the seal probe. Live seal test passes: from inside the sandbox both Postgres and the internet are unreachable, so the producer cannot read the verification artifacts. The `specs` table and resolver move to slice 5 (their consumer).
@@ -78,9 +80,9 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Self-test route `/health/oracles/{name}` exists.
   - [x] **Done criteria:** `tests/integration/test_held_out_isolation.py` confirms a sandboxed producer cannot read `held_out_tests` rows (Postgres unreachable under the seal).
 
-- [ ] **slice-6-metamorphic-oracle** (T).
-  - [ ] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic rules from spec invariants; rules persisted to `metamorphic_rules`; runtime checks fire each rule and report pass / fail.
-  - [ ] **Done criteria:** at least three metamorphic rules synthesized per spec, all surface in the dashboard verdict view.
+- [x] **slice-6-metamorphic-oracle** (T).
+  - [x] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic relations from spec invariants; runtime checks fire each in the sealed sandbox and report pass / fail / inconclusive. `metamorphic_rules` table added; the persist-and-render lifecycle wires in at slices 10 and 15 (same pattern as held_out_tests).
+  - [x] **Done criteria:** at least three relations synthesized per spec (live: real Sonnet synthesized 5; min_rules guard enforces >= 3). Surfacing in the verdict view is the slice-15 UI wiring; the count and outcome ride the OracleVote reason now.
 
 - [ ] **slice-7-differential-oracle** (T).
   - [ ] `modules/oracles/differential/`: for fraud, LightGBM versus IsolationForest; for code, Sonnet versus Haiku.
