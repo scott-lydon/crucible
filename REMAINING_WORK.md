@@ -264,7 +264,7 @@ real from a backend route or rendered as em-dash.
 
 ### C6 — slice-09 coevolution curves
 
-- [ ] **DONE-CRITERION** EITHER a backend `/coevolution` route is added
+- [x] **DONE-CRITERION** EITHER a backend `/coevolution` route is added
   (returns `{round, asr, detection}` series joined to real runs) AND the
   page renders the series, OR the page is removed from the dashboard and
   the link in slice-04 / slice-01 is deleted. `tasks.md` already lists
@@ -317,7 +317,7 @@ real from a backend route or rendered as em-dash.
 
 ### C10 — slice-13 leaderboard export (7 stubs)
 
-- [ ] **DONE-CRITERION** EITHER a `/leaderboard` route is added (top-N
+- [x] **DONE-CRITERION** EITHER a `/leaderboard` route is added (top-N
   runs by catch rate or by recovered evasions) AND the page renders it,
   OR the page is removed.
 - **FILE/PATH** `frontend/slice-13-leaderboard-export.dc.html`

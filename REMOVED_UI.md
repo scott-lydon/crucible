@@ -30,3 +30,5 @@ listed below.
 | slice-07 blue-patch | Reviewer-actions/approval workflow, fabricated diff + provenance sections | No patch-review/approval backend; `/blue/{id}` returns the patch + held-out validation + model version, not an approval workflow | a patch-approval route exists |
 | slice-11 health | Static infra leaves (orchestrator/judge-pool/artifact-store/cost-meter/audit-log latencies), overall DEGRADED strip | No infra-metrics backend; `/health/*` gives target/oracle self-test status only (US-8) | infra-metrics routes exist |
 | slice-11 health | Incident log (INC-2034 etc.) | No incident-tracking backend; out of PRD scope | an incidents route exists |
+| slice-09 (whole page) | Co-evolution curves (red↔blue over N rounds) | PRD STRETCH goal, no backend route; REMAINING_WORK C6 sanctions removal | a /coevolution route is built |
+| slice-13 (whole page) | Leaderboard export | PRD STRETCH goal, no backend route; REMAINING_WORK C10 sanctions removal | a /leaderboard route is built |
