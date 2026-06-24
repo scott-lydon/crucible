@@ -19,3 +19,7 @@ listed below.
 | slice-08 halt | Halt history table | No halt-history backend; `/halt` returns only the single current state | a halt-history route/table exists |
 | slice-08 halt | Lift-conditions + override workflow | No lift/override backend or governance route; beyond the PRD's "stop certifying below the red line" | a lift-conditions/override route exists |
 | slice-08 halt | Per-round debounce trace | No per-round recall-window backend; `HaltRule` compares the latest recall to the threshold, no debounce | a per-round recall-window route exists |
+| slice-16 specs | Spec diff view (vN → vN+1) | No spec-diff backend; `/specs/history` returns rows, not diffs | a spec-diff route exists |
+| slice-16 specs | Reviewer signatures panel | No signature/governance backend; out of PRD scope | a signatures route exists |
+| slice-16 specs | Provenance-chain panel | No provenance/hash-chain backend; out of PRD scope | a provenance route exists |
+| slice-16 specs | Timeline approved/retired states + patch counts | `/specs/history` has no lifecycle state or patch count per spec | spec-lifecycle fields exist |

@@ -355,7 +355,7 @@ real from a backend route or rendered as em-dash.
 
 ### C13 — slice-16 spec history (2 stubs)
 
-- [ ] **DONE-CRITERION** Backend `/specs/history` route added that
+- [x] **DONE-CRITERION** Backend `/specs/history` route added that
   returns the versioned spec rows from the `specs` table; page renders
   the real list.
 - **FILE/PATH** `frontend/slice-16-spec-history.dc.html`,

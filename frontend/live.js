@@ -75,7 +75,10 @@
     var host = document.querySelector('[data-live-list="' + key + '"]');
     if (!host) return;
     var rows = await json(path);
-    if (!Array.isArray(rows)) return;
+    // Keep the design's in-markup empty state when the route is unreachable or
+    // returns nothing, so a fresh deployment shows "no … yet" rather than a
+    // blank panel; only replace the host once there is real data to render.
+    if (!Array.isArray(rows) || rows.length === 0) return;
     host.innerHTML = "";
     rows.forEach(function (row) { host.appendChild(render(row)); });
   }
@@ -90,6 +93,31 @@
       r.tactic + "  ·  " + r.target_type + "  ·  reuse " + r.reuse_count +
       "  ·  $" + (r.avg_dollars_to_succeed || 0).toFixed(4);
     return div;
+  }
+
+  function specHistoryRow(r) {
+    // One sealed-spec timeline entry (slice-16) from /specs/history. The design
+    // bundle's approved/retired states, patch counts, diff, signatures, and
+    // provenance chain have no backing route and were removed (REMOVED_UI.md);
+    // this renders the real spec id, title, obligation count, and seal date.
+    var wrap = document.createElement("div");
+    wrap.setAttribute("data-live-row", "specs_history");
+    wrap.style.cssText = "display:flex;gap:18px;align-items:flex-start;padding-bottom:18px";
+    var title = r.title || r.spec_id;
+    var meta =
+      (r.spec_id || "").slice(0, 8) + " · sealed " + shortDate(r.created_at) +
+      " · " + r.obligations + " obligations";
+    wrap.innerHTML =
+      '<span style="width:14px;height:14px;border-radius:50%;background:#4FAAC0;' +
+      'border:3px solid #0E141B;flex:none;margin-left:8px;margin-top:4px"></span>' +
+      '<div style="flex:1"><div style="display:flex;gap:10px;align-items:baseline;flex-wrap:wrap">' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;color:#E8EDF3;font-size:14px"></span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:#B8C2CE"></span>' +
+      "</div></div>";
+    var spans = wrap.querySelectorAll("span");
+    spans[1].textContent = title;
+    spans[2].textContent = meta;
+    return wrap;
   }
 
   function wireSse() {
@@ -302,6 +330,7 @@
       wireHealth(),
       wireHalt(),
       wireList("catalog", "/catalog", catalogRow),
+      wireList("specs_history", "/specs/history", specHistoryRow),
       wireLauncher(),
     ]);
     wireSse();
