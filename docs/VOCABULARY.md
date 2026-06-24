@@ -92,7 +92,11 @@ The complement of catch rate. The fraction of producer wrongness Crucible's orac
 
 ## "Verifier recall"
 
-Recall of the oracle ensemble as a verifier. Measured on a seeded-hack corpus where the ground truth (which outputs are producer-wrong) is known. The halt-certification rule reads `metrics.recall_white_box` and refuses new clean verdicts when the value drops below the configured red line. Per `acceptance-tests.md` US-13.
+Recall of the oracle ensemble as a verifier. Measured on a seeded-hack corpus where the ground truth (which outputs are producer-wrong) is known.
+
+The halt-certification mechanism is implemented as a Python class, `modules.measure.halt_rule.HaltRule`. After each white-box pass, `HaltRule.evaluate()` computes `recall` (caught white-box attacks divided by judged white-box attacks), compares it to the configured threshold (default 0.70, the "red line"), and writes `halted=true|false` to the `HaltState` row in Postgres. The orchestrator's `POST /runs` handler reads that row before launching, and if `halted=true` it returns HTTP 409 with the recall and threshold values in the body, so the next run cannot start until recall recovers. Per `acceptance-tests.md` US-13.
+
+"Rule" here is the software sense (a class with `evaluate()` and `current()` methods), not a static logical statement. The decision the mechanism enforces is "do not start new runs against this verifier while it cannot defend against an informed attacker."
 
 ## "Sealed specification" or "sealed spec"
 
