@@ -12,23 +12,35 @@ here.
 
 ## Hard rules to obey while working any item below
 
-- [x] NO STUB / MOCK / FAKE / REUSED DATA. If a number cannot be measured
-  from a real run, the route returns null and the UI renders em-dash.
-  (Always on; tick once and leave ticked.)
-- [x] DISCLOSE UP FRONT, UNPROMPTED, any time output is scripted, cached,
-  replayed, or partially simulated. State which LLM calls were real and
-  which were `ScriptedLlmClient` BEFORE the headline number, every time.
-- [x] When wiring frontend stub markup, the ONLY structural change to a
-  `.dc.html` page is adding `data-live="<key>"` attributes (single
-  attribute, no markup change). React state initializers (`state = {...}`
-  blocks inside `<script>` tags) MAY be replaced with empty defaults
-  because those are data, not markup.
-- [x] Per-slice ritual: ruff, mypy --strict, scripts/check_module_imports.py,
-  pytest, conventional commit with `Assisted-by: Claude` trailer, dual-push
-  (origin = github + gitlab), trigger Render deploy via REST API, verify on
-  the live URL.
-- [x] Inline link to the live URL and the pending PR at the top of every
-  chat reply that touches this work.
+These are STANDING RULES, not work items. They are never "done" and never
+ignorable. Re-read them on every iteration. They are deliberately NOT
+formatted as checkboxes because a ticked checkbox semantically means
+"complete, skip on the next pass" and these must never be skipped.
+
+> **R1 · NO STUB / MOCK / FAKE / REUSED DATA.** If a number cannot be
+> measured from a real run, the route returns null and the UI renders
+> em-dash. Applies to every commit, every response, every artifact.
+
+> **R2 · DISCLOSE UP FRONT, UNPROMPTED**, any time output is scripted,
+> cached, replayed, or partially simulated. State which LLM calls were
+> real and which were `ScriptedLlmClient` BEFORE the headline number,
+> every time. Waiting to be asked is itself a violation.
+
+> **R3 · DESIGN-FIDELITY WIRING.** When wiring frontend stub markup, the
+> ONLY structural change to a `.dc.html` page is adding
+> `data-live="<key>"` attributes (single attribute, no markup change).
+> React state initializers (`state = {...}` blocks inside `<script>`
+> tags) MAY be replaced with empty defaults because those are data,
+> not markup.
+
+> **R4 · PER-SLICE RITUAL.** Every code change runs ruff, mypy --strict,
+> scripts/check_module_imports.py, pytest, then a conventional commit
+> with `Assisted-by: Claude` trailer, dual-push (origin = github +
+> gitlab, same hash), trigger Render deploy via REST API, verify on the
+> live URL.
+
+> **R5 · INLINE LINKS.** Every chat reply that touches this work begins
+> with a live-URL link and a pending-PR link.
 
 ## Deploy commands (used after every commit)
 
