@@ -144,8 +144,18 @@ def from_dict(data: Mapping[str, object]) -> SealedSpec:
 
 
 def from_yaml(text: str) -> SealedSpec:
-    """Parse YAML (via yaml.safe_load) and build a SealedSpec from it."""
-    loaded = yaml.safe_load(text)
+    """Parse YAML (via yaml.safe_load) and build a SealedSpec from it.
+
+    A malformed-YAML input (e.g. a syntax error from the operator's pasted spec)
+    is normalized to ``ValueError`` — the same "bad input" type every structural
+    failure below raises — so the one validating loader is the SINGLE point that
+    signals an invalid spec. Callers (``create_run``) translate that ``ValueError``
+    into a typed 422 at the boundary; a YAML parse error must not escape as a 500.
+    """
+    try:
+        loaded = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"sealed_spec: invalid YAML: {exc}") from exc
     if not isinstance(loaded, Mapping):
         raise ValueError(
             f"sealed_spec: YAML must parse to a mapping, got {type(loaded).__name__}"

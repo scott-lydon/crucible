@@ -33,8 +33,6 @@ from shared.llm import AnthropicApiProvider, MockProvider, PersistingLLMProvider
 from shared.llm.base import LLMProvider
 from shared.sandbox import LocalDockerSandbox
 
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
-
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
 DEFAULT_THRESHOLD: float = DETECTOR_THRESHOLD
@@ -135,7 +133,7 @@ def build_components_sparkov(
     blue_max_iters: int = 3,
     blue_max_repairs: int = 1,
     blue_sandbox: object | None = None,
-    session_factory: async_sessionmaker[AsyncSession] | None = None,
+    db_url: str | None = None,
     run_id: str | None = None,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
@@ -182,15 +180,16 @@ def build_components_sparkov(
     def _wrap(inner: LLMProvider, pillar: str) -> LLMProvider:
         """Record every call this provider makes to ``llm_calls`` (US-2/3/10).
 
-        Only wraps when a ``session_factory`` and ``run_id`` are threaded in (the
-        run path). Without them the raw provider is returned unchanged so unit
-        construction stays side-effect free. The decorator makes NO extra call.
+        Only wraps when a ``db_url`` and ``run_id`` are threaded in (the run path).
+        Without them the raw provider is returned unchanged so unit construction
+        stays side-effect free. The decorator records via a loop-safe SYNC write
+        (no async engine) and makes NO extra model call.
         """
-        if session_factory is None or run_id is None:
+        if db_url is None or run_id is None:
             return inner
         return PersistingLLMProvider(
             inner=inner,
-            session_factory=session_factory,
+            db_url=db_url,
             run_id=run_id,
             pillar=pillar,
         )

@@ -9,64 +9,54 @@ unchanged.
 
 The seam is awkward: ``LLMProvider.complete`` is synchronous and is called from
 inside the orchestrator's *running* async event loop (the oracle/adversary
-``vote``/``mutate`` methods are invoked synchronously inside ``run_loop``). We
-cannot ``await`` the async session there, and ``asyncio.run`` would fail
-("cannot be called from a running event loop"). So the persistence write is
-driven on a DEDICATED background event loop running in its own thread; the
-sync ``complete`` blocks on the result. This keeps the write on the same async
-SQLAlchemy machinery the rest of the app uses (no second sync DB driver).
+``vote``/``mutate`` methods are invoked synchronously inside ``run_loop``). The
+process-shared async engine is asyncpg, whose connections are PINNED to the loop
+that created them (the uvicorn loop) — they cannot be reused from a foreign
+loop/thread. So we MUST NOT touch the async engine from here.
+
+Loop-safe fix (Option A): the write goes through a dedicated, blocking SYNC
+SQLAlchemy engine built from the SAME DB URL (``postgresql+psycopg`` for the
+Postgres runtime, plain ``sqlite`` for tests). No event loop is involved on the
+write path, so there is no cross-loop hazard — ``complete()`` does one fast
+blocking INSERT and returns. The sync engine is created once per distinct URL
+and reused process-wide (a short-lived session per insert, no per-call connect).
 
 Fail-loud-but-don't-crash: a persistence error is logged and swallowed so a
 recording failure never aborts a run — but the call IS recorded on the happy
 path (we never silently drop records on a healthy DB).
 """
 
-import asyncio
 import json
 import threading
-from collections.abc import Coroutine, Mapping
-from typing import Any
+import uuid
+from collections.abc import Mapping
 
 import structlog
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+from sqlalchemy import Engine
 
 from shared.llm.base import LLMProvider, LLMResponse
-from shared.persistence import repo
+from shared.persistence import (make_sync_engine, make_sync_session_factory,
+                                 sync_url)
+from shared.persistence.models import LlmCallRow
 
 _log = structlog.get_logger(__name__)
 
+# One sync engine per distinct (sync) DB URL, reused process-wide. asyncpg's
+# loop-pinning does not apply here — a sync engine has its own blocking driver
+# and connection pool, safe to call from any thread/loop. Guarded so concurrent
+# first-use does not build two engines for the same URL.
+_engines: dict[str, Engine] = {}
+_engines_lock = threading.Lock()
 
-class _BackgroundLoop:
-    """A singleton asyncio loop on a daemon thread for sync->async DB writes.
 
-    One process-wide loop is cheap and avoids spinning a thread per call. It is
-    created lazily and lives for the process lifetime (daemon thread).
-    """
-
-    _instance: "_BackgroundLoop | None" = None
-    _lock = threading.Lock()
-
-    def __init__(self) -> None:
-        self._loop = asyncio.new_event_loop()
-        self._thread = threading.Thread(
-            target=self._run, name="llm-persist-loop", daemon=True
-        )
-        self._thread.start()
-
-    def _run(self) -> None:
-        asyncio.set_event_loop(self._loop)
-        self._loop.run_forever()
-
-    @classmethod
-    def instance(cls) -> "_BackgroundLoop":
-        with cls._lock:
-            if cls._instance is None:
-                cls._instance = cls()
-            return cls._instance
-
-    def run_blocking(self, coro: Coroutine[Any, Any, None]) -> None:
-        fut = asyncio.run_coroutine_threadsafe(coro, self._loop)
-        fut.result()
+def _engine_for(db_url: str) -> Engine:
+    key = sync_url(db_url)
+    with _engines_lock:
+        engine = _engines.get(key)
+        if engine is None:
+            engine = make_sync_engine(db_url)
+            _engines[key] = engine
+        return engine
 
 
 def _to_text(raw: Mapping[str, object]) -> str | None:
@@ -83,20 +73,27 @@ class PersistingLLMProvider:
     """``LLMProvider`` decorator that records each call to ``llm_calls``.
 
     Wrap a real provider; ``complete`` delegates to it, persists an ``llm_calls``
-    row, then returns the inner response unchanged. Makes no extra model call.
+    row via a loop-safe SYNC write, then returns the inner response unchanged.
+    Makes no extra model call.
+
+    ``db_url`` is the SAME DB URL the async engine uses (e.g.
+    ``postgresql+asyncpg://...`` or ``sqlite+aiosqlite://...``); it is translated
+    to its sync-driver equivalent for the blocking write. No async session
+    factory is taken — the write deliberately never touches the async engine.
     """
 
     def __init__(
         self,
         inner: LLMProvider,
-        session_factory: async_sessionmaker[AsyncSession],
+        db_url: str,
         run_id: str,
         pillar: str,
     ) -> None:
         self._inner = inner
-        self._session_factory = session_factory
+        self._db_url = db_url
         self._run_id = run_id
         self._pillar = pillar
+        self._session_factory = make_sync_session_factory(_engine_for(db_url))
 
     def complete(
         self,
@@ -113,24 +110,24 @@ class PersistingLLMProvider:
         return resp
 
     def _record(self, prompt: str, system: str | None, resp: LLMResponse) -> None:
-        async def _write() -> None:
-            async with self._session_factory() as s:
-                await repo.record_llm_call(
-                    s,
-                    run_id=self._run_id,
-                    pillar=self._pillar,
-                    model=resp.model,
-                    prompt=prompt,
-                    system=system,
-                    raw_response=_to_text(resp.raw),
-                    parsed_output=None,
-                    input_tokens=resp.input_tokens,
-                    output_tokens=resp.output_tokens,
-                    dollars=resp.dollars,
-                )
-
         try:
-            _BackgroundLoop.instance().run_blocking(_write())
+            with self._session_factory() as s:
+                s.add(
+                    LlmCallRow(
+                        id=str(uuid.uuid4()),
+                        run_id=self._run_id,
+                        pillar=self._pillar,
+                        model=resp.model,
+                        prompt=prompt,
+                        system=system,
+                        raw_response=_to_text(resp.raw),
+                        parsed_output=None,
+                        input_tokens=resp.input_tokens,
+                        output_tokens=resp.output_tokens,
+                        dollars=resp.dollars,
+                    )
+                )
+                s.commit()
         except Exception as exc:  # pragma: no cover - defensive: never crash a run
             _log.warning(
                 "llm_call.record_failed",

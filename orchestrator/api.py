@@ -19,6 +19,7 @@ from modules.measure.health import (
 )
 from modules.measure.metrics import compute_run_metrics
 from modules.measure.risk_report import render_risk_report
+from orchestrator.db import active_database_url
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
 from orchestrator.full_run import (
@@ -165,12 +166,14 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
         build_sparkov = cast(
             Callable[..., dict[str, object]], build_components_sparkov
         )
-        # Thread the session factory + run_id so every real provider call (judge/
-        # red/blue/white-box) is wrapped to RECORD an ``llm_calls`` row (US-2/3/10).
-        # No new model call — the wrapper records the calls already happening.
+        # Thread the DB URL + run_id so every real provider call (judge/red/blue/
+        # white-box) is wrapped to RECORD an ``llm_calls`` row (US-2/3/10) via a
+        # loop-safe SYNC write — the wrapper must NOT touch the async asyncpg
+        # engine from inside the running loop (cross-loop hazard). No new model
+        # call — the wrapper records the calls already happening.
         comp = build_sparkov(
             threshold=DEFAULT_THRESHOLD,
-            session_factory=sf,
+            db_url=active_database_url(),
             run_id=run_id,
             **overrides,
         )

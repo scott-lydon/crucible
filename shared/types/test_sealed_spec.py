@@ -93,3 +93,16 @@ def test_from_yaml_loads_fraud_spec() -> None:
 def test_isinstance_sealed_spec() -> None:
     spec = sealed_spec_from_yaml(FRAUD_SPEC_PATH.read_text())
     assert isinstance(spec, SealedSpec)
+
+
+def test_from_yaml_malformed_raises_value_error() -> None:
+    # Malformed YAML (a scanner/parser error) must surface as ValueError — the
+    # boundary signal create_run turns into a typed 422 — NOT an uncaught
+    # YAMLError that escapes as a 500.
+    with pytest.raises(ValueError):
+        sealed_spec_from_yaml("this: is: not: valid\n  ::: broken")
+
+
+def test_from_yaml_non_mapping_raises_value_error() -> None:
+    with pytest.raises(ValueError):
+        sealed_spec_from_yaml("- just\n- a\n- list")
