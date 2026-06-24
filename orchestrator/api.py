@@ -22,6 +22,7 @@ from modules.measure.corpus import export_corpus
 from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown
+from modules.measure.trust import compute_trust
 from modules.red.catalog import build_catalog
 from modules.targets.agent import demo_agent, validate_agent_config
 from orchestrator.loop import create_run, run_coevolution, run_loop
@@ -244,7 +245,16 @@ async def get_metrics(run_id: str | None = None) -> dict[str, object]:
     async with session_scope() as session:
         metrics = await compute_metrics(session, run_id)
         metrics["halt"] = await halt_state(session)
+        metrics["trust"] = await compute_trust(session, run_id)
     return metrics
+
+
+@app.get("/trust")
+async def get_trust(run_id: str | None = None) -> dict[str, object]:
+    """The headline trust score (cr-f1): how often the system fails silently past every
+    check — a measured floor on trust, with its honest caveats."""
+    async with session_scope() as session:
+        return await compute_trust(session, run_id)
 
 
 @app.get("/halt")

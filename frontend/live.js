@@ -707,6 +707,29 @@
     }).catch(logErr("/runs"));
   }
 
+  // slice-04 · Headline TRUST SCORE (cr-f1) — the number a user can stand behind
+  function bindTrust(root) {
+    if (document.getElementById("live-trust")) return;
+    var run = qs.get("run");
+    var url = "/trust" + (run ? "?run_id=" + encodeURIComponent(run) : "");
+    jget(url).then(function (d) {
+      var p = mkPanel(root, "live-trust", "LIVE · TRUST SCORE");
+      if (d.trust_score == null) { p.body.innerHTML = note("Not yet measured — run an evaluation."); return; }
+      var color = d.trust_score >= 90 ? "#57C08A" : d.trust_score >= 60 ? "#D9A441" : "#C0564F";
+      p.body.innerHTML =
+        '<div style="display:flex;align-items:baseline;gap:14px">' +
+        '<div style="font-size:46px;font-weight:700;color:' + color + '">' + d.trust_score +
+        '<span style="font-size:18px;color:#8A94A2">/100</span></div>' +
+        '<div style="font-size:22px;color:' + color + '">' + esc(d.band) + "</div>" +
+        '<div style="color:#8A94A2;font-size:12px;font-family:\'IBM Plex Mono\',monospace">' +
+        esc(d.silent_failures) + " silent / " + esc(d.n_attacks) + " " +
+        esc((d.basis || "").replace("_", "-")) + " attacks</div></div>" +
+        '<ul style="color:#8A94A2;font-size:12px;margin:14px 0 0;padding-left:18px;line-height:1.6">' +
+        (d.caveats || []).map(function (c) { return "<li>" + esc(c) + "</li>"; }).join("") +
+        "</ul>";
+    }).catch(logErr("/trust"));
+  }
+
   // slice-05 · Audit Row Replayer — deterministic replay + diff of a verdict
   function bindReplay(root) {
     if (document.getElementById("live-replay")) return;
@@ -800,7 +823,7 @@
   if (/slice-01-run-launcher/.test(PAGE)) { whenRendered(bindAgentLauncher, true); whenRendered(bindLauncher, true); }
   else if (/slice-02-live-run-view/.test(PAGE)) whenRendered(bindLiveRun, false);
   else if (/slice-03-verdict-detail/.test(PAGE)) whenRendered(bindVerdict, false);
-  else if (/slice-04-honest-dashboard/.test(PAGE)) whenRendered(bindDashboard, true);
+  else if (/slice-04-honest-dashboard/.test(PAGE)) { whenRendered(bindTrust, false); whenRendered(bindDashboard, true); }
   else if (/slice-11-health/.test(PAGE)) whenRendered(bindHealth, false);
   else if (/slice-06-strategy-catalog/.test(PAGE)) whenRendered(bindCatalog, false);
   else if (/slice-07-blue-patch-review/.test(PAGE)) whenRendered(bindBluePatch, false);
