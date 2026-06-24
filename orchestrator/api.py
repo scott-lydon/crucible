@@ -161,13 +161,17 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
     generate_fn = cast(Callable[[str, int], list[object]], comp["generate_fn"])
     spec = cast(SealedSpec, comp["spec"])
 
-    # Seal the spec: persist it server-side (app DB creds, in-process) so the
-    # harness/oracles resolve it from Postgres while the producer (sandboxed)
-    # never gets DB creds or the spec contents — only its input sample. The
-    # in-process ``spec`` object continues to drive this run unchanged; sealing
-    # is the additive, demonstrable path (US-9 / slice-4).
+    # Seal the spec, then RESOLVE it server-side to drive the run — closing the
+    # seal loop (US-9 / slice-4): the spec lives in Postgres (app DB creds,
+    # in-process), the producer (sandboxed) never gets DB creds or the spec
+    # contents (only its input sample), and the harness/oracles obtain the spec
+    # from the store. ``resolve_spec`` round-trips byte-identically to the
+    # in-process ``spec`` (verified by from_dict(to_dict(spec)) == spec), so
+    # behavior is unchanged — the run is just routed through the resolver instead
+    # of trusting the in-process object.
     async with sf() as s:
-        await repo.store_spec(s, run_id, spec)
+        spec_id = await repo.store_spec(s, run_id, spec)
+        spec = await repo.resolve_spec(s, spec_id)
 
     # Blue composition needs the sparkov-only seams; synth has no blue arc.
     blue_ready = req.run_blue and "blue_engineer" in comp
