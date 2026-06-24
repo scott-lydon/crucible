@@ -13,6 +13,10 @@ with measurable acceptance, not as a vague nonfunctional goal.
 If a behavior is not in this file, it is not in the product, and the answer to "but
 should it" is "open a pull request against this file first."
 
+Crucible is the evaluation harness; the target (the model or agent under evaluation) is
+the external system being evaluated, brought by the customer or provided as an example in
+`examples/targets/` — it is not part of the harness.
+
 Term definitions for every recurring noun live in
 [`docs/VOCABULARY.md`](docs/VOCABULARY.md). When a sentence uses "model," "retrain,"
 "catch," "target," or "producer," that file is the canonical referent.
@@ -133,13 +137,15 @@ prompt-and-configuration patch for the code agent).
 - **And** the held-out validation never touches the attacks the patch was built from; if
   it does, the orchestrator refuses to apply the patch and surfaces a typed error.
 
+> **Implementation note (Option B, 2026-06-24).** The blue maker does NOT pick feature additions off a menu. It is given ONLY the raw data columns and the attack pattern, REASONS to a hypothesis, and WRITES a feature-engineering transform (Python source). The harness runs that untrusted code in the Docker producer sandbox over a bounded sample, retrains on the base features plus the one engineered column, validates recovery on the held-out evasions, and iterates with feedback. It is bounded and **allowed to fail** — there is no guaranteed-recovery fallback, and recovery from a single engineered feature is honestly partial (amt still dominates the model). Per `coding-practices.md` §1 deviation, the maker runs on **Opus 4.8** (code generation held to the higher tier), not the §1-default Sonnet.
+
 **Owner:** Blue.
 
 ### US-8. See platform health for every subcomponent
 
 **As an** operator, **I want** a `/health` page that lists every module, every
-sub-module, every external dependency (Postgres, Modal, Anthropic), and shows live
-pass-fail status with last-self-test timestamp, **so that** when something breaks I see
+sub-module, every external dependency (Postgres, the sandbox adapter, Anthropic), and
+shows live pass-fail status with last-self-test timestamp, **so that** when something breaks I see
 what and where in under five seconds.
 
 - **Given** the platform is running,
@@ -160,11 +166,11 @@ the core bet is not just asserted but demonstrated.
 
 - **Given** a run is in progress,
 - **When** I open `/health` and expand the producer sandbox card,
-- **Then** I see (a) the Modal job identifier, (b) the network egress allow-list applied
-  (empty), (c) the environment variable list (no Postgres host, no Modal token, no
-  Anthropic key), (d) a "Run Seal Probe" button that runs an inside-the-sandbox probe
-  trying to reach Postgres, Modal control plane, and the verification bucket; each must
-  time out.
+- **Then** I see (a) the sandbox job identifier, (b) the network egress allow-list applied
+  (empty), (c) the environment variable list (no Postgres host, no sandbox/provider
+  credentials, no Anthropic key), (d) a "Run Seal Probe" button that runs an
+  inside-the-sandbox probe trying to reach Postgres, the sandbox's control plane / host,
+  and the verification bucket; each must time out.
 
 **Owner:** Targets-and-Oracles.
 

@@ -31,6 +31,7 @@ Term definitions for every recurring noun live in
   No other provider; no fallback to OpenAI or Google for "redundancy." Cross-family in
   the differential oracle is satisfied by the two model families (LightGBM versus
   IsolationForest for fraud; Sonnet versus Haiku for code), not by mixing vendors.
+  **Deviation (2026-06-24): the blue code-engineering maker runs on Opus 4.8, not Sonnet.** Blue writes feature-engineering code from raw columns (a demanding code-generation + reasoning task); the operator chose to hold it to the higher tier. This is the one place blue deviates from the §1 'Sonnet on the inner loops' default. Red's inner search stays on Sonnet 4.6 per §1.
 - **Dashboard front end:** React 18 plus Vite plus Tailwind, Recharts for plots, React
   Router 6. Palette is owned by the Claude Design export at `_design_bundle/` and is
   documented in `_design_bundle/_palette_notes.md` with audience-by-audience rationale.

@@ -60,7 +60,7 @@ crucible/
     types/               # Attack, Verdict, AuditTrace, TargetSpec, RunId, etc.
     persistence/         # SQLAlchemy async session, Alembic migrations
     telemetry/           # structlog, OpenTelemetry traces, cost meter
-    sandbox/             # Modal job wrapper (infrastructure)
+    sandbox/             # sandbox adapter port + local Docker adapter (Modal optional)
   orchestrator/
     interfaces/          # Protocol definitions per pillar (Target, Oracle,
                          #   RedAgent, BlueAgent, MeasureSink)
@@ -70,10 +70,11 @@ crucible/
                          #   GET /health
     wiring.py            # DI: which concrete class satisfies which interface
   modules/
-    targets/             # Pillar 1: adapters, sealed spec, sandbox client
-      fraud/             # LightGBM on Kaggle creditcard
-      code_agent/        # Claude Sonnet 4.6 producer
-      research_agent/    # Stub, wiring.py skips at runtime
+    targets/             # Pillar 1: generic Target ADAPTERS only (no victims),
+      local_model/       #   sealed spec, sandbox client. local_model = load +
+      model_endpoint/    #   query a serialized artifact; model_endpoint = query
+                         #   a remote model over HTTP. Concrete victims live in
+                         #   examples/targets/, wired only at the composition root.
     oracles/             # Pillar 1 cont: held-out, metamorphic, differential,
                          #   property fuzz, LLM judge, verdict aggregator
     red/                 # Pillar 2: search, catalog, white-box, hybrid
@@ -84,11 +85,21 @@ crucible/
   dashboard/             # React + Vite SPA (Measure pillar's frontend)
   website/               # Architecture website (existing, public-facing)
     index.html
+  examples/
+    targets/             # demo VICTIMS — the systems Crucible evaluates; NOT
+      fraud_synth/       #   part of the harness; reached via an adapter through
+                         #   the Target Protocol; externalizable to a separate
+                         #   repo. fraud_synth = synthetic flawed detector +
+                         #   generator. Later: fraud_kaggle/, code_agent/.
   tests/
     integration/         # orchestrator-owned, exercise the whole loop
   design/
     claude-design-brief.md   # input for claude.ai/design exports
 ```
+
+The harness must not import from `examples/` (enforced by the pre-merge import check);
+only `orchestrator/wiring.py` (the composition root) wires a concrete victim. Concrete
+target adapters live in `examples/targets/`, not the harness.
 
 Each module ships its own `tests/` directory and its own `README.md` documenting the
 module's interface contract.
@@ -101,18 +112,20 @@ exception (`coding-practices.md` section 6).
 
 ### Pillar 1, Targets and Oracles
 
-**Targets module** (`modules/targets/`). Implements `interfaces.Target` Protocol. Three
-sub-adapters.
+**Targets module** (`modules/targets/`). Implements `interfaces.Target` Protocol. Ships
+generic adapters only; the concrete victims they reach live in `examples/targets/` (see
+section 2) and are wired at the composition root.
 
 | Subcomponent | Inputs | Outputs | Persistence | Self-test |
 |---|---|---|---|---|
-| `fraud/` | Transaction record (JSON) | Fraud probability (float) | Trained model in `artifacts/fraud-vN.lgb` (N is the version integer) | `/health/targets/fraud` returns model file checksum + last training timestamp |
-| `code_agent/` | Function specification (sealed YAML) | Python source string | Producer stdout streamed to Postgres `producer_runs` | `/health/targets/code_agent` returns a one-second "produce hello world" round trip |
-| `research_agent/` | (stubbed) | (stubbed) | (none) | `/health/targets/research_agent` returns `{status: "stub"}` |
+| fraud adapter (loads a serialized model via `local_model`) + victim model in `examples/targets/`; trained artifact + dataset external | Transaction record (JSON) | Fraud probability (float) | Trained model artifact under `examples/targets/.../fraud-vN.lgb` (N is the version integer) | `/health/targets/fraud` returns model file checksum + last training timestamp |
+| `code_agent/` (adapter; victim producer in `examples/targets/`) | Function specification (sealed YAML) | Python source string | Producer stdout streamed to Postgres `producer_runs` | `/health/targets/code_agent` returns a one-second "produce hello world" round trip |
+| `research_agent/` (stub adapter) | (stubbed) | (stubbed) | (none) | `/health/targets/research_agent` returns `{status: "stub"}` |
 
-**Sandbox** (`shared/sandbox/`). Modal job wrapper. Strips environment, denies network
-egress, returns `{stdout, stderr, exit_code, modal_job_id}`. The "Seal Probe" feature
-called out in US-9 is implemented as a fixture under `shared/sandbox/probes/`.
+**Sandbox** (`shared/sandbox/`). Sandbox adapter (local Docker v1; Modal optional). Strips
+environment, denies network egress, returns `{stdout, stderr, exit_code, job_id}`. The
+"Seal Probe" feature called out in US-9 is implemented as a fixture under
+`shared/sandbox/probes/`.
 
 **Sealed spec** (`shared/types/sealed_spec.py`). YAML loaded into a typed `SealedSpec`
 value object containing `obligations[]`, `invariants[]`, `holdout_generator_kind`.
@@ -137,7 +150,7 @@ full audit trace JSON.
 **Failure modes.** Dataset download fails: typed `DatasetUnavailable` error, no
 fallback to a sample file. Model fails to train: `TargetTrainingFailed` naming the
 `LGBMClassifier.fit` traceback. Sandbox cannot launch: `SandboxLaunchFailed` pointing
-at the Modal token and the egress rule. An oracle's LLM call times out: the verdict
+at the sandbox configuration and the network-egress rule. An oracle's LLM call times out: the verdict
 records that oracle's vote as `unavailable` with the error, and the aggregator reports
 on the remaining votes rather than guessing.
 
@@ -251,7 +264,7 @@ Postgres via the SSE backend.
 | Patch validation | Held-out attack set defined up front | Validate on patch's training attacks | Prevents the blue loop from overfitting to known attacks. | Testing |
 | Stop rule | Halt certification at residual red line | Ship regardless of residual | Capability-threshold gating, per Responsible Scaling Policy spirit. | Security |
 | Persistence | Postgres 16 | SQLite | Concurrent writes from pillars break SQLite. | Scalability |
-| Sandbox | Modal | Docker on Render, nsjail | Fastest path to "producer cannot reach verification artifacts" inside two weeks. | Security |
+| Sandbox | **Local Docker/subprocess (v1); Modal optional adapter** | Modal, nsjail | Ports-and-adapters: Docker gives real isolation locally with zero external account; Modal swappable for managed production. | Security |
 | Dashboard SPA stack | React 18 + Vite + Tailwind + Recharts + Router | Next.js, Streamlit | Existing architecture site palette and the team's React familiarity. | Scalability |
 | Producer sandbox to oracle communication | Output written to a write-only Postgres row by the orchestrator after the sandbox returns; oracles read from Postgres | Direct pipe sandbox to oracles | Direct pipe would require the sandbox to know oracle endpoints. | Security |
 
@@ -289,7 +302,7 @@ Every LLM call is logged to `llm_calls` (prompt, raw response, parsed output, mo
 tokens, dollars, captured seed, parent action id). The dashboard's Inspect button on any
 trace line opens this row.
 
-Every Modal job is logged to `sandbox_jobs` (job id, env applied, network rules, exit
+Every sandbox job is logged to `sandbox_jobs` (job id, env applied, network rules, exit
 code, stdout, stderr, captured seed). Dashboard surfaces the live stream and the
 post-run record.
 
@@ -319,16 +332,17 @@ team-wide convergence at the end.
 ## 9. Deployment
 
 - **Production:** Render. One web service (the FastAPI app + dashboard build) plus one
-  Postgres service. Modal is per-invocation, not deployed.
+  Postgres service. The sandbox runs per-invocation (local Docker today); a Modal
+  adapter, if used, is per-invocation too.
 - **Static dashboard hosting:** the dashboard's Vite build output is served from the
   same Render web service under `/app`, the architecture website under `/architecture`.
   Both behind the same origin.
 - **Cache-busting:** Vite content-hashes filenames by default. `index.html` is served
   with `Cache-Control: no-cache` plus a `?v=<git-sha>` query string on the entry script,
   so a new build cannot be served from a poisoned cache.
-- **Secrets:** Anthropic key, Modal token, Postgres URL stored as Render environment
-  variables, never in the repo. Local development reads from `.env` which is
-  `.gitignored`.
+- **Secrets:** Anthropic key, sandbox/provider credentials (if a managed sandbox adapter
+  is used), Postgres URL stored as Render environment variables, never in the repo. Local
+  development reads from `.env` which is `.gitignored`.
 
 ## 10. Operational
 
@@ -357,7 +371,8 @@ out of it are:
 - **The producer sandbox has no path to the verification artifacts.** Held-out test
   instances, the differential second implementation's outputs, and oracle internals are
   never readable from inside the producer container. Verified by an integration test
-  that runs a Modal job and asserts the producer cannot resolve the Postgres host
+  that runs a sandboxed job (the local Docker adapter today) and asserts the producer
+  cannot reach the verification artifacts, no network egress, no credentials
   (`tests/integration/test_sandbox_seal.py`).
 - **Held-out tests are generated after submission, never before.** A static held-out
   set leaks over time. The held-out oracle generates fresh tests post-submit from the
