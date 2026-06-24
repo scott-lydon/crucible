@@ -396,7 +396,7 @@ real from a backend route or rendered as em-dash.
 
 ### D3 — Vouch (QA-Adversary) run on this branch
 
-- [ ] **DONE-CRITERION** Invoke the `vouch` sub-agent against the current
+- [x] **DONE-CRITERION** Invoke the `vouch` sub-agent against the current
   diff range, address any blocking findings, commit fixes if needed.
 - **VERIFY** vouch report appears at `/tmp/vouch_report_<sha>.md`; no
   blocking findings, or fixes committed.
