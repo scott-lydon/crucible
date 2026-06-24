@@ -581,6 +581,17 @@ def _media_type(path: Path) -> str:
     }.get(suffix, "application/octet-stream")
 
 
+@app.get("/")
+async def root() -> RedirectResponse:
+    """Root of the deployed service redirects to the dashboard's Run Launcher.
+
+    A bare GET / returning 404 makes the URL look broken to anyone who lands on
+    it without a path, so the root hops to /app, which itself hops to the Run
+    Launcher page (`frontend/slice-01-run-launcher.dc.html`).
+    """
+    return RedirectResponse(url="/app")
+
+
 @app.get("/app")
 async def app_root() -> RedirectResponse:
     """Route '/' of the dashboard maps to the Run Launcher (frontend/index.html)."""

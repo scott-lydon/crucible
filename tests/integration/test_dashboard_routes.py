@@ -177,6 +177,21 @@ async def test_sse_streams_persisted_rows(client: AsyncClient) -> None:
     assert json.loads(text.split("event: attack\r\ndata: ")[1].split("\r\n")[0])["succeeded"]
 
 
+async def test_root_redirects_to_app(client: AsyncClient) -> None:
+    """A bare GET / returning 404 makes the URL look broken; / -> /app -> launcher.
+
+    Asserted on the redirect chain rather than the final body so the test does
+    not depend on the bundled dashboard page (covered separately below). Httpx
+    does not follow redirects unless asked, so each hop is observed directly.
+    """
+    first = await client.get("/")
+    assert first.status_code in (307, 308)
+    assert first.headers["location"] == "/app"
+    second = await client.get("/app")
+    assert second.status_code in (307, 308)
+    assert second.headers["location"] == "/app/slice-01-run-launcher.dc.html"
+
+
 async def test_design_bundle_served_with_live_sidecar(client: AsyncClient) -> None:
     page = await client.get("/app/slice-06-strategy-catalog.dc.html")
     assert page.status_code == 200
