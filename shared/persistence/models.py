@@ -388,3 +388,23 @@ class DifferentialRun(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class HaltState(Base):
+    """The certification halt flag the orchestrator checks before a launch (US-13).
+
+    A single row keyed `global`: when white-box verifier recall falls below the
+    configured red line, `halted` is set true and the orchestrator refuses new
+    run launches with HTTP 409. Persisted (not just computed) so the flag is the
+    auditable record of when and why certification was halted.
+    """
+
+    __tablename__ = "halt_state"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    halted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    recall: Mapped[float | None] = mapped_column(Float, nullable=True)
+    threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

@@ -28,6 +28,7 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from modules.measure import HaltRule
 from modules.red import StrategyCatalog, compose_white_box_brief
 from orchestrator.errors import RunNotFoundError
 from orchestrator.wiring import Registry
@@ -129,6 +130,10 @@ class Loop:
         await self._red_pass(
             run, spec, target, target_type, budget, white_box=True, oracle_scheme=scheme
         )
+
+        # White-box recall just changed; recompute the certification halt flag
+        # for this run's pass so the banner and the launch guard reflect it (US-13).
+        await HaltRule(session=self.session).evaluate(run_id)
 
         run.status = RunStatus.COMPLETE.value
         await self.session.commit()

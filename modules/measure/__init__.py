@@ -5,6 +5,7 @@ report, halt rule, health aggregation (slices 15 to 18).
 from __future__ import annotations
 
 from .corpus_exporter import CorpusExporter
+from .halt_rule import HaltRule, HaltStateData
 from .metrics import CatchRate, CatchRateMetrics, MetricsAggregator
 from .risk_report import ReportRunNotFoundError, RiskReport
 
@@ -12,6 +13,8 @@ __all__ = [
     "CatchRate",
     "CatchRateMetrics",
     "CorpusExporter",
+    "HaltRule",
+    "HaltStateData",
     "MetricsAggregator",
     "ReportRunNotFoundError",
     "RiskReport",

@@ -32,6 +32,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from modules.measure import (
     CorpusExporter,
+    HaltRule,
     MetricsAggregator,
     ReportRunNotFoundError,
     RiskReport,
@@ -153,6 +154,9 @@ async def create_run(req: RunRequest, session: SessionDep) -> RunCreated:
     The loop that drives rounds against a registered target lands in slice 1;
     slice 0 deliberately does not fake any rounds.
     """
+    halt = await HaltRule(session=session).current()
+    if halt.halted:
+        raise HTTPException(status_code=409, detail=halt.as_json())
     spec = SealedSpec.from_payload(req.spec)
     target = TargetSpec(
         target_type=_parse_target_type(req.target_type),
@@ -417,6 +421,18 @@ async def get_blue_patch(patch_id: str, session: SessionDep) -> dict[str, Any]:
 
 # The .pdf route is registered before /reports/{run_id} so the literal suffix
 # wins; otherwise {run_id} would greedily capture "abc.pdf".
+@app.get("/halt")
+async def halt(session: SessionDep) -> dict[str, Any]:
+    """The certification halt state and the banner text every route shows (US-13).
+
+    Recomputed from the latest white-box recall on each read and persisted, so
+    the dashboard banner and the launch guard agree.
+    """
+    state = await HaltRule(session=session).evaluate()
+    await session.commit()
+    return state.as_json()
+
+
 @app.get("/reports/{run_id}.pdf")
 async def report_pdf(run_id: str, session: SessionDep) -> Response:
     """The same SR 11-7 report as a downloadable PDF (US-12)."""

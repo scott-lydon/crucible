@@ -85,6 +85,25 @@
     window.CrucibleLive.sse = es;
   }
 
+  async function wireHaltBanner() {
+    // The halt banner must appear on EVERY route (US-13), so it is independent
+    // of any per-page data hook. Injected once, pinned to the top, dismiss not
+    // offered: a halted certification is not something the operator waves away.
+    if (document.getElementById("crucible-halt-banner")) return;
+    var h = await json("/halt");
+    if (!h || !h.halted) return;
+    var bar = document.createElement("div");
+    bar.id = "crucible-halt-banner";
+    bar.setAttribute("role", "alert");
+    bar.style.cssText =
+      "position:sticky;top:0;z-index:9999;background:#7A1F1F;color:#FFE8E8;" +
+      "font-family:'IBM Plex Mono',monospace;font-size:13px;padding:10px 16px;" +
+      "text-align:center;border-bottom:1px solid #B23A3A";
+    bar.innerHTML =
+      h.message + ' · <a href="/metrics" style="color:#FFD7D7">view metrics</a>';
+    document.body.insertBefore(bar, document.body.firstChild);
+  }
+
   async function wire() {
     await Promise.all([
       wireMetrics(),
@@ -94,7 +113,19 @@
     wireSse();
   }
 
-  window.CrucibleLive = { json: json, wire: wire };
+  window.CrucibleLive = { json: json, wire: wire, wireHaltBanner: wireHaltBanner };
+
+  // The halt banner is route-independent; poll briefly for the mounted body.
+  var haltTicks = 0;
+  var haltTimer = setInterval(function () {
+    haltTicks += 1;
+    if (document.body) {
+      clearInterval(haltTimer);
+      wireHaltBanner();
+    } else if (haltTicks > 50) {
+      clearInterval(haltTimer);
+    }
+  }, 200);
 
   // The page mounts asynchronously; poll briefly for the tagged nodes, then bind.
   var ticks = 0;

@@ -6,10 +6,6 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-18-halt-cert** (M). Postgres `halted` flag when white-box recall drops below the red line; 409 on new runs; dashboard banner.
-
-## Next slice
-
 - [ ] **slice-19-demo-polish** (A). Runbook, interview prep, website numbers, Render deploy verified end to end.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
@@ -19,6 +15,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-18-halt-cert** (M). Certification halt at the residual red line (US-13). `modules/measure/halt_rule.py`'s `HaltRule` sets a persisted `halt_state` flag (migration `ec4dc1906055`) when white-box verifier recall falls below the configured red line (default 0.7): `evaluate(run_id)` scopes recall to one run's white-box pass (called by the loop after its pass), `evaluate()` recomputes the global rate for the dashboard, `current()` reads the cheap flag the launch guard checks. `POST /runs` is refused with HTTP 409 and a typed body when halted; `GET /halt` returns the state and banner text, and the `live.js` sidecar pins that red banner to the top of every served route when halted. Done-criterion on real Postgres (`test_halt.py`): recall 0.25 halts (exact banner text) and refuses the launch with 409; recall 1.0 does not halt and the launch is accepted; no white-box verdicts means unmeasured and not halted.
 - [x] **slice-17-risk-report** (M). The SR 11-7 model risk report (US-12). `modules/measure/risk_report.py`'s `RiskReport` renders the six SR 11-7 sections from one run's real rows, every numeric field a Markdown link to the API route returning its source row (run, verdict, or blue-patch row), so clicking a number jumps to its Postgres row. `GET /reports/:runId` is the Markdown, `GET /reports/:runId.pdf` the PDF (dependency-free writer in `modules/measure/pdf.py`, no heavy PDF library added). Done-criterion on real Postgres (`test_risk_report.py`): all six sections render, numbers link to their source-row routes, the replay seed is recorded, the PDF is a valid `%PDF`, and unknown runs 404.
 - [x] **slice-16-corpus-export** (M). The seeded-hack benchmark as a JSONL download (US-11). `modules/measure/corpus_exporter.py`'s `CorpusExporter` streams every undetected hack (a `succeeded` attack) joined to its run's target type, oldest first, one line per attack in the US-11 shape; the stream and the `/corpus` table read the same query so their counts cannot drift. `GET /corpus` returns the table and exact count; `GET /corpus.jsonl` streams the attachment over its own session. Done-criterion proven on real Postgres (`test_corpus.py`): the downloaded JSONL line count equals the table row count exactly, only successful attacks are included, and each line carries the US-11 fields.
 - [x] **slice-15-dashboard-spa** (M). Wired the PR #1 frontend to the backend, reconciled to the design-fidelity reading the operator confirmed (verbatim UI, live data, no React re-implementation). The `frontend/` Claude Design bundle is served verbatim at `/app/*` with a `live.js` sidecar injected at serve time, so the on-disk `.dc.html` stay byte-identical while the stubbed data is swapped for live backend data via `data-live` hooks and the SSE stream. Backend routes the pages fetch landed on real Postgres: `POST /runs/:id/start` (background loop, 404/409 guards), `GET /runs`, `GET /runs/:id`, `GET /runs/:id/verdicts/:verdictId`, `GET /blue/:patchId`, plus the real SSE backend streaming each persisted attack/verdict. The deferred per-oracle tables (`judge_votes`, `fuzz_findings`, `differential_runs`, migration `36b9359a0eec`) landed with their first renderer: the loop persists one row per relevant oracle vote and the verdict-detail route renders them. Done-criterion: the seven routes serve (verbatim render via the unchanged design runtime; live JSON + SSE curl-verified) and the SSE stream updates the ASR readout live. Deterministic tests cover every read route, the trigger guards, SSE streaming of persisted rows, per-oracle persistence, and verbatim-plus-sidecar serving with traversal refused. Reconciliation: the browser screenshot was blocked by a host-scoped driver (served bytes are byte-identical to the verbatim export); full per-page binding and the `/admin/debug` mock toggle ride slice 19.
@@ -159,11 +156,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Markdown at `GET /reports/:runId` and PDF at `GET /reports/:runId.pdf` (the `.pdf` route registered first so the suffix is not captured by `{run_id}`). The PDF is produced by a dependency-free writer (`modules/measure/pdf.py`) so no heavy/ system-dependent PDF library is added; it carries the same content as the Markdown.
   - [x] **Done criteria:** `test_risk_report.py` (real Postgres) seeds a run with attacks, verdicts, and a blue patch, asserts all six sections render and the numbers link to their source-row routes (the verdict row, the run row, the blue-patch row), the replay seed is recorded, the PDF is a valid `%PDF` with `%%EOF`, and an unknown run is 404 for both formats.
 
-- [ ] **slice-18-halt-cert** (M).
-  - [ ] `modules/measure/halt_rule.py`: Postgres `halted=true` flag set when white-box recall below threshold (default 0.7, configurable).
-  - [ ] Orchestrator refuses new run launches with HTTP 409 and a typed error body.
-  - [ ] Dashboard banner appears on every route.
-  - [ ] **Done criteria:** deliberately drop recall and verify the banner and the 409.
+- [x] **slice-18-halt-cert** (M).
+  - [x] `modules/measure/halt_rule.py`: `HaltRule` sets a persisted `halt_state` flag (singleton row, migration `ec4dc1906055`) when white-box verifier recall falls below the configured red line (default 0.7). `evaluate(run_id)` scopes recall to one run's white-box pass (US-13, "the latest white-box pass") and is called by the loop after its white-box pass; `evaluate()` recomputes the global white-box rate for the dashboard's live `/halt` read; `current()` reads the cheap persisted flag the launch guard checks.
+  - [x] The orchestrator refuses a new run launch (`POST /runs`) with HTTP 409 and a typed body (`{halted, recall, threshold, message}`) when the flag is set.
+  - [x] `GET /halt` returns the state and the banner text "Certification halted: recall is X.XX, threshold is Y.YY" (US-13); the `live.js` sidecar injects that red banner pinned to the top of every served route when halted, with a link to `/metrics`.
+  - [x] **Done criteria:** `test_halt.py` (real Postgres) drops white-box recall to 0.25, asserts `/halt` reports halted with the exact banner text and `POST /runs` is refused with 409 and the typed body; above the red line (recall 1.0) the platform is not halted and a launch is accepted; with no white-box verdicts recall is unmeasured and the platform is not halted.
 
 - [ ] **slice-19-demo-polish** (A).
   - [ ] 10-minute runbook at `docs/DEFENSE_BREAKOUT_SCRIPT.md`.
