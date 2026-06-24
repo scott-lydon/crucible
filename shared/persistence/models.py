@@ -188,3 +188,22 @@ class HeldOutTest(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class MetamorphicRule(Base):
+    """One metamorphic relation synthesized from the sealed spec's invariants.
+
+    A relation is a property that must hold when an input is transformed, with
+    no reference answer needed. Persisted so the verdict view can render which
+    relations fired.
+    """
+
+    __tablename__ = "metamorphic_rules"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
+    spec_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    rule_code: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
