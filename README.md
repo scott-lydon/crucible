@@ -386,6 +386,22 @@ The patch is always verified on held-out attacks, never the attacks used to buil
 
 ---
 
+## Local Postgres
+
+The runtime/prod database is **Postgres 16**, run locally as a Docker container. One command brings it up:
+
+```bash
+docker compose up -d postgres
+```
+
+The app reads its DB URL from `CRUCIBLE_DATABASE_URL`, defaulting to the local container:
+
+```
+postgresql+asyncpg://crucible:crucible@localhost:5432/crucible_dev
+```
+
+The unit/integration test suite keeps using **in-memory SQLite** (fast, zero-setup) — tests pass an explicit `sqlite+aiosqlite://` URL, so `pytest` never requires a running Postgres. Their passing on SQLite plus the app booting on Postgres proves the SQLAlchemy schema is dialect-neutral. Schema creation is `create_all` for now; Alembic migrations are a separate follow-up.
+
 ## Decisions
 
 Using an LLM's semantic reasoning in place of gradients as the search engine is a genuinely different design philosophy from a standard adversarial-ML pipeline.

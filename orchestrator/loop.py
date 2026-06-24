@@ -139,6 +139,13 @@ async def run_loop(
                                 seed=seed,
                             )
                         )
+                        # Flush the parent verdict before its child votes so the
+                        # FK target exists when the votes batch-inserts. SQLite
+                        # leaves FKs unenforced, but Postgres enforces them and
+                        # SQLAlchemy does not order INSERTs across tables within a
+                        # single flush — without this, oracle_votes can hit the DB
+                        # before its verdict row. (Dialect-parity fix.)
+                        await s.flush()
                         for vote in votes:
                             s.add(
                                 OracleVoteRow(
