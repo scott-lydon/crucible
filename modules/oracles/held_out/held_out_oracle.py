@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from shared.llm import LlmClient, LlmModel
-from shared.sandbox import DockerSandbox
+from shared.sandbox import CheckOutcome, DockerSandbox, run_python_checks
 from shared.source import extract_python_source
 from shared.types import (
     OracleVote,
@@ -24,9 +24,6 @@ from shared.types import (
     TargetOutput,
     VerdictDecision,
 )
-
-# Printed by the composed script only if every held-out assertion passed.
-_PASS_MARKER = "__CRUCIBLE_HELDOUT_PASS__"
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,22 +58,22 @@ class HeldOutOracle:
                 obligation_id,
             )
 
-        script = (
-            f"{output.output}\n\n# --- held-out tests ---\n{tests}\n\n"
-            f"print({_PASS_MARKER!r})\n"
-        )
-        result = await self.sandbox.run_python(script)
-        if result.exit_code == 0 and _PASS_MARKER in result.stdout:
+        result = await run_python_checks(self.sandbox, output.output, tests)
+        if result.outcome is CheckOutcome.PASS:
             return self._vote(
                 VerdictDecision.PASS,
                 "all held-out tests passed in the sealed sandbox",
                 obligation_id,
             )
-        stderr = result.stderr.strip()
-        tail = stderr.splitlines()[-1] if stderr else f"exit {result.exit_code}"
+        if result.outcome is CheckOutcome.FAIL:
+            return self._vote(
+                VerdictDecision.FAIL,
+                f"held-out tests failed in the sealed sandbox: {result.detail[:300]}",
+                obligation_id,
+            )
         return self._vote(
-            VerdictDecision.FAIL,
-            f"held-out tests failed in the sealed sandbox: {tail[:300]}",
+            VerdictDecision.UNAVAILABLE,
+            f"held-out harness errored, inconclusive: {result.detail[:200]}",
             obligation_id,
         )
 
