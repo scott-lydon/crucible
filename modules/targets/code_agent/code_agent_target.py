@@ -67,10 +67,17 @@ class CodeAgentTarget:
     # An instance field (not ClassVar) so it satisfies the Target Protocol's
     # instance-variable member, matching how DummyTarget exposes target_type.
     target_type: TargetType = TargetType.CODE_AGENT
+    # The blue-loop hardening (US-7): a prompt addition applied as the system
+    # prompt of a hardened agent version. None is the un-hardened baseline; a
+    # blue patch produces a version with this set, so the same agent re-runs the
+    # held-out attacks under the stricter instruction.
+    system_prompt: str | None = None
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Generate Python source for the spec and return it with a validity score."""
-        result = await self.llm.call(_build_prompt(spec, attack_input), model=self.model)
+        result = await self.llm.call(
+            _build_prompt(spec, attack_input), model=self.model, system=self.system_prompt
+        )
         source = extract_python_source(result.text)
         valid = is_valid_python(source)
         audit = AuditTrace(

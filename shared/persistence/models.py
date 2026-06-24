@@ -236,3 +236,100 @@ class MetamorphicRule(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class BluePatch(Base):
+    """One blue-loop hardening proposal, pending held-out validation (US-7).
+
+    `kind` is "retrain" for a Shape-1 target (a new LightGBM artifact) or
+    "prompt_config" for a Shape-2 target (an agent-config diff). `detail` carries
+    the proposed features / adversarial samples / diff, and `provenance` the
+    catalog attack ids the proposal was built from, so the held-out validator can
+    refuse a contaminated set (US-7).
+    """
+
+    __tablename__ = "blue_patches"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    target_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    provenance: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+    pillar: Mapped[str] = mapped_column(String(16), nullable=False, default="blue")
+    dollars_spent: Mapped[Decimal] = mapped_column(_MONEY, nullable=False, default=Decimal("0"))
+    seed: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    audit_trace: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class AgentConfig(Base):
+    """A versioned prompt-and-configuration for the code-agent target.
+
+    The vendor language model is never modified; hardening the code agent means
+    a new system-prompt-and-config row at the next version integer (US-7,
+    ARCHITECTURE.md section 3, Pillar 3).
+    """
+
+    __tablename__ = "agent_configs"
+    __table_args__ = (UniqueConstraint("version", name="uq_agent_config_version"),)
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    config: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    patch_id: Mapped[str | None] = mapped_column(ForeignKey("blue_patches.id"), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class ModelVersion(Base):
+    """One hardened target version, recording both shapes under one schema.
+
+    For the fraud target `artifact_ref` is the new `.lgb` path at the next
+    version integer; for the code agent it is the agent-config row id. `metrics`
+    carries the held-out detection figures the patch was validated on.
+    """
+
+    __tablename__ = "model_versions"
+    __table_args__ = (
+        UniqueConstraint("target_type", "version", name="uq_model_version_target"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    target_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    artifact_ref: Mapped[str] = mapped_column(String(256), nullable=False)
+    patch_id: Mapped[str | None] = mapped_column(ForeignKey("blue_patches.id"), nullable=True)
+    metrics: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HoldoutRun(Base):
+    """One held-out validation of a blue patch (US-7).
+
+    Records detection rate before and after the patch on an up-front held-out
+    attack set that never overlaps the patch's training attacks (the validator
+    refuses on contamination). `recovered` is the honest verdict, including a
+    real "did not generalize" when after does not exceed before.
+    """
+
+    __tablename__ = "holdout_runs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    patch_id: Mapped[str] = mapped_column(ForeignKey("blue_patches.id"), nullable=False)
+    target_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    holdout_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    detection_before: Mapped[float] = mapped_column(Float, nullable=False)
+    detection_after: Mapped[float] = mapped_column(Float, nullable=False)
+    recovered: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    detail: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    seed: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
