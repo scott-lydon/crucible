@@ -134,6 +134,15 @@ def _render(output: Mapping[str, object]) -> str:
     return response[:6000] if isinstance(response, str) else json.dumps(dict(output))[:6000]
 
 
+def detect_violations(spec: SealedSpec, output: Mapping[str, object]) -> list[str]:
+    """Deterministic, token-free violation scan over an agent output — the held-out
+    hidden checks applied without an LLM. Returns short descriptions of what tripped
+    (empty = clean). Reused by the Blue pillar to validate a hardening patch (cr-d1)
+    without depending on the oracle module."""
+    checks = [c for c in generate_checks_deterministic(spec) if c.kind != "llm_assertion"]
+    return [c.description for c in _eval_deterministic(checks, _render(output))]
+
+
 def _eval_deterministic(checks: Sequence[HiddenCheck], text: str) -> list[HiddenCheck]:
     tripped: list[HiddenCheck] = []
     low = text.lower()
