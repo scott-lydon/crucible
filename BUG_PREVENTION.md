@@ -43,3 +43,34 @@ no connection is pooled across per-test loops.
 database is not up to date" when the dev database had not been upgraded.
 
 **Prevention:** run `alembic upgrade head` before autogenerating a new revision.
+
+## 5. The red agent's task is refused by the model without a research frame
+
+**Bug (slice 11, red search):** pointed at the real fraud model, real Sonnet
+intermittently refused "propose a transaction that evades the fraud detector,"
+returning a safety redirect ("discussing evasion at a conceptual level... what's
+the actual context here?") instead of a JSON proposal. The parser then recorded
+every refused turn as a `malformed-proposal`, so the live search found zero
+evasions even though the scripted path passed. The scripted test could never
+catch this: a canned LLM never refuses.
+
+**Prevention:**
+- Any LLM driven to do adversarial / red-team work must carry a system prompt
+  that states the legitimate, authorized, defensive context (`_RESEARCH_SYSTEM`
+  in `modules/red/search.py`, passed via `LlmClient.call(system=...)`). The
+  framing must be accurate, not a jailbreak: Crucible really is a sealed-lab
+  defensive platform.
+- Always run at least one opt-in LIVE test against the real model for any new
+  LLM-driven path; a scripted double cannot surface a real refusal.
+
+## 6. Evasion threshold must match the target's decision threshold
+
+**Note (slice 11):** the fraud model scores almost every arbitrary input near
+0.0 (fraud is a rare class), so a fixed `evasion_threshold` of 0.5 makes any
+valid proposal "evade." That is fine for proving the search-and-catalog
+mechanics, but the meaningful evasion bar is the target's actual operating
+decision threshold.
+
+**Prevention:** calibrate `RedSearchAgent.evasion_threshold` to the target's
+real decision threshold (and define it against the held-out attack set) when the
+blue loop and white-box recall land, rather than trusting the 0.5 default.
