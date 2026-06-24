@@ -112,7 +112,7 @@ def test_health_lists_agent_target(client: TestClient) -> None:
     health = client.get("/health").json()
     assert health["targets/agent"]["status"] == "green"
     assert health["targets/agent"]["detail"]["agent"] == "support-bot"
-    assert health["red/agent/static"]["status"] == "green"
+    assert health["red/agent/llm"]["status"] == "green"
 
 
 def test_runs_rejects_both_specs(client: TestClient) -> None:
