@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-8-property-fuzz-oracle** (T). Hypothesis strategies derived from spec invariants.
+- [ ] **slice-9-llm-judge-oracle** (T). Opus reads the output and votes pass / fail at half weight.
 
 ## Next slice
 
-- [ ] **slice-9-llm-judge-oracle** (T). Opus reads the output and votes pass / fail at half weight.
+- [ ] **slice-10-verdict-aggregator** (T). Vote tally (four oracles at 1.0, judge at 0.5, threshold 2.0), audit trace, replay determinism.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -19,6 +19,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-8-property-fuzz-oracle** (T). `PropertyFuzzOracle` has Sonnet write a `fuzz()` function that random-samples inputs and asserts spec-guaranteed properties, run in the sealed sandbox via the shared check runner. Live proof: a correct impl passes, a broken one is caught with a concrete counterexample. Uses stdlib random rather than the hypothesis library, because the no-network sandbox cannot install it (doc reconciled).
 - [x] **slice-7-differential-oracle** (T, code mode). `DifferentialOracle` generates a second implementation from a different model family (Haiku) and concrete comparison inputs, runs both against the producer in the sealed sandbox, and flags disagreement without trusting either side. Live proof: a correct impl agrees on all inputs, a wrong one disagrees on 2 of 3. The fraud variant (LightGBM versus IsolationForest) is a documented follow-on.
 - [x] **slice-6-metamorphic-oracle** (T). `MetamorphicOracle` has Sonnet synthesize concrete-literal metamorphic relations from the spec invariants and checks them in the sealed sandbox via the shared check runner. Live proof: real Sonnet synthesized 5 relations, passed a correct impl, caught a wrong one. `metamorphic_rules` table added. Held-out oracle refactored onto the same shared runner (now returns UNAVAILABLE rather than a false FAIL when a generated check errors).
 - [x] **slice-2-fraud-target** (T). Real Kaggle creditcard model: `scripts/fetch_fraud_dataset.py` downloads the dataset, `train.py` fits LightGBM (held-out ROC-AUC 0.86, the best of the configs tried; defaults give 0.84 and more capacity gives 0.85), committed as `artifacts/fraud-v1.lgb`. `FraudTarget` scores transactions; `/health/targets/fraud` returns 200 green with checksum and AUC. Done-criterion test passes on the committed model.
@@ -90,9 +91,9 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Both implementations run per submission on the same inputs in the sealed sandbox; outputs compared.
   - [x] **Done criteria:** disagreement count measured (live: 2 of 3 inputs on a wrong impl, 0 on a correct one); the platform flags disagreement without trusting a single side as ground truth.
 
-- [ ] **slice-8-property-fuzz-oracle** (T).
-  - [ ] `modules/oracles/property_fuzz/`: `hypothesis` strategies derived from spec invariants.
-  - [ ] **Done criteria:** fuzz suite finds at least one violation on a deliberately broken producer in CI.
+- [x] **slice-8-property-fuzz-oracle** (T).
+  - [x] `modules/oracles/property_fuzz/`: Sonnet writes a `fuzz()` function that random-samples inputs (stdlib `random`, since the no-network sandbox cannot install `hypothesis`) and asserts spec invariants; runs in the sealed sandbox.
+  - [x] **Done criteria:** the fuzzer finds at least one violation on a deliberately broken producer (live: a concrete counterexample), and the scripted test reproduces it in CI.
 
 - [ ] **slice-9-llm-judge-oracle** (T).
   - [ ] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason.

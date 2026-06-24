@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from modules.oracles.differential import DifferentialOracle
 from modules.oracles.held_out import HeldOutOracle
 from modules.oracles.metamorphic import MetamorphicOracle
+from modules.oracles.property_fuzz import PropertyFuzzOracle
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
 from modules.targets.fraud import FraudTarget
@@ -71,6 +72,7 @@ def build_registry() -> Registry:
             HeldOutOracle(llm=llm, sandbox=DockerSandbox()),
             MetamorphicOracle(llm=llm, sandbox=DockerSandbox()),
             DifferentialOracle(llm=llm, sandbox=DockerSandbox()),
+            PropertyFuzzOracle(llm=llm, sandbox=DockerSandbox()),
         ),
     )
 
