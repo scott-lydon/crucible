@@ -74,3 +74,13 @@ decision threshold.
 **Prevention:** calibrate `RedSearchAgent.evasion_threshold` to the target's
 real decision threshold (and define it against the held-out attack set) when the
 blue loop and white-box recall land, rather than trusting the 0.5 default.
+
+## 7. Fake values from Claude Design surviving into the live dashboard
+
+**Issue.** The Claude Design export ships happy-state mocks with literal sample values (a 92.3% attack-success-rate, a $142.50 cost meter, an ISO date on a run row). The verbatim-copy rule means those values land in `dashboard/src/pages/` unchanged. Once the dashboard is running, a stubbed tile is visually indistinguishable from a real measurement, which is the exact failure mode `coding-practices.md` section 4 ("Data, never fake") forbids.
+
+**Prevention.**
+- Every fabricated value in a Claude Design happy-state mock is wrapped in the canonical stub label `__STUB__[<key>|<kind>|<hint>]__<visibleValue>__/STUB__` per `design/claude-design-brief.md` and `docs/STUB_PROTOCOL.md`.
+- After every re-export, run `uv run python scripts/strip_design_stubs.py --bundle-dir _design_bundle/` to replace the labels with `WIRE_ME_UP[<key>|<kind>]` placeholders and emit `_design_bundle/_stub_manifest.json` as the wire-up work list.
+- The pre-merge gate runs `uv run python scripts/audit_stubs.py`. Exit code 2 (unstripped `__STUB__` in a code path) and exit code 3 (heuristic indicators of unmarked fake data in `dashboard/src/`) block the merge. Exit code 1 (`WIRE_ME_UP` placeholders remaining) blocks the final ship but is allowed mid-build.
+- Apply the same checklist to any new product or feature that touches an operator-facing surface: every literal value must come from a hook reading real data, or render the typed "Not yet measured" sentinel from section 4.
