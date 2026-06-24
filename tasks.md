@@ -6,14 +6,15 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-1-target-protocol** (T). `interfaces.Target` Protocol, `DummyTarget`, end-to-end smoke through the orchestrator loop.
+- [ ] **slice-2-fraud-target** (T). Real Kaggle credit-card dataset, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
 
 ## Next slice
 
-- [ ] **slice-2-fraud-target** (T). Real Kaggle credit-card dataset, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
+- [ ] **slice-3-code-agent-target** (T). Code-agent producer via the local Claude CLI; output compiles via `ast.parse`.
 
 ## Done
 
+- [x] **slice-1-target-protocol** (T). `DummyTarget` implementing the Target Protocol, `orchestrator/wiring.py` registry, `orchestrator/loop.py` driving one round end to end, persisted as an attack row. All gates green (ruff, mypy --strict on 50 files, 18 tests on real Postgres).
 - [x] **slice-0-foundation** (A). Repo scaffold, value types, async Postgres persistence with Alembic, FastAPI (`POST /runs`, `GET /health`, SSE), pillar interface Protocols, module-boundary check, CI. All gates green (ruff, mypy --strict, 13 tests on real Postgres). Detail in Backlog below.
 
 ## Backlog
@@ -34,12 +35,12 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Dual-push confirmed: `git ls-remote origin` GitHub and GitLab push URLs carry the same `feat/crucible-build` hash.
   - [x] **Done criteria:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean. (13 tests pass against real Postgres; 42 files mypy-clean.)
 
-- [ ] **slice-1-target-protocol** (T).
-  - [ ] `interfaces.Target` Protocol with `submit(input)` and `query_target(input)`.
-  - [ ] `modules/targets/dummy/` concrete `DummyTarget` returning canned `(output, score)`.
-  - [ ] `orchestrator/wiring.py` registers `DummyTarget` as default for tests.
-  - [ ] Integration test exercises one loop round end to end with `DummyTarget`.
-  - [ ] **Done criteria:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
+- [x] **slice-1-target-protocol** (T).
+  - [x] `interfaces.Target` Protocol with `submit(input)` and `query_target(input)` (plus `self_test`).
+  - [x] `modules/targets/dummy/` concrete `DummyTarget` returning deterministic `(output, score)`.
+  - [x] `orchestrator/wiring.py` registers `DummyTarget` as default for tests.
+  - [x] Integration test exercises one loop round end to end with `DummyTarget` (`orchestrator/loop.py`).
+  - [x] **Done criteria:** `tests/integration/test_loop_smoke.py::test_one_round_with_dummy` passes.
 
 - [ ] **slice-2-fraud-target** (T).
   - [ ] `modules/targets/fraud/`: Kaggle credit-card dataset downloader (`scripts/fetch_fraud_dataset.py`), LightGBM trainer (`train.py`), serialized model under `artifacts/fraud-v1.lgb`, `FraudTarget` Protocol implementation.
