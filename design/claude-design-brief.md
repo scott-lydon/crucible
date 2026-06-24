@@ -14,6 +14,42 @@ The full architecture lives at `https://github.com/scott-lydon/crucible`. The pr
 
 The dashboard ships as a React 18 single-page application built with Vite and Tailwind, using Recharts for plots and React Router 6 for routing. The palette is yours to choose; see the "Audience and palette decision" section below for the customer context to reason from. Whatever palette you pick will be back-applied to the architecture website so the two share visual identity.
 
+### Stub labeling rule (mandatory)
+
+Every value in a happy-state mock that is fabricated rather than literal product copy must be wrapped in the canonical stub label. The wrapper is the only way the downstream strip and audit scripts (`scripts/strip_design_stubs.py`, `scripts/audit_stubs.py`) can tell a sample value from a real one once the bundle has been copied verbatim into `dashboard/src/pages/`. The full specification lives in `docs/STUB_PROTOCOL.md`; the shape is summarized here for the prompt.
+
+The exact textual shape:
+
+```
+__STUB__[<key>|<kind>|<hint>]__<visibleValue>__/STUB__
+```
+
+`<key>` is a dotted identifier (`metric.asr`, `runs.list[0].id`, `verdicts.held_out.passed`). `<kind>` is one of `number`, `string`, `percent`, `currency`, `count`, `timestamp`, `array`, `enum`. `<hint>` is free text describing the data source (`from /metrics`, `from SSE stream`, `from /runs/:runId/verdicts`). `<visibleValue>` is what the design renders at design time.
+
+Example, the ASR tile in the metrics happy-state mock:
+
+```html
+<div class="metric-tile">
+  <span class="label">Attack success rate</span>
+  <span class="value">__STUB__[metric.asr|percent|from /metrics]__92.3%__/STUB__</span>
+</div>
+```
+
+Empty-state and error-state mocks render real product copy ("Not yet measured", typed error text from `coding-practices.md` section 4), so they carry no wrappers. Only happy-state sample values are wrapped.
+
+Cover every fabricated value, including chart data points. For a Recharts series, wrap each row:
+
+```html
+<script type="application/json" data-recharts="asrOverRounds">
+[
+  {"round": 1, "asr": __STUB__[chart.asr_over_rounds[0].asr|number|from /runs/:runId/sse]__0.61__/STUB__},
+  {"round": 2, "asr": __STUB__[chart.asr_over_rounds[1].asr|number|from /runs/:runId/sse]__0.49__/STUB__}
+]
+</script>
+```
+
+Skipping the wrapper on a single value defeats the audit. The verbatim-copy rule already prohibits paraphrasing the bundle, so the wrappers ride into `dashboard/src/pages/` unchanged and the strip script handles them deterministically before any merge.
+
 ### Hard product rules the design must honor
 
 1. **Transparency first.** Every component a user sees must let them drill into its inner workings: every large language model (LLM) call shows its prompt, raw response, parsed output, tokens, and dollars; every oracle vote shows the spec obligation it checked and its reasoning verbatim; every sandbox execution shows its standard output and standard error; every persisted action carries a Replay button. Hide only what is a real security risk (Application Programming Interface keys, database credentials, sandbox tokens).
