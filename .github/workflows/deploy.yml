@@ -1,0 +1,23 @@
+name: Render deploy on push
+
+# Auto-deploys the Render service on every push to the working branch, so a
+# push triggers a deploy with no manual REST call (D1). This uses a GitHub
+# Action calling the Render deploy API with the RENDER_API_KEY repo secret,
+# rather than the Render GitHub App webhook (which needs an interactive
+# GitHub->Render OAuth connect). The effect is the same: push, then deploy.
+
+on:
+  push:
+    branches: ["feat/crucible-build"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"clearCache":"do_not_clear"}' \
+            "https://api.render.com/v1/services/srv-d8trfn9o3t8c73bvp470/deploys"
