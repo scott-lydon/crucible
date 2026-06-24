@@ -6,8 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-_All slices 0 to 19 are landed; the only remaining step is the credential-gated
-Render authentication (see slice-19 reconciliation below)._
+_All slices 0 to 19 are landed and the Render-hosted instance is live and
+curl-verified on the deployed commit (`ec2c8af`) at
+`https://crucible-zaag.onrender.com`. Submit-gate is READY. See `HANDOFF.md`
+for the captured `/health`, `/halt`, `/metrics`, `/app`, and POST `/runs` +
+`/runs/:id/start` evidence._
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 

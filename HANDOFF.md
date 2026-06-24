@@ -109,8 +109,38 @@ Full demo walk-through: `docs/DEFENSE_BREAKOUT_SCRIPT.md`.
 
 ## Submit-gate status
 
-NOT READY on exactly one criterion: "dashboard walks the demo on a live Render
-instance (curl the deployed hash)." Every other check passes (gates green, HEADs
-matched at `8391dd3`, no stubs on user paths, no catch-log-continue, deploy image
-verified locally). It flips to READY the moment the hosted instance answers on
-`8391dd3`.
+READY. Hosted instance answers on the deployed hash.
+
+Live URL: `https://crucible-zaag.onrender.com`
+Service: `srv-d8trfn9o3t8c73bvp470` (Render workspace `tea-cv93i1jtq21c7395gje0`)
+Postgres: `crucible-db` (`dpg-d8trep3sq97s73cgd8ng-a`), free plan, oregon
+Deploy: `dep-d8trfnho3t8c73bvp4g0` at commit `ec2c8af` (build to live in 100 seconds)
+
+Curl evidence (2026-06-24, captured against the deployed hash):
+
+```
+GET /health
+  -> 200 {"status":"ok","database":"connected"}
+GET /halt
+  -> 200 {"halted":false,"recall":null,"threshold":0.7,"message":""}
+GET /metrics
+  -> 200 {"black_box_catch_rate":{...},"white_box_catch_rate":{...},"catch_rate_gap":null}
+GET /app/slice-04-honest-dashboard.dc.html
+  -> 200, 58471 bytes (verbatim Claude Design bundle + injected live.js)
+POST /runs  (dummy target, sum-two-ints spec, budget 3 / $1)
+  -> 201 {"run_id":"267e609e7a0e433ba97e6133dcab3e52","status":"pending"}
+POST /runs/{id}/start
+  -> 202 {"run_id":"...","status":"running"}
+GET /runs/{id}
+  -> 200 {"status":"complete", attacks:[6 rows, both black-box and white-box passes]}
+```
+
+Render env vars set: `MOCK_LLM=true`, `HALT_RECALL_THRESHOLD=0.7`,
+`DATABASE_URL=<crucible-db internal connection string>`.
+
+Caveats re-stated for the reviewer:
+- Service runs under `MOCK_LLM=true` because the local `claude` CLI is not
+  available on Render; the dashboard and every read route serve real persisted
+  data, and the local demo runs the live red/blue walk-through.
+- Blue retrain is local only on Render (the 144MB `data/creditcard.csv` is
+  gitignored); the committed `artifacts/fraud-v1.lgb` ships in the image.
