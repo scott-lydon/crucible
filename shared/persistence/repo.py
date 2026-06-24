@@ -2,10 +2,13 @@ import uuid
 from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from shared.persistence.models import (AttackRow, BlueRoundRow, OracleVoteRow,
-                                       RoundRow, RunRow, SpecRow, TransactionRow,
-                                       VerdictRow, WhiteBoxMetricsRow)
+from shared.persistence.models import (AttackRow, BlueRoundRow, HaltStateRow,
+                                       OracleVoteRow, RoundRow, RunRow, SpecRow,
+                                       TransactionRow, VerdictRow,
+                                       WhiteBoxMetricsRow)
 from shared.types import SealedSpec, sealed_spec_from_dict, sealed_spec_to_dict
+
+_HALT_SINGLETON = "singleton"
 
 async def get_run(s: AsyncSession, run_id: str) -> RunRow | None:
     return await s.get(RunRow, run_id)
@@ -45,6 +48,18 @@ async def attacks_for_run(s: AsyncSession, run_id: str) -> Sequence[AttackRow]:
     res = await s.execute(select(AttackRow).where(AttackRow.run_id == run_id))
     return res.scalars().all()
 
+async def all_attacks(s: AsyncSession) -> Sequence[AttackRow]:
+    res = await s.execute(select(AttackRow))
+    return res.scalars().all()
+
+async def all_transactions(s: AsyncSession) -> Sequence[TransactionRow]:
+    res = await s.execute(select(TransactionRow))
+    return res.scalars().all()
+
+async def all_verdicts(s: AsyncSession) -> Sequence[VerdictRow]:
+    res = await s.execute(select(VerdictRow))
+    return res.scalars().all()
+
 async def transactions_for_run(s: AsyncSession, run_id: str) -> Sequence[TransactionRow]:
     res = await s.execute(select(TransactionRow).where(TransactionRow.run_id == run_id))
     return res.scalars().all()
@@ -81,6 +96,31 @@ async def white_box_metrics_for_run(
     s: AsyncSession, run_id: str
 ) -> WhiteBoxMetricsRow | None:
     return await s.get(WhiteBoxMetricsRow, run_id)
+
+
+async def get_halt_state(s: AsyncSession) -> HaltStateRow | None:
+    """The persisted halt-state singleton, or ``None`` if never written."""
+    return await s.get(HaltStateRow, _HALT_SINGLETON)
+
+
+async def set_halt_state(
+    s: AsyncSession,
+    *,
+    halted: bool,
+    recall: float | None,
+    threshold: float | None,
+    source_run_id: str | None,
+) -> None:
+    """Upsert the halt-state singleton (survives restarts)."""
+    row = await s.get(HaltStateRow, _HALT_SINGLETON)
+    if row is None:
+        row = HaltStateRow(id=_HALT_SINGLETON)
+        s.add(row)
+    row.halted = halted
+    row.recall = recall
+    row.threshold = threshold
+    row.source_run_id = source_run_id
+    await s.commit()
 
 
 async def blue_round_for_run(s: AsyncSession, run_id: str) -> BlueRoundRow | None:

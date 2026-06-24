@@ -5,10 +5,14 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator, cast
 
 from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from modules.blue.code_engineer import BlueCodeEngineer
+from modules.measure.corpus_exporter import corpus_entries, corpus_jsonl
+from modules.measure.halt_rule import halt_status
 from modules.measure.metrics import compute_run_metrics
+from modules.measure.risk_report import render_risk_report
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
 from orchestrator.full_run import run_white_box_pass, run_with_blue
@@ -188,8 +192,23 @@ async def create_run(
     arc and persists a ``BlueRoundRow``; synth has no blue arc and ignores it.
     Status transitions running -> complete/failed are owned by the loop.
     """
-    run_id = str(uuid.uuid4())
     sf = session_factory()
+    # Refuse new launches when certification is HALTED (US-13): the platform will
+    # not certify what it cannot defend. Typed 409 body carries the recall +
+    # threshold that tripped the red line.
+    async with sf() as s:
+        status = await halt_status(s)
+    if status.halted:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "error": "certification_halted",
+                "recall": status.recall,
+                "threshold": status.threshold,
+            },
+        )
+
+    run_id = str(uuid.uuid4())
     async with sf() as s:
         s.add(
             RunRow(
@@ -282,6 +301,63 @@ async def get_blue_round(run_id: str) -> dict[str, object]:
             "new_model_ref": row.new_model_ref,
             "iteration_trail": row.iteration_trail,
         }
+
+
+@app.get("/corpus")
+async def get_corpus(run_id: str | None = None) -> dict[str, object]:
+    """The seeded-hack corpus table: every successful evasion (optionally one run).
+
+    Honest empty-state: an empty corpus returns ``{"count": 0, "rows": []}``,
+    never a placeholder row. ``count`` equals the number of JSONL lines the
+    download produces (US-11 invariant).
+    """
+    async with session_factory()() as s:
+        entries = await corpus_entries(s, run_id)
+    return {"count": len(entries), "rows": [e.to_dict() for e in entries]}
+
+
+@app.get("/corpus/export")
+async def export_corpus(run_id: str | None = None) -> StreamingResponse:
+    """Stream the corpus as a JSONL download (one successful evasion per line).
+
+    The line count EXACTLY equals the ``/corpus`` row count — empty corpus yields
+    an empty (zero-line) file, never a fabricated row.
+    """
+    sf = session_factory()
+
+    async def _stream() -> AsyncIterator[str]:
+        async with sf() as s:
+            async for line in corpus_jsonl(s, run_id):
+                yield line
+
+    return StreamingResponse(
+        _stream(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": 'attachment; filename="corpus.jsonl"'},
+    )
+
+
+@app.get("/reports/{run_id}", response_class=PlainTextResponse)
+async def get_report(run_id: str) -> str:
+    """The SR 11-7 model risk report for ``run_id`` as Markdown (404 if no run).
+
+    PDF download (US-12) is deferred: a clean pure-Python md->pdf path is not
+    available without a heavy new dependency, so the operator dashboard renders
+    this Markdown and PDF export is tracked as a follow-up. Every numeric field
+    carries its source-row reference inline (`[table:id]`).
+    """
+    async with session_factory()() as s:
+        md = await render_risk_report(s, run_id)
+    if md is None:
+        raise HTTPException(404, "run not found")
+    return md
+
+
+@app.get("/halt")
+async def get_halt() -> dict[str, object]:
+    """The certification halt status the dashboard banner reads (US-13)."""
+    async with session_factory()() as s:
+        return (await halt_status(s)).to_dict()
 
 
 @app.get("/runs/{run_id}/verdicts/{verdict_id}")

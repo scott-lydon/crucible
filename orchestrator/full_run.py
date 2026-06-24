@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from modules.blue.code_engineer import BlueCodeEngineer
 from modules.blue.loop import BlueResult, run_blue_round
+from modules.measure.halt_rule import evaluate_halt
 from modules.measure.metrics import catch_rate_for_run
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import GenerateFn, LabelFn, run_loop
@@ -216,6 +217,9 @@ async def run_white_box_pass(
                 white_box_gap=gap,
             ),
         )
+        # Re-evaluate the halt red line against this latest white-box recall and
+        # persist the flag (US-13): a recall below the threshold halts new launches.
+        await evaluate_halt(s)
 
 
 def _iteration_trail(result: BlueResult) -> list[dict[str, object]]:

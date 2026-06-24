@@ -124,6 +124,29 @@ class WhiteBoxMetricsRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class HaltStateRow(Base):
+    """The platform's certification halt flag (US-13 / slice-18).
+
+    A single-row table (``id == "singleton"``) that survives restarts: when the
+    latest white-box verifier recall drops below the configured red line, the
+    platform is HALTED and new run launches are refused. The recall + threshold
+    that triggered the halt are recorded alongside the flag so the dashboard
+    banner and the 409 error body can report the exact numbers. Rates are
+    nullable so an un-halted (or never-measured) state is honest, not a fake 0.
+    """
+
+    __tablename__ = "halt_state"
+    id: Mapped[str] = mapped_column(String, primary_key=True, default="singleton")
+    halted: Mapped[bool] = mapped_column(Boolean, default=False)
+    recall: Mapped[float | None] = mapped_column(Float, nullable=True)
+    threshold: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source_run_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    pillar: Mapped[str] = mapped_column(String, default="measure")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now, onupdate=_now
+    )
+
+
 class BlueRoundRow(Base):
     """One blue recovery round: the defender's propose->retrain->validate arc."""
 
