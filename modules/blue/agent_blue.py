@@ -134,6 +134,12 @@ class LLMAgentBlue:
         (the blue instance is shared across runs)."""
         self._config = self._base_config
 
+    def set_base(self, config: AgentConfig) -> None:
+        """Point the blue at a per-run base agent (a BYO/demo config, cr-e2); the duel
+        versions it from here."""
+        self._base_config = config
+        self._config = config
+
     async def _safe_rate(
         self, spec: SealedSpec, config: AgentConfig, inputs: Sequence[str]
     ) -> float:

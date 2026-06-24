@@ -22,6 +22,7 @@ from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown
 from modules.red.catalog import build_catalog
+from modules.targets.agent import demo_agent, validate_agent_config
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
 from shared.persistence.db import session_scope
@@ -33,8 +34,9 @@ from shared.persistence.models import (
     Run,
     VerdictRow,
 )
-from shared.persistence.store import coevolution_series
+from shared.persistence.store import coevolution_series, save_agent_config
 from shared.telemetry.log import configure_logging
+from shared.types.agent import AgentConfig
 from shared.types.core import AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
 from shared.types.ids import RunId
@@ -62,6 +64,16 @@ class HumanSpecModel(BaseModel):
     hidden_tests: list[str] = Field(default_factory=list)
 
 
+class AgentSpecModel(BaseModel):
+    """A bring-your-own agent: a vendor model + system prompt the run will red-team
+    (cr-e2). When absent, an agent run targets the built-in demo agent."""
+
+    name: str = "byo-agent"
+    model: str
+    system_prompt: str
+    params: dict[str, object] = Field(default_factory=dict)
+
+
 class RunRequest(BaseModel):
     target_kind: str = Field(examples=["fraud", "agent"])
     shape: str = Field(examples=["shape1_ml", "shape2_agent"])
@@ -69,6 +81,9 @@ class RunRequest(BaseModel):
     # (Shape 2 agent, compiled by the wired spec compiler).
     spec_yaml: str | None = None
     human_spec: HumanSpecModel | None = None
+    # Agent target selection (Shape 2): a BYO agent, or a built-in demo by name.
+    agent: AgentSpecModel | None = None
+    demo_agent: str | None = None
     budget_rounds: int = Field(default=5, ge=1, le=200)
     budget_dollars: float = Field(default=2.0, ge=0.0)
     # "redteam" = red + white-box self-test; "coevolution" = red->verify->blue->red rounds.
@@ -120,11 +135,33 @@ async def post_runs(req: RunRequest) -> RunAccepted:
     if req.mode not in ("redteam", "coevolution"):
         raise HTTPException(status_code=422, detail=f"unknown mode {req.mode!r}")
 
+    # Resolve the agent target config (Shape 2): BYO model+prompt, or a built-in demo.
+    agent_config: AgentConfig | None = None
+    agent_source = "byo"
+    try:
+        if req.agent is not None:
+            agent_config = AgentConfig(
+                name=req.agent.name or "byo-agent", model=req.agent.model,
+                system_prompt=req.agent.system_prompt, params=dict(req.agent.params))
+            validate_agent_config(agent_config)
+        elif req.demo_agent is not None:
+            agent_config = demo_agent(req.demo_agent)
+            agent_source = "demo"
+    except (ValueError, KeyError) as exc:
+        raise HTTPException(status_code=422, detail=f"Invalid agent: {exc}") from exc
+
     target_spec = TargetSpec(target_kind=req.target_kind, shape=req.shape, artifact_ref="")
     budget = AttackBudget(max_rounds=req.budget_rounds, max_dollars=req.budget_dollars)
     run_id = await create_run(
         target_spec, sealed, budget, source_text=source_text, compiler=compiler_name
     )
+
+    if agent_config is not None:
+        async with session_scope() as session:
+            cfg_id = await save_agent_config(
+                session, agent_config, run_id=str(run_id), source=agent_source)
+            run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
+            run.agent_config_id = cfg_id
 
     if req.mode == "coevolution":
         coro = run_coevolution(

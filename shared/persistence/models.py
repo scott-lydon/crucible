@@ -40,6 +40,9 @@ class Run(Base):
     halted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     white_box_recall: Mapped[float | None] = mapped_column(Float, nullable=True)
     error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # For a Shape-2 agent run: the agent_configs row this run targets (BYO or demo). When
+    # set, the loop builds the target from that config instead of the registered demo.
+    agent_config_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class SpecRow(Base):

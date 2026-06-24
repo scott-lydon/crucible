@@ -23,7 +23,11 @@ from shared.llm import LLMCallRecord, drain_records, record_into, record_llm_cal
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
 from shared.persistence.resolver import resolve_spec
-from shared.persistence.store import save_agent_config, save_coevolution_round
+from shared.persistence.store import (
+    load_agent_config,
+    save_agent_config,
+    save_coevolution_round,
+)
 from shared.telemetry.log import get_logger
 from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
 from shared.types.enums import OracleKind, Pillar, RunStatus
@@ -84,11 +88,23 @@ async def _set_status(run_id: RunId, status: RunStatus, *, error: str | None = N
             run.error = error
 
 
-async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int]:
+async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int, str | None]:
     async with session_scope() as session:
         run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
         spec = await resolve_spec(session, run_id)
-        return spec, run.target_kind, run.budget_rounds
+        return spec, run.target_kind, run.budget_rounds, run.agent_config_id
+
+
+async def _resolve_target(
+    container: Container, target_kind: str, agent_config_id: str | None
+) -> Target:
+    """The target for a run: a per-run agent config (BYO or demo, cr-e2) built through the
+    agent factory when present, else the registered target."""
+    if agent_config_id is not None and container.agent_target_factory is not None:
+        async with session_scope() as session:
+            config = await load_agent_config(session, agent_config_id)
+        return container.agent_target_factory(config)
+    return container.get_target(target_kind)
 
 
 async def _persist_round(
@@ -199,8 +215,8 @@ async def run_loop(run_id: RunId, container: Container) -> None:
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id)})
     try:
-        spec, target_kind, budget_rounds = await _load_context(run_id)
-        target = container.get_target(target_kind)
+        spec, target_kind, budget_rounds, agent_config_id = await _load_context(run_id)
+        target = await _resolve_target(container, target_kind, agent_config_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
 
@@ -292,7 +308,7 @@ async def run_coevolution(
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id), "mode": "coevolution"})
     try:
-        spec, target_kind, _ = await _load_context(run_id)
+        spec, target_kind, _, agent_config_id = await _load_context(run_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         blue = container.blue_for(target_kind)
@@ -308,7 +324,14 @@ async def run_coevolution(
                 known = await container.tactic_loader(session, target_kind)
             red.prime(known)
 
-        blue.reset()                              # start from the base config each run
+        # The duel starts from the run's agent config (BYO/demo, cr-e2) when present, else
+        # the blue's built-in base; the blue versions it from there.
+        if agent_config_id is not None:
+            async with session_scope() as session:
+                base_cfg = await load_agent_config(session, agent_config_id)
+            blue.set_base(base_cfg)
+        else:
+            blue.reset()
         current_config = blue.current_config
         async with session_scope() as session:
             base_id = await save_agent_config(
