@@ -1,0 +1,53 @@
+{
+  "persona": "public-sector-procurement",
+  "slice_slug": "run-launcher",
+  "iteration": 1,
+  "new_feedback": [
+    {
+      "element": "Disabled 'Research Agent' adapter card — text color #5A6573 on background #12181E",
+      "issue": "Contrast ratio is roughly 2.6:1, well below the WCAG AA 4.5:1 floor for body text. A procurement reviewer doing a squint test, or any colleague with low vision, cannot perceive the disabled-state label or its explanation. Disabled controls must still meet WCAG 1.4.3 perceivability so the operator understands the system's state, not just its active controls.",
+      "change": "Raise the disabled-state text and label color to at least #8A95A2 on #12181E (≈4.6:1), and keep the dashed border and reduced opacity for the visual 'disabled' signal. Disabled state should be muted, not invisible."
+    },
+    {
+      "element": "Empty-state Run Summary values 'not picked', 'not pasted', 'not set' — color #5A6573 on background #0E141B",
+      "issue": "Contrast ratio is roughly 3.3:1, which fails WCAG AA 4.5:1 for normal body text. These three values are the user's primary signal that a step is incomplete. A procurement reviewer or low-vision colleague reading on a 24-inch monitor at modest brightness cannot reliably distinguish them from the label column.",
+      "change": "Use the same #B8C2CE body color (or at minimum #8A95A2) for the 'not picked / not pasted / not set' values so they pass AA. The semantic 'incomplete' signal can be carried by a small dashed pill or an italic treatment instead of by under-contrasted text."
+    },
+    {
+      "element": "NotYetMeasuredTile sub-copy 'No estimate until a target and budget are set — never a $0.00 placeholder.' — color #5A6573 on background #0E141B",
+      "issue": "Same 3.3:1 contrast problem as above. This is the tile that exists specifically to teach the operator the discipline of 'no fake zero' — the message itself being hard to read undermines the message it is delivering.",
+      "change": "Lift this explanatory line to #B8C2CE so it passes AA and reads as authoritative copy rather than as an afterthought."
+    },
+    {
+      "element": "Inspect button next to the YAML validity badge (line 109–111) — magnifying-glass icon only, meaning conveyed by a 'title' tooltip ('Inspect the validator LLM call')",
+      "issue": "Icon-only control with no visible text label and no rendered affordance other than a hover tooltip. A screen-reader colleague cannot hover, and even a sighted procurement reviewer cannot tell at a glance whether this is 'inspect', 'search', or 'zoom'. The persona's review bar explicitly disallows tooltip-only discovery.",
+      "change": "Pair the icon with a visible 'Inspect' text label inside the button (icon + word), or render an always-visible secondary text link 'Inspect validator call' next to the green '✓ VALID · sealed' badge. The hover title can remain as a long-form supplement."
+    },
+    {
+      "element": "Sandbox environment strip — Docker, Python, Linux logos with 'title' tooltips only ('Docker sandbox', 'Python 3.12 runtime', 'Linux · network-sealed')",
+      "issue": "Three icons in a row with no visible text labels. The 'network-sealed' chip at the end provides one piece of context, but the runtime versions and the sandbox technology are only discoverable on hover. A procurement reviewer auditing what the system runs on cannot read the inventory from the screen.",
+      "change": "Render each icon with a small visible label beneath or beside it ('Docker', 'Python 3.12', 'Linux'), matching the inline-label pattern already used for the target adapter cards."
+    },
+    {
+      "element": "Top-chrome cost figures 'EST / RUN $8.40' and 'SESSION $61.40', and the per-round breakdown '≈ $0.52 per round · hard stop at $25.00'",
+      "issue": "Monetary projections appear with no provenance or 'About this estimate' affordance. The persona's standing rule is that every metric carries a citation or a clear way to inspect its derivation. A US AI Safety Institute or EU AI Office reviewer will ask how $8.40 was computed and which prior runs informed it.",
+      "change": "Add a small inline info affordance — a visible '?' or 'about' link with a text label such as 'how this is estimated' — adjacent to the EST / RUN figure and to the '≈ $0.52 per round' line. The affordance opens the same inspect-style drawer pattern already used for the validator call, showing the inputs, the formula, and the source runs."
+    },
+    {
+      "element": "Slice masthead and copy throughout — terms 'attack run', 'attack budget', 'red agent', 'Start attack run'",
+      "issue": "The vocabulary reads as offensive-security or consumer-AI red-team product copy. A public-sector procurement reviewer expects model-risk-management language closer to NIST AI RMF and SR 11-7: 'adversarial evaluation run', 'evaluation budget', 'adversarial agent', 'Start evaluation'. The current phrasing risks reading as marketing voice rather than as an institutional artifact, and an operator briefing a compliance officer would have to translate every term.",
+      "change": "Either rename the user-facing labels to 'Evaluation run', 'Evaluation budget', 'Adversarial agent', and 'Start evaluation', or keep the shorter 'attack' wording and surface a one-line gloss in the masthead: 'attack run = adversarial evaluation run, per NIST AI RMF terminology'. Apply the same treatment consistently across the three states."
+    },
+    {
+      "element": "Top-chrome 'operator' role pill next to the Crucible wordmark",
+      "issue": "The role label has no glossary or 'about roles' affordance. In an institutional setting a reviewer needs to know whether 'operator' has different permissions than 'reviewer', 'auditor', or 'approver', and which role they are seeing the screen as.",
+      "change": "Make 'operator' a small text link (visible link styling, not hover-only) that opens a short role-definition popover with the permissions this role has and a link to the access-control documentation."
+    },
+    {
+      "element": "Error state — guidance / progress treatment compared to empty state",
+      "issue": "The empty state shows a helpful 'step 1 of 3 / step 2 of 3 / step 3 of 3' checklist plus a START HERE guidance bar. The error state, which is a higher-stakes moment, drops the checklist entirely and only shows an inline parse-error banner. A colleague who has never used the tool can read the empty state, but the error state assumes prior context.",
+      "change": "Add an analogous 'remediation checklist' to the error state right rail or top bar: 'Fix line 6 → re-validate → re-seal', with each step rendered as a visible item rather than only described in prose inside the error card. The 'Jump to line 6' button already exists; surface a small ordered list around it so the path back to a runnable state is structurally obvious."
+    }
+  ],
+  "approved": false
+}

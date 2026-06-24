@@ -105,9 +105,9 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 - [ ] **slice-14-blue-loop** (B).
   - [ ] `modules/blue/proposer.py`: reads catalog, proposes features / samples / ensemble via Sonnet 4.6.
-  - [ ] `modules/blue/retrainer.py`: applies patch, retrains, produces the next versioned artifact under `artifacts/fraud-vN.lgb`.
+  - [ ] `modules/blue/retrainer.py`: applies the patch. For the fraud target it runs LightGBM training and emits `artifacts/fraud-vN.lgb` at the next version integer. For the code-agent target it applies the prompt-and-configuration diff and emits a new `agent_configs` row; the vendor language model is never touched.
   - [ ] `modules/blue/holdout_validator.py`: held-out attack set defined up front, never overlaps patch training attacks.
-  - [ ] **Done criteria for `vouch`:** one blue round retrains and detection rate measurably recovers on held-out attacks.
+  - [ ] **Done criteria for `vouch`:** one blue round against the fraud target retrains the LightGBM classifier and detection rate measurably recovers on held-out attacks; one blue round against the code-agent target writes a reviewable prompt-and-configuration diff and held-out detection recovers.
 
 - [ ] **slice-15-dashboard-spa** (M).
   - [ ] `dashboard/`: Vite + React 18 + Tailwind + Recharts + React Router 6 scaffold.

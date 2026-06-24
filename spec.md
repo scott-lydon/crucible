@@ -4,9 +4,15 @@ What Crucible is, who uses it, and how anyone can tell whether it is doing its j
 
 If a behavior is not in this file, it is not in the product, and the answer to "but should it" is "open a pull request against this file first."
 
+Term definitions for every recurring noun in this document live in [`docs/VOCABULARY.md`](docs/VOCABULARY.md). When a sentence uses "model," "retrain," "catch," "target," or "producer," that file is the canonical referent.
+
 ## 1. Problem statement (one paragraph)
 
-AI models are graded against a proxy metric, and the optimizer that fit the model finds the cheapest path to that score. When the proxy diverges from the real goal, the optimizer lives in the gap: the model scores high on the metric and silently fails at the job. Crucible's user is whoever paid for or is responsible for that AI system continuing to do what it claims to do. Success is the user being able to point at a single number ("we caught X percent of cheats against an attacker who knew the verification scheme") and trust it. Success is also the user being able to drill into any individual catch-or-miss and see, end to end, exactly what each subcomponent did. Crucible is the evaluation harness; the target (the model or agent under evaluation) is the external system being evaluated, brought by the customer or provided as an example in `examples/targets/` — it is not part of the harness.
+AI systems (classifiers, agents, research pipelines) are graded against a proxy metric, and the optimizer that fit the AI system finds the cheapest path to that score. When the proxy diverges from the real goal, the optimizer lives in the gap: the AI system scores high on the metric and silently fails at the job. Crucible's user is whoever paid for or is responsible for that AI system continuing to do what it claims to do. Success is the user being able to point at a single number ("we caught X percent of cheats against an attacker who knew the verification scheme") and trust it. Success is also the user being able to drill into any individual catch-or-miss and see, end to end, exactly what each subcomponent did. Crucible is the evaluation harness; the target (the model or agent under evaluation) is the external system being evaluated, brought by the customer or provided as an example in `examples/targets/` — it is not part of the harness.
+
+### Scope clarification
+
+Crucible verifies AI systems. It does not detect fraud, write code, or perform research itself. The fraud-detection LightGBM classifier is one of three example target adapters; banks and fintechs run their own production fraud detectors, and Crucible verifies them in a lab pass to produce a Supervisory Letter 11-7 model risk report. The same shape applies to the code-agent and research-agent adapters. Reading "catch rate" or "catch" in this file always means "Crucible's verification correctness against producer wrongness," never "the target's production correctness on its own job."
 
 ## 2. Customers
 
@@ -23,9 +29,9 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 
 ### US-1. Submit a target for evaluation
 
-**As an** operator running Crucible, **I want** to register a target (a model endpoint or a code-agent harness) together with a sealed specification, **so that** Crucible can run a measured red-and-blue pass against it.
+**As an** operator running Crucible, **I want** to register a target (Shape 1: a smaller custom machine-learning model exposed through an endpoint, such as the fraud LightGBM classifier; or Shape 2: an agent harness built on a vendor language model, such as the code-generation agent) together with a sealed specification, **so that** Crucible can run a measured red-and-blue pass against it.
 
-- **Given** the operator pastes a Yet Another Markup Language (YAML) spec describing the task plus a model artifact reference,
+- **Given** the operator pastes a Yet Another Markup Language (YAML) spec describing the task plus a target artifact reference (a `.lgb` checksum for Shape 1, an agent-configuration version for Shape 2),
 - **When** the operator clicks Start on the Run Launcher (`/`),
 - **Then** the dashboard navigates to `/runs/:runId` and shows the spec accepted, the producer sandbox launched, and the first attack round in progress within ten seconds.
 
@@ -88,7 +94,7 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 
 ### US-7. Trigger the blue loop and review the patch
 
-**As an** operator, **I want** Crucible to propose a blue patch automatically when undetected evasions accumulate, **so that** I can review a diff before retraining is applied.
+**As an** operator, **I want** Crucible to propose a blue patch automatically when undetected evasions accumulate, **so that** I can review a diff before the hardening operation is applied to the target (a retrain for the fraud LightGBM classifier, a prompt-and-configuration patch for the code agent).
 
 - **Given** the strategy catalog contains at least three undetected attacks of the same target type,
 - **When** the orchestrator schedules a blue pass,

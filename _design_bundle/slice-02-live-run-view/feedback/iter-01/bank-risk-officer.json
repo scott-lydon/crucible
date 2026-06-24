@@ -1,0 +1,13 @@
+{
+  "persona": "bank-risk-officer",
+  "slice_slug": "live-run-view",
+  "iteration": 1,
+  "new_feedback": [
+    {"element":"Halt banner copy (state 3): 'Run stopped at round 35' vs 'CROSSED AT r.32 · 14:13:18Z'","issue":"3-round/44s lag between red-line crossing (r.32) and halt (r.35) reads like the control did not fire promptly; an examiner will catch the inconsistency.","change":"Add an inline reconciliation near the halt marker, e.g. 'crossed r.32 · confirmed over 3-round window · halted r.35', or make crossed-at and halted-at the same round if no debounce exists."},
+    {"element":"Ledger 'projected at r.48 $8.74' next to 'spent this run $4.18'","issue":"Forward-looking projection with no basis or confidence; single point estimate not traceable to method.","change":"Label basis inline e.g. 'projected at r.48 $8.74 (avg/round × remaining)', show as a range, and make the projection method clickable to its calc like the hard-stop links to MRG-12.4."},
+    {"element":"Cost meter chrome 'SESSION $65.58' with no time window or run count","issue":"Single aggregate number with no denominator (runs, start time) fails the 'single number with no context' trust test.","change":"Add denominator and window e.g. 'SESSION $65.58 · 7 runs · since 09:14Z'."},
+    {"element":"Timestamps use UTC 'Z' time-of-day but no date anywhere on the page","issue":"Audit-grade evidence (halt id, immutable record) needs a full date; bare HH:MM:SSZ is ambiguous across days.","change":"Add the run date once in the run-summary strip e.g. 'r_8f3a · 2026-06-22' so all relative Z timestamps resolve to a day."},
+    {"element":"streamPulse / liveDot / shimmer animations on live dots and skeletons","issue":"Pulsing ring + shimmer skeletons edge toward decorative motion; steady-state indicators read as more trustworthy in a governance dashboard.","change":"Keep static green/amber dots and WAITING label; drop the expanding box-shadow ring animation and replace shimmer skeleton with a static muted bar plus 'awaiting verdict'."}
+  ],
+  "approved": false
+}

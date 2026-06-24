@@ -1,0 +1,14 @@
+{
+  "persona": "codegen-vendor-eng",
+  "slice_slug": "live-run-view",
+  "iteration": 3,
+  "new_feedback": [
+    {
+      "element": "State 2 (reconnecting): header pill reads 'SSE reconnecting · attempt 3' and the RECONNECT card reads 'reconnecting · attempt 3 of 6', but the TRANSPORT card on the same screen shows 'reconnects 1'",
+      "issue": "Two unlabeled counters disagree at a glance: the current reconnect is on its 3rd retry attempt, while the lifetime 'reconnects' tally says 1. An operator scanning the degraded view can't tell whether '3' and '1' describe the same event or whether the view is internally inconsistent, which is exactly the moment they most need to trust the numbers. (State 1's STREAM card also reports 'reconnects 0', so the lifetime field is real and these are genuinely distinct series.)",
+      "change": "Disambiguate the two counters: label the header/card field 'retry attempt 3 of 6 (this drop)' and the TRANSPORT field 'reconnects (this run) 1', or drop one of them so a single reconnect concept is shown per screen.",
+      "regression_or_unresolved": false
+    }
+  ],
+  "approved": false
+}

@@ -139,7 +139,7 @@ Each module ships its own `tests/` directory and its own `README.md` documenting
 | Subcomponent | Responsibility | LLM | Persistence |
 |---|---|---|---|
 | `proposer.py` | Read catalog, propose features / samples / ensemble | Sonnet 4.6 | `blue_patches` table |
-| `retrainer.py` | Apply the patch, run training, produce a new model artifact | None | `artifacts/fraud-vN.lgb` (next integer), `model_versions` table |
+| `retrainer.py` | Apply the patch. For the fraud target: run a LightGBM training pass and emit a new `.lgb` artifact. For the code-agent target: apply the prompt-and-configuration diff and emit a new agent-config row. The vendor language model the code agent talks to is never modified. | None | `artifacts/fraud-vN.lgb` (next integer) for fraud, `agent_configs` row (next version) for code-agent; `model_versions` table records both under one schema |
 | `holdout_validator.py` | Re-evaluate detection on a held-out attack set defined up front (never the patch's training attacks) | None | `holdout_runs` table |
 
 ### Pillar 4, Measure

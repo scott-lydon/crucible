@@ -1,0 +1,48 @@
+{
+  "persona": "bank-risk-officer",
+  "slice_slug": "run-launcher",
+  "iteration": 1,
+  "new_feedback": [
+    {
+      "element": "Masthead and HAPPY/EMPTY/ERROR state separators (lines 28-39, 186-191, 300-304)",
+      "issue": "The page renders all three states stacked under explanatory copy ('Three states are shown below...'). This reads as a marketing comp or design-system page, not the operator surface a model risk officer would open to launch a run. A bank examiner reviewing the audit surface would not see one composite of three states; they would see the live route. Composite layouts erode the credibility that this is the actual governance tool rather than a sales mockup.",
+      "change": "Remove the slice masthead, the three colored state-header chips, and the descriptive paragraph. Show ONE state per artifact (three separate files or three tabs in a state-switcher), so the screenshot in evidence is indistinguishable from the live route at /. If a state-comparison view is needed for design review, it should not be a deliverable layout."
+    },
+    {
+      "element": "App-bar 'EST / RUN $8.40' and 'SESSION $61.40' cost chips (lines 53-57)",
+      "issue": "Two dollar metrics persist with no timestamp, no run count denominator, and no link to the underlying ledger. SR 11-7 expects every cost figure tied to a model run to be traceable to the invoice line, model_id, and timestamp. A floating '$61.40' for SESSION is exactly the 'single number with no context' that fails the trust test.",
+      "change": "Add an 'as of HH:MM:SSZ' timestamp under each chip, make the chip a click target labeled with a small caret or 'view ledger' affordance, and label SESSION with the run count it covers (e.g. 'SESSION · 7 runs · $61.40'). EST/RUN needs a tooltip or footnote naming the cost-model version that produced the estimate."
+    },
+    {
+      "element": "Judge note in right rail (lines 164-167)",
+      "issue": "The amber callout warns that the LLM judge is 'gameable by an adversary that knows the scheme.' For a model risk officer this is the right disclosure, but it is buried as a soft note in the summary rail. SR 11-7 effective-challenge documentation requires the limitation to be acknowledged BEFORE start, and the operator's acknowledgment to be recorded. As drawn, the operator can click Start without ever interacting with this warning.",
+      "change": "Promote the half-vote disclosure to a required acknowledgment checkbox above the Start button ('I acknowledge the LLM judge carries one of five votes and is adversarially gameable'). The checkbox state must be part of the run-launch payload so the audit log shows acknowledgment was given for this run."
+    },
+    {
+      "element": "Sealed-spec YAML block (lines 114-129) and target-picker cards (lines 76-99)",
+      "issue": "The spec preview shows obligations and oracles, but there is no spec hash, no spec version, no author, no created-at timestamp, no link to the prior approved spec for this target. The target-picker cards show no model_id, no last-validated date, no model owner. A bank examiner asking 'which exact spec ran' or 'which version of the Fraud adapter was attacked' cannot answer from this surface.",
+      "change": "Under the spec file label, add 'sha256: <8-char>… · v3.2.1 · author: <user> · created 2026-06-21 14:02Z'. Under each target card, add a small monospace strip with 'model_id · last validated YYYY-MM-DD · owner: <team>'. Make the sha and model_id clickable to provenance."
+    },
+    {
+      "element": "Attack-budget inputs (lines 138-145)",
+      "issue": "Dollar ceiling is editable free-text with no displayed cap, no approver, no policy reference. A model risk officer needs to see the workspace's policy ceiling and who can approve overrides — otherwise the budget is operator discretion, which fails segregation-of-duties review. The footnote '≈ $0.52 per round · hard stop at $25.00' also lacks a citation to the cost-model that produced $0.52.",
+      "change": "Show 'workspace ceiling: $X (policy ref MRG-12.3)' adjacent to the dollar-ceiling input; visually distinguish operator entry from policy ceiling. If the entered value exceeds policy, surface an inline 'requires risk approver' affordance rather than allowing free entry. Link '$0.52 per round' to the cost-model card or commit."
+    },
+    {
+      "element": "Page background and gridless layout overall",
+      "issue": "The body is a single dark panel with no gridlines, no row striping, no column rulers. Bloomberg, internal model-governance portals, and Excel risk dashboards all carry visible grid structure that lets a risk officer scan and reference cells. The current layout reads closer to a developer settings page than an auditable form.",
+      "change": "Add a subtle 1px grid divider between each form section (target / spec / budget) and a labeled column ruler on the right rail (e.g. tick marks for 0/25/50/75/100% of budget consumed on the EST / RUN chip). Even minimal grid scaffolding signals 'this is a governance surface' rather than 'this is a marketing form.'"
+    },
+    {
+      "element": "Error state 'Spec was not sealed — validation stopped at line 6, column 5' bar (lines 330-334)",
+      "issue": "The error tells the operator where parsing failed but does NOT tell the audit log what was attempted. For SR 11-7 a failed validation is itself a recordable event — the bar should reference the attempt ID, the validator model/version that ran, and where the audit entry lives.",
+      "change": "Extend the error bar with a monospace tail: 'attempt id: a3f9c2… · validator: spec-validator-v1.4 · audit entry: /audit/attempts/a3f9c2 ↗'. Make the audit-entry path a real link affordance."
+    },
+    {
+      "element": "Inspect drawer footer 'API keys, DB credentials, and sandbox tokens are redacted — the only values ever hidden.' (lines 470-473)",
+      "issue": "This is the right SR 11-7 posture but it is a single sentence in a 12px muted color. A risk officer skim-reading the drawer for an audit will miss the redaction policy. The redaction guarantee is exactly the kind of claim an examiner will ask the bank to defend in writing.",
+      "change": "Promote the redaction notice to a small bordered chip at the TOP of the drawer body, not the bottom: 'REDACTION POLICY · only secrets are hidden · policy ref MRG-7.1 ↗'. Make the policy ref clickable. The drawer's whole credibility rests on this guarantee being prominent."
+    }
+  ],
+  "approved": false
+}

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crucible · Live Run View</title>
+<!-- Consolidated 2026-06-23: the Live Run View now lives as the "Running" tab
+     inside the Run Launcher (route /). This file is a redirect so the many
+     existing run-id links across the other screens keep working and land on
+     the single source of truth. The launcher selects tabs via in-app state,
+     not a URL, so this redirect goes to the launcher's default view. -->
+<meta http-equiv="refresh" content="0; url=slice-01-run-launcher.dc.html">
+<link rel="canonical" href="slice-01-run-launcher.dc.html">
+<style>
+  html,body{margin:0;background:#0E141B;color:#B8C2CE;
+    font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px}
+  a{color:#4FAAC0}
+</style>
+<script>window.location.replace('slice-01-run-launcher.dc.html');</script>
+</head>
+<body>
+<div class="wrap">
+  <p>The Live Run View is now the Running tab of the
+     <a href="slice-01-run-launcher.dc.html">Run Launcher</a>.</p>
+</div>
+<noscript>
+  <div class="wrap"><a href="slice-01-run-launcher.dc.html">Open the Run Launcher</a></div>
+</noscript>
+</body>
+</html>

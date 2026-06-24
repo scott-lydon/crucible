@@ -1,0 +1,15 @@
+{
+  "persona": "public-sector-procurement",
+  "slice_slug": "live-run-view",
+  "iteration": 1,
+  "new_feedback": [
+    {"element":"Muted data text #95A1AE at 10-11.5px (timestamps, ledger labels, latencies, stream stats)","issue":"~4.5:1 = AA floor, fails AAA, and at 10-11.5px is below squint-test on a 24in monitor; carries real data not decoration.","change":"Lighten data-bearing muted text to >=#B8C2CE (~7:1) and raise minimum data mono size from 10px to 12px; reserve #95A1AE for secondary chrome only, still >=12px."},
+    {"element":"'REVIEW ONLY' state-divider rows in #5A6573 on #0E141B","issue":"~2.7:1 fails AA at any size.","change":"Raise to >=#8A94A2 (>=4.5:1); never reuse #5A6573 where a user must read it."},
+    {"element":"Reconnect card values #C2A93C/#E8C84A on #221C0C ('attempt 3 of 6','retry in 4s','net::ERR_TIMED_OUT')","issue":"~3:1 fails AA at 10.5-11px; lowest-contrast text sits in the exact state a reviewer most needs to read.","change":"Use #F0DA6A or #FFE9A8 for value text on #221C0C to clear 4.5:1."},
+    {"element":"Status dots encoding state by color alone (subcomponent health ok/slow, connection dots)","issue":"Some dots pair with text ('slow · 4.7s') but consistency is not guaranteed; colorblind reviewer relies on text.","change":"Audit every colored status dot to carry an adjacent plain-language state word ('ok','slow','degraded','connected','dropped'); never let the dot be the sole carrier."},
+    {"element":"Verdict stream as stacked mono chips, no table headers; filter 'All/Fails/Evasions' active state by background fill only","issue":"No visible plain-language column headers (Round, Time, Oracle, Verdict, Cost); degrades for screen readers; active filter has no non-color affordance.","change":"Provide a semantic table with a visible sortable header row, or a persistent header row above the chips; give the active filter tab an underline/'selected' label not background alone."},
+    {"element":"Headline metrics (ASR 0.18, Detection 0.94, pass_rate, recall, drift) have no 'About this measurement' affordance","issue":"Aggregate metrics lack inline provenance/definition; meaning only in scattered mono captions and 9px SVG text.","change":"Add a small text-labeled 'about'/'i' control (not a bare icon, focusable/clickable not hover-only) next to each headline metric opening definition, unit, and data source."},
+    {"element":"9px SVG chart text (axis labels, 'red line · recall >= 0.90', 'r.32 · crossed', 'backfill pending')","issue":"Below legible floor on a 24in monitor; several low-contrast; load-bearing for understanding the halt.","change":"Raise SVG annotation text to >=11px, clear 4.5:1, and restate red-line threshold and crossing round in adjacent body text not only inside the SVG."}
+  ],
+  "approved": false
+}

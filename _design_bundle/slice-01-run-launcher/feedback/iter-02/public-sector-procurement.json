@@ -1,0 +1,33 @@
+{
+  "persona": "public-sector-procurement",
+  "slice_slug": "run-launcher",
+  "iteration": 2,
+  "new_feedback": [
+    {
+      "element": "Muted label color #7C8896 on background #0E141B used pervasively for form labels ('TARGET ADAPTER', 'EVALUATION BUDGET', 'RUN SUMMARY', 'SANDBOX ENVIRONMENT'), step counters ('step 1 of 3'), the 'Rounds' / 'Dollar ceiling' sub-labels, and every workspace-chrome timestamp line",
+      "issue": "Computed contrast ratio is approximately 4.4:1 (foreground luminance ~0.222, background luminance ~0.0073). That fails the WCAG AA floor of 4.5:1 for normal body text. Because this is the dominant 'chrome' color of the whole launcher — every section header, every metadata line, every step counter — a low-vision colleague or a procurement reviewer squint-testing on a 24-inch monitor at modest brightness loses the entire information scaffolding of the screen. WCAG AAA (7:1) is the bar this persona rewards and the current value is not even AA.",
+      "change": "Promote the muted-label color from #7C8896 to at least #95A1AE on #0E141B (≈5.6:1, AA pass) or, to also clear AAA for the screen-reading colleagues, #AAB5C2 (≈7.2:1). Apply the lift everywhere #7C8896 currently sits on the page background, including 'EST / RUN', 'SESSION', 'BUDGET CONSUMED', 'as of HH:MM:SSZ', 'step N of 3', and YAML line numbers."
+    },
+    {
+      "element": "Cost-meter timestamp lines 'as of 14:07:52Z · model v2.1' and 'no estimate yet' / 'blocked · spec invalid', plus the inline 'how this is estimated ⓘ' link, all rendered at 9 px and 10 px in the top chrome",
+      "issue": "The persona's standing rule is 'type readable at smaller sizes — 14 pixel base must remain legible'. Rendering critical provenance (the timestamp that proves the estimate is fresh, the model version that proves which cost model produced it) and an actionable link ('how this is estimated') at 9 px and 10 px breaks that floor by a wide margin. At 9 px on a 24-inch monitor the timestamp is effectively decorative; the operator has to lean in to read the proof of freshness, which defeats the purpose of showing it.",
+      "change": "Raise every cost-meter metadata line, the 'as of …Z' timestamps, and the 'how this is estimated' affordance to at least 12 px (and preferably 13 px to match the rest of the run-summary rail). If horizontal space is tight, drop the 'model v2.1' suffix to a second line rather than shrinking the type."
+    },
+    {
+      "element": "'Rounds' and 'Dollar ceiling' inputs in the EMPTY state — placeholder text 'e.g. 48' and 'e.g. $25.00' rendered with the browser default placeholder color",
+      "issue": "No explicit placeholder color is set on the inputs, so browsers fall back to their default placeholder grey (Chrome/Safari ~ #757575 at ~54 % opacity, Firefox similar). On the #0E141B input background that lands well under AA 4.5:1. The placeholder is the only on-screen hint of the expected format ('e.g. 48' for rounds, '$25.00' with the dollar sign for ceiling), so under-contrast placeholder kills the format guidance for low-vision operators.",
+      "change": "Add an explicit '::placeholder { color:#95A1AE; opacity:1; }' rule (or inline equivalent) for the launcher inputs so the placeholder hits AA on #0E141B, and pair the placeholder with a small persistent helper line below each input ('integer · capped at workspace round-budget', 'USD · capped at workspace ceiling $25.00') so the format guidance is not lost when the field receives focus and the placeholder disappears."
+    },
+    {
+      "element": "Top-chrome 'SSE connected' status indicator (green dot at #57C08A with text label) present and identical across all three states — HAPPY, EMPTY, and the ERROR state where the YAML failed to parse",
+      "issue": "In the error state the same green 'SSE connected' indicator sits in the chrome while a red 'PARSE ERROR' banner sits directly below it. A procurement reviewer scanning the masthead sees a green health pip and may parse the page as 'system healthy' before reading downward. The 'connected' vocabulary also overloads two different ideas (transport health vs. run health) under one green status, with no in-line definition of what 'SSE' refers to. The persona bar requires iconography paired with plain-language labels; 'SSE' is a three-letter acronym with no gloss on screen.",
+      "change": "Expand 'SSE connected' to a plain-language phrasing such as 'Live updates · connected' (or 'Event stream · connected') and add a small adjacent text link 'about live updates' that opens a one-paragraph definition. Independently, when a higher-severity banner is present (parse error, sealed-spec failure, budget over policy), demote the transport-health pip from green to neutral grey-with-checkmark so it cannot be mistaken for an all-clear on the run itself."
+    },
+    {
+      "element": "YAML viewer in the HAPPY state — boolean `true` values on lines 3, 6, 10 rendered in #57C08A green as the only differentiator from surrounding plain text",
+      "issue": "The truthiness of the obligation values is conveyed by color alone. WCAG 1.4.1 'Use of Color' requires that color not be the sole means of conveying information. A procurement reviewer using a high-contrast or grayscale screen-reader profile loses the cue that 'metamorphic.invariance == true' and 'enabled: true' are the affirmative settings the run depends on.",
+      "change": "Pair every color-coded YAML value with a non-color glyph or weight cue — for example bold the keyword `true` in addition to the green color, or render it as 'true ✓' inline. Apply the same rule to the green '✓ sealed · valid' badge by keeping both the glyph and a text label ('sealed and valid') and never relying on the color swap alone."
+    }
+  ],
+  "approved": false
+}

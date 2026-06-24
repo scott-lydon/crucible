@@ -1,0 +1,12 @@
+{
+  "slice": 2,
+  "slug": "live-run-view",
+  "route": "/runs/:runId",
+  "iteration": 1,
+  "claude_design_file": "slice-02-live-run-view.dc.html",
+  "claude_design_url": "https://claude.ai/design/p/64f3247e-8912-4ad2-b6f2-d232d54b98de?file=slice-02-live-run-view.dc.html",
+  "size_bytes": 97414,
+  "scraped_at_utc": "2026-06-23T04:13:59Z",
+  "scrape_method": "fetch-hook on window.fetch over OmeletteService/GetFile; forced refetch by switching files in Pages dropdown (slice-03 then back to slice-02); extracted DOCTYPE..</html> from proto envelope; Blob anchor-download to ~/Downloads; read from sandbox mount",
+  "note": "slice-02 was already generated on the Claude Design server (Pages list shows 'Edited 3h ago') in a prior session; this run CAPTURED that real existing generation rather than regenerating. Native Share>Export>Standalone HTML download did NOT reach mounted FS this run; fetch-hook channel succeeded."
+}

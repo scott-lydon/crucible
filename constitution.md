@@ -4,6 +4,8 @@ The rules Crucible is built under. Violations are not "tech debt"; they are bugs
 
 This file is the first of the five foundational artifacts that govern the project. The other four (`spec.md`, `plan.md`, `tasks.md`, `QA_ADVERSARY.md`) reference rules defined here. If a downstream document contradicts a constitution rule, the constitution wins, and the downstream document is corrected.
 
+Term definitions for every recurring noun in this document live in [`docs/VOCABULARY.md`](docs/VOCABULARY.md). When a sentence uses "model," "retrain," "catch," "target," or "producer," that file is the canonical referent.
+
 ## 1. Stack
 
 - **Language:** Python 3.12. Forced by the machine-learning targets (LightGBM, scikit-learn, autoencoders), the Anthropic Software Development Kit (SDK), and `hypothesis` for property-based fuzzing. Swift cannot host these dependencies; no other language in the team's toolkit can either.
@@ -65,7 +67,7 @@ Inherited from the project-level CLAUDE.md hard rule ("NO MOCK / STUB / FAKE / R
 - The seeded-hack corpus and leaderboard export contain only attacks that actually succeeded against the running target.
 - The Supervisory Letter 11-7 (United States Federal Reserve, SR 11-7) model risk report is generated from the run's actual numbers, never from a template with sample values.
 
-If a number cannot be measured for real (the service is down, the dataset failed to download, the model failed to train), the dashboard renders a typed error explaining the failure, not a sample value.
+If a number cannot be measured for real (the service is down, the dataset failed to download, the target failed to train or patch — `LGBMClassifier.fit(...)` crashed for the Shape 1 fraud LightGBM classifier, or the agent-configuration diff failed to apply for the Shape 2 code agent), the dashboard renders a typed error explaining the failure, not a sample value.
 
 ## 6. Non-negotiables on quality
 
@@ -81,7 +83,7 @@ If a number cannot be measured for real (the service is down, the dataset failed
 - Crucible does not solve scalable oversight. It instruments the problem and reports residuals.
 - Crucible does not target Confidentiality or Availability. Section "What Crucible is not" of the README is binding.
 - Crucible does not ship a research-agent target adapter in the two-week build. The adapter shape exists; the implementation is stubbed and skipped at runtime by the orchestrator's `wiring.py`.
-- Crucible does not certify any model. It reports a catch rate against a white-box adversary and halts at a residual red line. The certification authority is whoever consumes the model risk report.
+- Crucible does not certify any AI system. It reports a catch rate against a white-box adversary and halts at a residual red line. The certification authority is whoever consumes the model risk report (per Supervisory Letter 11-7 for the bank customer; the equivalent governance body for other segments).
 
 ## 8. Things Claude (and any agent) must never do
 
