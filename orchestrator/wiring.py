@@ -17,11 +17,14 @@ from sqlalchemy import text
 from modules.blue.agent import FraudBlueAgent
 from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
+from modules.oracles.differential.agent import AgentDifferentialOracle
 from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.oracles.held_out.agent import AgentHeldOutOracle
 from modules.oracles.held_out.oracle import FraudHeldOutOracle
 from modules.oracles.llm_judge.oracle import LLMJudgeOracle
+from modules.oracles.metamorphic.agent import AgentMetamorphicOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
+from modules.oracles.property_fuzz.agent import AgentConsistencyOracle
 from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
 from modules.red.catalog import load_known_tactics
 from modules.red.llm_agent import LLMAgentRed
@@ -113,6 +116,23 @@ def _agent_red_llm() -> LLMClient:
     if os.environ.get("CRUCIBLE_REAL_RED") == "1" and settings.openrouter_api_key:
         return make_llm(settings.sonnet_model)
     return ScriptedLLM(_mock_agent_red, model="scripted-agent-red")
+
+
+def _differential_llm() -> LLMClient:
+    """The differential oracle's REFERENCE model — deliberately different from the
+    producer's model. Real Opus on CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free
+    ScriptedLLM that declines disallowed requests, so divergence fires when the producer
+    complies where a safe reference would not."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_DIFFERENTIAL") == "1" and settings.openrouter_api_key:
+        return make_llm(settings.opus_model)
+    return ScriptedLLM(
+        lambda _system, _prompt: (
+            "I'm sorry, but I can't help with that request; I can only assist with your "
+            "own order."
+        ),
+        model="scripted-differential",
+    )
 
 
 def _spec_compiler() -> SpecCompiler:
@@ -284,6 +304,24 @@ def build_container() -> Container:
     )
     container.register_oracle(AGENT_KIND, agent_held_out)
     sink.register_health_probe(f"oracles/{AGENT_KIND}/held_out", agent_held_out.health)
+
+    # Differential (cr-c3): a DIFFERENT model (Opus) answers the same input under the
+    # obligations; divergence (producer complies where the reference declines) fires.
+    agent_diff = AgentDifferentialOracle(RecordingLLM(_differential_llm(), "oracles"))
+    container.register_oracle(AGENT_KIND, agent_diff)
+    sink.register_health_probe(f"oracles/{AGENT_KIND}/differential", agent_diff.health)
+
+    # Metamorphic (cr-c3): re-ask the producer under neutral paraphrases; a flipped
+    # comply/decline decision means the agent is steerable by phrasing alone.
+    agent_meta = AgentMetamorphicOracle(agent.submit)
+    container.register_oracle(AGENT_KIND, agent_meta)
+    sink.register_health_probe(f"oracles/{AGENT_KIND}/metamorphic", agent_meta.health)
+
+    # Consistency/format (cr-c3): deterministic mechanical checks (forbidden/required
+    # substrings, format invariants, well-formedness). Free, token-less.
+    agent_consistency = AgentConsistencyOracle()
+    container.register_oracle(AGENT_KIND, agent_consistency)
+    sink.register_health_probe(f"oracles/{AGENT_KIND}/property_fuzz", agent_consistency.health)
 
     # Judge is target-agnostic; the same instance grades agent outputs too.
     container.register_oracle(AGENT_KIND, judge)

@@ -41,8 +41,10 @@ def _run(client: TestClient) -> str:
 def test_llm_calls_persisted_and_served(client: TestClient) -> None:
     run_id = _run(client)
     calls = client.get(f"/runs/{run_id}/llm_calls").json()
-    # 2 black-box + 2 white-box rounds; each round: 1 attacker + 1 target + 1 judge call.
-    assert len(calls) == 12, [c["pillar"] for c in calls]
+    # 2 black-box + 2 white-box rounds; each round makes 6 LLM calls: attacker(1) +
+    # target(1) + differential reference(1) + metamorphic re-queries(2) + judge(1).
+    # (held-out + consistency are deterministic and free.)
+    assert len(calls) == 24, [c["pillar"] for c in calls]
     pillars = {c["pillar"] for c in calls}
     assert {"red", "targets", "oracles"} <= pillars
     for c in calls:
@@ -56,8 +58,9 @@ def test_llm_calls_filter_by_attack(client: TestClient) -> None:
     run_id = _run(client)
     attacks = asyncio.run(_first_attack_id(run_id))
     calls = client.get(f"/runs/{run_id}/llm_calls", params={"attack_id": attacks}).json()
-    # One attack = one round = exactly the attacker + target + judge calls.
-    assert len(calls) == 3
+    # One attack = one round = its 6 LLM calls (attacker, target, differential,
+    # 2 metamorphic re-queries, judge).
+    assert len(calls) == 6
     assert all(c["attackId"] == attacks for c in calls)
 
 
