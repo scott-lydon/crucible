@@ -122,6 +122,14 @@ crashed for the Shape 1 fraud LightGBM classifier, or the agent-configuration di
 failed to apply for the Shape 2 code agent), the dashboard renders a typed error
 explaining the failure, not a sample value.
 
+### Authenticity is not a feature, do not market it in the UI
+
+Do not explicitly state that the values are not stubbed, nor "honest" in the ui as that is what users will expect, its not a feature to provide authentic values.
+
+That rule applies to every operator-facing surface: tile labels, route names, file names, breadcrumb text, marketing copy on the website, section titles in the README, and the names of acceptance-test user stories. The dashboard is named after what it shows (the metrics), not after the property of those metrics being real. The callout is on the inverse case: an empty state, a typed error, or a "no data yet for this run" banner when a number cannot be produced. Real values are the default and need no badge.
+
+This is the UI-copy corollary to the "data, never fake" rule above. The engineering contract (no stubs, no zero-defaults, no sample values rendered as measurements) is the same; what changes is that the contract is enforced silently and surfaces only when broken.
+
 ### What "mock" means here, and the only three cases where it is allowed
 
 The word "mock" carries three meanings in this repo. The section 4 prohibition applies to meaning (1) only. Meanings (2) and (3) are required by the design and testing strategies and are allowed inside the paths listed below; using them anywhere else is a section 4 violation.
