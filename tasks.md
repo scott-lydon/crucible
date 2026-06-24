@@ -6,29 +6,33 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-0-foundation** (A). The core docs (this file plus `coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`), repo scaffolding, Continuous Integration (CI) skeleton.
+- [ ] **slice-1-target-protocol** (T). `interfaces.Target` Protocol, `DummyTarget`, end-to-end smoke through the orchestrator loop.
 
 ## Next slice
 
-- [ ] **slice-1-target-protocol** (T). `interfaces.Target` Protocol, `DummyTarget`, end-to-end smoke through the orchestrator loop.
+- [ ] **slice-2-fraud-target** (T). Real Kaggle credit-card dataset, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
+
+## Done
+
+- [x] **slice-0-foundation** (A). Repo scaffold, value types, async Postgres persistence with Alembic, FastAPI (`POST /runs`, `GET /health`, SSE), pillar interface Protocols, module-boundary check, CI. All gates green (ruff, mypy --strict, 13 tests on real Postgres). Detail in Backlog below.
 
 ## Backlog
 
 ### Critical path (sequential)
 
-- [ ] **slice-0-foundation** (A).
+- [x] **slice-0-foundation** (A).
   - [x] `coding-practices.md`, `ARCHITECTURE.md`, `acceptance-tests.md`, `tasks.md` at repo root, populated (no template placeholders, grep clean).
   - [x] `CONTRIBUTING.md` with squash-per-slice and shared-folder discipline.
   - [x] `design/claude-design-brief.md` ready for paste into claude.ai/design.
-  - [ ] `pyproject.toml` with `python = "^3.12"`, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, Modal, structlog. `ruff` and `mypy --strict` configured.
-  - [ ] `orchestrator/interfaces/{target,oracle,red,blue,measure}.py` stub Protocols. No implementations yet.
-  - [ ] `shared/types/`: `Attack`, `Verdict`, `AuditTrace`, `TargetSpec`, `OracleVote`, `RunId`, `AttackBudget`, `SealedSpec` as `@dataclass(frozen=True, slots=True)`.
-  - [ ] `shared/persistence/`: async SQLAlchemy engine, base session, Alembic `env.py`. Migrations for `runs`, `verdicts`, `attacks`, `llm_calls`, `sandbox_jobs`, `health_probes`.
-  - [ ] FastAPI `POST /runs`, `GET /health`, `GET /runs/:runId/stream` (SSE).
-  - [ ] Pre-merge check script `scripts/check_module_imports.py` that rejects `from modules.<x>` inside `modules/<y>/` and rejects pull requests touching `modules/` and `shared/types/` together.
-  - [ ] GitHub Actions workflow `.github/workflows/ci.yml` runs ruff, mypy strict, pytest, the pre-merge check script.
-  - [ ] Dual-push confirmed: `git ls-remote https://github.com/scott-lydon/crucible.git main` equals `git ls-remote gitlab main`.
-  - [ ] **Done criteria:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean.
+  - [x] `pyproject.toml` with Python 3.12, FastAPI, SQLAlchemy, Alembic, Anthropic SDK, Hypothesis, LightGBM, scikit-learn, Modal, structlog. `ruff` and `mypy --strict` configured. (Heavy ML/LLM/fuzz/sandbox deps live in optional groups so the foundation installs fast; every mandated dependency is declared.)
+  - [x] `orchestrator/interfaces/{target,oracle,red,blue,measure}.py` stub Protocols. No implementations yet.
+  - [x] `shared/types/`: `Attack`, `Verdict`, `AuditTrace`, `TargetSpec`, `OracleVote`, `RunId`, `AttackBudget`, `SealedSpec` (plus `Money`, `TargetOutput`, `ProbeResult`, `BluePatch`, ids, enums) as `@dataclass(frozen=True, slots=True)`.
+  - [x] `shared/persistence/`: async SQLAlchemy engine, base session, Alembic `env.py`. Migrations for `runs`, `verdicts`, `attacks`, `llm_calls`, `sandbox_jobs`, `health_probes`.
+  - [x] FastAPI `POST /runs`, `GET /health`, `GET /runs/:runId/stream` (SSE).
+  - [x] Pre-merge check script `scripts/check_module_imports.py` that rejects `from modules.<x>` inside `modules/<y>/` and rejects commits touching `modules/` and `shared/types/` together.
+  - [x] GitHub Actions workflow `.github/workflows/ci.yml` runs ruff, mypy strict, pytest, the pre-merge check script (Postgres 16 service container).
+  - [x] Dual-push confirmed: `git ls-remote origin` GitHub and GitLab push URLs carry the same `feat/crucible-build` hash.
+  - [x] **Done criteria:** `pytest tests/integration/test_smoke.py::test_post_runs_returns_run_id` passes; `ruff check .` clean; `mypy --strict .` clean. (13 tests pass against real Postgres; 42 files mypy-clean.)
 
 - [ ] **slice-1-target-protocol** (T).
   - [ ] `interfaces.Target` Protocol with `submit(input)` and `query_target(input)`.

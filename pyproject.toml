@@ -1,0 +1,74 @@
+[project]
+name = "crucible"
+version = "0.1.0"
+description = "Adversarial security platform: an LLM red-team attacks a target, non-colluding oracles verify it over a sealed spec, a blue loop hardens it, and it grades its own catch rate against an adversary that already knows the scheme."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+
+# Core runtime. Kept deliberately small so the foundation installs fast.
+# The heavy machine-learning, large-language-model, fuzzing, and sandbox
+# dependencies live in the optional groups below and are pulled in by the
+# slice that first needs them (slice 2 ml, slices 5+ llm, slice 8 fuzz,
+# slice 4 sandbox). Every dependency the architecture mandates is declared
+# here; grouping only controls the install footprint, never availability.
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "structlog>=24.4",
+    "sse-starlette>=2.1",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+ml = ["lightgbm>=4.5", "scikit-learn>=1.5", "pandas>=2.2", "numpy>=2.1", "scipy>=1.14"]
+llm = ["anthropic>=0.40"]
+fuzz = ["hypothesis>=6.115"]
+sandbox = ["modal>=0.66"]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "ruff>=0.8",
+    "mypy>=1.13",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["shared*", "orchestrator*", "modules*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["shared/persistence/migrations/versions"]
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade, naming.
+select = ["E", "F", "I", "B", "C4", "UP", "N"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+# Alembic scaffolding (env.py + generated version scripts) rides its own
+# typing rules and is excluded from the strict floor.
+exclude = ["shared/persistence/migrations/"]
+
+# Third-party packages that ship no type stubs. Listed explicitly so a new
+# untyped import is a conscious decision, never a silent ignore-all.
+[[tool.mypy.overrides]]
+module = ["lightgbm.*", "sklearn.*", "sse_starlette.*", "modal.*", "asyncpg.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests", "modules", "shared", "orchestrator"]
+python_files = ["test_*.py"]
