@@ -24,8 +24,9 @@ Term definitions for every recurring noun live in
   concurrent writes from two pillars will break it.
 - **Object-relational mapping (ORM):** SQLAlchemy 2.x in async mode, with Alembic for
   migrations. No raw SQL outside `shared/persistence/`.
-- **Producer sandbox:** Modal. The producer container has no environment variables and
-  no network access to Postgres or the verification artifact bucket.
+- **Producer sandbox:** sandbox adapter (local Docker v1; Modal optional). The producer
+  container has no environment variables and no network access to Postgres or the
+  verification artifact bucket.
 - **Large language model (LLM) provider:** Anthropic Claude. Sonnet 4.6 on the inner
   red and blue loops; Opus 4.8 on the judge oracle and the white-box self-test pass.
   No other provider; no fallback to OpenAI or Google for "redundancy." Cross-family in
@@ -81,7 +82,7 @@ dashboard, on every persisted row.
 - **Every oracle vote exposes its reasoning.** "Which spec obligation did I check, what
   did I observe, why pass or fail." Stored inline in the audit trace JSON on
   `verdicts.audit_trace`. An audit trace that records only "ok" or "failed" is a bug.
-- **Every sandbox execution streams stdout and stderr to the dashboard.** Modal job
+- **Every sandbox execution streams stdout and stderr to the dashboard.** Sandbox job
   logs surface live; no swallowed output.
 - **Every subcomponent has a `/health` view** that lists its dependencies, last
   self-test timestamp, and pass-fail status. The dashboard `/health` route aggregates
@@ -93,7 +94,7 @@ dashboard, on every persisted row.
   has a `pillar` column and a `dollars_spent` column.
 
 Hide only what is a real security risk: Anthropic Application Programming Interface
-(API) keys, Postgres credentials, Modal tokens.
+(API) keys, Postgres credentials, and any sandbox/provider credentials (if a managed sandbox adapter is used).
 
 ## 4. Data, never fake
 
@@ -191,7 +192,7 @@ to hold a function that belongs on `Foo`.
   diagnosing and even fixing the issue is immediately obvious. The message names what
   operation failed, the concrete inputs in play, and, where knowable, the likely fix.
   When the producer sandbox fails to launch, the run fails loud with a typed error
-  pointing at the Modal token and the network egress rule, not a generic "sandbox
+  pointing at the sandbox configuration and the network egress rule, not a generic "sandbox
   error."
 - **Use structured logging context, never string interpolation.** Pass variables as a
   context dict (`logger.error("failed to send", phone=phone, exc_info=e)`), not baked
