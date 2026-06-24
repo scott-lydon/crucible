@@ -10,11 +10,22 @@ with a short timeout, to reach:
   * **the sandbox host / control plane** — a host-gateway / metadata address;
   * **the verification target** — a configured stand-in for the artifact store.
 
-Under ``--network none`` all three connects fail (network unreachable / timeout)
-→ every ``*_reached`` is ``False``. The harness also exposes the SAME probe logic
-run ON THE HOST (not sandboxed) as the positive control: there Postgres IS
-reachable, proving the probe is real and the SANDBOX is what blocks it
-(anti-tautology).
+Under ``--network none`` all three connects fail (network unreachable)
+→ every ``*_reached`` is ``False``. The harness also exposes the SAME probe
+SOURCE run in an identical container with ``--network bridge`` as the positive
+control (:func:`run_seal_probe_networked`): there the Postgres / target endpoint
+IS reachable, proving the probe is real and that ``--network none`` is the ONLY
+variable that blocks it (anti-tautology — same image, same code, same literal
+``ip:port``, only the network flag differs).
+
+To make that rigorous the endpoints must be the SAME concrete ``ip:port`` in both
+runs. We therefore pin Postgres/``target`` to the Docker bridge GATEWAY ip
+(:func:`bridge_gateway_ip`) — Postgres is published on the host at
+``0.0.0.0:5432``, so the gateway ip:5432 is the same socket a networked container
+reaches and a ``--network none`` container cannot. Because it is a literal IP (no
+hostname), the sealed failure is a socket-layer ``ENETUNREACH`` (``OSError``), NOT
+a name-resolution failure (``gaierror``); a DNS failure must never count as
+sealed.
 
 The probe body is pure stdlib (``socket``, ``json``, ``sys``) so it runs in the
 bare ``python:3.12-slim`` image with no pip installs and no host env / mounts.
@@ -23,7 +34,9 @@ bare ``python:3.12-slim`` image with no pip installs and no host env / mounts.
 from __future__ import annotations
 
 import json
+import shutil
 import socket
+import subprocess
 from dataclasses import dataclass
 
 from shared.sandbox.base import Sandbox
@@ -34,6 +47,42 @@ _CONNECT_TIMEOUT_S = 2.0
 # Wall-clock budget for the whole sandboxed probe run. Generous vs. the sum of
 # the per-attempt timeouts so a slow container start never looks like a hang.
 _PROBE_WALL_S = 20.0
+
+
+def bridge_gateway_ip(*, docker: str | None = None) -> str | None:
+    """Return the Docker default ``bridge`` network's gateway IP, or ``None``.
+
+    Derived dynamically from ``docker network inspect bridge`` (we never hardcode
+    an address — it varies per host/engine). Postgres is published on the host at
+    ``0.0.0.0:5432``, so this gateway ip:5432 is the SAME concrete socket that a
+    networked container reaches and a ``--network none`` container cannot — which
+    is exactly what makes the seal test's positive/sealed pair compare like with
+    like. Returns ``None`` if Docker is absent or the gateway can't be parsed, so
+    callers can skip cleanly rather than fabricate a target.
+    """
+    docker_path = docker or shutil.which("docker")
+    if docker_path is None:
+        return None
+    try:
+        proc = subprocess.run(
+            [
+                docker_path,
+                "network",
+                "inspect",
+                "bridge",
+                "--format",
+                "{{range .IPAM.Config}}{{.Gateway}}{{end}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30.0,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if proc.returncode != 0:
+        return None
+    gateway = proc.stdout.strip()
+    return gateway or None
 
 
 @dataclass(frozen=True, slots=True)
@@ -196,15 +245,49 @@ def run_seal_probe(
     return _parse(res.stdout)
 
 
+def run_seal_probe_networked(
+    sandbox: Sandbox,
+    targets: SealTargets,
+    *,
+    timeout_s: float = _CONNECT_TIMEOUT_S,
+) -> SealProbeResult:
+    """Positive control: run the IDENTICAL probe source in a ``--network bridge``
+    container so ``--network none`` is the ONLY variable vs :func:`run_seal_probe`.
+
+    Same image, same emitted source, same literal ``ip:port`` targets — the only
+    difference from the sealed run is ``network=True``. With Postgres published on
+    the host and ``targets`` pinned to the bridge gateway, this run REACHES the
+    Postgres/``target`` endpoint, proving the probe is real and that the sealed
+    run's failure is caused by ``--network none`` alone (anti-tautology).
+    """
+    src = probe_source(targets, timeout_s=timeout_s)
+    res = sandbox.run_python(src, timeout_s=_PROBE_WALL_S, network=True)
+    if res.timed_out:
+        raise RuntimeError(
+            f"networked seal probe timed out (job {res.job_id}); "
+            f"stderr={res.stderr.strip()!r}"
+        )
+    if res.exit_code != 0:
+        raise RuntimeError(
+            f"networked seal probe failed (exit {res.exit_code}, job {res.job_id}); "
+            f"stderr={res.stderr.strip()!r}"
+        )
+    return _parse(res.stdout)
+
+
 def run_seal_probe_on_host(
     targets: SealTargets,
     *,
     timeout_s: float = _CONNECT_TIMEOUT_S,
 ) -> SealProbeResult:
-    """Run the SAME probe logic ON THE HOST (not sandboxed) — the positive control.
+    """Run the SAME probe logic ON THE HOST (not sandboxed) — a secondary control.
 
-    Used to prove the probe is real: with Postgres up, the host reaches it. If
-    the sandbox result says unreachable and the host result says reachable, the
-    SANDBOX is demonstrably what blocks egress (anti-tautology).
+    Used to prove the probe is real: with Postgres up, the host reaches it. NOTE:
+    the rigorous anti-tautology control is :func:`run_seal_probe_networked`, which
+    pins the SAME literal ``ip:port`` as the sealed run so only ``--network none``
+    differs. The host run reaches Postgres via ``localhost`` — a *different*
+    address than the in-sandbox gateway IP (on Docker Desktop the bridge gateway
+    is inside the VM and not host-routable), so on its own it does not isolate the
+    network flag as the cause. Keep it only as a sanity check that Postgres is up.
     """
     return _evaluate(targets, timeout_s)
