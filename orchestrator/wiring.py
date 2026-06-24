@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from modules.oracles.aggregator import VerdictAggregator
 from modules.oracles.differential import DifferentialOracle
 from modules.oracles.held_out import HeldOutOracle
 from modules.oracles.llm_judge import LlmJudgeOracle
@@ -26,10 +27,11 @@ from shared.types import TargetType
 
 @dataclass(frozen=True, slots=True)
 class Registry:
-    """The wired set of targets and oracles (red and blue added in later slices)."""
+    """The wired set of targets, oracles, and the aggregator (red and blue later)."""
 
     targets: dict[TargetType, Target]
     oracles: tuple[Oracle, ...]
+    aggregator: VerdictAggregator
 
     def target_for(self, target_type: TargetType) -> Target:
         """Return the target adapter for a type, or raise a typed, named error."""
@@ -76,6 +78,7 @@ def build_registry() -> Registry:
             PropertyFuzzOracle(llm=llm, sandbox=DockerSandbox()),
             LlmJudgeOracle(llm=llm),
         ),
+        aggregator=VerdictAggregator(),
     )
 
 

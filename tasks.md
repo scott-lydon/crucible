@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-10-verdict-aggregator** (T). Vote tally (four oracles at 1.0, judge at 0.5, threshold 2.0), audit trace, replay determinism.
+- [ ] **slice-11-red-search** (R). Reason then propose then query then iterate; strategy catalog persisted.
 
 ## Next slice
 
-- [ ] **slice-11-red-search** (R). Reason then propose then query then iterate; strategy catalog persisted.
+- [ ] **slice-12-white-box-mode** (R). Inject the oracle scheme into the prompt; report black-box and white-box catch rate side by side.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -19,6 +19,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-10-verdict-aggregator** (T). `VerdictAggregator` folds the oracle votes into one verdict: it sums the weights of the PASS votes (four mechanical oracles at 1.0, judge at 0.5) and passes when the tally reaches 2.0, otherwise the submission is caught. UNAVAILABLE votes contribute nothing, so a timed-out oracle never guesses a verdict. The audit trace names every vote and the closing tally-versus-threshold step. `orchestrator/loop.py` now runs every wired oracle over the produced output, aggregates, and persists the verdict; a crashing oracle is recorded as an UNAVAILABLE vote with its error, not swallowed. Replay determinism: the aggregator is pure and `vote_as_json` / `vote_from_json` round-trip, so re-aggregating the persisted votes is byte-equal (proven on real Postgres in `test_verdict_replay.py`). Reconciliation: the per-oracle detail tables (`fuzz_findings`, `differential_runs`, `judge_votes`) and the held-out persist-then-delete lifecycle were deferred to slice 15, since `verdicts.votes` already records every vote and a table with no renderer would be dead schema. `test_loop_smoke` now wires the spine with no oracles (keeping it LLM-free as its docstring promised); the oracle fan-out is covered by `test_loop_verdict` with deterministic oracle doubles.
 - [x] **slice-9-llm-judge-oracle** (T). `LlmJudgeOracle` (Opus 4.8) reads the produced artifact, judges it against the sealed spec obligations, and returns a `{"decision","reason"}` JSON verdict parsed into a half-weight (0.5) `OracleVote`. An unparseable or empty response votes `unavailable` rather than guessing. Target-agnostic: source is read as-is, any structured output (a fraud score) is JSON-rendered first. Runs nothing in the sandbox, so no docker dependency. Registered as the fifth oracle in `wiring.py`. Live proof: real Opus passed a correct `add` and failed a subtracting one at 0.5 weight. Scripted CI covers pass / fail / unavailable / malformed-JSON / structured-artifact paths.
 - [x] **slice-8-property-fuzz-oracle** (T). `PropertyFuzzOracle` has Sonnet write a `fuzz()` function that random-samples inputs and asserts spec-guaranteed properties, run in the sealed sandbox via the shared check runner. Live proof: a correct impl passes, a broken one is caught with a concrete counterexample. Uses stdlib random rather than the hypothesis library, because the no-network sandbox cannot install it (doc reconciled).
 - [x] **slice-7-differential-oracle** (T, code mode). `DifferentialOracle` generates a second implementation from a different model family (Haiku) and concrete comparison inputs, runs both against the producer in the sealed sandbox, and flags disagreement without trusting either side. Live proof: a correct impl agrees on all inputs, a wrong one disagrees on 2 of 3. The fraud variant (LightGBM versus IsolationForest) is a documented follow-on.
@@ -101,11 +102,12 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Judge gets 0.5 vote weight per `ARCHITECTURE.md` section 3. Registered in `orchestrator/wiring.py` as the fifth oracle.
   - [~] Verdict view marks the judge card "one vote" with the tooltip from `acceptance-tests.md` US-4. The 0.5 weight rides the `OracleVote` now; the card and tooltip are the slice-15 UI wiring (same pattern as the other oracle cards).
 
-- [ ] **slice-10-verdict-aggregator** (T).
-  - [ ] `modules/oracles/aggregator.py`: vote tally per `ARCHITECTURE.md` section 3.
-  - [ ] Audit trace JSON written to `verdicts.audit_trace`.
-  - [ ] Replay determinism: seed capture on every oracle's row.
-  - [ ] **Done criteria:** integration test replays a past verdict and asserts byte-equal output.
+- [x] **slice-10-verdict-aggregator** (T).
+  - [x] `modules/oracles/aggregator.py`: vote tally per `ARCHITECTURE.md` section 3 (four oracles at 1.0, judge at 0.5, pass threshold 2.0; PASS-vote weights summed, UNAVAILABLE contributes nothing). Wired into `Registry` and driven from `orchestrator/loop.py`, which runs every oracle over the output and records a crashing oracle as an UNAVAILABLE vote rather than aborting or guessing.
+  - [x] Audit trace JSON written to `verdicts.audit_trace` (one step per vote naming whether it counted, then the tally-versus-threshold step).
+  - [x] Replay determinism: `vote_as_json` / `vote_from_json` is the single round-tripping serialization; the verdict row carries the run seed; re-aggregating the persisted votes is byte-equal.
+  - [x] **Done criteria:** `tests/integration/test_verdict_replay.py` persists a verdict, reconstructs the votes, re-aggregates, and asserts byte-equal content on real Postgres.
+  - [~] Per-oracle detail tables (`fuzz_findings`, `differential_runs`, `judge_votes`) and the held-out persist-then-delete lifecycle: deferred to slice 15 (the verdict view), their first consumer. The `verdicts.votes` JSONB already captures every oracle's vote and reason (single point of truth), so adding consumerless tables now would be dead schema. Reconciled here on purpose; see Done note.
 
 - [ ] **slice-11-red-search** (R).
   - [ ] `modules/red/search.py`: reason → propose → query → iterate using Sonnet 4.6.

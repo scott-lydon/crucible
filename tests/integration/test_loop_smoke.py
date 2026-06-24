@@ -3,6 +3,12 @@
 POST /runs persists a run, the orchestrator Loop drives a probe through the
 wired target, and the result is persisted as an attack row with the run marked
 complete. Real Postgres, no mocks.
+
+The registry here wires the DummyTarget with no oracles on purpose: this test
+covers the spine (target to orchestrator to Postgres) without an LLM or a
+sandbox, as its docstring promised before slice 10 added the oracle-verify
+step. The loop's oracle fan-out and verdict persistence are covered by
+test_loop_verdict.py with deterministic oracle doubles.
 """
 
 from __future__ import annotations
@@ -10,10 +16,13 @@ from __future__ import annotations
 from httpx import AsyncClient
 from sqlalchemy import select
 
+from modules.oracles.aggregator import VerdictAggregator
+from modules.targets.dummy import DummyTarget
 from orchestrator.loop import Loop
-from orchestrator.wiring import build_registry
+from orchestrator.wiring import Registry
 from shared.persistence import get_sessionmaker
 from shared.persistence.models import Attack, Run
+from shared.types import TargetType
 
 _DUMMY_RUN = {
     "target_type": "dummy",
@@ -33,8 +42,13 @@ async def test_one_round_with_dummy(client: AsyncClient) -> None:
     assert resp.status_code == 201, resp.text
     run_id = resp.json()["run_id"]
 
+    registry = Registry(
+        targets={TargetType.DUMMY: DummyTarget()},
+        oracles=(),
+        aggregator=VerdictAggregator(),
+    )
     async with get_sessionmaker()() as session:
-        await Loop(session=session, registry=build_registry()).run(run_id)
+        await Loop(session=session, registry=registry).run(run_id)
 
     async with get_sessionmaker()() as session:
         run = await session.get(Run, run_id)
