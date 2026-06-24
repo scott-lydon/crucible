@@ -292,7 +292,7 @@ real from a backend route or rendered as em-dash.
 
 ### C8 — slice-11 health (entirely static, 0 hooks)
 
-- [ ] **DONE-CRITERION** Each target's row reads from
+- [x] **DONE-CRITERION** Each target's row reads from
   `/health/targets/{type}` and each oracle's row reads from
   `/health/oracles/{name}`. The page renders the real probe status, not
   static green dots.

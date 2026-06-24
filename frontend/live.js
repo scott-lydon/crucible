@@ -124,6 +124,62 @@
     return x === null || x === undefined ? "—" : String(x);
   }
 
+  function healthCard(name, role, probe) {
+    var status = (probe && probe.status) || "amber";
+    var dot = status === "green" ? "#57C08A" : status === "red" ? "#E5736B" : "#D9A441";
+    var card = document.createElement("div");
+    card.setAttribute("data-live-row", "health");
+    card.style.cssText =
+      "border:1px solid #2C3744;border-radius:12px;background:#161E27;padding:22px;" +
+      "display:flex;flex-direction:column;gap:12px";
+    var head = document.createElement("div");
+    head.style.cssText = "display:flex;align-items:center;gap:10px";
+    head.innerHTML =
+      '<span style="width:9px;height:9px;border-radius:50%;flex:none"></span>' +
+      '<span style="font-size:14.5px;font-weight:600;color:#E8EDF3"></span>' +
+      '<span style="flex:1"></span>' +
+      '<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10.5px;letter-spacing:.1em;color:#7C8896;text-transform:uppercase"></span>';
+    var hs = head.querySelectorAll("span");
+    hs[0].style.background = dot;
+    hs[1].textContent = name;
+    hs[3].textContent = role + " · " + status;
+    var detail = document.createElement("div");
+    detail.style.cssText =
+      "font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;line-height:1.55";
+    var d = (probe && probe.detail) || {};
+    detail.textContent = Object.keys(d).slice(0, 4).map(function (k) {
+      return k + ": " + d[k];
+    }).join(" · ") || "no detail";
+    card.appendChild(head);
+    card.appendChild(detail);
+    return card;
+  }
+
+  async function wireHealthGrid() {
+    // slice-11 renders the REAL self-test status of each registered target and
+    // oracle (US-8) from /targets/registered + /health/targets/{type} and
+    // /oracles/registered + /health/oracles/{name}, replacing the design
+    // bundle's static infra leaves and incident log (out of PRD, removed —
+    // REMOVED_UI.md).
+    var host = document.querySelector('[data-live-list="health"]');
+    if (!host) return;
+    var targets = (await json("/targets/registered")) || [];
+    var oraclesResp = (await json("/oracles/registered")) || {};
+    var oracles = oraclesResp.oracles || [];
+    var cards = [];
+    for (var i = 0; i < targets.length; i++) {
+      var th = await json("/health/targets/" + targets[i].type);
+      cards.push(healthCard(targets[i].display_name || targets[i].type, "target", th));
+    }
+    for (var j = 0; j < oracles.length; j++) {
+      var oh = await json("/health/oracles/" + oracles[j].name);
+      cards.push(healthCard(oracles[j].name, "oracle", oh));
+    }
+    if (cards.length === 0) return;
+    host.innerHTML = "";
+    cards.forEach(function (c) { host.appendChild(c); });
+  }
+
   async function wireBluePatch() {
     // slice-07 reads /blue/{patchId} from a ?patch=<id> URL parameter and
     // renders the real patch (kind, held-out detection before/after, the
@@ -401,6 +457,7 @@
       wireList("specs_history", "/specs/history", specHistoryRow),
       wireReport(),
       wireBluePatch(),
+      wireHealthGrid(),
       wireLauncher(),
     ]);
     wireSse();
