@@ -62,21 +62,36 @@ async def compute_run_metrics(s: AsyncSession, run_id: str) -> RunMetrics | None
 async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
     """The platform's CATCH RATE for one red pass.
 
-    The denominator is the red agent's SUCCESSFUL evasions — attacks that both
-    ``evaded`` the detector and stayed ``true_label_preserved`` (genuinely
-    positive). The numerator is how many of those the ORACLES caught: the
-    aggregate verdict on the evaded sample came back FAIL (``aggregate_pass`` is
-    ``False``). An evasion the detector lets through but no oracle flags is a
-    platform MISS; one the oracles flag is a CATCH.
+    The denominator is the count of DISTINCT successful evasions that RECEIVED an
+    oracle verdict — ONE decision per ``txn_index`` lineage, never more. A
+    successful evasion is an attack that both ``evaded`` the detector and stayed
+    ``true_label_preserved`` (genuinely positive). The numerator is how many of
+    those the ORACLES caught: the aggregate verdict on the evaded sample came
+    back FAIL (``aggregate_pass`` is ``False``). An evasion the detector lets
+    through but no oracle flags is a platform MISS; one the oracles flag is a
+    CATCH.
 
-    Linkage: a successful evasion's mutated sample is re-scored in a later round
-    as a MUTATED-origin transaction with the SAME ``txn_index``; if it then
-    evaded the detector, the oracles voted and a verdict was recorded against
-    that mutated transaction. We match attack -> mutated transaction (by
-    ``txn_index``) -> verdict.
+    Linkage (and the round model): a successful evasion's mutated sample is
+    re-scored in the NEXT round as a MUTATED-origin transaction with the SAME
+    ``txn_index``; if it then evades the detector, the oracles vote and a verdict
+    is recorded against that mutated transaction. An evasion therefore enters the
+    denominator ONCE it has a verdict. We match attack lineage -> mutated
+    transaction (by ``txn_index``) -> verdict, deduping to ONE verdict per
+    ``txn_index`` (the latest-round mutated, evading row for that lineage). This
+    is why a lineage that is mutated again across several rounds is NOT
+    double-counted.
 
-    Returns ``None`` when there were no successful evasions (catch rate is
-    undefined, not zero).
+    Consequences this definition is honest about:
+
+    * A successful evasion landed in the FINAL round is never re-scored (there is
+      no next round), so it has no verdict and does not enter the denominator. In
+      particular an ``n_rounds == 1`` pass produces NO countable decisions —
+      every attack is round-0 and is never re-scored. The catch rate is then
+      genuinely UNDEFINED, not zero: this function returns ``None``. The rate is
+      only meaningful for ``n_rounds >= 2``.
+
+    Returns ``None`` when no successful evasion received a verdict (catch rate is
+    undefined, not zero) — including the zero-successful-evasion case.
     """
     attacks = await repo.attacks_for_run(s, run_id)
     successful = [a for a in attacks if a.evaded and a.true_label_preserved]
@@ -84,29 +99,36 @@ async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
         return None
 
     txns = await repo.transactions_for_run(s, run_id)
+    rounds = await repo.rounds_for_run(s, run_id)
     verdicts = await repo.verdicts_for_run(s, run_id)
-    # The mutated, evading transactions the oracles got to vote on, by txn_index.
-    mutated_by_index: dict[int, list[str]] = {}
-    for t in txns:
-        if t.origin == Origin.MUTATED.value and not t.caught:
-            mutated_by_index.setdefault(t.txn_index, []).append(t.id)
+    round_index_by_id = {r.id: r.round_index for r in rounds}
     verdict_by_txn: dict[str, VerdictRow] = {v.txn_id: v for v in verdicts}
 
-    evaded_indices = {
-        t.txn_index for t in txns if t.id in {a.txn_id for a in successful}
-    }
-    # Each successful-evasion lineage is one platform decision per txn_index that
-    # later evaded and got an oracle verdict. Count caught (verdict FAIL).
-    caught = 0
-    total = 0
-    for idx in evaded_indices:
-        for mutated_id in mutated_by_index.get(idx, []):
-            verdict = verdict_by_txn.get(mutated_id)
-            if verdict is None:
-                continue
-            total += 1
-            if not verdict.aggregate_pass:  # oracles overturned the clearance
-                caught += 1
-    if total == 0:
+    # The txn_index lineages the red agent successfully evaded (its attack's
+    # caught parent shares the txn_index of the mutated, re-scored child).
+    successful_txn_ids = {a.txn_id for a in successful}
+    evaded_indices = {t.txn_index for t in txns if t.id in successful_txn_ids}
+
+    # For each evaded lineage, pick the SINGLE canonical decision: the latest-round
+    # mutated, evading transaction that the oracles actually voted on. Deduping to
+    # one per txn_index is what stops a lineage mutated across rounds from being
+    # counted more than once.
+    canonical: dict[int, VerdictRow] = {}
+    canonical_round: dict[int, int] = {}
+    for t in txns:
+        if t.origin != Origin.MUTATED.value or t.caught:
+            continue
+        if t.txn_index not in evaded_indices:
+            continue
+        verdict = verdict_by_txn.get(t.id)
+        if verdict is None:
+            continue
+        r_idx = round_index_by_id.get(t.round_id, -1)
+        if t.txn_index not in canonical or r_idx > canonical_round[t.txn_index]:
+            canonical[t.txn_index] = verdict
+            canonical_round[t.txn_index] = r_idx
+
+    if not canonical:  # no successful evasion got a verdict (e.g. n_rounds == 1)
         return None
-    return caught / total
+    caught = sum(1 for v in canonical.values() if not v.aggregate_pass)
+    return caught / len(canonical)

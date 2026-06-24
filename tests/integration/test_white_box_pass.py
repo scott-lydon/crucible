@@ -29,7 +29,14 @@ from orchestrator.full_run import run_white_box_pass
 from orchestrator.interfaces import Oracle
 from orchestrator.loop import run_loop
 from shared.persistence import create_all, make_engine, make_session_factory, repo
-from shared.persistence.models import RunRow
+from shared.persistence.models import (
+    AttackRow,
+    RoundRow,
+    RunRow,
+    TransactionRow,
+    VerdictRow,
+)
+from shared.types.enums import Origin
 from shared.types import OracleKind, OracleVote, VerdictContext, Vote, sealed_spec_from_yaml
 
 _SPEC = sealed_spec_from_yaml(
@@ -203,3 +210,125 @@ async def test_white_box_catch_rate_at_most_black_box_with_gap(
     # SANITY: an informed attacker is caught no more often than an ignorant one.
     assert row.white_box_catch_rate <= row.black_box_catch_rate
     assert row.white_box_run_id is not None and row.white_box_run_id != black_id
+
+
+async def _seed_evasion_lineage(
+    sf: async_sessionmaker[AsyncSession],
+    run_id: str,
+    *,
+    txn_index: int,
+    verdict_passes: list[bool],
+) -> None:
+    """Seed ONE successful-evasion lineage that re-evades across several rounds.
+
+    For ``txn_index`` we write: a round-0 caught SYNTHETIC parent + a successful
+    AttackRow against it, then one MUTATED, uncaught transaction PER later round
+    (rounds 1..N), each with its own oracle verdict (``aggregate_pass`` taken from
+    ``verdict_passes``). This is exactly the shape that made the old code
+    double-count: many mutated/uncaught rows for a single evaded index. The run
+    row is created by the caller (so multiple lineages share one run).
+    """
+    parent_id = str(uuid.uuid4())
+    async with sf() as s:
+        round0 = str(uuid.uuid4())
+        s.add(RoundRow(id=round0, run_id=run_id, round_index=0))
+        await s.flush()
+        s.add(TransactionRow(
+            id=parent_id, run_id=run_id, round_id=round0, txn_index=txn_index,
+            features_json={}, true_label=True, origin=Origin.SYNTHETIC.value,
+            txn_slice="holdout", parent_txn_id=None, detector_score=0.9,
+            caught=True, seed="dc",
+        ))
+        s.add(AttackRow(
+            id=str(uuid.uuid4()), run_id=run_id, round_id=round0, txn_id=parent_id,
+            parent_txn_id=parent_id, mutation_json={}, pre_score=0.9, post_score=0.1,
+            evaded=True, true_label_preserved=True, seed="dc",
+        ))
+        await s.commit()
+
+    for r_idx, passes in enumerate(verdict_passes, start=1):
+        async with sf() as s:
+            round_id = str(uuid.uuid4())
+            s.add(RoundRow(id=round_id, run_id=run_id, round_index=r_idx))
+            await s.flush()
+            txn_id = str(uuid.uuid4())
+            s.add(TransactionRow(
+                id=txn_id, run_id=run_id, round_id=round_id, txn_index=txn_index,
+                features_json={}, true_label=True, origin=Origin.MUTATED.value,
+                txn_slice="holdout", parent_txn_id=parent_id, detector_score=0.1,
+                caught=False, seed="dc",
+            ))
+            await s.flush()
+            s.add(VerdictRow(
+                id=str(uuid.uuid4()), run_id=run_id, round_id=round_id, txn_id=txn_id,
+                aggregate_pass=passes, fail_weight=0.0 if passes else 1.0,
+                pass_weight=1.0 if passes else 0.0, audit_trace_json={}, seed="dc",
+            ))
+            await s.commit()
+
+
+async def test_catch_rate_dedupes_per_txn_index_no_double_count(
+    sf: async_sessionmaker[AsyncSession],
+) -> None:
+    """A single evaded lineage counts ONCE, even with many mutated verdicts.
+
+    Two evaded indices. Index 0 has THREE mutated/uncaught verdicts whose LATEST
+    (round 3) is a CATCH (FAIL); index 1 has ONE verdict that is a MISS (PASS).
+    Denominator is the 2 distinct lineages (not the 4 mutated rows); numerator is
+    the 1 caught lineage -> exactly 0.5. A raw-row tally over the 4 rows would be
+    1/4 = 0.25, so this asserts dedup, not a coincidental count.
+    """
+    run_id = str(uuid.uuid4())
+    await _seed_run(sf, run_id)
+    # index 0: 3 verdicts, latest (round 3) is a CATCH; index 1: 1 verdict, a MISS.
+    await _seed_evasion_lineage(sf, run_id, txn_index=0,
+                                verdict_passes=[True, True, False])
+    await _seed_evasion_lineage(sf, run_id, txn_index=1,
+                                verdict_passes=[True])
+
+    async with sf() as s:
+        rate = await catch_rate_for_run(s, run_id)
+    # 2 distinct lineages, 1 caught -> 0.5. Raw-row tally would be 1/4 = 0.25.
+    assert rate == 0.5
+
+
+async def test_catch_rate_latest_round_canonical_not_raw_row_count(
+    sf: async_sessionmaker[AsyncSession],
+) -> None:
+    """Dedup picks the LATEST-round verdict per index, not a raw-row tally.
+
+    One evaded index with THREE mutated verdicts: PASS, PASS, FAIL (latest is the
+    CATCH). Distinct-lineage rate = 1/1 = 1.0. A raw-row tally would be 1/3.
+    """
+    run_id = str(uuid.uuid4())
+    await _seed_run(sf, run_id)
+    await _seed_evasion_lineage(sf, run_id, txn_index=0,
+                                verdict_passes=[True, True, False])
+    async with sf() as s:
+        rate = await catch_rate_for_run(s, run_id)
+    assert rate == 1.0  # one distinct caught lineage; NOT 1/3 raw rows
+
+
+async def test_catch_rate_n_rounds_one_is_undefined_none(
+    sf: async_sessionmaker[AsyncSession],
+) -> None:
+    """An ``n_rounds == 1`` pass yields NO verdict per evasion -> honest ``None``.
+
+    Round-0 attacks evade but their mutated samples are never re-scored (no next
+    round), so no successful evasion gets a verdict. Despite real successful
+    evasions, the catch rate is genuinely undefined — ``None``, not a fake 0/1.
+    """
+    run_id = str(uuid.uuid4())
+    await _seed_run(sf, run_id)
+    await run_loop(
+        sf, run_id=run_id, seed="wb", n_rounds=1, batch_size=6,
+        threshold=_THRESHOLD, detector=_Detector(),
+        adversary=_FixedAmtAdversary(amt=2.0),
+        oracles=_ORACLES, label_fn=_is_fraud, generate_fn=_generate, spec=_SPEC,
+    )
+    async with sf() as s:
+        attacks = await repo.attacks_for_run(s, run_id)
+        rate = await catch_rate_for_run(s, run_id)
+    # Real successful evasions exist, but none received a verdict (never re-scored).
+    assert any(a.evaded and a.true_label_preserved for a in attacks)
+    assert rate is None

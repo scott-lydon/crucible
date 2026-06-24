@@ -254,13 +254,12 @@ async def get_metrics(run_id: str) -> dict[str, object]:
         if white_box is not None:
             not_measured["white_box"] = white_box
         return not_measured
+    # Single source of truth for the catch rates + gap: the nested ``white_box``
+    # object (``None`` until the white-box pass has run). No flat duplicates.
     return {
         "per_round": [dataclasses.asdict(r) for r in m.per_round],
         "baseline_validation_detection": m.baseline_validation_detection,
         "gap": m.gap,
-        "black_box_catch_rate": white_box["black_box_catch_rate"] if white_box else None,
-        "white_box_catch_rate": white_box["white_box_catch_rate"] if white_box else None,
-        "white_box_gap": white_box["white_box_gap"] if white_box else None,
         "white_box": white_box,
     }
 
