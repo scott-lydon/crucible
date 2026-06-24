@@ -69,6 +69,13 @@ class FraudTarget:
     target_type: TargetType = TargetType.FRAUD
 
     @property
+    def oracle_verified(self) -> bool:
+        """A scored model: evasion is the model's own query_target miss, not the
+        code oracles (Pillar 2). False routes the loop to the red search's
+        score-based evasion signal for this target's success."""
+        return False
+
+    @property
     def display_name(self) -> str:
         """Name shown on the launcher's target picker."""
         return "Fraud"

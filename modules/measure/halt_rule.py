@@ -90,17 +90,23 @@ class HaltRule:
         return HaltStateData(halted=row.halted, recall=row.recall, threshold=row.threshold)
 
     async def _run_recall(self, run_id: str) -> float | None:
-        """White-box verifier recall (caught / judged) for one run's pass."""
+        """White-box verifier recall (caught / judged) for one run's pass.
+
+        Reads the loop's domain-appropriate undetected signal off
+        ``attacks.succeeded`` (the oracle verdict for a code target, the model's
+        own query_target evasion for a scored model), joined to a verdict so only
+        judged submissions count, exactly as the metrics aggregator does.
+        """
         stmt = (
-            select(VerdictRow.passed)
-            .join(AttackRow, AttackRow.id == VerdictRow.attack_id)
+            select(AttackRow.succeeded)
+            .join(VerdictRow, VerdictRow.attack_id == AttackRow.id)
             .where(VerdictRow.run_id == run_id, AttackRow.white_box.is_(True))
         )
-        passed = list((await self.session.execute(stmt)).scalars().all())
-        if not passed:
+        undetected = list((await self.session.execute(stmt)).scalars().all())
+        if not undetected:
             return None
-        caught = sum(1 for p in passed if not p)
-        return caught / len(passed)
+        caught = sum(1 for u in undetected if not u)
+        return caught / len(undetected)
 
     async def _persist(self, halted: bool, recall: float | None) -> None:
         row = await self.session.get(HaltState, _HALT_ROW_ID)

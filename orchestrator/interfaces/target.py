@@ -55,6 +55,24 @@ class Target(Protocol):
         """
         ...
 
+    @property
+    def oracle_verified(self) -> bool:
+        """Whether the independent oracle ensemble decides this target's verdict.
+
+        The proposal splits the platform's verification by domain (Pillar 1/2).
+        The four independent oracles run over the CODE domain: a produced code
+        artifact is checked by held-out tests, metamorphic relations, a
+        cross-family differential, and property fuzzing, and an attack succeeds
+        (is undetected) when it gets past that ensemble. A scored model (the
+        fraud detector, and later the anomaly detectors) produces a numeric
+        artifact the code oracles cannot check; its evasion is measured by the
+        target's own ``query_target`` score, exactly as the red search already
+        determines (Pillar 2). True means the oracle verdict is the success
+        signal; False means the red search's score-based evasion is. Read-only so
+        a plain class attribute or a frozen dataclass field both satisfy it.
+        """
+        ...
+
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Run the target on one input and return its output plus a producer audit."""
         ...

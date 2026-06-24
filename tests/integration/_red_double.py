@@ -29,11 +29,20 @@ class _Attempt:
     tactic: str
     payload: dict[str, Any]
     white_box: bool
+    succeeded: bool
 
 
-def attempt(tactic: str, payload: dict[str, Any], *, white_box: bool) -> _Attempt:
-    """Describe one preset attempt for the scripted red double."""
-    return _Attempt(tactic=tactic, payload=payload, white_box=white_box)
+def attempt(
+    tactic: str, payload: dict[str, Any], *, white_box: bool, succeeded: bool = False
+) -> _Attempt:
+    """Describe one preset attempt for the scripted red double.
+
+    ``succeeded`` is the red search's own score-based evasion verdict (the model
+    scored the input below the evasion threshold). The loop trusts it for a
+    scored target (``oracle_verified == False``); for a code target the oracle
+    ensemble decides instead, so it defaults to False.
+    """
+    return _Attempt(tactic=tactic, payload=payload, white_box=white_box, succeeded=succeeded)
 
 
 @dataclass(frozen=True, slots=True)
@@ -58,7 +67,7 @@ class ScriptedRed:
                 run_id=run_id,
                 tactic=a.tactic,
                 payload=a.payload,
-                succeeded=False,
+                succeeded=a.succeeded,
                 white_box=a.white_box,
                 hybrid=False,
                 dollars_spent=Money.of(0.01),

@@ -61,6 +61,7 @@ class _FixtureDetector:
     display_name: str = "Fixture Detector"
     description: str = "Test fixture detector for the strategy catalog test."
     artifact_ref: str = "fixture@v0"
+    oracle_verified: bool = False
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         return TargetOutput(

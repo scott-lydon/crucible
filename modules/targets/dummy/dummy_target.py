@@ -30,6 +30,9 @@ class DummyTarget:
     display_name: str = "Dummy"
     description: str = "Deterministic echo target used by the spine test."
     artifact_ref: str = "dummy@v0"
+    # The spine test drives the oracle ensemble over this echo target, so its
+    # verdict is the oracle ensemble's, like the code domain.
+    oracle_verified: bool = True
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Echo the input back under the spec's first obligation, with a score."""

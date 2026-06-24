@@ -74,6 +74,11 @@ class CodeAgentTarget:
     system_prompt: str | None = None
 
     @property
+    def oracle_verified(self) -> bool:
+        """Code is the oracle ensemble's domain: the verdict is the oracles' (Pillar 1)."""
+        return True
+
+    @property
     def display_name(self) -> str:
         """Name shown on the launcher's target picker."""
         return "Code Agent"

@@ -186,15 +186,21 @@ class Loop:
         output = await target.submit(spec, attack.payload)
         verdict = await self._verify(run, attack.attack_id, spec, attack.payload, output)
 
-        # The reward-hack sense (ARCHITECTURE.md section 3): an attempt succeeds
-        # when it gets past the whole ensemble, not merely the target's score.
-        self.session.add(self._attack_row(run, attack, succeeded=verdict.passed, output=output))
+        # The "undetected" sense is domain-specific (proposal Pillar 1/2). For a
+        # code target the attempt succeeds when it gets past the whole oracle
+        # ensemble (the reward-hack sense, ARCHITECTURE.md section 3). For a
+        # scored model (fraud) the code oracles cannot check a numeric artifact;
+        # the evasion is the model's own query_target miss, which the red search
+        # already determined as attack.succeeded. The verdict is still computed
+        # and persisted for the audit trail either way.
+        undetected = verdict.passed if target.oracle_verified else attack.succeeded
+        self.session.add(self._attack_row(run, attack, succeeded=undetected, output=output))
         await self.session.flush()  # parent before child: verdict FK -> attacks.id
         self.session.add(self._verdict_row(run, attack.attack_id, verdict))
         await self.session.flush()  # verdict before its per-oracle detail rows
         self._persist_oracle_details(run.id, verdict)
 
-        if verdict.passed:
+        if undetected:
             await catalog.record_success(attack, target_type)
 
     def _persist_oracle_details(self, run_id: str, verdict: Verdict) -> None:

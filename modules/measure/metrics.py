@@ -80,16 +80,20 @@ class MetricsAggregator:
 
         Joins every verdict to its attack so an attempt with no verdict (a
         malformed proposal the loop never submitted) is excluded from the
-        denominator: catch rate is recall over judged submissions only.
+        denominator: catch rate is recall over judged submissions only. An
+        attack is "caught" when it was not undetected, where the undetected
+        signal is the loop's domain-appropriate one (the oracle verdict for a
+        code target, the model's own query_target evasion for a scored model),
+        persisted on ``attacks.succeeded`` so this read is target-agnostic.
         """
-        stmt = select(AttackRow.white_box, VerdictRow.passed, VerdictRow.created_at).join(
+        stmt = select(AttackRow.white_box, AttackRow.succeeded, VerdictRow.created_at).join(
             VerdictRow, VerdictRow.attack_id == AttackRow.id
         )
         rows = (await self.session.execute(stmt)).all()
 
         buckets: dict[bool, list[tuple[bool, datetime]]] = {False: [], True: []}
-        for white_box, passed, created_at in rows:
-            buckets[white_box].append((passed, created_at))
+        for white_box, undetected, created_at in rows:
+            buckets[white_box].append((undetected, created_at))
 
         black = self._bucket("black_box", buckets[False])
         white = self._bucket("white_box", buckets[True])
@@ -103,7 +107,7 @@ class MetricsAggregator:
     @staticmethod
     def _bucket(box: str, rows: list[tuple[bool, datetime]]) -> CatchRate:
         judged = len(rows)
-        caught = sum(1 for passed, _ in rows if not passed)
+        caught = sum(1 for undetected, _ in rows if not undetected)
         latest = max((created_at for _, created_at in rows), default=None)
         return CatchRate(
             box=box,

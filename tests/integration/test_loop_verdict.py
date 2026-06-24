@@ -21,8 +21,10 @@ from modules.targets.dummy import DummyTarget
 from orchestrator.loop import Loop
 from orchestrator.wiring import Registry
 from shared.persistence import get_sessionmaker
+from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import Verdict as VerdictRow
 from shared.types import (
+    AuditTrace,
     OracleVote,
     ProbeResult,
     ProbeStatus,
@@ -71,6 +73,76 @@ class _FixedOracle:
 
     async def self_test(self) -> ProbeResult:
         return ProbeResult(status=ProbeStatus.GREEN, detail={"name": self.name})
+
+
+@dataclass(frozen=True, slots=True)
+class _ScoredTarget:
+    """A scored-model target double (oracle_verified=False) emitting a numeric artifact.
+
+    Mirrors the fraud target: the code oracles cannot check the numeric output,
+    so the loop must take the red search's score-based evasion as the undetected
+    signal instead of the oracle verdict.
+    """
+
+    target_type: TargetType = TargetType.FRAUD
+    display_name: str = "Scored"
+    description: str = "Scored model double."
+    artifact_ref: str = "scored@v0"
+    oracle_verified: bool = False
+
+    async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
+        score = await self.query_target(attack_input)
+        return TargetOutput(
+            output={"fraud_probability": score}, score=score,
+            audit=AuditTrace(summary="scored model", steps=()),
+        )
+
+    async def query_target(self, attack_input: dict[str, Any]) -> float:
+        return 0.1  # below the evasion threshold: the model missed it
+
+    async def self_test(self) -> ProbeResult:
+        return ProbeResult(status=ProbeStatus.GREEN, detail={})
+
+
+async def test_scored_target_undetected_is_query_target_evasion_not_oracle_verdict(
+    client: AsyncClient, tmp_path: Path
+) -> None:
+    # The oracle ensemble would NEVER pass this attack (the only voter abstains),
+    # yet a scored target's evasion is the model's own miss; the loop must
+    # persist the attempt as undetected (succeeded=True) off the red signal.
+    resp = await client.post("/runs", json={**_DUMMY_RUN, "target_type": "fraud"})
+    assert resp.status_code == 201, resp.text
+    run_id = resp.json()["run_id"]
+
+    registry = Registry(
+        targets={TargetType.FRAUD: _ScoredTarget()},
+        oracles=(_FixedOracle("held_out", 1.0, VerdictDecision.UNAVAILABLE),),
+        aggregator=VerdictAggregator(),
+        red=ScriptedRed(
+            [attempt("evasion", {"Amount": 1.0}, white_box=False, succeeded=True)]
+        ),
+    )
+    async with get_sessionmaker()() as session:
+        await Loop(
+            session=session, registry=registry, catalog_jsonl=tmp_path / "c.jsonl"
+        ).run(run_id)
+
+    async with get_sessionmaker()() as session:
+        attacks = (
+            (await session.execute(select(AttackRow).where(AttackRow.run_id == run_id)))
+            .scalars()
+            .all()
+        )
+        verdicts = (
+            (await session.execute(select(VerdictRow).where(VerdictRow.run_id == run_id)))
+            .scalars()
+            .all()
+        )
+        assert len(attacks) == 1
+        # Undetected by the model's own score, even though the oracle verdict failed.
+        assert attacks[0].succeeded is True
+        assert len(verdicts) == 1
+        assert verdicts[0].passed is False
 
 
 async def test_loop_persists_one_verdict_per_attempt(
