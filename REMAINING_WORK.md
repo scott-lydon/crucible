@@ -147,7 +147,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B2 — `/halt` is meaningful (threshold defensible against real recall)
 
-- [ ] **DONE-CRITERION** A test, gated by A1 having run, asserts that if
+- [x] **DONE-CRITERION** A test, gated by A1 having run, asserts that if
   the measured white-box recall is below `HALT_RECALL_THRESHOLD` then
   `GET /halt` returns `halted: true` and a subsequent `POST /runs` returns
   409.
