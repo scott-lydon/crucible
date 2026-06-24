@@ -30,7 +30,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
-from modules.measure import CorpusExporter, MetricsAggregator
+from modules.measure import (
+    CorpusExporter,
+    MetricsAggregator,
+    ReportRunNotFoundError,
+    RiskReport,
+)
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
@@ -408,6 +413,32 @@ async def get_blue_patch(patch_id: str, session: SessionDep) -> dict[str, Any]:
             for m in versions
         ],
     }
+
+
+# The .pdf route is registered before /reports/{run_id} so the literal suffix
+# wins; otherwise {run_id} would greedily capture "abc.pdf".
+@app.get("/reports/{run_id}.pdf")
+async def report_pdf(run_id: str, session: SessionDep) -> Response:
+    """The same SR 11-7 report as a downloadable PDF (US-12)."""
+    try:
+        pdf = await RiskReport(session=session).render_pdf(run_id)
+    except ReportRunNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=crucible-report-{run_id}.pdf"},
+    )
+
+
+@app.get("/reports/{run_id}")
+async def report_markdown(run_id: str, session: SessionDep) -> dict[str, Any]:
+    """The SR 11-7 report for a run as Markdown, numbers linked to their rows (US-12)."""
+    try:
+        markdown = await RiskReport(session=session).render_markdown(run_id)
+    except ReportRunNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="run not found") from exc
+    return {"run_id": run_id, "markdown": markdown}
 
 
 @app.get("/corpus")
