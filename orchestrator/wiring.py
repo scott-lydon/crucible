@@ -15,7 +15,7 @@ from examples.targets.fraud_synth import (
 from examples.targets import fraud_sparkov
 
 from modules.targets.local_model.adapter import LocalModelTarget
-from modules.blue.proposer import BlueProposer
+from modules.blue.code_engineer import BlueCodeEngineer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
 from modules.red.hybrid.adversary import HybridAdversary
@@ -27,6 +27,7 @@ from modules.oracles.differential.oracle import DifferentialOracle
 from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from shared.llm import AnthropicApiProvider, MockProvider
 from shared.llm.base import LLMProvider
+from shared.sandbox import LocalDockerSandbox
 
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
@@ -78,7 +79,9 @@ def build_components_sparkov(
     red_provider: LLMProvider | None = None,
     red_max_calls: int | None = 20,
     blue_provider: LLMProvider | None = None,
-    blue_max_calls: int | None = 5,
+    blue_max_iters: int = 3,
+    blue_max_repairs: int = 1,
+    blue_sandbox: object | None = None,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
@@ -101,12 +104,23 @@ def build_components_sparkov(
     after which the LLM agent returns None and the deterministic fallback drives
     the loop (bounding spend while keeping co-evolution alive).
 
-    For the blue pillar this also returns ``retrain_fn`` (the victim's
-    ``retrain_with_features`` wrapped to yield a generic ``LocalModelTarget`` over
-    the new feature set), ``available_features``/``current_features``, and a
-    ``BlueProposer`` (real Sonnet 4.6 by default per constitution §1, capped by
-    ``blue_max_calls``; tests inject a ``MockProvider`` or set ``blue_max_calls=0``
-    to use the deterministic fallback).
+    For the blue pillar this wires Option B — a genuine code-engineering maker:
+    a ``BlueCodeEngineer`` that gets ONLY the RAW data surface (no derived menu)
+    and writes a feature-engineering transform, the locked-down
+    ``LocalDockerSandbox`` that runs that untrusted code, the victim's
+    ``load_raw_rows``/``load_holdout_raw_rows`` raw rows, ``retrain_with_engineered``
+    (base features + the engineered column), and the base feature names. The maker
+    uses REAL Opus 4.8 by default.
+
+    DEVIATION FROM CONSTITUTION §1: §1 puts Sonnet 4.6 on the inner blue loop, but
+    blue here generates CODE (a feature-engineering transform run in the sandbox),
+    so it is held to the higher Opus tier per the operator's documented preference
+    (see ``constitution.md`` §1 deviation note and ``CLAUDE.md`` "Opus everywhere"
+    BUILD-TIME scope — this RUNTIME use of Opus for blue codegen is the explicit,
+    narrow exception). Tests inject a deterministic mock provider + an in-process
+    sandbox so the suite makes ZERO real LLM calls. The maker is bounded
+    (``blue_max_iters``/``blue_max_repairs``) and ALLOWED TO FAIL — no guaranteed
+    recovery.
     """
     spec = fraud_sparkov.load_spec()
     detector: Detector = LocalModelTarget(
@@ -151,20 +165,31 @@ def build_components_sparkov(
             max_calls=judge_max_calls,
         ),
     ]
-    # Blue pillar: the victim's retrain capability, wrapped so the harness gets
-    # back a generic Detector (LocalModelTarget) over the new feature ORDER. The
-    # harness never imports the victim's retrainer — it is injected here, at the
-    # one composition root permitted to see examples/.
-    def retrain_fn(feature_names: Sequence[str]) -> Detector:
-        path = fraud_sparkov.retrain_with_features(list(feature_names))
-        return LocalModelTarget(model_path=path, feature_names=list(feature_names))
+    # Blue pillar (Option B): the victim's RAW surface + engineered-retrain
+    # capability, injected here at the one composition root permitted to see
+    # examples/. The harness never imports the victim — it only sees a generic
+    # Detector and plain raw-row dicts.
+    def retrain_engineered_fn(
+        train_rows: Sequence[dict[str, object]],
+        engineered_values: Sequence[float],
+        engineer: Callable[[dict[str, object]], float],
+    ) -> Detector:
+        return fraud_sparkov.retrain_with_engineered(
+            list(train_rows),
+            list(engineered_values),
+            list(fraud_sparkov.BASE_FEATURES),
+            engineer,
+        )
 
-    blue_proposer = BlueProposer(
+    blue_engineer = BlueCodeEngineer(
         provider=blue_provider
         if blue_provider is not None
-        else AnthropicApiProvider(model="claude-sonnet-4-6"),
-        max_calls=blue_max_calls,
+        # Opus 4.8 for blue CODE generation (documented §1 deviation; see docstring).
+        else AnthropicApiProvider(model="claude-opus-4-8"),
+        max_iters=blue_max_iters,
+        max_repairs=blue_max_repairs,
     )
+    sandbox = blue_sandbox if blue_sandbox is not None else LocalDockerSandbox()
 
     return {
         "detector": detector,
@@ -174,8 +199,14 @@ def build_components_sparkov(
         "generate_fn": fraud_sparkov.generate_batch,
         "spec": spec,
         "catalog": catalog,
-        "retrain_fn": retrain_fn,
-        "available_features": list(fraud_sparkov.AVAILABLE_FEATURES),
-        "current_features": list(fraud_sparkov.DETECTOR_FEATURES),
-        "blue_proposer": blue_proposer,
+        "retrain_engineered_fn": retrain_engineered_fn,
+        "load_raw_rows": fraud_sparkov.load_raw_rows,
+        "load_holdout_raw_rows": fraud_sparkov.load_holdout_raw_rows,
+        "base_features": list(fraud_sparkov.BASE_FEATURES),
+        "raw_columns": list(fraud_sparkov.RAW_COLUMNS),
+        "blue_engineer": blue_engineer,
+        "blue_sandbox": sandbox,
+        # The raw holdout has no derived `hour`, so the derived `is_fraud` rule
+        # cannot read it — the maker validates against the REAL committed label.
+        "raw_label_fn": fraud_sparkov.raw_is_fraud,
     }

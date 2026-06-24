@@ -7,7 +7,7 @@ from typing import AsyncIterator, cast
 from fastapi import BackgroundTasks, FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from modules.blue.proposer import BlueProposer
+from modules.blue.code_engineer import BlueCodeEngineer
 from modules.measure.metrics import compute_run_metrics
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
@@ -22,6 +22,7 @@ from orchestrator.wiring import (
 from shared.env import load_env
 from shared.persistence import repo
 from shared.persistence.models import RunRow
+from shared.sandbox.base import Sandbox
 from shared.types import SealedSpec
 from shared.types.enums import OracleKind, Vote
 
@@ -42,12 +43,26 @@ async def _lifespan(application: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="Crucible Fraud MVP v0", lifespan=_lifespan)
 
 
+# Per-target default batch sizes. Sparkov uses the larger demo default so the
+# red loop lands MORE evasions, giving the blue expand loop a bigger, more
+# representative holdout to recover on. Both stay inside the ``le=200`` bound.
+_DEFAULT_BATCH: dict[str, int] = {"sparkov": 120, "synth": 40}
+
+
 class LaunchRequest(BaseModel):
     target: str = Field("sparkov", pattern="^(sparkov|synth)$")
     rounds: int = Field(3, ge=1, le=5)
-    batch_size: int = Field(40, ge=2, le=200)
+    # ``None`` => resolve a target-aware default in ``create_run`` (sparkov=120,
+    # synth=40). An explicit value is still bounded to [2, 200].
+    batch_size: int | None = Field(None, ge=2, le=200)
     seed: str = "seed-1"
     run_blue: bool = True
+
+    def resolved_batch_size(self) -> int:
+        """Caller's batch_size, or the target's demo default when unset."""
+        if self.batch_size is not None:
+            return self.batch_size
+        return _DEFAULT_BATCH.get(self.target, 40)
 
 
 @app.get("/health")
@@ -63,6 +78,7 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
     error here is captured against the run row, never swallowed.
     """
     sf = session_factory()
+    batch_size = req.resolved_batch_size()
     if req.target == "sparkov":
         overrides = SPARKOV_TEST_OVERRIDES or {}
         build_sparkov = cast(
@@ -80,14 +96,14 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
     spec = cast(SealedSpec, comp["spec"])
 
     # Blue composition needs the sparkov-only seams; synth has no blue arc.
-    blue_ready = req.run_blue and "blue_proposer" in comp
+    blue_ready = req.run_blue and "blue_engineer" in comp
     if blue_ready:
         await run_with_blue(
             sf,
             run_id=run_id,
             seed=req.seed,
             n_rounds=req.rounds,
-            batch_size=req.batch_size,
+            batch_size=batch_size,
             threshold=DEFAULT_THRESHOLD,
             detector=detector,
             adversary=adversary,
@@ -96,12 +112,20 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
             generate_fn=generate_fn,
             spec=spec,
             catalog=comp["catalog"],
-            proposer=cast(BlueProposer, comp["blue_proposer"]),
-            retrain_fn=cast(
-                Callable[[Sequence[str]], object], comp["retrain_fn"]
+            engineer_agent=cast(BlueCodeEngineer, comp["blue_engineer"]),
+            sandbox=cast(Sandbox, comp["blue_sandbox"]),
+            retrain_engineered_fn=cast(
+                Callable[..., Detector], comp["retrain_engineered_fn"]
             ),
-            available_features=cast(Sequence[str], comp["available_features"]),
-            current_features=cast(Sequence[str], comp["current_features"]),
+            load_raw_rows=cast(
+                Callable[..., list[dict[str, object]]], comp["load_raw_rows"]
+            ),
+            load_holdout_raw_rows=cast(
+                Callable[..., list[object]], comp["load_holdout_raw_rows"]
+            ),
+            base_features=cast(Sequence[str], comp["base_features"]),
+            raw_columns=cast(Sequence[str], comp["raw_columns"]),
+            raw_label_fn=cast(Callable[[object], bool], comp["raw_label_fn"]),
         )
     else:
         await run_loop(
@@ -109,7 +133,7 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
             run_id=run_id,
             seed=req.seed,
             n_rounds=req.rounds,
-            batch_size=req.batch_size,
+            batch_size=batch_size,
             threshold=DEFAULT_THRESHOLD,
             detector=detector,
             adversary=adversary,
@@ -145,7 +169,7 @@ async def create_run(
                 seed=req.seed,
                 status="running",
                 n_rounds=req.rounds,
-                batch_size=req.batch_size,
+                batch_size=req.resolved_batch_size(),
                 threshold=DEFAULT_THRESHOLD,
                 params_json=req.model_dump(),
             )
@@ -210,6 +234,7 @@ async def get_blue_round(run_id: str) -> dict[str, object]:
             "n_holdout": row.n_holdout,
             "proposer_rationale": row.proposer_rationale,
             "new_model_ref": row.new_model_ref,
+            "iteration_trail": row.iteration_trail,
         }
 
 

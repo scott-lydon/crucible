@@ -1,56 +1,46 @@
 """Orchestrator-level full-arc flow: red -> verify -> measure -> blue -> recover.
 
 ``run_with_blue`` composes the generic ``run_loop`` (red -> verify -> measure,
-persisting rounds/attacks/verdicts) with the blue recovery round. ``run_loop``
-itself stays target-agnostic and blue-free; the composition happens HERE, where
-the orchestrator already owns the run lifecycle.
+persisting rounds/attacks/verdicts) with the Option-B blue recovery round.
+``run_loop`` itself stays target-agnostic and blue-free; the composition happens
+HERE, where the orchestrator already owns the run lifecycle.
 
-After the red loop, this harvests THIS run's successful evasions from
-``AttackRow`` (``evaded AND true_label_preserved``), reconstructs the held-out
-mutated samples from the persisted feature maps, calls ``run_blue_round`` with
-the components' proposer / retrain_fn / feature sets, and persists a
-``BlueRoundRow`` with the ``BlueResult``.
+After the red loop, this confirms THIS run produced successful evasions
+(``evaded AND true_label_preserved``) — proof the red loop found the gap — then
+runs the genuine code-engineering blue maker over the victim's RAW data surface:
+a bounded raw training sample plus a held-out set of RAW evasions (real
+night-hour frauds with ``amt`` lowered, the exact metamorphic evasion). The maker
+discovers a transform, the harness sandbox-runs it, retrains, and measures
+recovery — iterating with feedback and ALLOWED TO FAIL. The best result plus the
+full iteration trail are persisted as a ``BlueRoundRow``.
 
-The samples are reconstructed as plain attribute-bearing objects
-(``SimpleNamespace``) from the persisted ``to_features`` dict — the detector
-(``LocalModelTarget``) and the victim ``label_fn`` both read features via
-attribute access, so the harness never needs to import the victim record type
-(import-discipline: only ``orchestrator/wiring.py`` may see ``examples/``).
+The harness stays victim-agnostic: the raw rows, the engineered-retrain callback,
+and the base/raw feature lists are all INJECTED from the composition root
+(``orchestrator/wiring.py``, the only place permitted to import ``examples/``).
 """
 
 import uuid
 from collections.abc import Callable, Sequence
-from types import SimpleNamespace
-from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from modules.blue.loop import run_blue_round
-from modules.blue.proposer import BlueProposer
+from modules.blue.code_engineer import BlueCodeEngineer
+from modules.blue.loop import BlueResult, run_blue_round
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import GenerateFn, LabelFn, run_loop
 from shared.persistence import repo
-from shared.persistence.models import AttackRow, BlueRoundRow
+from shared.persistence.models import BlueRoundRow
+from shared.sandbox.base import Sandbox
 from shared.types import SealedSpec
 
-
-def _harvest_holdout(rows: Sequence[AttackRow]) -> list[object]:
-    """Reconstruct the mutated, still-fraud, old-detector-cleared evasions.
-
-    One sample per distinct ``txn_index`` (the latest mutation persisted last
-    wins by dedup on first-seen, mirroring the demo test). Returned as plain
-    attribute objects so the harness stays victim-agnostic.
-    """
-    holdout: list[object] = []
-    seen: set[object] = set()
-    for row in rows:
-        to_features = cast(dict[str, object], row.mutation_json["to_features"])
-        key = to_features.get("txn_index")
-        if key in seen:
-            continue
-        seen.add(key)
-        holdout.append(SimpleNamespace(**to_features))
-    return holdout
+# The raw training set for the engineered retrain. ``None`` = the FULL dataset:
+# the fraud base rate is ~0.6%, so a subsample starves the engineered feature of
+# signal and recovery collapses. The sandbox VET runs over a small bounded prefix
+# only (so the untrusted-execution cost stays tiny); the trusted retrain uses all
+# rows. The maker's single engineered feature recovers a real ~0.2 share — honest,
+# bounded, not a rigged number (amt still dominates the model).
+_TRAIN_SAMPLE_N: int | None = None
+_HOLDOUT_N = 200
 
 
 async def run_with_blue(
@@ -68,18 +58,21 @@ async def run_with_blue(
     generate_fn: GenerateFn,
     spec: SealedSpec,
     catalog: object,
-    proposer: BlueProposer,
-    retrain_fn: Callable[[Sequence[str]], object],
-    available_features: Sequence[str],
-    current_features: Sequence[str],
+    engineer_agent: BlueCodeEngineer,
+    sandbox: Sandbox,
+    retrain_engineered_fn: Callable[..., Detector],
+    load_raw_rows: Callable[..., list[dict[str, object]]],
+    load_holdout_raw_rows: Callable[..., list[object]],
+    base_features: Sequence[str],
+    raw_columns: Sequence[str],
+    raw_label_fn: Callable[[object], bool],
 ) -> None:
     """Run the full red->verify->measure->blue->recover arc for one run.
 
     ``run_loop`` is invoked first (and persists rounds/attacks/verdicts as
-    today). Then the successful evasions are harvested and the blue recovery
-    round runs and is persisted as a ``BlueRoundRow``. ``run_loop`` raises (and
-    marks the run failed) on its own errors; if it completes, the blue round
-    runs against the persisted evasions.
+    today). If the red loop produced successful evasions, the Option-B blue round
+    runs over the RAW data surface and is persisted as a ``BlueRoundRow`` (best
+    result + the full iteration trail). Recovery is NOT guaranteed.
     """
     await run_loop(
         session_factory,
@@ -98,24 +91,33 @@ async def run_with_blue(
 
     async with session_factory() as s:
         attacks = await repo.attacks_for_run(s, run_id)
-    successful = [
-        a for a in attacks if a.evaded and a.true_label_preserved
-    ]
-    holdout = _harvest_holdout(successful)
-    if not holdout:
-        # No successful evasions to recover from — nothing to persist. The run
-        # is already marked complete by run_loop; surface honestly via no row.
+    successful = [a for a in attacks if a.evaded and a.true_label_preserved]
+    if not successful:
+        # The red loop found no gap — nothing for blue to recover. Honest: no row.
+        return
+
+    # The maker works on RAW rows: a bounded training sample and a held-out set of
+    # RAW evasions (real night-frauds with amt lowered — the same evasion the red
+    # loop just landed). Seeded off the run seed for reproducibility.
+    row_seed = abs(hash(seed)) % (2**31)
+    train_rows = load_raw_rows(limit=_TRAIN_SAMPLE_N, seed=row_seed)
+    holdout_rows = load_holdout_raw_rows(limit=_HOLDOUT_N, seed=row_seed)
+    if not holdout_rows:
         return
 
     result = run_blue_round(
         catalog=catalog,
-        current_features=current_features,
-        available_features=available_features,
-        retrain_fn=retrain_fn,
-        holdout_samples=holdout,
-        label_fn=label_fn,
+        base_features=base_features,
+        raw_columns=raw_columns,
+        train_rows=train_rows,
+        holdout_rows=holdout_rows,
+        sandbox=sandbox,
+        engineer_agent=engineer_agent,
+        retrain_engineered_fn=retrain_engineered_fn,
+        # The raw holdout carries no derived `hour`; validate against the REAL
+        # committed label, not the derived `is_fraud` rule used by the red loop.
+        label_fn=raw_label_fn,
         threshold=threshold,
-        proposer=proposer,
         old_detector=detector,
     )
 
@@ -126,14 +128,31 @@ async def run_with_blue(
             BlueRoundRow(
                 id=str(uuid.uuid4()),
                 run_id=run_id,
-                features_added=list(result.patch.features_to_add),
+                # The engineered feature the BEST iteration added (empty on an
+                # honest fail where nothing recovered).
+                features_added=[result.feature_name] if result.new_detector else [],
                 detection_before=v.detection_before,
                 detection_after=v.detection_after,
                 recovered=v.recovered,
                 n_holdout=v.n,
-                proposer_rationale=result.patch.rationale,
-                new_model_ref=str(result.new_model_path)
-                if result.new_model_path is not None
-                else None,
+                proposer_rationale=result.rationale,
+                new_model_ref=None,
+                iteration_trail=_iteration_trail(result),
             ),
         )
+
+
+def _iteration_trail(result: BlueResult) -> list[dict[str, object]]:
+    """The full per-iteration trail (rationale/code/sandbox_ok/recovered) as JSON."""
+    return [
+        {
+            "rationale": it.rationale,
+            "feature_name": it.feature_name,
+            "engineer_src": it.engineer_src,
+            "sandbox_ok": it.sandbox_ok,
+            "error": it.error,
+            "detection_after": it.detection_after,
+            "recovered": it.recovered,
+        }
+        for it in result.iterations
+    ]

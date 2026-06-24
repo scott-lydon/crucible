@@ -20,6 +20,15 @@ from examples.targets.fraud_sparkov.loader import (
     load_records,
     verify_checksum,
 )
+from examples.targets.fraud_sparkov.raw_surface import (
+    BASE_FEATURES,
+    RAW_COLUMNS,
+    EngineeredDetector,
+    load_holdout_raw_rows,
+    load_raw_rows,
+    raw_is_fraud,
+    retrain_with_engineered,
+)
 from examples.targets.fraud_sparkov.record import SparkovTxn
 from examples.targets.fraud_sparkov.retrain import (
     AVAILABLE_FEATURES,
@@ -37,12 +46,15 @@ from examples.targets.fraud_sparkov.spec import SPEC_PATH, load_spec
 __all__ = [
     "AMT_HIGH",
     "AVAILABLE_FEATURES",
+    "BASE_FEATURES",
     "BATCH_FRAUD_RATE",
     "CURRENT_FEATURES",
     "DETECTOR_FEATURES",
     "DETECTOR_THRESHOLD",
+    "EngineeredDetector",
     "MODEL_PATH",
     "NIGHT_HOURS",
+    "RAW_COLUMNS",
     "RISKY_CATEGORIES",
     "SECOND_MODEL_FEATURES",
     "SECOND_MODEL_PATH",
@@ -52,8 +64,12 @@ __all__ = [
     "is_fraud",
     "isoforest_is_fraud",
     "load_dataframe",
+    "load_holdout_raw_rows",
+    "load_raw_rows",
     "load_records",
     "load_spec",
+    "raw_is_fraud",
+    "retrain_with_engineered",
     "retrain_with_features",
     "verify_checksum",
 ]

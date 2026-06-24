@@ -99,5 +99,8 @@ class BlueRoundRow(Base):
     n_holdout: Mapped[int] = mapped_column(Integer)
     proposer_rationale: Mapped[str] = mapped_column(String)
     new_model_ref: Mapped[str | None] = mapped_column(String, nullable=True)
+    # The full Option-B iteration trail: one entry per propose->sandbox->retrain
+    # ->validate attempt (rationale, engineered code, sandbox_ok, recovered).
+    iteration_trail: Mapped[list[dict[str, object]]] = mapped_column(JSON, default=list)
     pillar: Mapped[str] = mapped_column(String, default="blue")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)

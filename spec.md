@@ -95,6 +95,8 @@ Each story is owned by one of the four pillar owners (Targets-and-Oracles, Red, 
 - **Then** `/blue/:patchId` shows (a) the proposed feature additions, (b) the proposed adversarial training samples with provenance to the catalog entries, (c) a "Validate on Held-Out Attacks" button.
 - **And** the held-out validation never touches the attacks the patch was built from; if it does, the orchestrator refuses to apply the patch and surfaces a typed error.
 
+> **Implementation note (Option B, 2026-06-24).** The blue maker does NOT pick feature additions off a menu. It is given ONLY the raw data columns and the attack pattern, REASONS to a hypothesis, and WRITES a feature-engineering transform (Python source). The harness runs that untrusted code in the Docker producer sandbox over a bounded sample, retrains on the base features plus the one engineered column, validates recovery on the held-out evasions, and iterates with feedback. It is bounded and **allowed to fail** — there is no guaranteed-recovery fallback, and recovery from a single engineered feature is honestly partial (amt still dominates the model). Per constitution §1 deviation, the maker runs on **Opus 4.8** (code generation held to the higher tier), not the §1-default Sonnet.
+
 **Owner:** Blue.
 
 ### US-8. See platform health for every subcomponent
