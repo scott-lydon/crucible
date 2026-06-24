@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from orchestrator.interfaces import Oracle, RedAgent, Target
+from orchestrator.interfaces import Oracle, Primable, RedAgent, Target
 from orchestrator.wiring import Container
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
@@ -176,6 +176,15 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         target = container.get_target(target_kind)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
+
+        # Reuse across runs (cr-b2): seed the attacker with the most evasive tactics the
+        # strategy catalog distilled from PRIOR runs against this target type.
+        if isinstance(red, Primable):
+            async with session_scope() as session:
+                known = await container.tactic_loader(session, target_kind)
+            red.prime(known)
+            if known:
+                await sink.emit(run_id, "red_primed", {"n_tactics": len(known)})
 
         last_verdict: Verdict | None = None
         for i in range(budget_rounds):

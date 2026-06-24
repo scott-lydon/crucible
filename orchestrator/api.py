@@ -21,6 +21,7 @@ from modules.measure.corpus import export_corpus
 from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown
+from modules.red.catalog import build_catalog
 from orchestrator.loop import create_run, run_loop
 from orchestrator.wiring import get_container
 from shared.persistence.db import session_scope
@@ -226,21 +227,14 @@ async def get_corpus(run_id: str | None = None) -> Response:
 
 
 @app.get("/catalog")
-async def get_catalog(run_id: str | None = None) -> list[dict[str, object]]:
-    """Strategy catalog: successful (undetected) tactics, grouped (spec US-6)."""
+async def get_catalog(
+    run_id: str | None = None, target_kind: str | None = None
+) -> list[dict[str, object]]:
+    """Strategy catalog: the attacker's distilled, named tactics across runs, with how
+    often each was used and how often it slipped the verification panel (spec US-6,
+    cr-b2). Target-agnostic; optionally filtered by run or target kind."""
     async with session_scope() as session:
-        rows = await export_corpus(session, run_id)
-    counts: dict[str, int] = {}
-    meta: dict[str, dict[str, object]] = {}
-    for row in rows:
-        tactic = str(row["tactic"])
-        counts[tactic] = counts.get(tactic, 0) + 1
-        if tactic not in meta:
-            meta[tactic] = {"tactic": tactic, "target_type": row["target_type"],
-                            "first_run": row["run_id"], "white_box": False}
-        if row["white_box"]:
-            meta[tactic]["white_box"] = True
-    return [{**meta[t], "reuse_count": counts[t]} for t in meta]
+        return await build_catalog(session, target_kind=target_kind, run_id=run_id)
 
 
 @app.get("/reports/{run_id}")

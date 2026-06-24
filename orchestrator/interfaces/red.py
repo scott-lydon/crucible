@@ -4,12 +4,19 @@ runs the black-box and the white-box pass (constitution.md section 3)."""
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable, Sequence
 from typing import Protocol, runtime_checkable
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.types.core import Attack, Verdict
 from shared.types.ids import RunId
 from shared.types.results import HealthStatus
 from shared.types.sealed_spec import SealedSpec
+
+# Loads the strategy catalog's most evasive prior-run tactics for a target kind, so the
+# loop can prime a Primable red at run start (cr-b2). Injected through wiring.
+TacticLoader = Callable[[AsyncSession, str], Awaitable[list[str]]]
 
 
 @runtime_checkable
@@ -27,3 +34,10 @@ class RedAgent(Protocol):
         ...
 
     async def health(self) -> HealthStatus: ...
+
+
+@runtime_checkable
+class Primable(Protocol):
+    """A red agent that can be seeded with prior-run tactics before a run (cr-b2)."""
+
+    def prime(self, known_tactics: Sequence[str]) -> None: ...

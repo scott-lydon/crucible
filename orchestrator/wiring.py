@@ -22,6 +22,7 @@ from modules.oracles.held_out.oracle import FraudHeldOutOracle
 from modules.oracles.llm_judge.oracle import LLMJudgeOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
 from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
+from modules.red.catalog import load_known_tactics
 from modules.red.llm_agent import LLMAgentRed
 from modules.red.llm_hybrid import LLMHybridFraudRed
 from modules.red.static import StaticRedAgent
@@ -39,6 +40,7 @@ from orchestrator.interfaces import (
     MeasureSink,
     Oracle,
     RedAgent,
+    TacticLoader,
     Target,
     VerifyFn,
 )
@@ -144,6 +146,7 @@ class Container:
     default_red: RedAgent
     verify: VerifyFn
     spec_compiler: SpecCompiler = field(default_factory=DeterministicSpecCompiler)
+    tactic_loader: TacticLoader = load_known_tactics
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
     reds: dict[str, RedAgent] = field(default_factory=dict)
