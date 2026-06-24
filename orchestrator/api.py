@@ -25,7 +25,15 @@ from modules.red.catalog import build_catalog
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
 from shared.persistence.db import session_scope
-from shared.persistence.models import AttackRow, LLMCallRow, Run, VerdictRow
+from shared.persistence.models import (
+    AgentConfigRow,
+    AttackRow,
+    CoevolutionRoundRow,
+    LLMCallRow,
+    Run,
+    VerdictRow,
+)
+from shared.persistence.store import coevolution_series
 from shared.telemetry.log import configure_logging
 from shared.types.core import AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
@@ -201,6 +209,55 @@ async def list_verdicts(run_id: str) -> list[dict[str, object]]:
         }
         for v in rows
     ]
+
+
+@app.get("/coevolution/{run_id}")
+async def get_coevolution(run_id: str) -> list[dict[str, object]]:
+    """The co-evolution series for a run (cr-d4): per round, ASR (the agent's failure
+    rate), detection, the agent config version it ran, and the blue's before/after
+    held-out safe-rate — the curves the dashboard plots (spec US-7)."""
+    async with session_scope() as session:
+        rounds = await coevolution_series(session, run_id)
+    return [
+        {
+            "round": r.round_index, "asr": r.asr, "detection": r.detection,
+            "config_version": r.config_version, "n_attacks": r.n_attacks,
+            "n_caught": r.n_caught, "patch_id": r.patch_id,
+            "safe_before": r.safe_before, "safe_after": r.safe_after,
+            "summary": r.audit_trace.get("patch_summary"),
+            "validated": r.audit_trace.get("validated"),
+            "new_version": r.audit_trace.get("new_version"),
+        }
+        for r in rounds
+    ]
+
+
+@app.get("/blue/{patch_id}")
+async def get_blue_patch(patch_id: str) -> dict[str, object]:
+    """One blue hardening patch (cr-d4): the rewritten system prompt, the before/after
+    held-out safe-rate, and whether it validated (spec US-7)."""
+    async with session_scope() as session:
+        row = (
+            await session.execute(
+                select(CoevolutionRoundRow).where(CoevolutionRoundRow.patch_id == patch_id))
+        ).scalar_one_or_none()
+        if row is None:
+            raise HTTPException(status_code=404, detail="patch not found")
+        new_version = row.audit_trace.get("new_version")
+        cfg = (
+            await session.execute(
+                select(AgentConfigRow).where(
+                    AgentConfigRow.run_id == row.run_id,
+                    AgentConfigRow.version == new_version))
+        ).scalar_one_or_none()
+    return {
+        "patch_id": patch_id, "runId": row.run_id, "round": row.round_index,
+        "base_version": row.config_version, "new_version": new_version,
+        "safe_before": row.safe_before, "safe_after": row.safe_after,
+        "validated": row.audit_trace.get("validated"),
+        "summary": row.audit_trace.get("patch_summary"),
+        "new_system_prompt": cfg.system_prompt if cfg is not None else None,
+    }
 
 
 @app.get("/runs/{run_id}/llm_calls")

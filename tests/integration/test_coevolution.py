@@ -80,6 +80,25 @@ def test_coevolution_runs_and_persists_rounds(client: TestClient) -> None:
     assert any(c["source"] == "blue" for c in configs)
 
 
+def test_coevolution_and_blue_endpoints(client: TestClient) -> None:
+    run_id = _run(client, _COEVO_RUN)
+    series = client.get(f"/coevolution/{run_id}").json()
+    assert len(series) == 2
+    for row in series:
+        assert "asr" in row and "detection" in row and "config_version" in row
+        assert "safe_before" in row and "safe_after" in row
+
+    # The blue patch detail surfaces the rewritten system prompt (cr-d4 Inspect).
+    patch_id = series[0]["patch_id"]
+    assert patch_id
+    patch = client.get(f"/blue/{patch_id}").json()
+    assert patch["patch_id"] == patch_id
+    assert patch["runId"] == run_id
+    assert patch["new_system_prompt"]                  # the rewritten guardrail prompt
+    assert patch["new_version"] == series[0]["new_version"]
+    assert client.get("/blue/nonexistent-patch").status_code == 404
+
+
 # --- the curves move with a prompt-responsive agent ------------------------------
 
 class _ResponsiveAgent:
