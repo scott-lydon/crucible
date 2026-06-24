@@ -17,9 +17,19 @@ from shared.types import OracleVote, ProbeResult, SealedSpec, TargetOutput
 class Oracle(Protocol):
     """One non-colluding check over a submission."""
 
-    name: str
-    # Four oracles carry weight 1.0; the LLM judge carries 0.5 (US-4).
-    weight: float
+    @property
+    def name(self) -> str:
+        """The oracle's stable name, shown on its verdict card."""
+        ...
+
+    @property
+    def weight(self) -> float:
+        """Vote weight. Four oracles carry 1.0; the LLM judge carries 0.5 (US-4).
+
+        Read-only so an oracle can be a frozen value object and still satisfy
+        the Protocol (same pattern as Target.target_type).
+        """
+        ...
 
     async def verify(
         self,
