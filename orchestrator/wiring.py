@@ -9,19 +9,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from modules.oracles.held_out import HeldOutOracle
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
-from orchestrator.errors import NoTargetRegisteredError
-from orchestrator.interfaces import Target
+from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
+from orchestrator.interfaces import Oracle, Target
 from shared.llm import get_llm_client
+from shared.sandbox import DockerSandbox
 from shared.types import TargetType
 
 
 @dataclass(frozen=True, slots=True)
 class Registry:
-    """The wired set of targets (and, in later slices, oracles, red, blue)."""
+    """The wired set of targets and oracles (red and blue added in later slices)."""
 
     targets: dict[TargetType, Target]
+    oracles: tuple[Oracle, ...]
 
     def target_for(self, target_type: TargetType) -> Target:
         """Return the target adapter for a type, or raise a typed, named error."""
@@ -34,6 +37,17 @@ class Registry:
                 f"orchestrator/wiring.py or correct the run's target_type."
             )
         return target
+
+    def oracle_for(self, name: str) -> Oracle:
+        """Return the oracle wired under a name, or raise a typed, named error."""
+        for oracle in self.oracles:
+            if oracle.name == name:
+                return oracle
+        known = ", ".join(sorted(o.name for o in self.oracles)) or "none"
+        raise NoOracleRegisteredError(
+            f"No oracle registered under {name!r}. Registered oracles: {known}. "
+            f"Register it in orchestrator/wiring.py or correct the name."
+        )
 
 
 def build_registry() -> Registry:
@@ -48,7 +62,8 @@ def build_registry() -> Registry:
         targets={
             TargetType.DUMMY: DummyTarget(),
             TargetType.CODE_AGENT: CodeAgentTarget(llm=llm),
-        }
+        },
+        oracles=(HeldOutOracle(llm=llm, sandbox=DockerSandbox()),),
     )
 
 

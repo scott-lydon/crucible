@@ -20,3 +20,11 @@ class NoTargetRegisteredError(CrucibleError):
     The message lists the registered target types so the fix (register the
     adapter in wiring.py, or correct the run's target_type) is obvious.
     """
+
+
+class NoOracleRegisteredError(CrucibleError):
+    """No oracle is wired under the requested name.
+
+    The message lists the registered oracle names so the fix (register the
+    oracle in wiring.py, or correct the name) is obvious.
+    """

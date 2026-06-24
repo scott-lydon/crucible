@@ -22,7 +22,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
-from orchestrator.errors import NoTargetRegisteredError
+from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.wiring import get_registry
 from shared.persistence import get_session, ping
 from shared.persistence.models import Run
@@ -164,6 +164,17 @@ async def target_health(target_type: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="target not registered") from exc
     probe = await target.self_test()
     return {"target_type": target_type, "status": probe.status.value, "detail": probe.detail}
+
+
+@app.get("/health/oracles/{name}")
+async def oracle_health(name: str) -> dict[str, Any]:
+    """Run one oracle's self-test (US-8). 404 when no oracle is registered by name."""
+    try:
+        oracle = get_registry().oracle_for(name)
+    except NoOracleRegisteredError as exc:
+        raise HTTPException(status_code=404, detail="oracle not registered") from exc
+    probe = await oracle.self_test()
+    return {"oracle": name, "status": probe.status.value, "detail": probe.detail}
 
 
 @app.get("/runs/{run_id}/stream")

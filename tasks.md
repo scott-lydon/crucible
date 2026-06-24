@@ -6,11 +6,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-5-held-out-oracle** (T). First oracle on the LLM client (Opus generates held-out tests post-submit), plus the `specs` table and server-side `SpecResolver` it reads through.
-
-## Blocked (awaiting secret)
-
-- [ ] **slice-2-fraud-target** (T). Blocked on the Kaggle token. Resumes the instant it lands: real dataset download, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
+- [ ] **slice-2-fraud-target** (T). Unblocked: the Kaggle token is in place. Real dataset download, LightGBM trainer, serialized artifact, `FraudTarget`, `/health/targets/fraud`.
 
 ## Next slice
 
@@ -22,6 +18,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-5-held-out-oracle** (T). `HeldOutOracle` (Opus generates fresh asserts from the sealed spec post-submit, run against the producer output in the sealed sandbox, votes pass or fail) plus the `specs` table and server-side `SpecResolver`. Live proof: real Opus passes a correct implementation and catches a wrong one. Done-criterion test confirms a sandboxed producer cannot read `held_out_tests`. Oracle health route `/health/oracles/{name}`.
 - [x] **slice-4-sealed-spec-and-sandbox** (T). `shared/sandbox` Docker runner (`--network none`, no host env) plus the seal probe. Live seal test passes: from inside the sandbox both Postgres and the internet are unreachable, so the producer cannot read the verification artifacts. The `specs` table and resolver move to slice 5 (their consumer).
 - [x] **slice-3-code-agent-target** (T). `CodeAgentTarget` produces Python from a sealed spec via the LLM, scored by `ast.parse` validity; `/health/targets/{type}` self-test route; registered in wiring. Unit tests via the scripted client; live done-criterion test passes (real Claude emits ast-parseable Python).
 - [x] **slice-1-target-protocol** (T). `DummyTarget` implementing the Target Protocol, `orchestrator/wiring.py` registry, `orchestrator/loop.py` driving one round end to end, persisted as an attack row. All gates green (ruff, mypy --strict on 50 files, 18 tests on real Postgres).
@@ -74,11 +71,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ### Per-pillar (parallel after slice 4)
 
-- [ ] **slice-5-held-out-oracle** (T).
-  - [ ] `modules/oracles/held_out/`: Claude Opus 4.8 generates fresh tests from the sealed spec after submission, runs them against producer output, returns pass / fail with reason.
-  - [ ] Tests are persisted to `held_out_tests` table, deleted after the run completes.
-  - [ ] Self-test endpoint exists.
-  - [ ] **Done criteria:** integration test confirms the producer cannot read `held_out_tests` rows.
+- [x] **slice-5-held-out-oracle** (T).
+  - [x] `modules/oracles/held_out/`: Claude Opus 4.8 generates fresh asserts from the sealed spec after submission, runs them against producer output in the sealed sandbox, returns pass / fail / unavailable with reason. Plus the `specs` table and `SpecResolver` (moved here from slice 4).
+  - [~] Tests persisted to `held_out_tests` table: table and model exist; the persist-then-delete-after-run lifecycle wires in at slice 10 when the loop drives oracles. The table is in place and proven unreadable from the producer.
+  - [x] Self-test route `/health/oracles/{name}` exists.
+  - [x] **Done criteria:** `tests/integration/test_held_out_isolation.py` confirms a sandboxed producer cannot read `held_out_tests` rows (Postgres unreachable under the seal).
 
 - [ ] **slice-6-metamorphic-oracle** (T).
   - [ ] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic rules from spec invariants; rules persisted to `metamorphic_rules`; runtime checks fire each rule and report pass / fail.
