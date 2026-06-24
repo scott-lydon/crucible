@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-11-red-search** (R). Reason then propose then query then iterate; strategy catalog persisted.
+- [ ] **slice-12-white-box-mode** (R). Inject the oracle scheme into the prompt; report black-box and white-box catch rate side by side.
 
 ## Next slice
 
-- [ ] **slice-12-white-box-mode** (R). Inject the oracle scheme into the prompt; report black-box and white-box catch rate side by side.
+- [ ] **slice-13-red-hybrid-fallback** (R). When LLM constraint satisfaction fails, a constrained numeric search executes the proposed strategy.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -19,6 +19,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-11-red-search** (R). `RedSearchAgent` is the LLM-driven adversarial search engine: it reasons over the running transcript, proposes a new distinct tactic each round, queries the target through `query_target()`, and iterates until the attempt or dollar budget is spent (Sonnet 4.6). Success is an evasion measured by the target's own signal (a detector score below the evasion threshold); the reward-hack-versus-oracles sense is the loop's job once it drives the oracles over the red output. A malformed proposal is recorded as a clean failed attempt, not a crash. The `RedAgent.search` Protocol gained a `run_id` so each returned attack is stamped for the catalog. `StrategyCatalog` records every successful evasion twice: a `strategy_catalog` Postgres row (one per tactic per target type, reuse count and running dollar total, so average dollars-to-succeed is the real mean) and an append-only JSONL discovery log; the catalog carries no foreign key to runs so it outlives them as a reusable benchmark. `/catalog` returns the table most-reused first. Done-criterion proven on real Postgres (`test_catalog.py`): the agent finds three distinct evasions and all three surface at `/catalog`. Live proof against the real fraud model is opt-in. Reconciliation: wiring red into the loop (replacing the seed probe) was deferred to slice 12, where the same search runs again with the verification scheme injected and the loop drives both passes; the agent is wired into the registry now.
 - [x] **slice-10-verdict-aggregator** (T). `VerdictAggregator` folds the oracle votes into one verdict: it sums the weights of the PASS votes (four mechanical oracles at 1.0, judge at 0.5) and passes when the tally reaches 2.0, otherwise the submission is caught. UNAVAILABLE votes contribute nothing, so a timed-out oracle never guesses a verdict. The audit trace names every vote and the closing tally-versus-threshold step. `orchestrator/loop.py` now runs every wired oracle over the produced output, aggregates, and persists the verdict; a crashing oracle is recorded as an UNAVAILABLE vote with its error, not swallowed. Replay determinism: the aggregator is pure and `vote_as_json` / `vote_from_json` round-trip, so re-aggregating the persisted votes is byte-equal (proven on real Postgres in `test_verdict_replay.py`). Reconciliation: the per-oracle detail tables (`fuzz_findings`, `differential_runs`, `judge_votes`) and the held-out persist-then-delete lifecycle were deferred to slice 15, since `verdicts.votes` already records every vote and a table with no renderer would be dead schema. `test_loop_smoke` now wires the spine with no oracles (keeping it LLM-free as its docstring promised); the oracle fan-out is covered by `test_loop_verdict` with deterministic oracle doubles.
 - [x] **slice-9-llm-judge-oracle** (T). `LlmJudgeOracle` (Opus 4.8) reads the produced artifact, judges it against the sealed spec obligations, and returns a `{"decision","reason"}` JSON verdict parsed into a half-weight (0.5) `OracleVote`. An unparseable or empty response votes `unavailable` rather than guessing. Target-agnostic: source is read as-is, any structured output (a fraud score) is JSON-rendered first. Runs nothing in the sandbox, so no docker dependency. Registered as the fifth oracle in `wiring.py`. Live proof: real Opus passed a correct `add` and failed a subtracting one at 0.5 weight. Scripted CI covers pass / fail / unavailable / malformed-JSON / structured-artifact paths.
 - [x] **slice-8-property-fuzz-oracle** (T). `PropertyFuzzOracle` has Sonnet write a `fuzz()` function that random-samples inputs and asserts spec-guaranteed properties, run in the sealed sandbox via the shared check runner. Live proof: a correct impl passes, a broken one is caught with a concrete counterexample. Uses stdlib random rather than the hypothesis library, because the no-network sandbox cannot install it (doc reconciled).
@@ -109,10 +110,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] **Done criteria:** `tests/integration/test_verdict_replay.py` persists a verdict, reconstructs the votes, re-aggregates, and asserts byte-equal content on real Postgres.
   - [~] Per-oracle detail tables (`fuzz_findings`, `differential_runs`, `judge_votes`) and the held-out persist-then-delete lifecycle: deferred to slice 15 (the verdict view), their first consumer. The `verdicts.votes` JSONB already captures every oracle's vote and reason (single point of truth), so adding consumerless tables now would be dead schema. Reconciled here on purpose; see Done note.
 
-- [ ] **slice-11-red-search** (R).
-  - [ ] `modules/red/search.py`: reason → propose → query → iterate using Sonnet 4.6.
-  - [ ] `modules/red/catalog.py`: strategy catalog persisted to Postgres + JSONL append-only log.
-  - [ ] **Done criteria:** red agent finds at least three distinct evasion or reward-hack strategies in the test fixtures, all surface in `/catalog`.
+- [x] **slice-11-red-search** (R).
+  - [x] `modules/red/search.py`: `RedSearchAgent` reasons over the transcript, proposes a distinct tactic, queries the target through `query_target()`, and iterates until the budget (attempts or dollars) is spent, using Sonnet 4.6. Returns every attempt; success is an evasion measured by the target's own score below the evasion threshold. A malformed proposal becomes a clean failed attempt, never a crash. `run_id` added to the `RedAgent.search` Protocol so each attempt is stamped for the catalog.
+  - [x] `modules/red/catalog.py`: `StrategyCatalog` persists each successful evasion to the `strategy_catalog` Postgres table (one row per tactic per target type, with reuse count and running dollar total) and appends to a JSONL discovery log. `/catalog` route returns the table, most-reused first. Migration `e40347a6be4a`.
+  - [x] **Done criteria:** `tests/integration/test_catalog.py` runs the agent over a fixture detector, records the three distinct evasions, and asserts all three surface at `/catalog` on real Postgres; the JSONL log carries one line per discovery. Live proof (real Sonnet versus the real fraud model) in `tests/integration/test_red_search_live.py`, opt-in.
+  - [~] Wire red into `loop.py` (replace the seed probe with a budget-driven search): deferred to the white-box slice (12), where the same search runs again with the verification scheme injected and the loop drives both passes. The agent is wired into the registry now and proven end-to-end via the catalog test.
 
 - [ ] **slice-12-white-box-mode** (R).
   - [ ] `modules/red/white_box.py`: prompt includes oracle protocol descriptions; runs on every pass after slices 5 to 10 land.

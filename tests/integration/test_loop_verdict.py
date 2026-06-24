@@ -15,9 +15,11 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from modules.oracles.aggregator import VerdictAggregator
+from modules.red import RedSearchAgent
 from modules.targets.dummy import DummyTarget
 from orchestrator.loop import Loop
 from orchestrator.wiring import Registry
+from shared.llm import ScriptedLlmClient
 from shared.persistence import get_sessionmaker
 from shared.persistence.models import Verdict as VerdictRow
 from shared.types import (
@@ -78,6 +80,7 @@ async def test_loop_persists_one_aggregated_verdict(client: AsyncClient) -> None
             _FixedOracle("metamorphic", 1.0, VerdictDecision.FAIL),
         ),
         aggregator=VerdictAggregator(),
+        red=RedSearchAgent(llm=ScriptedLlmClient()),
     )
 
     async with get_sessionmaker()() as session:

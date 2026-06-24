@@ -15,11 +15,12 @@ from modules.oracles.held_out import HeldOutOracle
 from modules.oracles.llm_judge import LlmJudgeOracle
 from modules.oracles.metamorphic import MetamorphicOracle
 from modules.oracles.property_fuzz import PropertyFuzzOracle
+from modules.red import RedSearchAgent
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
 from modules.targets.fraud import FraudTarget
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
-from orchestrator.interfaces import Oracle, Target
+from orchestrator.interfaces import Oracle, RedAgent, Target
 from shared.llm import get_llm_client
 from shared.sandbox import DockerSandbox
 from shared.types import TargetType
@@ -32,6 +33,7 @@ class Registry:
     targets: dict[TargetType, Target]
     oracles: tuple[Oracle, ...]
     aggregator: VerdictAggregator
+    red: RedAgent
 
     def target_for(self, target_type: TargetType) -> Target:
         """Return the target adapter for a type, or raise a typed, named error."""
@@ -79,6 +81,7 @@ def build_registry() -> Registry:
             LlmJudgeOracle(llm=llm),
         ),
         aggregator=VerdictAggregator(),
+        red=RedSearchAgent(llm=llm),
     )
 
 

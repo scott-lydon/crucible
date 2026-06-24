@@ -14,6 +14,7 @@ import json
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -22,6 +23,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
+from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.wiring import get_registry
 from shared.persistence import get_session, ping
@@ -39,6 +41,13 @@ from shared.types import (
 )
 
 log = get_logger("orchestrator.api")
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _catalog_jsonl_path() -> Path:
+    """The append-only strategy-catalog discovery log on disk (US-6)."""
+    return _REPO_ROOT / "data" / "strategy_catalog.jsonl"
 
 # FastAPI dependency alias. The Annotated form keeps the Depends() call out of
 # the parameter default, which is both the recommended FastAPI style and ruff
@@ -164,6 +173,18 @@ async def target_health(target_type: str) -> dict[str, Any]:
         raise HTTPException(status_code=404, detail="target not registered") from exc
     probe = await target.self_test()
     return {"target_type": target_type, "status": probe.status.value, "detail": probe.detail}
+
+
+@app.get("/catalog")
+async def catalog(session: SessionDep) -> list[dict[str, Any]]:
+    """The strategy catalog: every recorded successful evasion tactic (US-6).
+
+    Most-reused first. Each row carries the tactic, target-type, first-discovered
+    run, reuse count, average dollars-to-succeed, the payload fragment, and the
+    discovery audit trace, so the catalog is browsable institutional memory.
+    """
+    cat = StrategyCatalog(session=session, jsonl_path=_catalog_jsonl_path())
+    return [entry.as_json() for entry in await cat.entries()]
 
 
 @app.get("/health/oracles/{name}")

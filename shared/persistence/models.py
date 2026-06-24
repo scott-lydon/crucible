@@ -23,6 +23,7 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    UniqueConstraint,
     func,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -185,6 +186,34 @@ class HeldOutTest(Base):
     run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
     spec_id: Mapped[str] = mapped_column(String(64), nullable=False)
     test_code: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class StrategyCatalogEntry(Base):
+    """A successful evasion tactic: the red pillar's institutional memory (US-6).
+
+    No foreign key to runs on purpose: the catalog is a reusable benchmark that
+    outlives any single run (proposal section 3, Pillar 4), so a tactic stays
+    even if its discovering run is later pruned. One row per (tactic,
+    target_type); rediscovery increments reuse_count and adds to total_dollars,
+    so average dollars-to-succeed is total_dollars / reuse_count.
+    """
+
+    __tablename__ = "strategy_catalog"
+    __table_args__ = (
+        UniqueConstraint("tactic", "target_type", name="uq_strategy_tactic_target"),
+    )
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    tactic: Mapped[str] = mapped_column(String(256), nullable=False)
+    target_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    first_run_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    reuse_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    total_dollars: Mapped[Decimal] = mapped_column(_MONEY, nullable=False, default=Decimal("0"))
+    prompt_fragment: Mapped[str] = mapped_column(Text, nullable=False)
+    discovery_audit: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from shared.types import Attack, AttackBudget, SealedSpec
+from shared.types import Attack, AttackBudget, RunId, SealedSpec
 
 from .target import Target
 
@@ -25,13 +25,15 @@ class RedAgent(Protocol):
         spec: SealedSpec,
         target: Target,
         budget: AttackBudget,
+        run_id: RunId,
         *,
         white_box: bool,
     ) -> list[Attack]:
         """Search for evasions until the budget is spent.
 
-        Returns every attempt made, each marked succeeded or not, so the
-        dashboard can compute attack-success-rate over the whole search, not
-        just the wins.
+        `run_id` stamps every returned attempt so the catalog can record the
+        run an evasion was first discovered in (US-6). Returns every attempt
+        made, each marked succeeded or not, so the dashboard can compute
+        attack-success-rate over the whole search, not just the wins.
         """
         ...

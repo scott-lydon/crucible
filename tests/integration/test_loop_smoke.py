@@ -17,9 +17,11 @@ from httpx import AsyncClient
 from sqlalchemy import select
 
 from modules.oracles.aggregator import VerdictAggregator
+from modules.red import RedSearchAgent
 from modules.targets.dummy import DummyTarget
 from orchestrator.loop import Loop
 from orchestrator.wiring import Registry
+from shared.llm import ScriptedLlmClient
 from shared.persistence import get_sessionmaker
 from shared.persistence.models import Attack, Run
 from shared.types import TargetType
@@ -46,6 +48,7 @@ async def test_one_round_with_dummy(client: AsyncClient) -> None:
         targets={TargetType.DUMMY: DummyTarget()},
         oracles=(),
         aggregator=VerdictAggregator(),
+        red=RedSearchAgent(llm=ScriptedLlmClient()),
     )
     async with get_sessionmaker()() as session:
         await Loop(session=session, registry=registry).run(run_id)
