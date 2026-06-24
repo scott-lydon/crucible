@@ -79,6 +79,28 @@ class SealedSpec:
         }
 
     @classmethod
+    def from_stored(cls, data: dict[str, Any]) -> SealedSpec:
+        """Rebuild a SealedSpec from its stored `as_json` form, preserving spec_id.
+
+        Used by the server-side resolver, so a spec read back from Postgres is
+        the same identity it was sealed under (unlike from_payload, which mints a
+        fresh id for inbound API requests).
+        """
+        return cls(
+            spec_id=SpecId(str(data["spec_id"])),
+            title=str(data["title"]),
+            obligations=tuple(
+                Obligation(id=str(o["id"]), description=str(o["description"]))
+                for o in data["obligations"]
+            ),
+            invariants=tuple(
+                Invariant(id=str(i["id"]), description=str(i["description"]))
+                for i in data.get("invariants", [])
+            ),
+            holdout_generator_kind=str(data["holdout_generator_kind"]),
+        )
+
+    @classmethod
     def from_payload(cls, payload: dict[str, Any]) -> SealedSpec:
         """Parse an API request body into a SealedSpec (parse, do not validate).
 

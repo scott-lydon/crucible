@@ -153,3 +153,38 @@ class HealthProbe(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class Spec(Base):
+    """A sealed specification, stored server-side.
+
+    The producer sandbox has no network and so cannot read this table; oracles
+    read it through SpecResolver. The whole spec is stored as its `as_json`
+    form so the row round-trips back to a SealedSpec with its id intact.
+    """
+
+    __tablename__ = "specs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    spec_json: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class HeldOutTest(Base):
+    """A test generated after submission by the held-out oracle.
+
+    Never exposed to the producer (which is sealed) and deleted after the run
+    completes, so a static held-out set cannot leak across runs.
+    """
+
+    __tablename__ = "held_out_tests"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False)
+    spec_id: Mapped[str] = mapped_column(String(64), nullable=False)
+    test_code: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

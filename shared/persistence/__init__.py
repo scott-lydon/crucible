@@ -14,9 +14,12 @@ from .engine import (
     ping,
     reset_engine_for_tests,
 )
+from .spec_resolver import SpecNotFoundError, SpecResolver
 
 __all__ = [
     "Base",
+    "SpecNotFoundError",
+    "SpecResolver",
     "async_database_url",
     "get_engine",
     "get_session",
