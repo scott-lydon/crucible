@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.00 0.00 920.00 871.00" role="img" aria-labelledby="t d">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#e2e8f0" /></marker><style>
+  /* Box fills are pale pastels; text is solid #0d0d0d for maximum legibility
+     regardless of the host theme (light or dark). We do NOT use the
+     --text-primary CSS variable here because in a dark theme it can resolve
+     to a near-white that then sits on top of a near-white pastel fill and
+     becomes unreadable. The pastels are constants, so the text color can be
+     a constant too. */
+  .box        { fill: var(--bg-200, #f3f3f0); stroke: var(--border, #d6d3cf); stroke-width: 1.2; }
+  .accent     { fill: var(--accent-100, #e8e6e1); stroke: var(--border, #a59f96); stroke-width: 2.0; }
+  .tier-data         { fill: #dde7f0; stroke: #6b8aab; }
+  .tier-compute      { fill: #e0ecd9; stroke: #75986a; }
+  .tier-control      { fill: #ecdff0; stroke: #9b6fa7; }
+  .tier-observability{ fill: #f5dcdc; stroke: #a96f6f; }
+  .tier-storage      { fill: #f5ecd0; stroke: #a98947; }
+  .tier-parallel     { fill: #dde7f0; stroke: #6b8aab; }
+  .tier-kernel       { fill: #e0ecd9; stroke: #75986a; }
+  .tier-decode       { fill: #ecdff0; stroke: #9b6fa7; }
+  .tier-output       { fill: #f5ecd0; stroke: #a98947; }
+  /* Foundational nodes — present in the Basic Interview Sketch (the simplest
+     diagram that would pass 90% of technical interviews) AND echoed in
+     exhaustive diagrams. The accent border + outer drop-shadow glow lets a
+     reader sweeping the deep-dive diagrams instantly see which boxes carry
+     the whiteboard answer and which are extra-credit material. The selectors
+     below have higher specificity than the .tier-* rules above (class.class
+     beats single class), so they win on stroke. The filter is applied at the
+     node-level &lt;g&gt; so the glow sits behind the box and its text. */
+  .node.foundational &gt; path,
+  .node.foundational &gt; polygon,
+  .node.foundational &gt; ellipse,
+  .node.foundational &gt; rect {
+    stroke: #c2410c;
+    stroke-width: 3.2;
+  }
+  .node.foundational {
+    filter: drop-shadow(0 0 3px rgba(194, 65, 12, 0.55));
+  }
+  /* Solid dark text for legibility on pastel fills. Accent ellipses get an
+     extra weight + size bump because their text otherwise looks small inside
+     a large oval. */
+  .node text         { fill: #0d0d0d; font: 700 13px system-ui, sans-serif; }
+  .node.accent text  { fill: #0d0d0d; font: 800 14px system-ui, sans-serif; letter-spacing: 0.1px; }
+  /* High-contrast edges that read on BOTH dark and light backgrounds.
+     The previous edge stroke (#4a4a48) disappeared on dark themes because
+     the chat surface is near-black. A bright slate stroke (#e2e8f0) at width
+     2.2, with a matching arrowhead fill and labels carrying a dark halo via
+     paint-order: stroke, is visible on dark backgrounds and still readable
+     on top of the pale pastel box fills in light mode. The marker fill in
+     style_svg below was bumped to the same #e2e8f0 for the same reason. */
+  .edge path, .edge polyline {
+    fill: none; stroke: #e2e8f0; stroke-width: 2.2;
+  }
+  .edge polygon { fill: #e2e8f0; stroke: #e2e8f0; }
+  .edge-ctrl path, .edge-ctrl polyline {
+    fill: none; stroke: #e2e8f0; stroke-width: 2.0;
+    stroke-dasharray: 6 4;
+  }
+  .edge-ctrl polygon { fill: #e2e8f0; stroke: #e2e8f0; }
+  .edge text, .edge-ctrl text {
+    fill: #f1f5f9; font: 700 12px system-ui, sans-serif;
+    paint-order: stroke; stroke: rgba(15, 23, 42, 0.85); stroke-width: 3px;
+  }
+</style></defs><title id="t">Crucible · closed loop, 8 foundational nodes</title><desc id="d">Cycle topology: red attacks, target outputs, oracles vote, aggregator decides, catalog records, blue patches, measure scores, halt-cert gates. Burnt-orange border marks whiteboard-pass-bar nodes.</desc><g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(50.4 820.44)">
+<text xml:space="preserve" text-anchor="start" x="267.78" y="-753.74" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="14.00" fill="#e2e8f0">Crucible · closed loop, 8 foundational nodes</text>
+
+<g id="node1" class="node tier-compute foundational">
+<path d="M222.16,-157.76C222.16,-157.76 115.84,-157.76 115.84,-157.76 109.84,-157.76 103.84,-151.76 103.84,-145.76 103.84,-145.76 103.84,-108.96 103.84,-108.96 103.84,-102.96 109.84,-96.96 115.84,-96.96 115.84,-96.96 222.16,-96.96 222.16,-96.96 228.16,-96.96 234.16,-102.96 234.16,-108.96 234.16,-108.96 234.16,-145.76 234.16,-145.76 234.16,-151.76 228.16,-157.76 222.16,-157.76" />
+<text xml:space="preserve" text-anchor="start" x="139" y="-132.96" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Red Agent</text>
+<text xml:space="preserve" text-anchor="start" x="143.5" y="-122.86" font-family="Helvetica,sans-Serif" font-size="10.00">LLM search</text>
+<text xml:space="preserve" text-anchor="start" x="124" y="-112.86" font-family="Helvetica,sans-Serif" font-size="10.00">+ persistent memory</text>
+</g>
+
+<g id="node2" class="node tier-compute foundational">
+<path d="M712.98,-152.76C712.98,-152.76 609.66,-152.76 609.66,-152.76 603.66,-152.76 597.66,-146.76 597.66,-140.76 597.66,-140.76 597.66,-113.96 597.66,-113.96 597.66,-107.96 603.66,-101.96 609.66,-101.96 609.66,-101.96 712.98,-101.96 712.98,-101.96 718.98,-101.96 724.98,-107.96 724.98,-113.96 724.98,-113.96 724.98,-140.76 724.98,-140.76 724.98,-146.76 718.98,-152.76 712.98,-152.76" />
+<text xml:space="preserve" text-anchor="start" x="617.82" y="-127.96" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Target Protocol</text>
+<text xml:space="preserve" text-anchor="start" x="629.07" y="-117.86" font-family="Helvetica,sans-Serif" font-size="10.00">3 thin adapters</text>
+</g>
+
+<g id="edge1" class="edge">
+<path d="M234.63,-127.36C325.42,-127.36 488.98,-127.36 585.07,-127.36" />
+<polygon points="584.98,-130.51 593.98,-127.36 584.98,-124.21 584.98,-130.51" />
+<text xml:space="preserve" text-anchor="middle" x="382.39" y="-128.91" font-family="Helvetica,sans-Serif" font-size="11.00">submit / query</text>
+</g>
+
+<g id="node3" class="node tier-storage foundational">
+<path d="M470.94,-50.8C470.94,-50.8 359.37,-50.8 359.37,-50.8 353.37,-50.8 347.37,-44.8 347.37,-38.8 347.37,-38.8 347.37,-12 347.37,-12 347.37,-6 353.37,0 359.37,0 359.37,0 470.94,0 470.94,0 476.94,0 482.94,-6 482.94,-12 482.94,-12 482.94,-38.8 482.94,-38.8 482.94,-44.8 476.94,-50.8 470.94,-50.8" />
+<text xml:space="preserve" text-anchor="start" x="367.53" y="-26" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Oracle ensemble</text>
+<text xml:space="preserve" text-anchor="start" x="382.53" y="-15.9" font-family="Helvetica,sans-Serif" font-size="10.00">5 non-colluding</text>
+</g>
+
+<g id="edge2" class="edge">
+<path d="M598.88,-101.5C565.34,-87.61 523.78,-70.39 488.68,-55.85" />
+<polygon points="490.12,-53.04 480.6,-52.51 487.71,-58.86 490.12,-53.04" />
+<text xml:space="preserve" text-anchor="middle" x="511.88" y="-77.89" font-family="Helvetica,sans-Serif" font-size="11.00">output only</text>
+</g>
+
+<g id="node4" class="node tier-control foundational">
+<path d="M464.19,-747.04C464.19,-747.04 366.12,-747.04 366.12,-747.04 360.12,-747.04 354.12,-741.04 354.12,-735.04 354.12,-735.04 354.12,-708.24 354.12,-708.24 354.12,-702.24 360.12,-696.24 366.12,-696.24 366.12,-696.24 464.19,-696.24 464.19,-696.24 470.19,-696.24 476.19,-702.24 476.19,-708.24 476.19,-708.24 476.19,-735.04 476.19,-735.04 476.19,-741.04 470.19,-747.04 464.19,-747.04" />
+<text xml:space="preserve" text-anchor="start" x="382.53" y="-722.24" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Aggregator</text>
+<text xml:space="preserve" text-anchor="start" x="374.28" y="-712.14" font-family="Helvetica,sans-Serif" font-size="10.00">PASS-weight ≥ 2.0</text>
+</g>
+
+<g id="edge3" class="edge">
+<path d="M415.16,-51.01C415.16,-156.45 415.16,-557.43 415.16,-683.48" />
+<polygon points="412.01,-683.48 415.16,-692.48 418.31,-683.48 412.01,-683.48" />
+<text xml:space="preserve" text-anchor="middle" x="397.91" y="-375.08" font-family="Helvetica,sans-Serif" font-size="11.00">5 votes</text>
+</g>
+
+<g id="edge4" class="edge">
+<path d="M404.58,-696.11C366.19,-603.43 233.96,-284.2 186.3,-169.13" />
+<polygon points="189.32,-168.2 182.97,-161.09 183.5,-170.61 189.32,-168.2" />
+<text xml:space="preserve" text-anchor="middle" x="259.26" y="-428.3" font-family="Helvetica,sans-Serif" font-size="11.00">verdict + audit</text>
+</g>
+
+<g id="node5" class="node tier-data foundational">
+<path d="M717.1,-645.08C717.1,-645.08 605.53,-645.08 605.53,-645.08 599.53,-645.08 593.53,-639.08 593.53,-633.08 593.53,-633.08 593.53,-606.28 593.53,-606.28 593.53,-600.28 599.53,-594.28 605.53,-594.28 605.53,-594.28 717.1,-594.28 717.1,-594.28 723.1,-594.28 729.1,-600.28 729.1,-606.28 729.1,-606.28 729.1,-633.08 729.1,-633.08 729.1,-639.08 723.1,-645.08 717.1,-645.08" />
+<text xml:space="preserve" text-anchor="start" x="613.69" y="-620.28" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Strategy Catalog</text>
+<text xml:space="preserve" text-anchor="start" x="620.82" y="-610.18" font-family="Helvetica,sans-Serif" font-size="10.00">persistent memory</text>
+</g>
+
+<g id="edge5" class="edge">
+<path d="M476.64,-696.18C510.89,-681.99 553.71,-664.25 589.49,-649.43" />
+<polygon points="590.4,-652.46 597.51,-646.11 587.99,-646.64 590.4,-652.46" />
+<text xml:space="preserve" text-anchor="middle" x="502.26" y="-672.51" font-family="Helvetica,sans-Serif" font-size="11.00">log undetected</text>
+</g>
+
+<g id="node7" class="node tier-observability foundational">
+<path d="M234.91,-645.08C234.91,-645.08 103.09,-645.08 103.09,-645.08 97.09,-645.08 91.09,-639.08 91.09,-633.08 91.09,-633.08 91.09,-606.28 91.09,-606.28 91.09,-600.28 97.09,-594.28 103.09,-594.28 103.09,-594.28 234.91,-594.28 234.91,-594.28 240.91,-594.28 246.91,-600.28 246.91,-606.28 246.91,-606.28 246.91,-633.08 246.91,-633.08 246.91,-639.08 240.91,-645.08 234.91,-645.08" />
+<text xml:space="preserve" text-anchor="start" x="111.25" y="-620.28" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Measure Dashboard</text>
+<text xml:space="preserve" text-anchor="start" x="133.37" y="-610.18" font-family="Helvetica,sans-Serif" font-size="10.00">recall, ASR, gap</text>
+</g>
+
+<g id="edge8" class="edge">
+<path d="M353.68,-696.18C319.43,-681.99 276.6,-664.25 240.82,-649.43" />
+<polygon points="242.32,-646.64 232.8,-646.11 239.91,-652.46 242.32,-646.64" />
+<text xml:space="preserve" text-anchor="middle" x="262.43" y="-672.51" font-family="Helvetica,sans-Serif" font-size="11.00">every verdict</text>
+</g>
+
+<g id="node6" class="node tier-compute foundational">
+<path d="M807.06,-403.92C807.06,-403.92 719.49,-403.92 719.49,-403.92 713.49,-403.92 707.49,-397.92 707.49,-391.92 707.49,-391.92 707.49,-355.12 707.49,-355.12 707.49,-349.12 713.49,-343.12 719.49,-343.12 719.49,-343.12 807.06,-343.12 807.06,-343.12 813.06,-343.12 819.06,-349.12 819.06,-355.12 819.06,-355.12 819.06,-391.92 819.06,-391.92 819.06,-397.92 813.06,-403.92 807.06,-403.92" />
+<text xml:space="preserve" text-anchor="start" x="733.65" y="-379.12" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Blue Loop</text>
+<text xml:space="preserve" text-anchor="start" x="728.03" y="-369.02" font-family="Helvetica,sans-Serif" font-size="10.00">propose, retrain,</text>
+<text xml:space="preserve" text-anchor="start" x="727.65" y="-359.02" font-family="Helvetica,sans-Serif" font-size="10.00">validate held-out</text>
+</g>
+
+<g id="edge6" class="edge">
+<path d="M672.03,-593.8C689.77,-550.98 725.35,-465.08 746.46,-414.12" />
+<polygon points="749.37,-415.33 749.9,-405.81 743.55,-412.92 749.37,-415.33" />
+<text xml:space="preserve" text-anchor="middle" x="681.21" y="-500.77" font-family="Helvetica,sans-Serif" font-size="11.00">reuse tactics</text>
+</g>
+
+<g id="edge7" class="edge">
+<path stroke-dasharray="5,2" d="M750.57,-342.84C731.59,-297.02 695.94,-210.95 675.91,-162.61" />
+<polygon points="678.94,-161.69 672.59,-154.58 673.12,-164.1 678.94,-161.69" />
+<text xml:space="preserve" text-anchor="middle" x="675" y="-249.76" font-family="Helvetica,sans-Serif" font-size="11.00">retrain or patch</text>
+</g>
+
+<g id="node8" class="node tier-control foundational">
+<path d="M122.07,-398.92C122.07,-398.92 12,-398.92 12,-398.92 6,-398.92 0,-392.92 0,-386.92 0,-386.92 0,-360.12 0,-360.12 0,-354.12 6,-348.12 12,-348.12 12,-348.12 122.07,-348.12 122.07,-348.12 128.07,-348.12 134.07,-354.12 134.07,-360.12 134.07,-360.12 134.07,-386.92 134.07,-386.92 134.07,-392.92 128.07,-398.92 122.07,-398.92" />
+<text xml:space="preserve" text-anchor="start" x="20.16" y="-374.12" font-family="Helvetica,sans-Serif" font-weight="bold" font-size="12.00">Halt-certification</text>
+<text xml:space="preserve" text-anchor="start" x="23.91" y="-364.02" font-family="Helvetica,sans-Serif" font-size="10.00">recall below red line</text>
+</g>
+
+<g id="edge9" class="edge">
+<path d="M158.28,-593.8C139.87,-549.36 102.24,-458.51 81.52,-408.49" />
+<polygon points="84.54,-407.56 78.19,-400.45 78.72,-409.97 84.54,-407.56" />
+</g>
+
+<g id="edge10" class="edge edge-ctrl">
+<path stroke-dasharray="5,2" d="M77.75,-347.64C95.49,-304.83 131.07,-218.92 152.18,-167.96" />
+<polygon points="155.09,-169.18 155.62,-159.65 149.27,-166.76 155.09,-169.18" />
+<text xml:space="preserve" text-anchor="middle" x="84.68" y="-254.61" font-family="Helvetica,sans-Serif" font-size="11.00">blocks launch</text>
+</g>
+</g>
+</svg>

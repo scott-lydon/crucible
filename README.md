@@ -56,124 +56,30 @@ The diagrams below render natively on GitHub. A polished interactive version, wi
 
 ---
 
-## System overview, everything in one view
+## System overview
 
-The diagram below is one combined picture of the whole platform with every per-pillar detail inlined. It folds in: the four-node loop of section 1, the seven-node topology of section 2, the three adapters and five oracles of section 3, the red agent's internal reason-propose-query loop with white-box mode and hybrid fallback of section 4, the blue loop's three proposer feeds and held-out validator of section 5, the measure pillar's traces, dashboard, curves, audit, artifacts, and halt-certification of section 6, the sealed verification boundary of section 7, and the end-to-end data flow of section 9. Section 8 (white-box self-test, a two-pass comparison) is a different shape of picture and stays as its own diagram.
+One picture, eight foundational nodes, true cycle topology, zero edge crossings. This is the whiteboard-pass-bar view: the simplest diagram that captures Crucible end-to-end. Each node here is the foundational box that the per-pillar deep dives (sections 3 through 6) zoom inside.
 
-```mermaid
-flowchart LR
-  subgraph RZ["Red side  ·  sections 4 + 6 (catalog)"]
-    direction TB
-    subgraph REDAGENT["Red Agent  ·  LLM semantic search"]
-      direction TB
-      REASON["reason<br/>why was I caught?"]:::red
-      PROPOSE["propose minimal change<br/>preserve intent + constraints"]:::red
-      QUERY["query_target()<br/>score · iterate"]:::red
-      REASON --> PROPOSE --> QUERY
-      QUERY -.->|"score"| REASON
-    end
-    WB["white-box mode<br/>scheme revealed, instances hidden"]:::wb
-    HYB["hybrid fallback<br/>scipy.optimize constrained numeric search"]:::hyb
-    CAT["Strategy Catalog<br/>winning tactics persist across runs"]:::mem
-    WB -.->|"augments prompt"| REASON
-    HYB -.->|"executes proposals"| QUERY
-    CAT -.->|"reuse tactics"| REASON
-  end
+![Crucible system overview](docs/diagrams/crucible-basic-v2.svg)
 
-  subgraph PROD["Producer Zone  ·  sandboxed, no path to verifier  ·  section 3"]
-    direction TB
-    A_F["fraud adapter<br/>LightGBM .lgb"]:::tgt
-    A_C["code-agent adapter<br/>Sonnet 4.6 endpoint"]:::tgt
-    A_R["research adapter<br/>stub"]:::tgt
-    TGT["Target Protocol<br/>submit() · query_target() · self_test()"]:::tgt
-    A_F --> TGT
-    A_C --> TGT
-    A_R --> TGT
-  end
+How to read it. The solid arrows trace one round in order: Red Agent submits or queries the Target Protocol, the Target's output (sealed from the spec) flows to the Oracle ensemble, the five oracles vote, the Aggregator decides pass-or-caught and returns the verdict to red. The single feedback edge from Aggregator to the Strategy Catalog records undetected hacks for future runs. The Strategy Catalog feeds the Blue Loop, which retrains or patches the Target across runs (dashed because it crosses rounds, not within one). The Measure Dashboard reads every verdict and drives the Halt-certification kill switch, which blocks new run starts when white-box recall falls below the red line (dashed control edge).
 
-  subgraph SEAL["Sealed Verification Zone  ·  no producer path in  ·  sections 3 + 7"]
-    direction TB
-    SPEC["Sealed Spec<br/>YAML obligations"]:::spec
-    subgraph ORS["Non-colluding oracle ensemble"]
-      direction TB
-      O1["held-out tests<br/>fresh assertions post-submit  ·  weight 1.0"]:::ora
-      O2["metamorphic relations<br/>invariants under transforms  ·  weight 1.0"]:::ora
-      O3["differential cross-family<br/>Haiku vs Sonnet  ·  weight 1.0"]:::ora
-      O4["property-based fuzz<br/>random samples vs spec  ·  weight 1.0"]:::ora
-      O5["LLM judge  ·  Opus<br/>semantic read  ·  weight 0.5"]:::ora_half
-    end
-    AGG["Aggregator<br/>PASS-weight sum ≥ 2.0 ⇒ pass<br/>otherwise caught"]:::agg
-    SPEC -->|"derives, never from submission"| ORS
-    ORS --> AGG
-  end
+The burnt-orange accent border on every node marks it as foundational, that is, a box the candidate would draw on a whiteboard within five minutes. The skill that produced this diagram (`anthropic-skills:arch-interview-batch`) uses Graphviz's `circo` engine because Crucible is structurally a closed loop with satellites, and `circo` is the topology-aware engine that lays out cycles cleanly.
 
-  subgraph HM["Harden + Measure  ·  sections 5 + 6"]
-    direction TB
-    subgraph BLUEL["Blue Loop"]
-      direction TB
-      PROP_F["new features"]:::blue
-      PROP_S["adversarial training samples"]:::blue
-      PROP_E["specialist ensemble"]:::blue
-      RTR["Retrainer<br/>LightGBM.fit() OR agent_configs patch"]:::blue
-      HOV["Held-out validator<br/>fixed attack set, never seen by proposer"]:::hov
-      PROP_F --> RTR
-      PROP_S --> RTR
-      PROP_E --> RTR
-      RTR --> HOV
-    end
-    subgraph MEASL["Measure"]
-      direction TB
-      TRACE["agent step traces<br/>+ every verdict"]:::meas
-      DASH["Dashboard<br/>undetected-hack rate<br/>val-vs-heldout gap<br/>cost/hack · human-min/1k"]:::meas
-      CURVE["Co-evolution curves<br/>ASR · detection · red↔blue rounds"]:::meas
-      AUDIT["Audit trace per verdict<br/>1-click replay"]:::meas
-      ART["Artifacts<br/>seeded corpus · leaderboard<br/>SR 11-7 report"]:::meas
-      HALT["Halt-certification<br/>white-box recall &lt; red line<br/>⇒ refuse new POST /runs"]:::halt
-      TRACE --> DASH
-      TRACE --> CURVE
-      TRACE --> AUDIT
-      DASH --> HALT
-      DASH --> ART
-      CURVE --> ART
-      AUDIT --> ART
-    end
-  end
+Deep dives. Each foundational box expands into a per-pillar diagram later in the document:
 
-  QUERY ==>|"submit / query_target"| TGT
-  TGT ==>|"output only, sealed from spec"| ORS
-  AGG ==>|"verdict + audit trace"| REASON
-  AGG -->|"undetected hacks logged"| CAT
-  CAT --> PROP_F
-  CAT --> PROP_S
-  CAT --> PROP_E
-  HOV -. "retrain or patch, then re-evaluate on held-out" .-> TGT
-  AGG --> TRACE
-  REASON --> TRACE
-  HALT -.->|"blocks launch"| REASON
+- **Red Agent** opens up at section 4 (Pillar 2): the inner reason-propose-query loop, white-box mode, hybrid fallback against constrained search.
+- **Target Protocol** opens up at section 3 (Pillar 1): the three thin adapters (fraud LightGBM, code-agent Sonnet 4.6, research stub) behind one common Protocol.
+- **Oracle ensemble** opens up at section 3 (Pillar 1): the five non-colluding oracles by name and weight (held-out, metamorphic, differential, property-fuzz at 1.0; LLM judge at 0.5).
+- **Aggregator** opens up at sections 3 and 7: PASS-weight sum against the 2.0 threshold, plus the sealed verification boundary.
+- **Strategy Catalog** opens up at section 4: persistent winning tactics across runs.
+- **Blue Loop** opens up at section 5 (Pillar 3): the three proposer feeds (features, samples, ensemble), the retrainer, the held-out validator.
+- **Measure Dashboard** opens up at section 6 (Pillar 4): the trace store, dashboard tiles, co-evolution curves, audit traces, artifacts.
+- **Halt-certification** opens up at section 6 plus section 8: the capability-threshold gate that refuses new runs when white-box recall is below the red line.
 
-  classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
-  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
-  classDef ora fill:#1f6b5c,stroke:#2fa589,color:#ffffff,stroke-width:2px;
-  classDef ora_half fill:#1f6b5c,stroke:#2fa589,color:#ffffff,stroke-dasharray:5 5;
-  classDef agg fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
-  classDef red fill:#7f2d2d,stroke:#c0584f,color:#ffffff,stroke-width:2px;
-  classDef wb fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2;
-  classDef hyb fill:#243049,stroke:#64748b,color:#e2e8f0;
-  classDef mem fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe;
-  classDef blue fill:#3b3f8f,stroke:#6366f1,color:#ffffff,stroke-width:2px;
-  classDef hov fill:#1f6b5c,stroke:#2fa589,color:#ffffff;
-  classDef meas fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
-  classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
-```
-
-How to read it. Double-headed arrows (`==>`) are the main forward path of one round: red's `query_target()` hits the Target Protocol, the target's output flows to the oracles, the aggregator returns its verdict to red. Solid single-headed arrows are the data routes that feed memory and measurement: undetected hacks logged to the strategy catalog, the catalog read by each of blue's three proposer feeds, the aggregator and red's reasoning step both feeding the measure pillar's trace store. Dashed arrows are the cross-round feedback edges that close the loop: tactics reused on the next attack, blue's held-out-validated retrain or patch landing on the target, halt-certification blocking the next `POST /runs` when white-box recall drops below the red line.
-
-What this incorporates, section by section. Section 1's four-node loop is the diagonal red-to-target-to-oracles-to-measure path, plus the closing dashed feedback edges. Section 2's seven-node topology is each named box (spec, red, target, oracles, catalog, blue, measure). Section 3's pillar 1 detail is the three adapters and the five oracles. Section 4's pillar 2 detail is the inner reason-propose-query loop plus white-box mode plus hybrid fallback plus the catalog memory. Section 5's pillar 3 detail is the three proposer feeds (features, samples, specialist ensemble) flowing into the retrainer and the held-out validator. Section 6's pillar 4 detail is the trace-to-dashboard-to-curves-to-audit fan-out plus the artifacts export and the halt-certification kill switch. Section 7's trust boundary is the two clearly separated subgraphs (Producer Zone above, Sealed Verification Zone below) with the spec deriving the oracles and the producer never reading the spec. Section 9's end-to-end sequence is the order the arrows are traversed: red attacks, target outputs, oracles vote, aggregator decides, catalog records, blue patches, measure scores, halt-cert gates the next round.
-
-What the diagram does NOT incorporate, deliberately. Section 8 (the black-box-vs-white-box self-test comparison) is a two-pass picture, not a topology, so it stays as its own diagram below.
+Why the master diagram is 8 nodes and not 30. A picture that crams every per-pillar internal into one frame is the artifact I tried first and it was unreadable. The right shape, per the architecture-interview literature the skill encodes, is one foundational sketch plus per-pillar zooms. The 8 foundational nodes are exactly the boxes you would draw on a whiteboard in five minutes; the per-pillar diagrams are exactly what you would draw if the interviewer asked "go deeper on this one."
 
 ---
-
 ## Threat model
 
 Three terms, used precisely:
