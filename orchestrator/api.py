@@ -29,6 +29,7 @@ from orchestrator.full_run import (
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
 from orchestrator.stream import run_event_stream
+from orchestrator.targets_registry import default_spec_yaml, list_targets
 from orchestrator.wiring import (
     DEFAULT_THRESHOLD,
     build_components,
@@ -39,7 +40,7 @@ from shared.persistence import repo
 from shared.persistence.models import RunRow
 from shared.sandbox import LocalDockerSandbox
 from shared.sandbox.base import Sandbox
-from shared.types import SealedSpec
+from shared.types import SealedSpec, sealed_spec_from_yaml
 from shared.types.enums import OracleKind, Vote
 
 # Test-injection seam. A test may set this to a dict of kwargs forwarded into
@@ -102,6 +103,16 @@ class LaunchRequest(BaseModel):
     batch_size: int | None = Field(None, ge=2, le=200)
     seed: str = "seed-1"
     run_blue: bool = True
+    # Optional operator-supplied sealed-spec YAML (US-1 input side). When provided
+    # and non-blank it OVERRIDES the target's built-in default spec — the oracles
+    # enforce THESE obligations. Parsed + validated in ``create_run`` (422 on a
+    # bad spec). ``None``/blank => fall back to the target's default spec. Only the
+    # sealed spec is operator-supplied; the detector/label_fn/adversary stay the
+    # selected example's (uploading custom model/code is out of scope, spec.md §4).
+    spec: str | None = None
+
+    def has_custom_spec(self) -> bool:
+        return self.spec is not None and self.spec.strip() != ""
 
     def resolved_batch_size(self) -> int:
         """Caller's batch_size, or the target's demo default when unset."""
@@ -171,7 +182,15 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
     oracles = cast(Sequence[Oracle], comp["oracles"])
     label_fn = cast(Callable[[object], bool], comp["label_fn"])
     generate_fn = cast(Callable[[str, int], list[object]], comp["generate_fn"])
-    spec = cast(SealedSpec, comp["spec"])
+    # Operator-supplied sealed spec OVERRIDES the target's built-in default, so a
+    # pasted spec genuinely changes the obligations the oracles enforce (US-1).
+    # Already validated in ``create_run`` (422 on a bad spec), so parsing here is
+    # safe; the detector/label_fn/adversary stay the selected example's.
+    spec = (
+        sealed_spec_from_yaml(cast(str, req.spec))
+        if req.has_custom_spec()
+        else cast(SealedSpec, comp["spec"])
+    )
 
     # Seal the spec, then RESOLVE it server-side to drive the run — closing the
     # seal loop (US-9 / slice-4): the spec lives in Postgres (app DB creds,
@@ -277,6 +296,18 @@ async def create_run(
     Status transitions running -> complete/failed are owned by the loop.
     """
     sf = session_factory()
+    # Validate an operator-supplied sealed spec at the boundary BEFORE launching:
+    # a parse/validation failure is a typed 422 (the message names the problem),
+    # never a silently-ignored bad spec. A blank/absent spec falls back to the
+    # target's default in ``_execute_run``, so nothing to validate here.
+    if req.has_custom_spec():
+        try:
+            sealed_spec_from_yaml(cast(str, req.spec))
+        except ValueError as exc:
+            raise HTTPException(
+                status_code=422,
+                detail={"error": "invalid_sealed_spec", "message": str(exc)},
+            ) from exc
     # Refuse new launches when certification is HALTED (US-13): the platform will
     # not certify what it cannot defend. Typed 409 body carries the recall +
     # threshold that tripped the red line.
@@ -308,6 +339,31 @@ async def create_run(
         await s.commit()
     background_tasks.add_task(_execute_run, req, run_id)
     return {"run_id": run_id}
+
+
+@app.get("/targets")
+async def get_targets() -> dict[str, object]:
+    """The bundled example target adapters the launcher can run (US-1 input side).
+
+    Real, server-side registry (the same place wiring knows the targets) — never
+    a hardcoded frontend list. Each entry: ``{name, kind, model_artifact_ref,
+    has_default_spec}``. Uploading a custom model/code is out of scope (spec.md §4);
+    these are the bundled examples + the operator-editable sealed spec.
+    """
+    return {"targets": list_targets()}
+
+
+@app.get("/targets/{name}/spec", response_class=PlainTextResponse)
+async def get_target_spec(name: str) -> str:
+    """The named target's DEFAULT sealed spec as YAML text (pre-fills the launcher).
+
+    404 on an unknown target. The body is the SAME default spec ``_execute_run``
+    falls back to when no custom spec is pasted, so the textarea pre-fill is honest.
+    """
+    try:
+        return default_spec_yaml(name)
+    except KeyError as exc:
+        raise HTTPException(404, f"unknown target {name!r}") from exc
 
 
 @app.get("/runs/{run_id}")

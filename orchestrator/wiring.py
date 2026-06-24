@@ -47,6 +47,42 @@ def _load_spec() -> SealedSpec:
     return sealed_spec_from_yaml(_SPEC_PATH.read_text())
 
 
+# --- Target registry (US-1 input side) -------------------------------------
+# The composition root is the one place allowed to see ``examples/``, so it is
+# also the single source of truth for which bundled example targets exist, their
+# model-artifact references, and their DEFAULT sealed-spec YAML. The API layer
+# (orchestrator.targets_registry) reads THIS — it never imports ``examples`` —
+# so the launcher's target list + spec pre-fill come from the same place the run
+# is actually wired from. No hardcoded frontend list, no duplicated YAML.
+
+
+def target_registry() -> dict[str, dict[str, object]]:
+    """The bundled example targets, keyed by name.
+
+    Each value: ``{kind, model_artifact_ref, has_default_spec, default_spec_yaml}``.
+    ``model_artifact_ref`` is informational/read-only (uploading a custom model or
+    code is out of scope, spec.md §4). ``default_spec_yaml`` is the SAME spec text
+    ``build_components``/``build_components_sparkov`` load by default.
+    """
+    return {
+        "sparkov": {
+            "kind": fraud_sparkov.load_spec().target_kind,
+            # The serialized LightGBM victim the LocalModelTarget loads.
+            "model_artifact_ref": f"local:{fraud_sparkov.MODEL_PATH.name}",
+            "has_default_spec": True,
+            "default_spec_yaml": fraud_sparkov.SPEC_PATH.read_text(),
+        },
+        "synth": {
+            "kind": _load_spec().target_kind,
+            # A coded in-process detector, not a serialized artifact — surfaced
+            # honestly rather than faking a file reference.
+            "model_artifact_ref": "in-process:FlawedDetector (synthetic, no artifact)",
+            "has_default_spec": True,
+            "default_spec_yaml": _SPEC_PATH.read_text(),
+        },
+    }
+
+
 def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]:
     spec = _load_spec()
     detector: Detector = FlawedDetector()

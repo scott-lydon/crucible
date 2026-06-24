@@ -39,14 +39,21 @@ export class HttpError extends Error {
 // ---------------------------------------------------------------------------
 
 export type LaunchBody = {
-  target: "sparkov" | "synth"
+  target: string
   rounds: number
   batch_size?: number | null
   seed: string
   run_blue: boolean
+  // Operator-supplied sealed-spec YAML (US-1 input side). When non-blank it
+  // OVERRIDES the target's default; blank/omitted falls back to the default.
+  spec?: string | null
 }
 
 export type HaltError = { error: "certification_halted"; recall: number | null; threshold: number }
+
+// The typed 422 body when a pasted sealed spec fails parse/validation. The
+// launcher renders ``message`` inline (and does NOT navigate).
+export type SpecValidationError = { error: "invalid_sealed_spec"; message: string }
 
 export async function launchRun(body: LaunchBody): Promise<{ run_id: string }> {
   const r = await fetch(url("/runs"), {
@@ -58,8 +65,35 @@ export async function launchRun(body: LaunchBody): Promise<{ run_id: string }> {
     const detail = (await safeBody(r)) as { detail?: HaltError } | null
     throw new HttpError(409, detail?.detail ?? detail)
   }
+  if (r.status === 422) {
+    const detail = (await safeBody(r)) as { detail?: SpecValidationError } | null
+    throw new HttpError(422, detail?.detail ?? detail)
+  }
   if (!r.ok) throw new HttpError(r.status, await safeBody(r))
   return (await r.json()) as { run_id: string }
+}
+
+// ---------------------------------------------------------------------------
+// Target registry (US-1 input side) — real, server-side; no hardcoded list.
+// ---------------------------------------------------------------------------
+
+export type TargetSummary = {
+  name: string
+  kind: string
+  model_artifact_ref: string
+  has_default_spec: boolean
+}
+
+export async function getTargets(): Promise<TargetSummary[]> {
+  const data = await getJson<{ targets: TargetSummary[] }>("/targets")
+  return data.targets
+}
+
+// The target's DEFAULT sealed spec as YAML text (pre-fills the launcher textarea).
+export async function getTargetSpec(name: string): Promise<string> {
+  const r = await fetch(url(`/targets/${encodeURIComponent(name)}/spec`))
+  if (!r.ok) throw new HttpError(r.status, await safeBody(r))
+  return r.text()
 }
 
 // ---------------------------------------------------------------------------

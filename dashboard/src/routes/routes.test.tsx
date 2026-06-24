@@ -4,7 +4,7 @@
 // `attack` event.
 
 import { describe, it, expect, beforeEach } from "vitest"
-import { render, screen, waitFor, act } from "@testing-library/react"
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react"
 import { MemoryRouter, Routes, Route } from "react-router-dom"
 import { installEventSource, latestEventSource, mockFetch } from "../test/setup"
 
@@ -37,12 +37,74 @@ function renderAt(path: string, element: React.ReactNode, routePath: string) {
 
 const NOT_HALTED = { match: "/halt", json: { halted: false, recall: 0.9, threshold: 0.7 } }
 
+const TARGETS = {
+  match: "/targets",
+  json: {
+    targets: [
+      { name: "sparkov", kind: "fraud", model_artifact_ref: "local:sparkov_flawed.pkl", has_default_spec: true },
+      { name: "synth", kind: "fraud", model_artifact_ref: "in-process:FlawedDetector", has_default_spec: true },
+    ],
+  },
+}
+// /targets/sparkov/spec returns YAML text; mockFetch matches "/targets" first by
+// substring, so the spec route is listed BEFORE /targets in fetch order below.
+const SPARKOV_SPEC = { match: "/targets/sparkov/spec", text: "target_kind: fraud\nobligations:\n  - DEFAULT SPEC BODY\n" }
+
 describe("Launcher (US-1)", () => {
-  it("renders the launch form", async () => {
-    mockFetch([NOT_HALTED])
+  it("fetches the real targets and pre-fills the sealed-spec textarea", async () => {
+    mockFetch([NOT_HALTED, SPARKOV_SPEC, TARGETS])
     renderAt("/", <Launcher />, "/")
     expect(await screen.findByText(/Launch a Crucible run/i)).toBeTruthy()
+    // The target option came from the REAL /targets registry, not a hardcoded list.
+    await waitFor(() => expect(screen.getByRole("option", { name: /sparkov — fraud/i })).toBeTruthy())
+    // The model-artifact ref is shown read-only with the post-capstone note.
+    expect((screen.getByLabelText(/Model artifact/i) as HTMLInputElement).value).toContain("sparkov_flawed.pkl")
+    // The sealed-spec textarea was pre-filled from /targets/sparkov/spec.
+    await waitFor(() => expect((screen.getByLabelText(/Sealed spec/i) as HTMLTextAreaElement).value).toContain("DEFAULT SPEC BODY"))
     expect(screen.getByText(/Start run/i)).toBeTruthy()
+  })
+
+  it("submits the EDITED sealed spec in the POST /runs body", async () => {
+    const fn = mockFetch([
+      NOT_HALTED,
+      SPARKOV_SPEC,
+      TARGETS,
+      { match: "/runs", json: { run_id: "run-xyz" } },
+    ])
+    renderAt("/", <Launcher />, "/")
+    const ta = (await screen.findByLabelText(/Sealed spec/i)) as HTMLTextAreaElement
+    await waitFor(() => expect(ta.value).toContain("DEFAULT SPEC BODY"))
+    await act(async () => {
+      fireEvent.change(ta, { target: { value: "target_kind: fraud\nobligations:\n  - EDITED BY OPERATOR\n" } })
+    })
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Start run/i))
+    })
+    // The POST carried the operator's EDITED spec, not the pre-filled default.
+    const calls = fn.mock.calls as unknown as [string, RequestInit | undefined][]
+    const post = calls.find((c) => String(c[0]).includes("/runs") && c[1]?.method === "POST")
+    expect(post).toBeTruthy()
+    const body = JSON.parse(String(post![1]!.body))
+    expect(body.spec).toContain("EDITED BY OPERATOR")
+    expect(body.target).toBe("sparkov")
+  })
+
+  it("renders the 422 spec-validation error inline and does NOT navigate", async () => {
+    mockFetch([
+      NOT_HALTED,
+      SPARKOV_SPEC,
+      TARGETS,
+      { match: "/runs", status: 422, json: { detail: { error: "invalid_sealed_spec", message: "missing required key 'obligations'" } } },
+    ])
+    renderAt("/", <Launcher />, "/")
+    const ta = (await screen.findByLabelText(/Sealed spec/i)) as HTMLTextAreaElement
+    await waitFor(() => expect(ta.value).toContain("DEFAULT SPEC BODY"))
+    await act(async () => {
+      fireEvent.click(screen.getByText(/Start run/i))
+    })
+    // The inline spec-validation error renders; we stayed on the launcher.
+    expect(await screen.findByText(/missing required key 'obligations'/i)).toBeTruthy()
+    expect(screen.getByText(/Launch a Crucible run/i)).toBeTruthy()
   })
 })
 
