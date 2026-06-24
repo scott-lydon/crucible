@@ -4,7 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <script src="./support.js"></script>
-<script src="./live.js"></script>
 </head>
 <body>
 <x-dc>
@@ -50,8 +49,8 @@
           <div style="padding:9px 14px;display:flex;flex-direction:column;gap:4px;line-height:1.3;min-width:160px;background:#19222C">
             <span style="color:#E8EDF3;font-size:12px;letter-spacing:.06em;font-weight:600">THIS RUN</span>
             <span style="color:#E8EDF3;font-size:14px;font-weight:600">$4.18 <span style="color:#B8C2CE;font-weight:400">/ $25.00</span></span>
-            <div title="16.7% of ceiling · cyan <70% · amber 70–90% · danger >90%" style="height:3px;background:#0E141B;border-radius:2px;overflow:hidden;border:1px solid #1D2630"><div style="width:16.7%;height:100%;background:#4FAAC0"></div></div>
-            <span style="color:#B8C2CE;font-size:11px">16.7% · warns at 70%</span>
+            <div style="height:3px;background:#0E141B;border-radius:2px;overflow:hidden;border:1px solid #1D2630"><div style="width:16.7%;height:100%;background:#4FAAC0"></div></div>
+            <span style="color:#B8C2CE;font-size:11px">16.7% · cyan &lt;70% · amber 70–90% · danger &gt;90%</span>
           </div>
           <div style="width:1px;background:#2C3744"></div>
           <div style="padding:9px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3">
@@ -60,8 +59,8 @@
           </div>
           <div style="width:1px;background:#2C3744"></div>
           <div style="padding:9px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3">
-            <span style="color:#B8C2CE;font-size:12px;letter-spacing:.06em">SESSION</span>
-            <span style="color:#E8EDF3;font-size:13px;font-weight:500">$65.58 <span style="color:#B8C2CE;font-weight:400">· 7 runs · since 09:14Z</span></span>
+            <span style="color:#8A94A2;font-size:11px;letter-spacing:.06em;font-weight:400">session · context only</span>
+            <span style="color:#8A94A2;font-size:12px;font-weight:400">$65.58 · 7 runs · since 09:14Z</span>
           </div>
         </div>
         <!-- live pill -->
@@ -116,8 +115,8 @@
               <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">updating each round</span>
             </div>
             <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;flex-wrap:wrap;align-items:center">
-              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#D9A441"></span>ASR <span style="color:#E8EDF3">0.18</span> <span style="color:#D9A441">↓ better</span><button onClick="{{ openInspect }}" aria-label="About ASR" title="ASR · attack success rate · share of red-team attempts the producer slipped past the verifier · source: oracle aggregator" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">i</button></span>
-              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#4FAAC0"></span>Detection <span style="color:#E8EDF3">0.94</span> <span style="color:#4FAAC0">↑ better</span><button onClick="{{ openInspect }}" aria-label="About Detection" title="Detection · recall on the held-out attack set · source: held-out oracle" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;margin-left:4px">i</button></span>
+              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE;position:relative"><span style="width:14px;height:2px;background:#D9A441"></span>ASR <span style="color:#E8EDF3">0.18</span> <span style="color:#D9A441">↓ better</span><details style="display:inline-block;margin-left:4px;position:relative"><summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:11px;padding:1px 8px 1px 6px;font-size:11px" aria-label="About ASR — open definition"><span style="width:14px;height:14px;border-radius:50%;background:#0E141B;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600">i</span>about</summary><div role="dialog" aria-label="ASR definition" style="position:absolute;top:24px;left:0;z-index:5;width:280px;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:10px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#B8C2CE;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.45)"><div style="color:#E8EDF3;font-weight:600;margin-bottom:4px">ASR · attack success rate</div>unit: fraction 0–1 · share of red-team attempts the producer slipped past the verifier.<div style="margin-top:6px;color:#8A94A2;font-family:'IBM Plex Mono',monospace;font-size:11px">source: oracle aggregator</div></div></details></span>
+              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE;position:relative"><span style="width:14px;height:2px;background:#4FAAC0"></span>Detection <span style="color:#E8EDF3">0.94</span> <span style="color:#4FAAC0">↑ better</span><details style="display:inline-block;margin-left:4px;position:relative"><summary style="list-style:none;cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:11px;padding:1px 8px 1px 6px;font-size:11px" aria-label="About Detection — open definition"><span style="width:14px;height:14px;border-radius:50%;background:#0E141B;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600">i</span>about</summary><div role="dialog" aria-label="Detection definition" style="position:absolute;top:24px;right:0;z-index:5;width:300px;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:10px 12px;font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#B8C2CE;line-height:1.55;box-shadow:0 8px 24px rgba(0,0,0,.45)"><div style="color:#E8EDF3;font-weight:600;margin-bottom:4px">Detection · recall</div>unit: fraction 0–1 · share of known attacks the verifier catches on the held-out attack set. Same series as <span style="color:#E8EDF3">white-box self-test recall</span> used for halt gating.<div style="margin-top:6px;color:#8A94A2;font-family:'IBM Plex Mono',monospace;font-size:11px">source: held-out oracle</div></div></details></span>
               <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:0;border-top:1px dashed #E5736B"></span>red line 0.90</span>
             </div>
           </div>
@@ -312,8 +311,10 @@
             </div>
             <div style="margin-top:12px;padding-top:12px;border-top:1px solid #232E39;display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE">
               <div style="display:flex;justify-content:space-between"><span>avg / round</span><span style="color:#E8EDF3">$0.182</span></div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span>projected at r.48</span><button onClick="{{ openHalt }}" title="avg $/round × rounds remaining + 95% confidence band · click for calc" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12.5px;text-decoration:underline;text-align:right;line-height:1.4">$8.20 – $9.30<br/><span style="color:#B8C2CE;font-size:11px;text-decoration:none">avg/round × remaining ↗</span></button></div>
-              <div style="display:flex;justify-content:space-between;align-items:baseline"><span>hard stop</span><button onClick="{{ openHalt }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12.5px;text-decoration:underline">$25.00 · MRG-12.4</button></div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span>projected at r.48</span><button onClick="{{ openHalt }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12.5px;text-decoration:underline;text-align:right;line-height:1.4">$8.20 – $9.30 ↗</button></div>
+              <div style="font-size:11.5px;color:#8A94A2;line-height:1.5;font-family:'IBM Plex Mono',monospace">method · avg $/round × rounds remaining; band is 95% CI over last 5 rounds.</div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline"><span>spend ceiling</span><button onClick="{{ openHalt }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12.5px;text-decoration:underline">$25.00 · MRG-12.4 ↗</button></div>
+              <div style="font-size:11.5px;color:#8A94A2;line-height:1.5;font-family:'IBM Plex Mono',monospace">bar warns at 70% (amber), danger at 90% (red). parent doc · Model Risk Governance MRG-12.</div>
             </div>
           </div>
         </div>
@@ -431,8 +432,8 @@
         <div>spec <button onClick="{{ openInspect }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline">9f2a4c7b ↗</button> · operator <span style="color:#B8C2CE">j.okafor</span></div>
       </div>
       <div style="display:flex;gap:8px;margin-left:auto">
-        <button disabled="true" title="Disabled while reconnecting." style="background:#1A222B;color:#5A6573;border:1px solid #232E39;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Pause · waiting</button>
-        <button disabled="true" title="Disabled while reconnecting." style="background:#1A222B;color:#5A6573;border:1px solid #232E39;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Halt run · waiting</button>
+        <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end"><button disabled="true" style="background:#1A222B;color:#B8C2CE;border:1px solid #2C3744;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Pause</button><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8A94A2">disabled · transport reconnecting</span></div>
+        <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end"><button disabled="true" style="background:#1A222B;color:#B8C2CE;border:1px solid #2C3744;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Halt run</button><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8A94A2">disabled · transport reconnecting</span></div>
       </div>
     </div>
 
@@ -654,7 +655,7 @@
       </div>
       <div style="display:flex;gap:8px;margin-left:auto">
         <button style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit" style-hover="background:#25303C">Open audit ↗</button>
-        <button disabled="true" title="Resume needs a risk-approver override (MRG-12.6)." style="background:#1A222B;color:#5A6573;border:1px solid #232E39;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Resume · blocked</button>
+        <div style="display:flex;flex-direction:column;gap:2px;align-items:flex-end"><button disabled="true" style="background:#1A222B;color:#B8C2CE;border:1px solid #2C3744;border-radius:6px;padding:8px 14px;font-size:12px;font-weight:500;cursor:not-allowed;font-family:inherit">Resume</button><span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#8A94A2">blocked · needs risk-approver override (recall red line · MRG-12.6)</span></div>
       </div>
     </div>
 
@@ -667,12 +668,12 @@
         <div style="border:1px solid #2C3744;border-radius:8px;background:#161E27;padding:18px 20px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
             <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
-              <div style="font-size:13px;font-weight:600;color:#E8EDF3">ASR vs Detection · halted at r.35</div>
+              <div style="font-size:13px;font-weight:600;color:#E8EDF3">ASR vs White-box recall · halted at r.35</div>
               <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B">crossed r.32 · confirmed over 3-round debounce window · halted r.35</span>
             </div>
             <div style="display:flex;gap:18px;font-family:'IBM Plex Mono',monospace;font-size:12px">
               <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#D9A441"></span>ASR <span style="color:#E8EDF3">0.42</span></span>
-              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#4FAAC0"></span>Detection <span style="color:#E5736B">0.71</span></span>
+              <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#4FAAC0"></span>White-box recall <span style="color:#E5736B">0.71</span></span>
               <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:0;border-top:1px dashed #E5736B"></span>red line 0.90</span>
             </div>
           </div>
@@ -705,7 +706,7 @@
             <text x="680" y="172" fill="#E5736B" font-size="11" font-family="'IBM Plex Mono',monospace">r.35</text>
           </svg>
           <div style="margin-top:10px;padding:9px 12px;background:#0E141B;border:1px solid #221A1D;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5B5B0;line-height:1.6">
-            <span style="color:#E5736B">Red line ·</span> Detection recall must stay <span style="color:#E5B5B0">&gt;= 0.90</span>. ASR ↓ better, Detection ↑ better. Crossed at <span style="color:#E5B5B0">r.32 · 14:13:18Z</span>; confirmed over a <span style="color:#E5B5B0">3-round debounce window</span> (r.32 → r.34) so a single bad round can't halt a run; halted at <span style="color:#E5B5B0">r.35 · 14:14:02Z</span>.
+            <span style="color:#E5736B">Red line ·</span> White-box recall must stay <span style="color:#E5B5B0">&gt;= 0.90</span>. Same series as "Detection" in the live view — renamed here to match the halt gate. ASR ↓ better, recall ↑ better. Crossed at <span style="color:#E5B5B0">r.32 · 14:13:18Z</span>; confirmed over a <span style="color:#E5B5B0">3-round debounce window</span> (r.32 → r.34) so a single bad round can't halt a run; halted at <span style="color:#E5B5B0">r.35 · 14:14:02Z</span>.
           </div>
         </div>
 
@@ -714,8 +715,9 @@
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
             <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#E5736B;background:#1B1518;border:1px solid #4A2528;border-radius:5px;padding:3px 9px">RED LINE CROSSED</span>
             <span style="font-size:13px;color:#E8EDF3;font-weight:500">recall · white-box self-test</span>
-            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C99B95">policy <button onClick="{{ openHalt }}" style="background:none;border:none;padding:0;color:#E5B5B0;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline">MRG-12.6 ↗</button></span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C99B95">policy · recall red line · <button onClick="{{ openHalt }}" style="background:none;border:none;padding:0;color:#E5B5B0;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline">MRG-12.6 ↗</button></span>
           </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;margin:-6px 0 12px">parent · Model Risk Governance MRG-12 — §12.4 spend ceiling, §12.6 recall red line.</div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
             <div style="background:#0E141B;border:1px solid #221A1D;border-radius:7px;padding:11px 13px">
               <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C99B95;letter-spacing:.06em">RED LINE</div>
@@ -746,7 +748,7 @@
           <div style="padding:18px 20px;background:#161217;border-bottom:1px solid #221A1D">
             <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px">
               <span style="display:inline-flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#E5736B;background:#1B1518;border:1px solid #4A2528;border-radius:5px;padding:3px 9px">ROUND 35 · HALTING</span>
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C99B95">14:14:02Z · <span style="color:#E5B5B0">$0.41</span> · aggregate <span style="color:#E5736B">FAIL · 3 of 4 oracles flipped</span></span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C99B95">14:14:02Z · <span style="color:#E5B5B0">$0.41</span> · aggregate <span style="color:#E5736B">FAIL</span></span><div style="flex-basis:100%;height:0"></div><div style="padding:8px 11px;background:#0E141B;border:1px solid #221A1D;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#E5B5B0;line-height:1.6;width:100%">aggregation · 3 of 4 deterministic oracles FAIL → weight 4/5 FAIL; LLM judge PASS · weight 1/5; weighted result <span style="color:#E5736B">FAIL (4/5)</span>.</div>
               <button onClick="{{ openReplay }}" style="margin-left:auto;background:#1B1518;border:1px solid #4A2528;border-radius:5px;color:#E5B5B0;cursor:pointer;padding:4px 10px;font-family:'IBM Plex Mono',monospace;font-size:12px" style-hover="background:#221A1D">↺ replay</button>
             </div>
             <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px">
@@ -759,7 +761,7 @@
               <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#B8C2CE"><span style="width:17px;height:17px;border-radius:4px;background:#1D2630;display:inline-flex;align-items:center;justify-content:center;font-size:11px;color:#B8C2CE;font-family:'IBM Plex Mono',monospace">1/5</span>LLM Judge</span>
               <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#D9A441;border:1px solid #4A3D17;background:#221C0C;border-radius:5px;padding:2px 7px">ONE VOTE</span>
               <span style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE">judge says <span style="color:#57C08A">pass</span> · ignored by aggregator; three independent oracles voted FAIL</span>
-              <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#57C08A">✓ PASS · weight 1/5</span>
+              <span style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#57C08A">✓ PASS</span>
             </div>
           </div>
 
@@ -949,14 +951,14 @@ target, and report whether the verdict held.</pre>
   <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
   <div style="position:fixed;top:0;right:0;bottom:0;width:480px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
-      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B;letter-spacing:.08em">HALT POLICY · MRG-12.6</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">Why this run halted</div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B;letter-spacing:.08em">HALT POLICY · recall red line · MRG-12.6</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">Why this run halted</div><div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#8A94A2;margin-top:3px">parent · Model Risk Governance MRG-12</div></div>
       <button onClick="{{ close }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
     </div>
     <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
       <p style="margin:0;font-size:13px;color:#B8C2CE;line-height:1.65"><span style="color:#E8EDF3">Halt-certification</span> stops a run when the white-box self-test recall — the catch rate measured against an adversary that already knows the verification scheme — drops below a published red line. The platform cannot honestly attest to catch rate when this line is crossed, so it stops certifying rather than ship a false claim.</p>
       <div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;letter-spacing:.08em;margin-bottom:6px">RULE</div>
-        <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;line-height:1.7">if <span style="color:#E8EDF3">recall_white_box</span> &lt; <span style="color:#E5736B">0.90</span><br/>&nbsp;&nbsp;then <span style="color:#E8EDF3">halt_certification()</span><br/>&nbsp;&nbsp;and <span style="color:#E8EDF3">block_subsequent_runs()</span><br/>&nbsp;&nbsp;until <span style="color:#57C08A">recall_held_out</span> &gt;= <span style="color:#57C08A">0.90</span></div>
+        <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;line-height:1.7">// entry and exit thresholds use the identical metric on the<br/>// identical population: white_box recall measured on a fresh<br/>// held-out attack set, so the producer can't re-overfit to<br/>// the known white-box scheme between halt and resume<br/><br/>halt   if <span style="color:#E8EDF3">recall_white_box</span> &lt; <span style="color:#E5736B">0.90</span> on <span style="color:#E5736B">held_out_attack_set</span><br/>resume if <span style="color:#57C08A">recall_white_box</span> &gt;= <span style="color:#57C08A">0.90</span> on <span style="color:#57C08A">held_out_attack_set</span> (binding)</div>
       </div>
       <div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;letter-spacing:.08em;margin-bottom:6px">OBSERVATION</div>
@@ -985,5 +987,6 @@ class Component extends DCLogic {
   }
 }
 </script>
+<script src="live.js"></script>
 </body>
 </html>
