@@ -22,6 +22,8 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
+from orchestrator.errors import NoTargetRegisteredError
+from orchestrator.wiring import get_registry
 from shared.persistence import get_session, ping
 from shared.persistence.models import Run
 from shared.telemetry import configure_logging, get_logger
@@ -143,6 +145,25 @@ async def health(session: SessionDep) -> HealthResponse:
     """Liveness plus a real database round trip, so /health is never a lie."""
     await ping(session)
     return HealthResponse(status="ok", database="connected")
+
+
+@app.get("/health/targets/{target_type}")
+async def target_health(target_type: str) -> dict[str, Any]:
+    """Run one target's self-test (US-8).
+
+    Returns 404 for an unknown target type or one with no registered adapter,
+    so a typo is distinguishable from a target that is down.
+    """
+    try:
+        parsed = TargetType(target_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail="unknown target type") from exc
+    try:
+        target = get_registry().target_for(parsed)
+    except NoTargetRegisteredError as exc:
+        raise HTTPException(status_code=404, detail="target not registered") from exc
+    probe = await target.self_test()
+    return {"target_type": target_type, "status": probe.status.value, "detail": probe.detail}
 
 
 @app.get("/runs/{run_id}/stream")

@@ -6,14 +6,23 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-2-fraud-target** (T). Real Kaggle credit-card dataset, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
+- [ ] **slice-4-sealed-spec-and-sandbox** (T). Docker sandbox with egress denied, `SealedSpec` server-side resolver, seal-probe integration test. Unblocked (Docker, no secret).
+
+## Blocked (awaiting secret)
+
+- [ ] **slice-2-fraud-target** (T). Blocked on the Kaggle token. Resumes the instant it lands: real dataset download, LightGBM trainer, `FraudTarget`, `/health/targets/fraud`.
 
 ## Next slice
 
-- [ ] **slice-3-code-agent-target** (T). Code-agent producer via the local Claude CLI; output compiles via `ast.parse`.
+- [ ] **slice-5-held-out-oracle** (T). First oracle on the LLM client (Opus generates held-out tests post-submit).
+
+## Shared infrastructure (landed ahead of its consuming slice)
+
+- [x] **LLM client** (`shared/llm`). `ClaudeCliClient` over the local Claude Max CLI, `ScriptedLlmClient` for MOCK_LLM, typed `LlmCallError`, cost and usage captured per call. Real CLI path proven live.
 
 ## Done
 
+- [x] **slice-3-code-agent-target** (T). `CodeAgentTarget` produces Python from a sealed spec via the LLM, scored by `ast.parse` validity; `/health/targets/{type}` self-test route; registered in wiring. Unit tests via the scripted client; live done-criterion test passes (real Claude emits ast-parseable Python).
 - [x] **slice-1-target-protocol** (T). `DummyTarget` implementing the Target Protocol, `orchestrator/wiring.py` registry, `orchestrator/loop.py` driving one round end to end, persisted as an attack row. All gates green (ruff, mypy --strict on 50 files, 18 tests on real Postgres).
 - [x] **slice-0-foundation** (A). Repo scaffold, value types, async Postgres persistence with Alembic, FastAPI (`POST /runs`, `GET /health`, SSE), pillar interface Protocols, module-boundary check, CI. All gates green (ruff, mypy --strict, 13 tests on real Postgres). Detail in Backlog below.
 
@@ -48,11 +57,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [ ] Integration test with real data: `pytest tests/integration/test_fraud_target.py`.
   - [ ] **Done criteria:** model trained on real Kaggle data (not a stub), AUC against the held-out portion at or above 0.85, health endpoint returns 200.
 
-- [ ] **slice-3-code-agent-target** (T).
-  - [ ] `modules/targets/code_agent/`: producer that takes a sealed `code_spec.yaml` and returns Python source via Claude Sonnet 4.6 tool use.
-  - [ ] Producer runs inside the Modal sandbox (per slice 4 wiring).
-  - [ ] Self-test endpoint `/health/targets/code_agent` runs a "produce hello world" round trip in under one second.
-  - [ ] **Done criteria:** integration test produces real Python code that compiles via `ast.parse`.
+- [x] **slice-3-code-agent-target** (T).
+  - [x] `modules/targets/code_agent/`: producer takes a sealed spec and returns Python source via Claude Sonnet 4.6 through the local Claude Max CLI (not the metered API).
+  - [ ] Producer runs inside the sandbox: deferred to slice 4 (Docker-first) per the wiring there. Slice 3 produces source only.
+  - [x] Self-test route `/health/targets/{type}` returns a fast readiness probe (client, model, and whether `claude` is on PATH). Reconciled from the original sub-second "produce hello world" round trip, which a real LLM call cannot meet and which would burn quota on every poll.
+  - [x] **Done criteria:** live integration test produces real Python that compiles via `ast.parse` (`tests/integration/test_code_agent_target.py`, opt-in real CLI).
 
 - [ ] **slice-4-sealed-spec-and-sandbox** (T).
   - [ ] `shared/sandbox/`: Modal job wrapper. Strips env vars, denies network egress except to Claude.

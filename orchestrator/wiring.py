@@ -9,9 +9,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
 from orchestrator.errors import NoTargetRegisteredError
 from orchestrator.interfaces import Target
+from shared.llm import get_llm_client
 from shared.types import TargetType
 
 
@@ -35,9 +37,31 @@ class Registry:
 
 
 def build_registry() -> Registry:
-    """Build the default registry.
+    """Build a fresh registry.
 
-    Slice 1 wires only the DummyTarget. Real targets (fraud, code_agent) and
-    the other pillars are added to this function as their slices land.
+    Wires the DummyTarget (slice 1) and the CodeAgentTarget (slice 3) on the
+    configured LLM client. The fraud target and the other pillars are added to
+    this function as their slices land.
     """
-    return Registry(targets={TargetType.DUMMY: DummyTarget()})
+    llm = get_llm_client()
+    return Registry(
+        targets={
+            TargetType.DUMMY: DummyTarget(),
+            TargetType.CODE_AGENT: CodeAgentTarget(llm=llm),
+        }
+    )
+
+
+_registry: Registry | None = None
+
+
+def get_registry() -> Registry:
+    """Return the process-wide registry, building it once on first use.
+
+    Module-level singleton (the sanctioned mutable-state exception here): the
+    registry is read-only after construction and shared across requests.
+    """
+    global _registry
+    if _registry is None:
+        _registry = build_registry()
+    return _registry

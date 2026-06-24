@@ -51,3 +51,16 @@ async def test_post_runs_rejects_unknown_target_type(client: AsyncClient) -> Non
 async def test_stream_unknown_run_is_404(client: AsyncClient) -> None:
     resp = await client.get("/runs/does-not-exist/stream")
     assert resp.status_code == 404, resp.text
+
+
+async def test_target_health_dummy_is_green(client: AsyncClient) -> None:
+    resp = await client.get("/health/targets/dummy")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["target_type"] == "dummy"
+    assert body["status"] == "green"
+
+
+async def test_target_health_unknown_type_is_404(client: AsyncClient) -> None:
+    resp = await client.get("/health/targets/not_a_target")
+    assert resp.status_code == 404, resp.text
