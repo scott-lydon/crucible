@@ -8,16 +8,20 @@ import { useEffect, useRef, useState } from "react"
 import { Link, useParams } from "react-router-dom"
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import {
+  getLlmCall,
+  getLlmCalls,
   getVerdicts,
   subscribeRun,
   type AttackEvent,
   type CompleteEvent,
+  type LlmCallDetail,
+  type LlmCallSummary,
   type TraceEvent,
   type VerdictEvent,
   type VerdictSummary,
 } from "../api"
 import Layout from "../components/Layout"
-import { Card, Mono, Pill, SectionLabel } from "../components/ui"
+import { Button, Card, Mono, Pill, SectionLabel } from "../components/ui"
 import { C, MONO } from "../theme"
 
 type AsrPoint = { n: number; asr: number | null }
@@ -33,6 +37,9 @@ export default function RunView() {
   const [traces, setTraces] = useState<TraceLine[]>([])
   const [status, setStatus] = useState<string>("running")
   const [verdicts, setVerdicts] = useState<VerdictSummary[]>([])
+  const [llmCalls, setLlmCalls] = useState<LlmCallSummary[]>([])
+  const [inspect, setInspect] = useState<LlmCallDetail | null>(null)
+  const [inspectErr, setInspectErr] = useState<string | null>(null)
   const nAttack = useRef(0)
   const nVerdict = useRef(0)
 
@@ -61,6 +68,21 @@ export default function RunView() {
     if (!id) return
     getVerdicts(id).then(setVerdicts).catch(() => setVerdicts([]))
   }, [id, status])
+
+  // The recorded LLM calls list (US-2/US-3 Inspect). One-shot fetch, refreshed
+  // when the run completes; honest empty-state when nothing was recorded.
+  useEffect(() => {
+    if (!id) return
+    getLlmCalls(id).then(setLlmCalls).catch(() => setLlmCalls([]))
+  }, [id, status])
+
+  function openInspect(callId: string) {
+    setInspect(null)
+    setInspectErr(null)
+    getLlmCall(callId)
+      .then(setInspect)
+      .catch((e) => setInspectErr(e instanceof Error ? e.message : "Failed to load call"))
+  }
 
   return (
     <Layout>
@@ -158,6 +180,89 @@ export default function RunView() {
           </table>
         )}
       </Card>
+
+      <Card style={{ marginTop: 16 }}>
+        <SectionLabel>LLM calls — Inspect ({llmCalls.length})</SectionLabel>
+        {llmCalls.length === 0 ? (
+          <p style={{ color: C.textMut, fontSize: 13 }}>No LLM calls recorded for this run yet.</p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ color: C.textMut, textAlign: "left", fontSize: 11 }}>
+                <th style={{ padding: "6px 8px" }}>Pillar</th>
+                <th style={{ padding: "6px 8px" }}>Model</th>
+                <th style={{ padding: "6px 8px" }}>Tokens (in/out)</th>
+                <th style={{ padding: "6px 8px" }}>Dollars</th>
+                <th style={{ padding: "6px 8px" }} />
+              </tr>
+            </thead>
+            <tbody>
+              {llmCalls.slice(0, 100).map((c) => (
+                <tr key={c.id} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <td style={{ padding: "8px", fontFamily: MONO, color: C.text }}>{c.pillar}</td>
+                  <td style={{ padding: "8px", fontFamily: MONO, color: C.textMut }}>{c.model}</td>
+                  <td style={{ padding: "8px", fontFamily: MONO, color: C.textMut }}>
+                    {c.input_tokens}/{c.output_tokens}
+                  </td>
+                  <td style={{ padding: "8px", fontFamily: MONO, color: C.text }}>
+                    {c.dollars == null ? "—" : `$${c.dollars.toFixed(4)}`}
+                  </td>
+                  <td style={{ padding: "8px" }}>
+                    <Button variant="ghost" onClick={() => openInspect(c.id)}>
+                      Inspect
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {inspectErr && <p style={{ color: C.danger, fontSize: 12, marginTop: 10 }}>{inspectErr}</p>}
+      </Card>
+
+      {inspect && (
+        <Card style={{ marginTop: 16, borderColor: C.primaryDim }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <SectionLabel>
+              Inspect · {inspect.pillar} · <Mono>{inspect.model}</Mono>
+            </SectionLabel>
+            <Button variant="ghost" onClick={() => setInspect(null)}>
+              Close
+            </Button>
+          </div>
+          <div style={{ fontSize: 12, color: C.textMut, marginBottom: 12 }}>
+            {inspect.input_tokens} in / {inspect.output_tokens} out ·{" "}
+            {inspect.dollars == null ? "cost not recorded" : `$${inspect.dollars.toFixed(4)}`} ·{" "}
+            <Mono>{inspect.created_at}</Mono>
+          </div>
+          {([
+            ["System", inspect.system],
+            ["Prompt", inspect.prompt],
+            ["Raw response", inspect.raw_response],
+            ["Parsed output", inspect.parsed_output],
+          ] as const).map(([label, body]) => (
+            <div key={label} style={{ marginBottom: 12 }}>
+              <SectionLabel>{label}</SectionLabel>
+              <pre
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  color: body ? C.text : C.textMut,
+                  background: C.surface2,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 7,
+                  padding: 12,
+                  overflowX: "auto",
+                  whiteSpace: "pre-wrap",
+                  margin: 0,
+                }}
+              >
+                {body ?? "(not recorded)"}
+              </pre>
+            </div>
+          ))}
+        </Card>
+      )}
     </Layout>
   )
 }

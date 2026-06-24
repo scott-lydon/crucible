@@ -98,6 +98,13 @@ export type Metrics =
       baseline_validation_detection: number | null
       gap: number | null
       white_box: WhiteBox | null
+      // Real cost tile (US-10): total recorded LLM dollars / caught hacks.
+      // ``null`` when there are no caught hacks or no recorded calls — rendered
+      // honestly as "Not yet measured", never a fabricated 0.0.
+      dollars_per_caught_hack: number | null
+      // Honestly null: there is no human-review signal in the system, so the
+      // human-minutes tile stays "Not yet measured" rather than fabricating one.
+      human_minutes_per_1k_outputs: number | null
     }
 
 export function isNotMeasured(m: Metrics): m is { status: "Not yet measured"; white_box?: WhiteBox | null } {
@@ -106,6 +113,50 @@ export function isNotMeasured(m: Metrics): m is { status: "Not yet measured"; wh
 
 export function getMetrics(runId: string): Promise<Metrics> {
   return getJson<Metrics>(`/runs/${runId}/metrics`)
+}
+
+// ---------------------------------------------------------------------------
+// LLM calls / Inspect (US-2, US-3)
+// ---------------------------------------------------------------------------
+
+export type LlmCallSummary = {
+  id: string
+  pillar: string
+  model: string
+  input_tokens: number
+  output_tokens: number
+  dollars: number | null
+  created_at: string
+  prompt_preview: string
+}
+
+export type LlmCallDetail = {
+  id: string
+  run_id: string
+  pillar: string
+  model: string
+  prompt: string
+  system: string | null
+  raw_response: string | null
+  parsed_output: string | null
+  input_tokens: number
+  output_tokens: number
+  dollars: number | null
+  created_at: string
+}
+
+export async function getLlmCalls(runId: string): Promise<LlmCallSummary[]> {
+  try {
+    const data = await getJson<{ count: number; llm_calls: LlmCallSummary[] }>(`/runs/${runId}/llm_calls`)
+    return data.llm_calls
+  } catch (e) {
+    if (e instanceof HttpError && e.status === 404) return []
+    throw e
+  }
+}
+
+export function getLlmCall(callId: string): Promise<LlmCallDetail> {
+  return getJson<LlmCallDetail>(`/llm_calls/${callId}`)
 }
 
 // ---------------------------------------------------------------------------
@@ -213,6 +264,23 @@ export function getCorpus(runId?: string): Promise<{ count: number; rows: Corpus
 export function corpusExportUrl(runId?: string): string {
   const q = runId ? `?run_id=${encodeURIComponent(runId)}` : ""
   return url(`/corpus/export${q}`)
+}
+
+// ---------------------------------------------------------------------------
+// Strategy catalog (US-6) — the persisted cross-run institutional memory.
+// ---------------------------------------------------------------------------
+
+export type CatalogRow = {
+  tactic: string
+  target_type: string
+  first_discovered_run: string
+  reuse_count: number
+  avg_dollars_to_succeed: number | null
+}
+
+export function getCatalog(targetType?: string): Promise<{ count: number; rows: CatalogRow[] }> {
+  const q = targetType ? `?target_type=${encodeURIComponent(targetType)}` : ""
+  return getJson<{ count: number; rows: CatalogRow[] }>(`/catalog${q}`)
 }
 
 // ---------------------------------------------------------------------------

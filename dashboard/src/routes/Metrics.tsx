@@ -45,8 +45,13 @@ export default function MetricsView() {
   const undetected = lastRound?.detection_rate == null ? null : pct(1 - lastRound.detection_rate)
   const gap = measured && metrics.gap != null ? metrics.gap.toFixed(2) : null
   const corpusRecall = measured ? pct(lastRound?.detection_rate ?? null) : null
-  const dollarsPerHack: string | null = null // not exposed by /metrics — honestly unmeasured
-  const minutesPerK: string | null = null // not exposed by /metrics — honestly unmeasured
+  // Real cost tile from the /metrics payload. Null (no caught hacks / no recorded
+  // calls) renders "Not yet measured", never a fabricated 0.0.
+  const dollarsPerHack =
+    measured && metrics.dollars_per_caught_hack != null ? `$${metrics.dollars_per_caught_hack.toFixed(2)}` : null
+  // Honestly unmeasured: the API returns human_minutes_per_1k_outputs = null
+  // (no human-review signal exists), so the tile stays "Not yet measured".
+  const minutesPerK: string | null = null
 
   return (
     <Layout>

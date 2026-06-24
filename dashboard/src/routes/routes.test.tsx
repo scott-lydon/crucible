@@ -99,6 +99,65 @@ describe("RunView (US-2) — SSE", () => {
     })
     expect(await screen.findByText(/no rationale recorded/i)).toBeTruthy()
   })
+
+  it("lists recorded LLM calls and Inspect opens the full /llm_calls/:id record", async () => {
+    const fn = mockFetch([
+      NOT_HALTED,
+      { match: "/verdicts", json: { verdicts: [] } },
+      {
+        match: "/runs/r1/llm_calls",
+        json: {
+          count: 1,
+          llm_calls: [
+            {
+              id: "call-1",
+              pillar: "judge",
+              model: "claude-opus",
+              input_tokens: 100,
+              output_tokens: 20,
+              dollars: 0.0042,
+              created_at: "2026-06-24T00:00:00",
+              prompt_preview: "score this",
+            },
+          ],
+        },
+      },
+      {
+        match: "/llm_calls/call-1",
+        json: {
+          id: "call-1",
+          run_id: "r1",
+          pillar: "judge",
+          model: "claude-opus",
+          prompt: "FULL PROMPT BODY",
+          system: "you are a judge",
+          raw_response: "RAW RESPONSE BODY",
+          parsed_output: '{"vote":"fail"}',
+          input_tokens: 100,
+          output_tokens: 20,
+          dollars: 0.0042,
+          created_at: "2026-06-24T00:00:00",
+        },
+      },
+    ])
+    renderAt("/runs/r1", <RunView />, "/runs/:id")
+    const inspectBtn = await screen.findByText("Inspect")
+    await act(async () => {
+      inspectBtn.click()
+    })
+    // The Inspect button opened GET /llm_calls/call-1 and rendered the full record.
+    await waitFor(() => expect(screen.getByText("FULL PROMPT BODY")).toBeTruthy())
+    expect(screen.getByText("RAW RESPONSE BODY")).toBeTruthy()
+    const calls = fn.mock.calls.map((c) => String(c[0]))
+    expect(calls.some((u) => u.includes("/runs/r1/llm_calls"))).toBe(true)
+    expect(calls.some((u) => u.includes("/llm_calls/call-1"))).toBe(true)
+  })
+
+  it("shows the honest empty-state when no LLM calls were recorded", async () => {
+    mockFetch([NOT_HALTED, { match: "/verdicts", json: { verdicts: [] } }, { match: "/llm_calls", json: { count: 0, llm_calls: [] } }])
+    renderAt("/runs/r1", <RunView />, "/runs/:id")
+    expect(await screen.findByText(/No LLM calls recorded for this run yet/i)).toBeTruthy()
+  })
 })
 
 describe("VerdictDrilldown (US-3/US-4)", () => {
@@ -129,15 +188,18 @@ describe("VerdictDrilldown (US-3/US-4)", () => {
 })
 
 describe("Metrics (US-10)", () => {
-  it("shows 'Not yet measured' for empty data", async () => {
+  it("shows 'Not yet measured' for empty data (no fabricated 0.0)", async () => {
     mockFetch([NOT_HALTED, { match: "/metrics", json: { status: "Not yet measured" } }, { match: "/corpus", json: { count: 0, rows: [] } }])
     renderAt("/metrics?run_id=r1", <MetricsView />, "/metrics")
+    // Every tile reads the honest literal, never a fabricated 0.0.
     await waitFor(() => {
       expect(screen.getAllByText("Not yet measured").length).toBeGreaterThan(0)
     })
+    expect(screen.queryByText("0.0")).toBeNull()
+    expect(screen.queryByText("$0.00")).toBeNull()
   })
 
-  it("renders measured tiles + the white-box gap when data is present", async () => {
+  it("renders the real dollars-per-caught-hack tile from /metrics + keeps human-minutes honest", async () => {
     mockFetch([
       NOT_HALTED,
       {
@@ -147,6 +209,8 @@ describe("Metrics (US-10)", () => {
           baseline_validation_detection: 0.9,
           gap: 0.1,
           white_box: { black_box_catch_rate: 0.8, white_box_catch_rate: 0.6, white_box_gap: 0.2 },
+          dollars_per_caught_hack: 0.37,
+          human_minutes_per_1k_outputs: null,
         },
       },
       { match: "/corpus", json: { count: 3, rows: [] } },
@@ -155,15 +219,49 @@ describe("Metrics (US-10)", () => {
     // The white-box gap tile renders its measured value (0.20), not "Not yet measured".
     await waitFor(() => expect(screen.getByText("0.20")).toBeTruthy())
     expect(screen.getByText(/Black-box vs white-box catch rate/i)).toBeTruthy()
+    // The dollars tile renders the REAL measured value from /metrics.
+    expect(screen.getByText("$0.37")).toBeTruthy()
+    // The human-minutes tile stays honestly "Not yet measured" (null in payload).
+    expect(screen.getAllByText("Not yet measured").length).toBeGreaterThan(0)
   })
 })
 
 describe("Catalog (US-6)", () => {
-  it("renders without error and shows empty state for a run", async () => {
-    mockFetch([NOT_HALTED, { match: "/corpus", json: { count: 0, rows: [] } }])
-    renderAt("/catalog?run_id=r1", <Catalog />, "/catalog")
+  it("hits the real /catalog endpoint and shows the honest empty state", async () => {
+    const fn = mockFetch([NOT_HALTED, { match: "/catalog", json: { count: 0, rows: [] } }])
+    renderAt("/catalog", <Catalog />, "/catalog")
     expect(await screen.findByText(/Evasion strategy catalog/i)).toBeTruthy()
-    await waitFor(() => expect(screen.getByText(/No landed strategies/i)).toBeTruthy())
+    // Honest empty-state: no fabricated rows when the catalog is empty.
+    await waitFor(() => expect(screen.getByText(/No strategies in the catalog yet/i)).toBeTruthy())
+    // Proves the page calls the REAL GET /catalog, not a corpus reconstruction.
+    const calls = fn.mock.calls.map((c) => String(c[0]))
+    expect(calls.some((u) => u.includes("/catalog"))).toBe(true)
+    expect(calls.some((u) => u.includes("/corpus"))).toBe(false)
+  })
+
+  it("renders persisted catalog rows from /catalog", async () => {
+    mockFetch([
+      NOT_HALTED,
+      {
+        match: "/catalog",
+        json: {
+          count: 1,
+          rows: [
+            {
+              tactic: "amount_just_under_threshold",
+              target_type: "sparkov",
+              first_discovered_run: "run-abcdef12",
+              reuse_count: 4,
+              avg_dollars_to_succeed: 0.12,
+            },
+          ],
+        },
+      },
+    ])
+    renderAt("/catalog", <Catalog />, "/catalog")
+    expect(await screen.findByText("amount_just_under_threshold")).toBeTruthy()
+    expect(screen.getByText(/4× reused/i)).toBeTruthy()
+    expect(screen.getByText("$0.12")).toBeTruthy()
   })
 })
 
