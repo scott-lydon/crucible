@@ -52,7 +52,125 @@ The same core handles three target types behind thin adapters: a fraud-detection
 
 If the producer were allowed to pick the test inputs, the cheapest winning move would be to ship a lookup table of memorized answers. An honest verifier has to control its own inputs.
 
-The diagrams below render natively on GitHub. A polished interactive version — with logos, a decision table, trade-off panels, and the safety map — lives at [`website/index.html`](website/index.html).
+The diagrams below render natively on GitHub. A polished interactive version, with logos, a decision table, trade-off panels, and the safety map, lives at [`website/index.html`](website/index.html).
+
+---
+
+## System overview, everything in one view
+
+The diagram below is one combined picture of the whole platform with every per-pillar detail inlined. It folds in: the four-node loop of section 1, the seven-node topology of section 2, the three adapters and five oracles of section 3, the red agent's internal reason-propose-query loop with white-box mode and hybrid fallback of section 4, the blue loop's three proposer feeds and held-out validator of section 5, the measure pillar's traces, dashboard, curves, audit, artifacts, and halt-certification of section 6, the sealed verification boundary of section 7, and the end-to-end data flow of section 9. Section 8 (white-box self-test, a two-pass comparison) is a different shape of picture and stays as its own diagram.
+
+```mermaid
+flowchart LR
+  subgraph RZ["Red side  ·  sections 4 + 6 (catalog)"]
+    direction TB
+    subgraph REDAGENT["Red Agent  ·  LLM semantic search"]
+      direction TB
+      REASON["reason<br/>why was I caught?"]:::red
+      PROPOSE["propose minimal change<br/>preserve intent + constraints"]:::red
+      QUERY["query_target()<br/>score · iterate"]:::red
+      REASON --> PROPOSE --> QUERY
+      QUERY -.->|"score"| REASON
+    end
+    WB["white-box mode<br/>scheme revealed, instances hidden"]:::wb
+    HYB["hybrid fallback<br/>scipy.optimize constrained numeric search"]:::hyb
+    CAT["Strategy Catalog<br/>winning tactics persist across runs"]:::mem
+    WB -.->|"augments prompt"| REASON
+    HYB -.->|"executes proposals"| QUERY
+    CAT -.->|"reuse tactics"| REASON
+  end
+
+  subgraph PROD["Producer Zone  ·  sandboxed, no path to verifier  ·  section 3"]
+    direction TB
+    A_F["fraud adapter<br/>LightGBM .lgb"]:::tgt
+    A_C["code-agent adapter<br/>Sonnet 4.6 endpoint"]:::tgt
+    A_R["research adapter<br/>stub"]:::tgt
+    TGT["Target Protocol<br/>submit() · query_target() · self_test()"]:::tgt
+    A_F --> TGT
+    A_C --> TGT
+    A_R --> TGT
+  end
+
+  subgraph SEAL["Sealed Verification Zone  ·  no producer path in  ·  sections 3 + 7"]
+    direction TB
+    SPEC["Sealed Spec<br/>YAML obligations"]:::spec
+    subgraph ORS["Non-colluding oracle ensemble"]
+      direction TB
+      O1["held-out tests<br/>fresh assertions post-submit  ·  weight 1.0"]:::ora
+      O2["metamorphic relations<br/>invariants under transforms  ·  weight 1.0"]:::ora
+      O3["differential cross-family<br/>Haiku vs Sonnet  ·  weight 1.0"]:::ora
+      O4["property-based fuzz<br/>random samples vs spec  ·  weight 1.0"]:::ora
+      O5["LLM judge  ·  Opus<br/>semantic read  ·  weight 0.5"]:::ora_half
+    end
+    AGG["Aggregator<br/>PASS-weight sum ≥ 2.0 ⇒ pass<br/>otherwise caught"]:::agg
+    SPEC -->|"derives, never from submission"| ORS
+    ORS --> AGG
+  end
+
+  subgraph HM["Harden + Measure  ·  sections 5 + 6"]
+    direction TB
+    subgraph BLUEL["Blue Loop"]
+      direction TB
+      PROP_F["new features"]:::blue
+      PROP_S["adversarial training samples"]:::blue
+      PROP_E["specialist ensemble"]:::blue
+      RTR["Retrainer<br/>LightGBM.fit() OR agent_configs patch"]:::blue
+      HOV["Held-out validator<br/>fixed attack set, never seen by proposer"]:::hov
+      PROP_F --> RTR
+      PROP_S --> RTR
+      PROP_E --> RTR
+      RTR --> HOV
+    end
+    subgraph MEASL["Measure"]
+      direction TB
+      TRACE["agent step traces<br/>+ every verdict"]:::meas
+      DASH["Dashboard<br/>undetected-hack rate<br/>val-vs-heldout gap<br/>cost/hack · human-min/1k"]:::meas
+      CURVE["Co-evolution curves<br/>ASR · detection · red↔blue rounds"]:::meas
+      AUDIT["Audit trace per verdict<br/>1-click replay"]:::meas
+      ART["Artifacts<br/>seeded corpus · leaderboard<br/>SR 11-7 report"]:::meas
+      HALT["Halt-certification<br/>white-box recall &lt; red line<br/>⇒ refuse new POST /runs"]:::halt
+      TRACE --> DASH
+      TRACE --> CURVE
+      TRACE --> AUDIT
+      DASH --> HALT
+      DASH --> ART
+      CURVE --> ART
+      AUDIT --> ART
+    end
+  end
+
+  QUERY ==>|"submit / query_target"| TGT
+  TGT ==>|"output only, sealed from spec"| ORS
+  AGG ==>|"verdict + audit trace"| REASON
+  AGG -->|"undetected hacks logged"| CAT
+  CAT --> PROP_F
+  CAT --> PROP_S
+  CAT --> PROP_E
+  HOV -. "retrain or patch, then re-evaluate on held-out" .-> TGT
+  AGG --> TRACE
+  REASON --> TRACE
+  HALT -.->|"blocks launch"| REASON
+
+  classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
+  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
+  classDef ora fill:#1f6b5c,stroke:#2fa589,color:#ffffff,stroke-width:2px;
+  classDef ora_half fill:#1f6b5c,stroke:#2fa589,color:#ffffff,stroke-dasharray:5 5;
+  classDef agg fill:#1f5c3a,stroke:#34d399,color:#e0ffe9,stroke-width:2px;
+  classDef red fill:#7f2d2d,stroke:#c0584f,color:#ffffff,stroke-width:2px;
+  classDef wb fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2;
+  classDef hyb fill:#243049,stroke:#64748b,color:#e2e8f0;
+  classDef mem fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe;
+  classDef blue fill:#3b3f8f,stroke:#6366f1,color:#ffffff,stroke-width:2px;
+  classDef hov fill:#1f6b5c,stroke:#2fa589,color:#ffffff;
+  classDef meas fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
+  classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
+```
+
+How to read it. Double-headed arrows (`==>`) are the main forward path of one round: red's `query_target()` hits the Target Protocol, the target's output flows to the oracles, the aggregator returns its verdict to red. Solid single-headed arrows are the data routes that feed memory and measurement: undetected hacks logged to the strategy catalog, the catalog read by each of blue's three proposer feeds, the aggregator and red's reasoning step both feeding the measure pillar's trace store. Dashed arrows are the cross-round feedback edges that close the loop: tactics reused on the next attack, blue's held-out-validated retrain or patch landing on the target, halt-certification blocking the next `POST /runs` when white-box recall drops below the red line.
+
+What this incorporates, section by section. Section 1's four-node loop is the diagonal red-to-target-to-oracles-to-measure path, plus the closing dashed feedback edges. Section 2's seven-node topology is each named box (spec, red, target, oracles, catalog, blue, measure). Section 3's pillar 1 detail is the three adapters and the five oracles. Section 4's pillar 2 detail is the inner reason-propose-query loop plus white-box mode plus hybrid fallback plus the catalog memory. Section 5's pillar 3 detail is the three proposer feeds (features, samples, specialist ensemble) flowing into the retrainer and the held-out validator. Section 6's pillar 4 detail is the trace-to-dashboard-to-curves-to-audit fan-out plus the artifacts export and the halt-certification kill switch. Section 7's trust boundary is the two clearly separated subgraphs (Producer Zone above, Sealed Verification Zone below) with the spec deriving the oracles and the producer never reading the spec. Section 9's end-to-end sequence is the order the arrows are traversed: red attacks, target outputs, oracles vote, aggregator decides, catalog records, blue patches, measure scores, halt-cert gates the next round.
+
+What the diagram does NOT incorporate, deliberately. Section 8 (the black-box-vs-white-box self-test comparison) is a two-pass picture, not a topology, so it stays as its own diagram below.
 
 ---
 
@@ -260,12 +378,12 @@ The hole is verified closed on held-out attacks, **not** the attacks used to bui
 
 ## 6. Pillar 4 — Measure: self-test, observability & benchmark
 
-Agent step traces and every verdict feed an honest dashboard, co-evolution curves, and a per-verdict audit trace. These export a seeded-hack corpus, a leaderboard, and an SR 11-7 style model risk report (SR 11-7 is the United States Federal Reserve's guidance on model risk management, a standard format for documenting a model's risks), and certification halts when verifier recall crosses a residual red line.
+Agent step traces and every verdict feed the dashboard, co-evolution curves, and a per-verdict audit trace. These export a seeded-hack corpus, a leaderboard, and an SR 11-7 style model risk report (SR 11-7 is the United States Federal Reserve's guidance on model risk management, a standard format for documenting a model's risks), and certification halts when verifier recall crosses a residual red line.
 
 ```mermaid
 flowchart LR
   TRACE["Agent step traces<br/>+ every verdict"]:::in
-  DASH["Honest dashboard<br/>undetected-hack · val-vs-heldout gap<br/>recall · cost/hack · human-min/1k"]:::dash
+  DASH["Dashboard<br/>undetected-hack · val-vs-heldout gap<br/>recall · cost/hack · human-min/1k"]:::dash
   CURVE["Curves<br/>ASR · detection · red↔blue co-evolution"]:::curve
   AUDIT["Audit trace per verdict<br/>check fired · obligation · 1-click replay"]:::audit
   ART["Artifacts<br/>seeded corpus · leaderboard · SR 11-7 report"]:::art
@@ -336,6 +454,43 @@ Crucible's self-test runs the same red agent from earlier in the loop in **white
 
 The red agent's *role* does not change in white-box mode. It is still the attacker; the four oracles plus the judge are still the verifier. What changes is the information available to the attacker. In black-box mode the red agent probes the target blindly; in white-box mode it also reads the verifier's design and can craft attacks aimed at the verifier's known mechanisms. Same actor, harder difficulty setting.
 
+```mermaid
+flowchart LR
+  subgraph BB["Black-box pass"]
+    direction TB
+    RB["Red agent<br/>knows nothing of verifier"]:::red
+    TB["Target"]:::tgt
+    OB["Oracles · 4 + judge"]:::ora
+    MB["Recall · black-box"]:::dash
+    RB -->|"hardcoded branch on visible inputs"| TB
+    TB --> OB
+    OB -->|"caught: shifted input misses branch"| MB
+  end
+  subgraph WB["White-box pass"]
+    direction TB
+    SCHEME["Verification scheme<br/>oracles · held-out generator · differential impl<br/><i>instances stay hidden</i>"]:::spec
+    RW["Red agent<br/>same actor, harder setting"]:::red
+    TW["Target"]:::tgt
+    OW["Oracles · 4 + judge"]:::ora
+    MW["Recall · white-box"]:::dash
+    SCHEME --> RW
+    RW -->|"crafts n = n mod 101 remap"| TW
+    TW --> OW
+    OW -->|"slips through: cached answer returned"| MW
+  end
+  MB --> GAP{{"Catch-rate gap =<br/>strength borrowed from<br/>attacker ignorance"}}
+  MW --> GAP
+  GAP --> HALT["Halt-certification<br/>when white-box recall falls below the red line"]:::halt
+  classDef red fill:#7f2d2d,stroke:#c0584f,color:#ffffff,stroke-width:2px;
+  classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
+  classDef ora fill:#1f6b5c,stroke:#2fa589,color:#ffffff,stroke-width:2px;
+  classDef dash fill:#2f3b52,stroke:#94a3b8,color:#e2e8f0,stroke-width:2px;
+  classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
+  classDef halt fill:#5c1f1f,stroke:#e06a6a,color:#ffe2e2,stroke-width:2px;
+```
+
+The two passes share every actor; only the information available to red differs. The gap between the two recall numbers is the strength the oracles were borrowing from the attacker's ignorance.
+
 **Concrete example, code-agent target.** Suppose the visible tests are five `(input, expected-output)` pairs and the held-out oracle is described as "we will grade your code on new inputs that equal a visible input plus a random integer in `[1, 100]`."
 
 - *Black-box cheat that gets caught.* The producer ships code that hardcodes branches for exactly the five visible inputs and returns the cached answer when one matches, garbage otherwise. The held-out oracle picks a shifted input (say, `visible + 47`), the hardcoded branch misses, garbage is returned, the oracle catches the cheat.
@@ -382,7 +537,7 @@ sequenceDiagram
   Note over RED,MEAS: loop closes — each pass graded
 ```
 
-The patch is always verified on held-out attacks, never the attacks used to build it — what keeps the recovered detection rate honest.
+The patch is always verified on held-out attacks, never the attacks used to build it, so the recovered detection rate is not a memorization artifact.
 
 ---
 
@@ -402,7 +557,7 @@ Using an LLM's semantic reasoning in place of gradients as the search engine is 
 | **Patch validation** | A held-out attack set defined up front | The attacks used to build the patch | Prevents the blue loop from overfitting to known attacks. |
 | **Stop rule** | Halt certification at a residual red line | Ship regardless of residual | Capability-threshold gating in the spirit of a Responsible Scaling Policy. |
 
-## Trade-offs (honest limits)
+## Trade-offs (residual limits)
 
 The deep limits are not solved. For each, Crucible shrinks the gap with a concrete mechanism, reports the residual as a number, and halts certification when that residual crosses a red line.
 
@@ -429,7 +584,7 @@ Component for component, Crucible is a working testbed for problems on Anthropic
 
 ## Scope — what ships in two weeks
 
-**Core, committed (the honest minimum):**
+**Core, committed (the minimum that ships):**
 
 - Minimal spec sealing and a producer sandbox with no path to the verification artifacts.
 - The four independent oracles running in parallel over one real domain (code), plus the fraud-model adapter so the red and blue loop demos visually.
