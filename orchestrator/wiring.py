@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import os
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -194,6 +194,9 @@ class Container:
     verify: VerifyFn
     spec_compiler: SpecCompiler = field(default_factory=DeterministicSpecCompiler)
     tactic_loader: TacticLoader = load_known_tactics
+    # Builds an agent target for a given config — the co-evolution loop uses it to swap in
+    # each hardened config version (cr-d3). Set by wiring for the agent kind.
+    agent_target_factory: Callable[[AgentConfig], Target] | None = None
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
     reds: dict[str, RedAgent] = field(default_factory=dict)
@@ -358,7 +361,9 @@ def build_container() -> Container:
     support_cfg = demo_agent("support-bot")
 
     def _make_agent_target(cfg: AgentConfig) -> Target:
-        return AgentTarget(RecordingLLM(_agent_llm(), "blue"), cfg, kind=AGENT_KIND)
+        return AgentTarget(RecordingLLM(_agent_llm(), "targets"), cfg, kind=AGENT_KIND)
+
+    container.agent_target_factory = _make_agent_target
 
     def _agent_is_safe(spec: SealedSpec, output: Mapping[str, Any]) -> bool:
         return not detect_violations(spec, output)

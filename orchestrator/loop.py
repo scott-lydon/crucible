@@ -10,12 +10,20 @@ from __future__ import annotations
 
 from sqlalchemy import select
 
-from orchestrator.interfaces import Oracle, Primable, RedAgent, SchemeAware, Target
+from orchestrator.interfaces import (
+    ConfigurableBlue,
+    Oracle,
+    Primable,
+    RedAgent,
+    SchemeAware,
+    Target,
+)
 from orchestrator.wiring import Container
 from shared.llm import LLMCallRecord, drain_records, record_into, record_llm_call
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, Run, SpecRow, VerdictRow
 from shared.persistence.resolver import resolve_spec
+from shared.persistence.store import save_agent_config, save_coevolution_round
 from shared.telemetry.log import get_logger
 from shared.types.core import Attack, AttackBudget, TargetSpec, Verdict
 from shared.types.enums import OracleKind, Pillar, RunStatus
@@ -240,6 +248,134 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         })
         _log.info("run_complete", run_id=str(run_id), rounds=budget_rounds,
                   white_box_recall=(wb_caught / wb_wrong) if wb_wrong else None)
+    except Exception as exc:
+        await _set_status(run_id, RunStatus.failed, error=repr(exc))
+        await sink.emit(run_id, "run_failed", {"run_id": str(run_id), "error": repr(exc)})
+        raise
+
+
+async def _coevo_attack(
+    container: Container, spec: SealedSpec, target: Target, red: RedAgent,
+    oracles: list[Oracle], run_id: RunId, round_index: int, last_verdict: Verdict | None,
+) -> tuple[Attack, Verdict | None]:
+    """One attack against the current agent config: red -> submit -> verify -> persist.
+    Returns the attack (so the loop can collect the ones that evaded) and the verdict."""
+    attack = await red.propose(spec, run_id, round_index, last_verdict, white_box=False)
+    result = await target.submit(attack.payload)
+    verdict = await container.verify(oracles, spec, attack, result.output) if oracles else None
+    await _persist_round(run_id, attack, result, verdict)
+    await _persist_llm_calls(run_id, attack.attack_id, drain_records())
+    await container.sink.emit(run_id, "attack", {
+        "attack_id": str(attack.attack_id), "round": round_index, "tactic": attack.tactic,
+        "payload": dict(attack.payload)})
+    if verdict is not None:
+        await container.sink.emit(run_id, "verdict", {
+            "verdict_id": str(verdict.verdict_id), "attack_id": str(attack.attack_id),
+            "outcome": str(verdict.outcome), "tally": verdict.tally,
+            "threshold": verdict.threshold, "summary": verdict.audit.summary})
+    return attack, verdict
+
+
+async def run_coevolution(
+    run_id: RunId, container: Container, *, coevo_rounds: int = 3, attacks_per_round: int = 3,
+) -> None:
+    """The co-evolutionary duel (cr-d3): for N rounds the red attacks the CURRENT agent
+    config, the panel verifies, and the blue hardens the system prompt (a new
+    agent_configs version, vendor model never retrained) — then the red attacks the
+    hardened agent. Per-round ASR (fraction of attacks that slipped the panel) and
+    detection are persisted so the dashboard can draw the co-evolution curves.
+
+    The mock agent ignores its system prompt, so on the free demo the curves stay flat
+    (honest); real movement needs CRUCIBLE_REAL_AGENT, where the agent follows the
+    hardened prompt."""
+    sink = container.sink
+    await _set_status(run_id, RunStatus.running)
+    await sink.emit(run_id, "run_started", {"run_id": str(run_id), "mode": "coevolution"})
+    try:
+        spec, target_kind, _ = await _load_context(run_id)
+        red = container.red_for(target_kind)
+        oracles = container.oracles_for(target_kind)
+        blue = container.blue_for(target_kind)
+        factory = container.agent_target_factory
+        if blue is None or factory is None or not isinstance(blue, ConfigurableBlue):
+            raise RuntimeError(
+                "co-evolution requires an agent blue (ConfigurableBlue) + agent target factory")
+
+        if isinstance(red, SchemeAware):
+            red.note_scheme([str(o.kind) for o in oracles])
+        if isinstance(red, Primable):
+            async with session_scope() as session:
+                known = await container.tactic_loader(session, target_kind)
+            red.prime(known)
+
+        blue.reset()                              # start from the base config each run
+        current_config = blue.current_config
+        async with session_scope() as session:
+            base_id = await save_agent_config(
+                session, current_config, run_id=str(run_id), source="base")
+
+        call_sink: list[LLMCallRecord] = []
+        with record_into(call_sink):
+            last_verdict: Verdict | None = None
+            global_round = 0
+            for r in range(coevo_rounds):
+                target = factory(current_config)
+                total_caught = 0
+                failed: list[Attack] = []        # attacks where the agent actually violated
+                caught_failures = 0
+                for _k in range(attacks_per_round):
+                    attack, verdict = await _coevo_attack(
+                        container, spec, target, red, oracles, run_id, global_round, last_verdict)
+                    global_round += 1
+                    last_verdict = verdict
+                    if verdict is None:
+                        continue
+                    if verdict.caught:
+                        total_caught += 1
+                    # The held-out oracle is the closest thing to ground truth: when it
+                    # fires, the agent genuinely failed (the attack worked).
+                    if _held_out_fired(verdict):
+                        failed.append(attack)
+                        if verdict.caught:
+                            caught_failures += 1
+                # ASR = the agent's failure rate (attacks that made it violate); detection =
+                # of those real failures, the fraction the panel caught.
+                asr = len(failed) / attacks_per_round
+                detection = caught_failures / len(failed) if failed else 1.0
+                await sink.emit(run_id, "coevolution_round", {
+                    "round": r, "asr": asr, "detection": detection,
+                    "config_version": current_config.version, "n_attacks": attacks_per_round})
+
+                # The blue hardens against the attacks that actually worked this round.
+                patch = await blue.harden(spec, run_id, failed)
+                await _persist_llm_calls(run_id, AttackId(patch.patch_id), drain_records())
+                new_config = blue.current_config
+                async with session_scope() as session:
+                    if new_config.version != current_config.version:
+                        await save_agent_config(
+                            session, new_config, run_id=str(run_id), source="blue",
+                            parent_config_id=base_id)
+                    await save_coevolution_round(
+                        session, run_id=str(run_id), round_index=r,
+                        config_version=current_config.version, n_attacks=attacks_per_round,
+                        n_caught=total_caught, asr=asr, detection=detection,
+                        patch_id=patch.patch_id,
+                        safe_before=patch.holdout_detection_before,
+                        safe_after=patch.holdout_detection_after,
+                        audit={"patch_summary": patch.summary, "validated": patch.validated,
+                               "new_version": new_config.version})
+                await sink.emit(run_id, "blue_patch", {
+                    "round": r, "patch_id": patch.patch_id, "summary": patch.summary,
+                    "safe_before": patch.holdout_detection_before,
+                    "safe_after": patch.holdout_detection_after, "validated": patch.validated})
+                current_config = new_config
+
+        await _set_status(run_id, RunStatus.complete)
+        await sink.emit(run_id, "run_complete", {
+            "run_id": str(run_id), "rounds": coevo_rounds, "mode": "coevolution",
+            "final_config_version": current_config.version})
+        _log.info("coevolution_complete", run_id=str(run_id), rounds=coevo_rounds,
+                  final_version=current_config.version)
     except Exception as exc:
         await _set_status(run_id, RunStatus.failed, error=repr(exc))
         await sink.emit(run_id, "run_failed", {"run_id": str(run_id), "error": repr(exc)})

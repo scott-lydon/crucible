@@ -22,7 +22,7 @@ from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown
 from modules.red.catalog import build_catalog
-from orchestrator.loop import create_run, run_loop
+from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
 from shared.persistence.db import session_scope
 from shared.persistence.models import AttackRow, LLMCallRow, Run, VerdictRow
@@ -63,6 +63,10 @@ class RunRequest(BaseModel):
     human_spec: HumanSpecModel | None = None
     budget_rounds: int = Field(default=5, ge=1, le=200)
     budget_dollars: float = Field(default=2.0, ge=0.0)
+    # "redteam" = red + white-box self-test; "coevolution" = red->verify->blue->red rounds.
+    mode: str = Field(default="redteam", examples=["redteam", "coevolution"])
+    coevo_rounds: int = Field(default=3, ge=1, le=20)
+    attacks_per_round: int = Field(default=3, ge=1, le=20)
 
 
 class RunAccepted(BaseModel):
@@ -105,13 +109,22 @@ async def post_runs(req: RunRequest) -> RunAccepted:
     except Exception as exc:  # bad spec is a typed 422 to the caller, not a crash
         raise HTTPException(status_code=422, detail=f"Invalid spec: {exc}") from exc
 
+    if req.mode not in ("redteam", "coevolution"):
+        raise HTTPException(status_code=422, detail=f"unknown mode {req.mode!r}")
+
     target_spec = TargetSpec(target_kind=req.target_kind, shape=req.shape, artifact_ref="")
     budget = AttackBudget(max_rounds=req.budget_rounds, max_dollars=req.budget_dollars)
     run_id = await create_run(
         target_spec, sealed, budget, source_text=source_text, compiler=compiler_name
     )
 
-    task = asyncio.create_task(run_loop(run_id, container))
+    if req.mode == "coevolution":
+        coro = run_coevolution(
+            run_id, container,
+            coevo_rounds=req.coevo_rounds, attacks_per_round=req.attacks_per_round)
+    else:
+        coro = run_loop(run_id, container)
+    task = asyncio.create_task(coro)
     _background.add(task)
     task.add_done_callback(_background.discard)
 

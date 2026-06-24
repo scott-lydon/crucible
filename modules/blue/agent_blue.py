@@ -113,6 +113,7 @@ class LLMAgentBlue:
         holdout: HoldoutFn = held_out_attacks,
     ) -> None:
         self._llm = llm
+        self._base_config = base_config
         self._config = base_config
         self._make_target = make_target
         self._is_safe = is_safe
@@ -127,6 +128,11 @@ class LLMAgentBlue:
     def adopt(self, config: AgentConfig) -> None:
         """Track an externally-applied config (e.g. after the loop swaps the target)."""
         self._config = config
+
+    def reset(self) -> None:
+        """Restore the base config — co-evolution starts each run from the same agent
+        (the blue instance is shared across runs)."""
+        self._config = self._base_config
 
     async def _safe_rate(
         self, spec: SealedSpec, config: AgentConfig, inputs: Sequence[str]

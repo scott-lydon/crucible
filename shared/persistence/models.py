@@ -70,6 +70,31 @@ class SpecRow(Base):
     parent_spec_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
+class CoevolutionRoundRow(Base):
+    """One round of the co-evolutionary loop (cr-d3): the red attacks the current agent
+    config, the panel verifies, the blue hardens. Holds the per-round ASR (fraction of
+    attacks that slipped the panel) and detection rate, plus the blue's before/after
+    held-out safe-rate, so the dashboard can draw the co-evolution curves (cr-d4)."""
+
+    __tablename__ = "coevolution_rounds"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False, index=True)
+    round_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    config_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    n_attacks: Mapped[int] = mapped_column(Integer, nullable=False)
+    n_caught: Mapped[int] = mapped_column(Integer, nullable=False)
+    asr: Mapped[float] = mapped_column(Float, nullable=False)            # attack success rate
+    detection: Mapped[float] = mapped_column(Float, nullable=False)
+    patch_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    safe_before: Mapped[float | None] = mapped_column(Float, nullable=True)
+    safe_after: Mapped[float | None] = mapped_column(Float, nullable=True)
+    audit_trace: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+
+
 class AgentConfigRow(Base):
     """One version of a Shape-2 agent target: the editable system prompt over a fixed
     vendor model (shared/types/agent.py AgentConfig). Blue's hardening emits a new

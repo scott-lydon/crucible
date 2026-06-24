@@ -24,7 +24,8 @@ PGPORT = int(os.environ.get("PGPORT", "55432"))
 PGUSER = os.environ.get("PGUSER", "crucible")
 PGPASSWORD = os.environ.get("PGPASSWORD", "crucible")
 _TABLES = (
-    "runs, specs, attacks, verdicts, llm_calls, sandbox_jobs, health_probes, agent_configs"
+    "runs, specs, attacks, verdicts, llm_calls, sandbox_jobs, health_probes, "
+    "agent_configs, coevolution_rounds"
 )
 
 

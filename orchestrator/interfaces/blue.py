@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import Protocol, runtime_checkable
 
+from shared.types.agent import AgentConfig
 from shared.types.core import Attack
 from shared.types.ids import RunId
 from shared.types.results import HealthStatus, PatchResult
@@ -26,3 +27,14 @@ class BlueAgent(Protocol):
         ...
 
     async def health(self) -> HealthStatus: ...
+
+
+@runtime_checkable
+class ConfigurableBlue(Protocol):
+    """A Shape-2 (agent) blue that hardens by versioning an AgentConfig — the surface the
+    co-evolution loop needs to read the current config and reset between runs (cr-d3)."""
+
+    @property
+    def current_config(self) -> AgentConfig: ...
+
+    def reset(self) -> None: ...

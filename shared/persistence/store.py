@@ -8,7 +8,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.persistence.models import AgentConfigRow, SpecRow
+from shared.persistence.models import AgentConfigRow, CoevolutionRoundRow, SpecRow
 from shared.types.agent import AgentConfig
 from shared.types.ids import new_id
 from shared.types.sealed_spec import HumanSpec, SealedSpec
@@ -118,3 +118,44 @@ async def load_spec(session: AsyncSession, spec_id: str) -> SealedSpec:
         await session.execute(select(SpecRow).where(SpecRow.id == spec_id))
     ).scalar_one()
     return SealedSpec.from_dict(row.payload)
+
+
+async def save_coevolution_round(
+    session: AsyncSession,
+    *,
+    run_id: str,
+    round_index: int,
+    config_version: int,
+    n_attacks: int,
+    n_caught: int,
+    asr: float,
+    detection: float,
+    patch_id: str | None = None,
+    safe_before: float | None = None,
+    safe_after: float | None = None,
+    audit: dict[str, object] | None = None,
+) -> str:
+    """Persist one co-evolution round's metrics (cr-d3) for the curves."""
+    row_id = new_id("coevo")
+    session.add(
+        CoevolutionRoundRow(
+            id=row_id, run_id=run_id, round_index=round_index, config_version=config_version,
+            n_attacks=n_attacks, n_caught=n_caught, asr=asr, detection=detection,
+            patch_id=patch_id, safe_before=safe_before, safe_after=safe_after,
+            audit_trace=dict(audit or {}),
+        )
+    )
+    return row_id
+
+
+async def coevolution_series(session: AsyncSession, run_id: str) -> list[CoevolutionRoundRow]:
+    """All co-evolution rounds for a run, oldest first (the curve, cr-d4)."""
+    return list(
+        (
+            await session.execute(
+                select(CoevolutionRoundRow)
+                .where(CoevolutionRoundRow.run_id == run_id)
+                .order_by(CoevolutionRoundRow.round_index.asc())
+            )
+        ).scalars()
+    )
