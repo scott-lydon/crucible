@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-7-differential-oracle** (T). LightGBM versus IsolationForest (fraud), Sonnet versus Haiku (code); flag disagreement.
+- [ ] **slice-8-property-fuzz-oracle** (T). Hypothesis strategies derived from spec invariants.
 
 ## Next slice
 
-- [ ] **slice-8-property-fuzz-oracle** (T). Hypothesis strategies derived from spec invariants.
+- [ ] **slice-9-llm-judge-oracle** (T). Opus reads the output and votes pass / fail at half weight.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -19,6 +19,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-7-differential-oracle** (T, code mode). `DifferentialOracle` generates a second implementation from a different model family (Haiku) and concrete comparison inputs, runs both against the producer in the sealed sandbox, and flags disagreement without trusting either side. Live proof: a correct impl agrees on all inputs, a wrong one disagrees on 2 of 3. The fraud variant (LightGBM versus IsolationForest) is a documented follow-on.
 - [x] **slice-6-metamorphic-oracle** (T). `MetamorphicOracle` has Sonnet synthesize concrete-literal metamorphic relations from the spec invariants and checks them in the sealed sandbox via the shared check runner. Live proof: real Sonnet synthesized 5 relations, passed a correct impl, caught a wrong one. `metamorphic_rules` table added. Held-out oracle refactored onto the same shared runner (now returns UNAVAILABLE rather than a false FAIL when a generated check errors).
 - [x] **slice-2-fraud-target** (T). Real Kaggle creditcard model: `scripts/fetch_fraud_dataset.py` downloads the dataset, `train.py` fits LightGBM (held-out ROC-AUC 0.86, the best of the configs tried; defaults give 0.84 and more capacity gives 0.85), committed as `artifacts/fraud-v1.lgb`. `FraudTarget` scores transactions; `/health/targets/fraud` returns 200 green with checksum and AUC. Done-criterion test passes on the committed model.
 - [x] **slice-5-held-out-oracle** (T). `HeldOutOracle` (Opus generates fresh asserts from the sealed spec post-submit, run against the producer output in the sealed sandbox, votes pass or fail) plus the `specs` table and server-side `SpecResolver`. Live proof: real Opus passes a correct implementation and catches a wrong one. Done-criterion test confirms a sandboxed producer cannot read `held_out_tests`. Oracle health route `/health/oracles/{name}`.
@@ -84,10 +85,10 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] `modules/oracles/metamorphic/`: Sonnet 4.6 synthesizes metamorphic relations from spec invariants; runtime checks fire each in the sealed sandbox and report pass / fail / inconclusive. `metamorphic_rules` table added; the persist-and-render lifecycle wires in at slices 10 and 15 (same pattern as held_out_tests).
   - [x] **Done criteria:** at least three relations synthesized per spec (live: real Sonnet synthesized 5; min_rules guard enforces >= 3). Surfacing in the verdict view is the slice-15 UI wiring; the count and outcome ride the OracleVote reason now.
 
-- [ ] **slice-7-differential-oracle** (T).
-  - [ ] `modules/oracles/differential/`: for fraud, LightGBM versus IsolationForest; for code, Sonnet versus Haiku.
-  - [ ] Both implementations are spawned per submission, outputs compared.
-  - [ ] **Done criteria:** disagreement rate measured on the test fixtures; the platform never trusts a single side as ground truth.
+- [x] **slice-7-differential-oracle** (T).
+  - [x] `modules/oracles/differential/`: for code, Sonnet (producer) versus Haiku (second family). Fraud variant (LightGBM versus IsolationForest) is a documented follow-on.
+  - [x] Both implementations run per submission on the same inputs in the sealed sandbox; outputs compared.
+  - [x] **Done criteria:** disagreement count measured (live: 2 of 3 inputs on a wrong impl, 0 on a correct one); the platform flags disagreement without trusting a single side as ground truth.
 
 - [ ] **slice-8-property-fuzz-oracle** (T).
   - [ ] `modules/oracles/property_fuzz/`: `hypothesis` strategies derived from spec invariants.

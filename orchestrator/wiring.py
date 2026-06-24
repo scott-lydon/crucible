@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from modules.oracles.differential import DifferentialOracle
 from modules.oracles.held_out import HeldOutOracle
 from modules.oracles.metamorphic import MetamorphicOracle
 from modules.targets.code_agent import CodeAgentTarget
@@ -69,6 +70,7 @@ def build_registry() -> Registry:
         oracles=(
             HeldOutOracle(llm=llm, sandbox=DockerSandbox()),
             MetamorphicOracle(llm=llm, sandbox=DockerSandbox()),
+            DifferentialOracle(llm=llm, sandbox=DockerSandbox()),
         ),
     )
 
