@@ -1,5 +1,21 @@
 # Crucible — Active Build Plan: "Stress-test ANY AI agent" (AI-vs-AI re-center)
 
+> ## ✅ COMPLETE (2026-06-24) — all six milestones A–F shipped, 153 tests green.
+> The platform stress-tests ANY AI agent with a real AI attacker (Claude), an independent
+> 5-oracle checker panel, and a real AI defender (Claude) co-evolving over rounds, ending
+> in a trust score + risk report (PDF) + weakness catalog. **LIVE with real Claude** at
+> https://integrity-51-81-34-160.nip.io/app/ behind a $15 global budget cap (cr-f4 → f5).
+> Verified: a real run completed at $0.13, the attacker invented novel named tactics, the
+> metamorphic oracle found a real phrasing-instability. BYO agent (model+prompt or HTTP
+> endpoint) is real end-to-end. See `docs/DEMO.md` for the runbook + deploy-verify.
+>
+> **Honest residual (deferred, beads cr-t09/cr-m3/cr-s3):** a *dedicated sandboxed
+> code-agent target* (Sonnet writes Python, executes in the Docker `--network none`
+> sandbox) is NOT built — the re-centering made any natural-language agent the product
+> (a "coder" demo agent exists but doesn't execute code). The sandbox is built and unused
+> for agents; this is a real future enhancement, out of the approved re-centered scope.
+> **Still UNPUSHED** — `gh auth refresh -h github.com -s workflow` then push.
+
 > This is the **canonical execution plan** as of 2026-06-24. It supersedes the earlier
 > fraud-first slice order and the `cr-v2`/`cr-m1..m5`/`cr-t01..t20` beads (deleted). It is
 > faithful to the team's `spec.md` (which always called for a target-agnostic platform and
