@@ -11,7 +11,7 @@ from modules.blue.code_engineer import BlueCodeEngineer
 from modules.measure.metrics import compute_run_metrics
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
-from orchestrator.full_run import run_with_blue
+from orchestrator.full_run import run_white_box_pass, run_with_blue
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
 from orchestrator.wiring import (
@@ -151,6 +151,26 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
             spec=spec,
         )
 
+    # WHITE-BOX self-test pass (US-14): after the black-box red+blue arc, run an
+    # INFORMED red pass whose prompt carries the oracles' verification scheme,
+    # then persist black-box vs white-box catch rate + the gap. Sparkov-only
+    # (the white-box adversary is wired at the sparkov composition root).
+    if "white_box_adversary" in comp:
+        await run_white_box_pass(
+            sf,
+            black_box_run_id=run_id,
+            seed=req.seed,
+            n_rounds=req.rounds,
+            batch_size=batch_size,
+            threshold=DEFAULT_THRESHOLD,
+            detector=detector,
+            white_box_adversary=cast(Adversary, comp["white_box_adversary"]),
+            oracles=oracles,
+            label_fn=label_fn,
+            generate_fn=generate_fn,
+            spec=spec,
+        )
+
 
 @app.post("/runs", status_code=201)
 async def create_run(
@@ -217,12 +237,31 @@ async def list_verdicts(run_id: str) -> dict[str, object]:
 async def get_metrics(run_id: str) -> dict[str, object]:
     async with session_factory()() as s:
         m = await compute_run_metrics(s, run_id)
+        wb = await repo.white_box_metrics_for_run(s, run_id)
+    # The white-box gap tile: black-box vs white-box catch rate + the gap. Null
+    # rates surface honestly (undefined when a pass had no successful evasions).
+    white_box = (
+        {
+            "black_box_catch_rate": wb.black_box_catch_rate,
+            "white_box_catch_rate": wb.white_box_catch_rate,
+            "white_box_gap": wb.white_box_gap,
+        }
+        if wb is not None
+        else None
+    )
     if m is None:
-        return {"status": "Not yet measured"}
+        not_measured: dict[str, object] = {"status": "Not yet measured"}
+        if white_box is not None:
+            not_measured["white_box"] = white_box
+        return not_measured
     return {
         "per_round": [dataclasses.asdict(r) for r in m.per_round],
         "baseline_validation_detection": m.baseline_validation_detection,
         "gap": m.gap,
+        "black_box_catch_rate": white_box["black_box_catch_rate"] if white_box else None,
+        "white_box_catch_rate": white_box["white_box_catch_rate"] if white_box else None,
+        "white_box_gap": white_box["white_box_gap"] if white_box else None,
+        "white_box": white_box,
     }
 
 

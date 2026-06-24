@@ -103,6 +103,27 @@ class OracleVoteRow(Base):
     evidence_json: Mapped[dict[str, object]] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
+class WhiteBoxMetricsRow(Base):
+    """Black-box vs white-box catch rate + the gap for a run (US-14 / slice-12).
+
+    Keyed to the BLACK-BOX run. The white-box pass runs as a SEPARATE run; its
+    id is recorded here so the two passes are auditable. ``white_box_gap`` =
+    ``black_box_catch_rate - white_box_catch_rate`` (an informed attacker is
+    caught no more often than an ignorant one, so the gap is >= 0 on a sane run).
+    Rates are nullable: a pass with no successful evasions has an undefined
+    catch rate, never a misleading zero.
+    """
+
+    __tablename__ = "white_box_metrics"
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), primary_key=True)
+    white_box_run_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    black_box_catch_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    white_box_catch_rate: Mapped[float | None] = mapped_column(Float, nullable=True)
+    white_box_gap: Mapped[float | None] = mapped_column(Float, nullable=True)
+    pillar: Mapped[str] = mapped_column(String, default="measure")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class BlueRoundRow(Base):
     """One blue recovery round: the defender's propose->retrain->validate arc."""
 

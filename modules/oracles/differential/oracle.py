@@ -33,6 +33,15 @@ class DifferentialOracle:
     def kind(self) -> OracleKind:
         return OracleKind.DIFFERENTIAL
 
+    def describe(self) -> str:
+        return (
+            "differential oracle: queries a second-opinion model from a "
+            "DIFFERENT model family than the target. It FAILS the detector when "
+            "the detector cleared a sample but the independent cross-family model "
+            "flags it as positive. It ABSTAINS (no weight) when no second-family "
+            "model is available."
+        )
+
     def vote(self, ctx: VerdictContext) -> OracleVote:
         if self._second_opinion_is_fraud is None:
             return self._abstain()

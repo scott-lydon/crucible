@@ -26,10 +26,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from modules.blue.code_engineer import BlueCodeEngineer
 from modules.blue.loop import BlueResult, run_blue_round
+from modules.measure.metrics import catch_rate_for_run
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import GenerateFn, LabelFn, run_loop
 from shared.persistence import repo
-from shared.persistence.models import BlueRoundRow
+from shared.persistence.models import BlueRoundRow, RunRow, WhiteBoxMetricsRow
 from shared.sandbox.base import Sandbox
 from shared.types import SealedSpec
 
@@ -138,6 +139,81 @@ async def run_with_blue(
                 proposer_rationale=result.rationale,
                 new_model_ref=None,
                 iteration_trail=_iteration_trail(result),
+            ),
+        )
+
+
+async def run_white_box_pass(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    black_box_run_id: str,
+    seed: str,
+    n_rounds: int,
+    batch_size: int,
+    threshold: float,
+    detector: Detector,
+    white_box_adversary: Adversary,
+    oracles: Sequence[Oracle],
+    label_fn: LabelFn,
+    generate_fn: GenerateFn,
+    spec: SealedSpec,
+) -> None:
+    """Run the white-box red pass and persist both passes' catch rates + gap.
+
+    The white-box pass is a SECOND full red loop over the same target, but the
+    red agent's prompt carries the oracles' verification scheme (an INFORMED
+    attacker). It runs as its own run row so its attacks/verdicts are auditable.
+    We then compute the platform CATCH RATE for the black-box run and this
+    white-box run (fraction of successful evasions the ORACLES caught) and
+    persist black/white/gap keyed to the black-box run.
+
+    Sanity: an informed attacker is caught NO MORE OFTEN than an ignorant one,
+    so ``white_box_catch_rate <= black_box_catch_rate`` and ``gap >= 0`` on a
+    sane run. Runs the same target-agnostic ``run_loop``; recovery/blue is not
+    repeated (this pass measures the verifiers against an informed attacker).
+    """
+    white_box_run_id = str(uuid.uuid4())
+    async with session_factory() as s:
+        s.add(
+            RunRow(
+                id=white_box_run_id,
+                seed=seed,
+                status="running",
+                n_rounds=n_rounds,
+                batch_size=batch_size,
+                threshold=threshold,
+                params_json={"pass": "white_box", "black_box_run_id": black_box_run_id},
+            )
+        )
+        await s.commit()
+
+    await run_loop(
+        session_factory,
+        run_id=white_box_run_id,
+        seed=seed,
+        n_rounds=n_rounds,
+        batch_size=batch_size,
+        threshold=threshold,
+        detector=detector,
+        adversary=white_box_adversary,
+        oracles=oracles,
+        label_fn=label_fn,
+        generate_fn=generate_fn,
+        spec=spec,
+    )
+
+    async with session_factory() as s:
+        black = await catch_rate_for_run(s, black_box_run_id)
+        white = await catch_rate_for_run(s, white_box_run_id)
+        gap = (black - white) if (black is not None and white is not None) else None
+        await repo.upsert_white_box_metrics(
+            s,
+            WhiteBoxMetricsRow(
+                run_id=black_box_run_id,
+                white_box_run_id=white_box_run_id,
+                black_box_catch_rate=black,
+                white_box_catch_rate=white,
+                white_box_gap=gap,
             ),
         )
 

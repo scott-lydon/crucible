@@ -159,6 +159,15 @@ class LlmJudgeOracle:
     def kind(self) -> OracleKind:
         return OracleKind.LLM_JUDGE
 
+    def describe(self) -> str:
+        return (
+            "LLM-judge oracle: an independent skeptical LLM auditor that forms "
+            "its OWN opinion of whether a cleared sample is a missed positive, "
+            "reasoning from the sample and the declared obligations. It casts a "
+            f"single {_JUDGE_WEIGHT}-weight vote (deliberately less than a "
+            "full-weight hard oracle)."
+        )
+
     def vote(self, ctx: VerdictContext) -> OracleVote:
         if self._max_calls is not None and self._calls_made >= self._max_calls:
             return OracleVote(

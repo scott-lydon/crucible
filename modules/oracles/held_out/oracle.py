@@ -18,6 +18,20 @@ class HeldOutOracle:
     def kind(self) -> OracleKind:
         return OracleKind.HELD_OUT
 
+    def describe(self) -> str:
+        # Describe the MECHANISM, never the literal label rule: a white-box red
+        # agent learning the exact ground-truth formula could trivially flip the
+        # true label, which is not an evasion. So we expose only that an
+        # independent held-out generator certifies ground truth.
+        return (
+            "held-out oracle: an independent label authority (a held-out "
+            "generator, separate from the detector) certifies each sample's "
+            "ground-truth label. It FAILS the detector when the detector cleared "
+            "a sample the ground-truth rule labels positive. You cannot defeat "
+            "this by argument: a sample the ground-truth rule calls negative is "
+            "not a true positive, so it is not a valid evasion."
+        )
+
     def vote(self, ctx: VerdictContext) -> OracleVote:
         cleared = ctx.detector_score < ctx.threshold
         truly_fraud = self._label_fn(ctx.sample)   # recompute from sealed rule, ignore ctx.true_label

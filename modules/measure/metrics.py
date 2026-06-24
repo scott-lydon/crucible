@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.persistence import repo
-from shared.persistence.models import TransactionRow, AttackRow
+from shared.persistence.models import TransactionRow, AttackRow, VerdictRow
+from shared.types.enums import Origin
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,3 +57,56 @@ async def compute_run_metrics(s: AsyncSession, run_id: str) -> RunMetrics | None
     last_det = per_round[-1].detection_rate if per_round else None
     gap = (baseline - last_det) if (baseline is not None and last_det is not None) else None
     return RunMetrics(per_round=per_round, baseline_validation_detection=baseline, gap=gap)
+
+
+async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
+    """The platform's CATCH RATE for one red pass.
+
+    The denominator is the red agent's SUCCESSFUL evasions — attacks that both
+    ``evaded`` the detector and stayed ``true_label_preserved`` (genuinely
+    positive). The numerator is how many of those the ORACLES caught: the
+    aggregate verdict on the evaded sample came back FAIL (``aggregate_pass`` is
+    ``False``). An evasion the detector lets through but no oracle flags is a
+    platform MISS; one the oracles flag is a CATCH.
+
+    Linkage: a successful evasion's mutated sample is re-scored in a later round
+    as a MUTATED-origin transaction with the SAME ``txn_index``; if it then
+    evaded the detector, the oracles voted and a verdict was recorded against
+    that mutated transaction. We match attack -> mutated transaction (by
+    ``txn_index``) -> verdict.
+
+    Returns ``None`` when there were no successful evasions (catch rate is
+    undefined, not zero).
+    """
+    attacks = await repo.attacks_for_run(s, run_id)
+    successful = [a for a in attacks if a.evaded and a.true_label_preserved]
+    if not successful:
+        return None
+
+    txns = await repo.transactions_for_run(s, run_id)
+    verdicts = await repo.verdicts_for_run(s, run_id)
+    # The mutated, evading transactions the oracles got to vote on, by txn_index.
+    mutated_by_index: dict[int, list[str]] = {}
+    for t in txns:
+        if t.origin == Origin.MUTATED.value and not t.caught:
+            mutated_by_index.setdefault(t.txn_index, []).append(t.id)
+    verdict_by_txn: dict[str, VerdictRow] = {v.txn_id: v for v in verdicts}
+
+    evaded_indices = {
+        t.txn_index for t in txns if t.id in {a.txn_id for a in successful}
+    }
+    # Each successful-evasion lineage is one platform decision per txn_index that
+    # later evaded and got an oracle verdict. Count caught (verdict FAIL).
+    caught = 0
+    total = 0
+    for idx in evaded_indices:
+        for mutated_id in mutated_by_index.get(idx, []):
+            verdict = verdict_by_txn.get(mutated_id)
+            if verdict is None:
+                continue
+            total += 1
+            if not verdict.aggregate_pass:  # oracles overturned the clearance
+                caught += 1
+    if total == 0:
+        return None
+    return caught / total

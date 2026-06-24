@@ -27,6 +27,16 @@ class MetamorphicOracle:
     def kind(self) -> OracleKind:
         return OracleKind.METAMORPHIC
 
+    def describe(self) -> str:
+        return (
+            "metamorphic oracle: checks the spec's declared metamorphic "
+            "relations. If a mutation moved a feature in a label-preserving "
+            "direction, dropped the detector score materially (>= "
+            f"{self.SCORE_DROP}), left the true label unchanged, and the sample "
+            "is still positive, the relation is VIOLATED (R1). It also FAILS any "
+            "still-positive sample the detector cleared (R2)."
+        )
+
     def _followed_relation(self, original: object, current: object,
                            feat: str, direction: str) -> bool:
         """Did the original->current mutation move `feat` in `direction`?"""

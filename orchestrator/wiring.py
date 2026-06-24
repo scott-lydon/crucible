@@ -20,7 +20,9 @@ from modules.blue.code_engineer import BlueCodeEngineer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
 from modules.red.hybrid.adversary import HybridAdversary
+from modules.red.white_box import WhiteBoxRedAdversary
 from modules.red.catalog import StrategyCatalog
+from modules.oracles.scheme import verification_scheme
 from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
@@ -89,6 +91,8 @@ def build_components_sparkov(
     judge_max_calls: int | None = 25,
     red_provider: LLMProvider | None = None,
     red_max_calls: int | None = 20,
+    white_box_provider: LLMProvider | None = None,
+    white_box_max_calls: int | None = 15,
     blue_provider: LLMProvider | None = None,
     blue_max_iters: int = 3,
     blue_max_repairs: int = 1,
@@ -158,6 +162,17 @@ def build_components_sparkov(
         spec=spec,
     )
     adversary: Adversary = HybridAdversary(primary=llm_red, fallback=deterministic)
+    # WHITE-BOX red (US-14): an Opus 4.8 LLM red agent (constitution §1: the
+    # white-box self-test pass runs on the higher tier) whose prompt carries the
+    # oracles' verification scheme, with the SAME free deterministic fallback.
+    # Budgeted independently of the Sonnet black-box loop. Tests inject a
+    # MockProvider / white_box_max_calls=0 so the suite makes ZERO real calls.
+    white_box_deterministic = MetamorphicEvasionAdversary(
+        score_fn=detector.score,
+        label_fn=sparkov_is_fraud,
+        threshold=threshold,
+        spec=spec,
+    )
     oracles: list[Oracle] = [
         HeldOutOracle(label_fn=sparkov_is_fraud),
         MetamorphicOracle(label_fn=sparkov_is_fraud),
@@ -212,9 +227,28 @@ def build_components_sparkov(
     )
     sandbox = blue_sandbox if blue_sandbox is not None else LocalDockerSandbox()
 
+    # Assemble the verification scheme from the live oracles (Targets-and-Oracles
+    # owns describe()/assembly) and wire the white-box red pass against it.
+    scheme = verification_scheme(oracles)
+    white_box_adversary: Adversary = WhiteBoxRedAdversary(
+        provider=white_box_provider
+        if white_box_provider is not None
+        else AnthropicApiProvider(model="claude-opus-4-8"),
+        spec=spec,
+        score_fn=detector.score,
+        label_fn=sparkov_is_fraud,
+        threshold=threshold,
+        scheme=scheme,
+        fallback=white_box_deterministic,
+        max_calls=white_box_max_calls,
+        catalog=catalog,
+    )
+
     return {
         "detector": detector,
         "adversary": adversary,
+        "white_box_adversary": white_box_adversary,
+        "verification_scheme": scheme,
         "oracles": oracles,
         "label_fn": sparkov_is_fraud,
         "generate_fn": fraud_sparkov.generate_batch,

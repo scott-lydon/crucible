@@ -78,6 +78,15 @@ class PropertyFuzzOracle:
     def kind(self) -> OracleKind:
         return OracleKind.PROPERTY_FUZZ
 
+    def describe(self) -> str:
+        return (
+            "property-fuzz oracle: a generative (Hypothesis) search over input "
+            "space for a sample that satisfies a declared `must_flag_when` "
+            "invariant yet the detector clears. If such a counterexample is "
+            "found, the oracle FAILS the detector. It is a run-level probe of "
+            "the detector + spec, not of any single sample."
+        )
+
     def vote(self, ctx: VerdictContext) -> OracleVote:
         result = self._search(ctx)
         if result.counterexample is not None:

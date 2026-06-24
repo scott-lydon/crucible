@@ -19,6 +19,9 @@ class _Ora:
     def vote(self, ctx: VerdictContext) -> OracleVote:
         return OracleVote(self.kind, Vote.PASS, 1.0, "ok", {})
 
+    def describe(self) -> str:
+        return "stub oracle"
+
 def test_stubs_satisfy_protocols() -> None:
     d: Detector = _Det()
     a: Adversary = _Adv()

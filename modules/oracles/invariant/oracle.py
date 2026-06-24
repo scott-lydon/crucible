@@ -18,6 +18,14 @@ class InvariantOracle:
     def kind(self) -> OracleKind:
         return OracleKind.INVARIANT
 
+    def describe(self) -> str:
+        return (
+            "invariant oracle: for each declared `must_flag_when` invariant, if "
+            "ALL of its conditions hold on the sample yet the detector cleared "
+            "it, the invariant is VIOLATED and the oracle FAILS the detector. "
+            "The conditions come from the sealed spec's declared invariants."
+        )
+
     def vote(self, ctx: VerdictContext) -> OracleVote:
         cleared = ctx.detector_score < ctx.threshold
         violated: list[str] = []

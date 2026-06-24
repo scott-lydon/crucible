@@ -76,6 +76,7 @@ class LlmRedAdversary:
         max_attempts: int = 3,
         max_calls: int | None = None,
         catalog: StrategyCatalog | None = None,
+        prompt_suffix: str | None = None,
     ) -> None:
         self._provider = provider
         self._spec = spec
@@ -85,6 +86,10 @@ class LlmRedAdversary:
         self._max_attempts = max_attempts
         self._max_calls = max_calls
         self._catalog = catalog
+        # Optional extra context appended to every prompt. The WHITE-BOX red pass
+        # uses this to inject the oracles' verification scheme so the attacker is
+        # informed about the verifiers it must also fool. ``None`` => black box.
+        self._prompt_suffix = prompt_suffix
         self._calls_made = 0
 
     @property
@@ -169,4 +174,6 @@ class LlmRedAdversary:
             prompt += "\n\nPrior failed attempts this round (do not repeat):\n" + "\n".join(
                 f"- {h}" for h in history
             )
+        if self._prompt_suffix:
+            prompt += "\n\n" + self._prompt_suffix
         return prompt

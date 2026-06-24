@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.persistence.models import (AttackRow, BlueRoundRow, OracleVoteRow,
                                        RoundRow, RunRow, SpecRow, TransactionRow,
-                                       VerdictRow)
+                                       VerdictRow, WhiteBoxMetricsRow)
 from shared.types import SealedSpec, sealed_spec_from_dict, sealed_spec_to_dict
 
 async def get_run(s: AsyncSession, run_id: str) -> RunRow | None:
@@ -66,6 +66,22 @@ async def votes_for_verdict(s: AsyncSession, verdict_id: str) -> Sequence[Oracle
 async def add_blue_round(s: AsyncSession, row: BlueRoundRow) -> None:
     s.add(row)
     await s.commit()
+
+async def upsert_white_box_metrics(s: AsyncSession, row: WhiteBoxMetricsRow) -> None:
+    """Persist (or replace) the black-box/white-box catch rates + gap for a run."""
+    existing = await s.get(WhiteBoxMetricsRow, row.run_id)
+    if existing is not None:
+        await s.delete(existing)
+        await s.flush()
+    s.add(row)
+    await s.commit()
+
+
+async def white_box_metrics_for_run(
+    s: AsyncSession, run_id: str
+) -> WhiteBoxMetricsRow | None:
+    return await s.get(WhiteBoxMetricsRow, run_id)
+
 
 async def blue_round_for_run(s: AsyncSession, run_id: str) -> BlueRoundRow | None:
     res = await s.execute(
