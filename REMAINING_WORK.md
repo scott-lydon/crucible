@@ -189,7 +189,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B6 — Code-agent end-to-end recovery measured
 
-- [ ] **DONE-CRITERION** Either A1 is extended to also exercise the
+- [x] **DONE-CRITERION** Either A1 is extended to also exercise the
   code-agent target, OR a separate script `scripts/run_e2e_code_agent.py`
   produces `artifacts/code_agent_e2e_summary.json` with before/after
   pass-rate numbers from a real-LLM code-agent run. Same disclosure rules
