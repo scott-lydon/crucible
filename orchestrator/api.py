@@ -21,7 +21,11 @@ from modules.measure.metrics import compute_run_metrics
 from modules.measure.risk_report import render_risk_report
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
-from orchestrator.full_run import run_white_box_pass, run_with_blue
+from orchestrator.full_run import (
+    record_strategies,
+    run_white_box_pass,
+    run_with_blue,
+)
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
 from orchestrator.stream import run_event_stream
@@ -228,6 +232,12 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
             generate_fn=generate_fn,
             spec=spec,
         )
+
+    # Institutional memory (US-6): persist every successful evasion the black-box
+    # run landed into the cross-run strategy catalog (the source of truth for
+    # GET /catalog). Reuses the corpus's tactic/target/dollars derivation; a
+    # repeated tactic increments reuse_count rather than inserting a duplicate.
+    await record_strategies(sf, run_id)
 
     # WHITE-BOX self-test pass (US-14): after the black-box red+blue arc, run an
     # INFORMED red pass whose prompt carries the oracles' verification scheme,
@@ -499,6 +509,38 @@ async def export_corpus(run_id: str | None = None) -> StreamingResponse:
         media_type="application/x-ndjson",
         headers={"Content-Disposition": 'attachment; filename="corpus.jsonl"'},
     )
+
+
+@app.get("/catalog")
+async def get_catalog(target_type: str | None = None) -> dict[str, object]:
+    """The persisted strategy catalog: institutional memory across runs (US-6).
+
+    One row per distinct ``(tactic, target_type)`` ever landed, with the US-6
+    columns: ``tactic``, ``target_type``, ``first_discovered_run``,
+    ``reuse_count``, and ``avg_dollars_to_succeed`` (``total_dollars`` over the
+    landings that carried cost; honest ``None`` when none did). Optional
+    ``?target_type=`` filter; sortable client-side. Honest empty-state: an empty
+    catalog returns ``{"count": 0, "rows": []}`` — never a fabricated row.
+    """
+    async with session_factory()() as s:
+        rows = await repo.catalog_entries(s, target_type)
+    return {
+        "count": len(rows),
+        "rows": [
+            {
+                "tactic": r.tactic,
+                "target_type": r.target_type,
+                "first_discovered_run": r.first_run_id,
+                "reuse_count": r.reuse_count,
+                "avg_dollars_to_succeed": (
+                    r.total_dollars / r.dollars_samples
+                    if r.dollars_samples > 0
+                    else None
+                ),
+            }
+            for r in rows
+        ],
+    }
 
 
 @app.get("/reports/{run_id}", response_class=PlainTextResponse)

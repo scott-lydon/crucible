@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from modules.blue.code_engineer import BlueCodeEngineer
 from modules.blue.loop import BlueResult, run_blue_round
+from modules.measure.corpus_exporter import corpus_entries
 from modules.measure.halt_rule import evaluate_halt
 from modules.measure.metrics import catch_rate_for_run
 from orchestrator.interfaces import Adversary, Detector, Oracle
@@ -203,6 +204,13 @@ async def run_white_box_pass(
         spec=spec,
     )
 
+    # The informed (white-box) pass is institutional memory too: record the
+    # strategies it landed under the SAME target_type as the black-box run, so a
+    # repeated tactic accumulates reuse_count across both passes (US-6).
+    await record_strategies(
+        session_factory, white_box_run_id, target_run_id=black_box_run_id
+    )
+
     async with session_factory() as s:
         black = await catch_rate_for_run(s, black_box_run_id)
         white = await catch_rate_for_run(s, white_box_run_id)
@@ -220,6 +228,38 @@ async def run_white_box_pass(
         # Re-evaluate the halt red line against this latest white-box recall and
         # persist the flag (US-13): a recall below the threshold halts new launches.
         await evaluate_halt(s)
+
+
+async def record_strategies(
+    session_factory: async_sessionmaker[AsyncSession],
+    run_id: str,
+    *,
+    target_run_id: str | None = None,
+) -> None:
+    """Persist this run's landed evasions into the cross-run strategy catalog.
+
+    Derives one ``(tactic, target_type, dollars)`` per successful evasion via the
+    shared corpus exporter (single point of truth for that derivation), then
+    upserts each into ``strategy_catalog`` — a repeated tactic increments
+    ``reuse_count`` rather than inserting a duplicate. ``target_run_id`` overrides
+    which run supplies the declared ``target_type`` (the white-box pass records
+    under the black-box run's target, since its own params carry none).
+    """
+    async with session_factory() as s:
+        entries = await corpus_entries(s, run_id)
+        target_type: str | None = None
+        if target_run_id is not None:
+            run = await repo.get_run(s, target_run_id)
+            params = (run.params_json if run is not None else None) or {}
+            target_type = str(params.get("target", "unknown"))
+        for entry in entries:
+            await repo.record_strategy(
+                s,
+                tactic=entry.tactic,
+                target_type=target_type if target_type is not None else entry.target_type,
+                run_id=run_id,
+                dollars=entry.dollars,
+            )
 
 
 def _iteration_trail(result: BlueResult) -> list[dict[str, object]]:

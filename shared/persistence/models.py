@@ -175,6 +175,38 @@ class LlmCallRow(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 
 
+class StrategyCatalogRow(Base):
+    """One persisted evasion strategy — institutional memory ACROSS runs (US-6).
+
+    Keyed by ``(tactic, target_type)``: the tactic is the ``feature:direction``
+    label from ``corpus_exporter._tactic_from_mutation`` (e.g. ``amt:down``), the
+    target_type is the run's declared target (``run.params_json["target"]``). The
+    FIRST run to land a tactic seeds the row (``first_run_id`` /
+    ``first_discovered_at``); every later landing of the same tactic increments
+    ``reuse_count`` and accumulates ``total_dollars`` (so the average is honest).
+
+    ``reuse_count`` counts EVERY landing including the first sighting (so a tactic
+    seen once has ``reuse_count == 1``). ``total_dollars`` accumulates the dollars
+    at stake for each landing; the average is ``total_dollars / reuse_count`` and
+    is honestly ``None`` when no cost data was ever recorded for the tactic.
+    """
+
+    __tablename__ = "strategy_catalog"
+    tactic: Mapped[str] = mapped_column(String, primary_key=True)
+    target_type: Mapped[str] = mapped_column(String, primary_key=True)
+    first_run_id: Mapped[str] = mapped_column(String)
+    first_discovered_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_now
+    )
+    reuse_count: Mapped[int] = mapped_column(Integer, default=0)
+    total_dollars: Mapped[float] = mapped_column(Float, default=0.0)
+    # How many of the landings carried real (non-zero) cost data — so the average
+    # is over rows with cost, and stays None when none did (never a misleading 0).
+    dollars_samples: Mapped[int] = mapped_column(Integer, default=0)
+    pillar: Mapped[str] = mapped_column(String, default="red")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class BlueRoundRow(Base):
     """One blue recovery round: the defender's propose->retrain->validate arc."""
 

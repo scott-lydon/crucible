@@ -4,8 +4,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.persistence.models import (AttackRow, BlueRoundRow, HaltStateRow,
                                        LlmCallRow, OracleVoteRow, RoundRow,
-                                       RunRow, SpecRow, TransactionRow,
-                                       VerdictRow, WhiteBoxMetricsRow)
+                                       RunRow, SpecRow, StrategyCatalogRow,
+                                       TransactionRow, VerdictRow,
+                                       WhiteBoxMetricsRow)
 from shared.types import SealedSpec, sealed_spec_from_dict, sealed_spec_to_dict
 
 _HALT_SINGLETON = "singleton"
@@ -173,6 +174,60 @@ async def llm_calls_for_run(s: AsyncSession, run_id: str) -> Sequence[LlmCallRow
 
 async def get_llm_call(s: AsyncSession, call_id: str) -> LlmCallRow | None:
     return await s.get(LlmCallRow, call_id)
+
+
+async def record_strategy(
+    s: AsyncSession,
+    *,
+    tactic: str,
+    target_type: str,
+    run_id: str,
+    dollars: float,
+) -> None:
+    """Upsert one landed evasion strategy into the persisted catalog (US-6).
+
+    Institutional memory ACROSS runs: the first sighting of ``(tactic,
+    target_type)`` inserts the row (seeding ``first_run_id`` /
+    ``first_discovered_at`` and ``reuse_count == 1``); every later landing of the
+    same pair increments ``reuse_count`` and accumulates ``total_dollars``. A
+    landing with real (non-zero) cost also bumps ``dollars_samples`` so the
+    average is computed only over rows that carried cost — honest ``None`` when
+    none ever did.
+    """
+    row = await s.get(StrategyCatalogRow, (tactic, target_type))
+    if row is None:
+        row = StrategyCatalogRow(
+            tactic=tactic,
+            target_type=target_type,
+            first_run_id=run_id,
+            reuse_count=0,
+            total_dollars=0.0,
+            dollars_samples=0,
+        )
+        s.add(row)
+    row.reuse_count += 1
+    if dollars > 0.0:
+        row.total_dollars += dollars
+        row.dollars_samples += 1
+    await s.commit()
+
+
+async def catalog_entries(
+    s: AsyncSession, target_type: str | None = None
+) -> Sequence[StrategyCatalogRow]:
+    """The persisted strategy catalog rows, optionally filtered by target type.
+
+    Returns ``[]`` when no strategy has ever been recorded (honest empty catalog —
+    never a fabricated row). Ordered most-reused first, then by tactic for a
+    stable client-side default.
+    """
+    stmt = select(StrategyCatalogRow).order_by(
+        StrategyCatalogRow.reuse_count.desc(), StrategyCatalogRow.tactic
+    )
+    if target_type is not None:
+        stmt = stmt.where(StrategyCatalogRow.target_type == target_type)
+    res = await s.execute(stmt)
+    return res.scalars().all()
 
 
 async def blue_round_for_run(s: AsyncSession, run_id: str) -> BlueRoundRow | None:
