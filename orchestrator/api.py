@@ -55,6 +55,7 @@ from shared.persistence.models import (
     LlmCall,
     ModelVersion,
     Run,
+    Spec,
 )
 from shared.persistence.models import Verdict as VerdictRow
 from shared.sandbox.docker_sandbox import DEFAULT_SANDBOX_IMAGE
@@ -650,6 +651,36 @@ async def report_markdown(run_id: str, session: SessionDep) -> dict[str, Any]:
     except ReportRunNotFoundError as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     return {"run_id": run_id, "markdown": markdown}
+
+
+@app.get("/specs/history")
+async def specs_history(session: SessionDep) -> list[dict[str, Any]]:
+    """Every sealed spec, newest first: the versioned spec history (slice 16).
+
+    Reads the real `specs` table the resolver writes; a fresh deployment returns
+    an empty list the page renders as "no specs sealed yet" rather than the
+    hardcoded version rows the design bundle shipped with. Each row carries the
+    spec id, its title and obligation count (read from the stored `as_json`
+    form), and when it was sealed.
+    """
+    rows = (
+        (await session.execute(select(Spec).order_by(Spec.created_at.desc())))
+        .scalars()
+        .all()
+    )
+    history: list[dict[str, Any]] = []
+    for r in rows:
+        spec_json = r.spec_json if isinstance(r.spec_json, dict) else {}
+        obligations = spec_json.get("obligations", [])
+        history.append(
+            {
+                "spec_id": r.id,
+                "title": spec_json.get("title"),
+                "obligations": len(obligations) if isinstance(obligations, list) else 0,
+                "created_at": r.created_at.isoformat(),
+            }
+        )
+    return history
 
 
 @app.get("/corpus")

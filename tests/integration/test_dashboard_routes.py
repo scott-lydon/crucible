@@ -27,6 +27,7 @@ from shared.persistence.models import (
     JudgeVote,
     ModelVersion,
     Run,
+    Spec,
 )
 from shared.persistence.models import Verdict as VerdictRow
 
@@ -190,6 +191,34 @@ async def test_root_redirects_to_app(client: AsyncClient) -> None:
     second = await client.get("/app")
     assert second.status_code in (307, 308)
     assert second.headers["location"] == "/app/slice-01-run-launcher.dc.html"
+
+
+async def test_specs_history_returns_real_sealed_specs(client: AsyncClient) -> None:
+    empty = await client.get("/specs/history")
+    assert empty.status_code == 200
+    assert isinstance(empty.json(), list)
+
+    spec_id = f"spec-{uuid.uuid4().hex}"
+    async with get_sessionmaker()() as session:
+        session.add(
+            Spec(
+                id=spec_id,
+                spec_json={
+                    "title": "fraud spec",
+                    "obligations": [{"id": "o1", "description": "d"}],
+                },
+            )
+        )
+        await session.commit()
+
+    resp = await client.get("/specs/history")
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert isinstance(rows, list)
+    row = next(r for r in rows if r["spec_id"] == spec_id)
+    assert row["title"] == "fraud spec"
+    assert row["obligations"] == 1
+    assert row["created_at"]
 
 
 async def test_design_bundle_served_with_live_sidecar(client: AsyncClient) -> None:
