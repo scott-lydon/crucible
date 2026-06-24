@@ -16,7 +16,15 @@ async def client() -> AsyncGenerator[AsyncClient, None]:
 
 async def test_health_ok(client: AsyncClient) -> None:
     r = await client.get("/health")
-    assert r.status_code == 200 and r.json()["status"] == "ok"
+    assert r.status_code == 200
+    body = r.json()
+    # /health is now the hierarchical self-test view (US-8) + seal card (US-9):
+    # pillar -> module -> subcomponent, plus the producer-sandbox seal card.
+    assert "pillars" in body and body["pillars"]
+    assert {p["pillar_id"] for p in body["pillars"]} >= {
+        "targets", "red", "blue", "measure", "external_deps"
+    }
+    assert body["seal_card"]["egress_allow_list"] == []
 
 
 async def test_post_run_then_metrics(client: AsyncClient) -> None:

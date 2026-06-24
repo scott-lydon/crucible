@@ -11,6 +11,12 @@ from pydantic import BaseModel, Field
 from modules.blue.code_engineer import BlueCodeEngineer
 from modules.measure.corpus_exporter import corpus_entries, corpus_jsonl
 from modules.measure.halt_rule import halt_status
+from modules.measure.health import (
+    HealthInputs,
+    health_report,
+    run_live_seal_probe,
+    run_one_self_test,
+)
 from modules.measure.metrics import compute_run_metrics
 from modules.measure.risk_report import render_risk_report
 from orchestrator.db import init_db as init_db  # re-export for tests
@@ -18,6 +24,7 @@ from orchestrator.db import session_factory
 from orchestrator.full_run import run_white_box_pass, run_with_blue
 from orchestrator.interfaces import Adversary, Detector, Oracle
 from orchestrator.loop import run_loop
+from orchestrator.stream import run_event_stream
 from orchestrator.wiring import (
     DEFAULT_THRESHOLD,
     build_components,
@@ -26,6 +33,7 @@ from orchestrator.wiring import (
 from shared.env import load_env
 from shared.persistence import repo
 from shared.persistence.models import RunRow
+from shared.sandbox import LocalDockerSandbox
 from shared.sandbox.base import Sandbox
 from shared.types import SealedSpec
 from shared.types.enums import OracleKind, Vote
@@ -35,6 +43,35 @@ from shared.types.enums import OracleKind, Vote
 # makes ZERO real LLM calls. None => the real demo path (live, bounded providers).
 # This is the ONLY way the suite exercises target="sparkov" without billing.
 SPARKOV_TEST_OVERRIDES: dict[str, object] | None = None
+
+# Test-injection seam for the /health self-test view. A test may set this to a
+# ``HealthInputs`` (with a deterministic sandbox + a mockable anthropic ping) so
+# the seal card / probe and the Anthropic leg are exercised with ZERO real LLM
+# calls and no Docker dependency. None => the live, introspected inputs.
+HEALTH_TEST_INPUTS: object | None = None
+
+
+def _health_inputs() -> HealthInputs:
+    """Assemble the live ``HealthInputs`` for the self-test view.
+
+    Introspects the OFFLINE synth composition (always constructible, no real LLM
+    calls, no external data) for the in-process component shapes — the detector,
+    adversary, and the six oracles share the same Protocol surface across
+    targets, so the synth wiring is a faithful, free stand-in for the smoke
+    checks. The real session factory and the real local Docker sandbox adapter
+    are wired in so the Postgres / sandbox / seal-probe legs are honest.
+    """
+    if HEALTH_TEST_INPUTS is not None:
+        return cast(HealthInputs, HEALTH_TEST_INPUTS)
+    comp = build_components(threshold=DEFAULT_THRESHOLD)
+    sandbox: object = LocalDockerSandbox()
+    return HealthInputs(
+        session_factory=session_factory(),
+        detector=comp["detector"],
+        adversary=comp["adversary"],
+        oracles=cast(Sequence[object], comp["oracles"]),
+        sandbox=sandbox,
+    )
 
 
 @asynccontextmanager
@@ -70,8 +107,33 @@ class LaunchRequest(BaseModel):
 
 
 @app.get("/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+async def health() -> dict[str, object]:
+    """Hierarchical self-test view (US-8) + the producer-sandbox seal card (US-9).
+
+    pillar -> module -> subcomponent, each leaf ``{state, last_self_test, error}``.
+    Read-only smoke tests; the Anthropic leg is TOKEN-FREE (key presence / a
+    mockable ping), so opening this page never spends money or runs the loop.
+    """
+    return await health_report(_health_inputs())
+
+
+@app.post("/health/selftest/{component_id}")
+async def post_self_test(component_id: str) -> dict[str, object]:
+    """Re-run ONE subcomponent's smoke and return its updated leaf (US-8 button)."""
+    try:
+        return await run_one_self_test(_health_inputs(), component_id)
+    except KeyError as exc:
+        raise HTTPException(404, f"unknown component {component_id!r}") from exc
+
+
+@app.post("/health/seal-probe")
+async def post_seal_probe() -> dict[str, object]:
+    """Run the live in-sandbox seal probe (US-9 button) and report the result.
+
+    Honest when the live probe cannot run (Docker/gateway unavailable): returns
+    ``available=false`` with the reason — never a fabricated ``sealed: true``.
+    """
+    return run_live_seal_probe(_health_inputs().sandbox)
 
 
 async def _execute_run(req: LaunchRequest, run_id: str) -> None:
@@ -281,6 +343,29 @@ async def get_metrics(run_id: str) -> dict[str, object]:
         "gap": m.gap,
         "white_box": white_box,
     }
+
+
+@app.get("/runs/{run_id}/stream")
+async def stream_run(run_id: str) -> StreamingResponse:
+    """Server-Sent Events stream of a run's progress (US-2).
+
+    Tails the run's PERSISTED rows and emits an ``attack`` + ``trace`` event per
+    attack (ASR-so-far / rationale), a ``verdict`` event per verdict
+    (detection-rate-so-far + pass/fail), and a terminal ``complete`` event when
+    the run status is terminal. No new LLM calls — it reads only what the loop
+    persisted. Bounded by a wall-clock cap so it always closes cleanly.
+    """
+    sf = session_factory()
+
+    async def _events() -> AsyncIterator[str]:
+        async for chunk in run_event_stream(sf, run_id):
+            yield chunk
+
+    return StreamingResponse(
+        _events(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @app.get("/runs/{run_id}/blue")
