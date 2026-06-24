@@ -1,155 +1,163 @@
-import { useEffect, useRef, useState } from "react"
-import { useParams, Link } from "react-router-dom"
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-} from "recharts"
-import { getMetrics, getVerdicts, isNotMeasured, type Metrics, type VerdictSummary } from "../api"
+// US-2: Live Run View. SSE-wired — the ASR chart appends a point on every
+// `attack` event, the detection chart on every `verdict` event, and the trace
+// pane streams the red agent's rationale from `trace` events (rendered
+// gracefully when rationale is null). The headline of slice-15 is that the ASR
+// chart updates live as attack events arrive.
 
-const VERDICT_PAGE_SIZE = 50
+import { useEffect, useRef, useState } from "react"
+import { Link, useParams } from "react-router-dom"
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+import {
+  getVerdicts,
+  subscribeRun,
+  type AttackEvent,
+  type CompleteEvent,
+  type TraceEvent,
+  type VerdictEvent,
+  type VerdictSummary,
+} from "../api"
+import Layout from "../components/Layout"
+import { Card, Mono, Pill, SectionLabel } from "../components/ui"
+import { C, MONO } from "../theme"
+
+type AsrPoint = { n: number; asr: number | null }
+type DetPoint = { n: number; detection: number | null }
+type TraceLine = { attack_id: string; rationale: string | null }
+
+const axis = { stroke: C.border, tick: { fill: C.textMut, fontSize: 11, fontFamily: MONO } }
 
 export default function RunView() {
   const { id } = useParams<{ id: string }>()
-  const [metrics, setMetrics] = useState<Metrics | null>(null)
-  const [verdicts, setVerdicts] = useState<VerdictSummary[] | null>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [asr, setAsr] = useState<AsrPoint[]>([])
+  const [det, setDet] = useState<DetPoint[]>([])
+  const [traces, setTraces] = useState<TraceLine[]>([])
+  const [status, setStatus] = useState<string>("running")
+  const [verdicts, setVerdicts] = useState<VerdictSummary[]>([])
+  const nAttack = useRef(0)
+  const nVerdict = useRef(0)
 
   useEffect(() => {
     if (!id) return
-    timerRef.current = setInterval(async () => {
-      try {
-        const m = await getMetrics(id)
-        setMetrics(m)
-        // Stop polling once we have a real metrics payload
-        if (!isNotMeasured(m)) {
-          if (timerRef.current !== null) {
-            clearInterval(timerRef.current)
-            timerRef.current = null
-          }
-        }
-      } catch {
-        // keep polling on error
-      }
-    }, 1000)
-    return () => {
-      if (timerRef.current !== null) {
-        clearInterval(timerRef.current)
-      }
-    }
+    const dispose = subscribeRun(id, {
+      onAttack: (e: AttackEvent) => {
+        nAttack.current += 1
+        setAsr((prev) => [...prev, { n: nAttack.current, asr: e.asr_so_far }])
+      },
+      onTrace: (e: TraceEvent) => {
+        setTraces((prev) => [{ attack_id: e.attack_id, rationale: e.rationale }, ...prev].slice(0, 50))
+      },
+      onVerdict: (e: VerdictEvent) => {
+        nVerdict.current += 1
+        setDet((prev) => [...prev, { n: nVerdict.current, detection: e.detection_rate_so_far }])
+      },
+      onComplete: (e: CompleteEvent) => setStatus(e.timed_out ? "timed out" : e.status),
+    })
+    return dispose
   }, [id])
 
+  // Verdict table is a one-shot fetch (the persisted summary), refreshed when the
+  // run completes so the operator can drill in (US-3).
   useEffect(() => {
     if (!id) return
-    getVerdicts(id).then(setVerdicts)
-  }, [id])
-
-  if (!metrics) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-500 text-sm">Loading…</p>
-      </div>
-    )
-  }
-
-  if (isNotMeasured(metrics)) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <p className="text-gray-400 text-sm">Not yet measured.</p>
-      </div>
-    )
-  }
-
-  const chartData = metrics.per_round.map((r) => ({
-    round: r.round_index,
-    evasion: r.evasion_rate,
-    detection: r.detection_rate,
-  }))
-
-  const firstAsr = metrics.per_round[0]?.asr
-
-  const shownVerdicts = verdicts ? verdicts.slice(0, VERDICT_PAGE_SIZE) : []
+    getVerdicts(id).then(setVerdicts).catch(() => setVerdicts([]))
+  }, [id, status])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <h1 className="text-xl font-semibold text-gray-800 mb-6">Run: {id}</h1>
-
-      <div className="grid grid-cols-2 gap-4 mb-8 max-w-lg">
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Validation-vs-held-out gap</p>
-          <p className="text-lg font-semibold text-gray-800">
-            {metrics.gap === null ? "Not yet measured" : metrics.gap.toFixed(2)}
-          </p>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm p-4">
-          <p className="text-xs text-gray-500 mb-1">Attack success (round 0, per attempt)</p>
-          <p className="text-lg font-semibold text-gray-800">
-            {firstAsr == null ? "Not yet measured" : (firstAsr * 100).toFixed(0) + "%"}
-          </p>
-        </div>
+    <Layout>
+      <SectionLabel>Live Run View · US-2</SectionLabel>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
+        <h1 style={{ color: C.textHi, fontSize: 20, fontWeight: 600, margin: 0 }}>
+          Run <Mono style={{ color: C.primary }}>{id}</Mono>
+        </h1>
+        <Pill tone={status === "complete" ? "pass" : status === "failed" ? "fail" : "info"}>{status}</Pill>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm p-4 inline-block mb-8">
-        <LineChart width={600} height={300} data={chartData}>
-          <XAxis dataKey="round" />
-          <YAxis domain={[0, 1]} />
-          <Tooltip />
-          <Legend />
-          <Line type="monotone" dataKey="evasion" stroke="#dc2626" dot={false} />
-          <Line type="monotone" dataKey="detection" stroke="#2563eb" dot={false} />
-        </LineChart>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+        <Card>
+          <SectionLabel>Attack-success rate (live)</SectionLabel>
+          <div data-testid="asr-chart" style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={asr}>
+                <CartesianGrid stroke={C.border} strokeDasharray="3 3" />
+                <XAxis dataKey="n" stroke={axis.stroke} tick={axis.tick} />
+                <YAxis domain={[0, 1]} stroke={axis.stroke} tick={axis.tick} />
+                <Tooltip contentStyle={{ background: C.surface2, border: `1px solid ${C.border}`, fontFamily: MONO }} />
+                <Line type="monotone" dataKey="asr" stroke={C.warning} dot={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ fontSize: 11, color: C.textMut, marginTop: 6 }}>
+            {asr.length} attack event{asr.length === 1 ? "" : "s"} streamed
+          </div>
+        </Card>
+        <Card>
+          <SectionLabel>Detection rate (live)</SectionLabel>
+          <div data-testid="detection-chart" style={{ height: 240 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={det}>
+                <CartesianGrid stroke={C.border} strokeDasharray="3 3" />
+                <XAxis dataKey="n" stroke={axis.stroke} tick={axis.tick} />
+                <YAxis domain={[0, 1]} stroke={axis.stroke} tick={axis.tick} />
+                <Tooltip contentStyle={{ background: C.surface2, border: `1px solid ${C.border}`, fontFamily: MONO }} />
+                <Line type="monotone" dataKey="detection" stroke={C.primary} dot={false} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ fontSize: 11, color: C.textMut, marginTop: 6 }}>
+            {det.length} verdict event{det.length === 1 ? "" : "s"} streamed
+          </div>
+        </Card>
       </div>
 
-      <div className="max-w-2xl">
-        <h2 className="text-base font-semibold text-gray-800 mb-3">Verdicts</h2>
-        {verdicts === null ? (
-          <p className="text-gray-400 text-sm">Loading verdicts…</p>
-        ) : verdicts.length === 0 ? (
-          <p className="text-gray-400 text-sm">No verdicts recorded.</p>
+      <Card style={{ marginBottom: 16 }}>
+        <SectionLabel>Reasoning trace (streaming)</SectionLabel>
+        {traces.length === 0 ? (
+          <p style={{ color: C.textMut, fontSize: 13 }}>Awaiting trace events…</p>
         ) : (
-          <>
-            {verdicts.length > VERDICT_PAGE_SIZE && (
-              <p className="text-xs text-gray-400 mb-2">
-                showing first {VERDICT_PAGE_SIZE} of {verdicts.length}
-              </p>
-            )}
-            <table className="w-full text-sm bg-white rounded-lg shadow-sm overflow-hidden">
-              <thead className="bg-gray-100 text-gray-600 text-xs uppercase">
-                <tr>
-                  <th className="px-4 py-2 text-left">Verdict ID</th>
-                  <th className="px-4 py-2 text-left">Result</th>
-                  <th className="px-4 py-2 text-left">Fail Weight</th>
-                </tr>
-              </thead>
-              <tbody>
-                {shownVerdicts.map((v) => (
-                  <tr key={v.verdict_id} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-2 font-mono">
-                      <Link
-                        to={`/runs/${id}/verdicts/${v.verdict_id}`}
-                        className="text-blue-600 hover:underline"
-                      >
-                        {v.verdict_id.slice(0, 8)}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2">
-                      {v.aggregate_pass ? (
-                        <span className="text-green-700 font-medium">sound</span>
-                      ) : (
-                        <span className="text-red-600 font-medium">MISSED</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-gray-600">{v.fail_weight.toFixed(3)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 280, overflowY: "auto" }}>
+            {traces.map((t, i) => (
+              <div key={`${t.attack_id}-${i}`} style={{ borderLeft: `2px solid ${C.primaryDim}`, paddingLeft: 12 }}>
+                <Mono style={{ fontSize: 11, color: C.textMut }}>{t.attack_id.slice(0, 8)}</Mono>
+                <div style={{ fontFamily: MONO, fontSize: 12.5, color: t.rationale ? C.text : C.textMut }}>
+                  {t.rationale ?? "(no rationale recorded for this attack)"}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
-      </div>
-    </div>
+      </Card>
+
+      <Card>
+        <SectionLabel>Verdicts ({verdicts.length})</SectionLabel>
+        {verdicts.length === 0 ? (
+          <p style={{ color: C.textMut, fontSize: 13 }}>No verdicts recorded yet.</p>
+        ) : (
+          <table style={{ width: "100%", fontSize: 13, borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ color: C.textMut, textAlign: "left", fontSize: 11 }}>
+                <th style={{ padding: "6px 8px" }}>Verdict</th>
+                <th style={{ padding: "6px 8px" }}>Result</th>
+                <th style={{ padding: "6px 8px" }}>Fail weight</th>
+              </tr>
+            </thead>
+            <tbody>
+              {verdicts.slice(0, 50).map((v) => (
+                <tr key={v.verdict_id} style={{ borderTop: `1px solid ${C.border}` }}>
+                  <td style={{ padding: "8px" }}>
+                    <Link to={`/runs/${id}/verdicts/${v.verdict_id}`} style={{ color: C.primary, fontFamily: MONO }}>
+                      {v.verdict_id.slice(0, 8)}
+                    </Link>
+                  </td>
+                  <td style={{ padding: "8px" }}>
+                    <Pill tone={v.aggregate_pass ? "pass" : "fail"}>{v.aggregate_pass ? "caught" : "MISSED"}</Pill>
+                  </td>
+                  <td style={{ padding: "8px", fontFamily: MONO, color: C.text }}>{v.fail_weight.toFixed(3)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+    </Layout>
   )
 }
