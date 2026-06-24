@@ -50,7 +50,7 @@
         <div style="width:1px;background:#2C3744"></div>
         <div style="padding:9px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3;min-width:170px">
           <span style="color:#95A1AE;font-size:11px;letter-spacing:.06em">SESSION</span>
-          <span style="color:#B8C2CE;font-size:12px"><span data-live="spend.current">$61.40</span> <span style="color:#95A1AE">/ <span data-live="spend.ceiling">$250.00</span> mo</span></span>
+          <span style="color:#B8C2CE;font-size:12px"><span data-live="spend.current">—</span> <span style="color:#95A1AE">/ <span data-live="spend.ceiling">—</span> mo</span></span>
           <div style="height:4px;background:#0E141B;border-radius:2px;overflow:hidden;margin:2px 0"><div style="width:24.6%;height:100%;background:#316E7E"></div></div>
         </div>
       </div>
@@ -88,9 +88,9 @@
     <div style="background:#1B1518;border-top:1px solid #4A2528;color:#E5B5B0">
       <div style="max-width:1400px;margin:0 auto;padding:10px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px">
         <span style="display:inline-flex;align-items:center;gap:7px;font-weight:600;letter-spacing:.04em"><span style="width:8px;height:8px;border-radius:50%;background:#E5736B"></span>ADMIN · ROOT</span>
-        <span style="color:#B8C2CE">overrides act on this run only · all changes signed to <span style="color:#E8EDF3" data-live="me.audit_log_target">audit-log/admin</span> as <span style="color:#E8EDF3" data-live="me.display_name">m.chen</span></span>
+        <span style="color:#B8C2CE">overrides act on this run only · all changes signed to <span style="color:#E8EDF3" data-live="me.audit_log_target">audit-log/admin</span> as <span style="color:#E8EDF3" data-live="me.display_name">anonymous</span></span>
         <div style="flex:1"></div>
-        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="workspace ceiling $25.00 — admin can lift to $500.00"><button onClick="{{ toggleLiftCeiling }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ liftCeilingBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ liftCeilingKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">lift $ ceiling</span></label>
+        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="workspace ceiling $25 — admin can lift to $500"><button onClick="{{ toggleLiftCeiling }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ liftCeilingBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ liftCeilingKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">lift $ ceiling</span></label>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="workspace cap 500 rounds — admin can lift to 5,000"><button onClick="{{ toggleLiftRounds }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ liftRoundsBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ liftRoundsKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">lift rounds cap</span></label>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="serve all producer + judge calls from cassettes — zero vendor billing"><button onClick="{{ toggleMockLLM }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ mockLLMBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ mockLLMKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">mock-llm</span></label>
         <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer" title="allow egress to vendor endpoints from sandbox"><button onClick="{{ toggleEgress }}" style="background:none;border:none;padding:0;cursor:pointer;display:inline-flex;align-items:center"><span style="display:inline-flex;width:30px;height:18px;border-radius:10px;background:{{ egressBg }};position:relative;flex:none"><span style="position:absolute;top:2px;left:{{ egressKnob }};width:14px;height:14px;border-radius:50%;background:#E8EDF3;transition:left .12s"></span></span></button><span style="color:#E8EDF3">allow egress</span></label>
@@ -176,7 +176,7 @@
               </div>
               <div style="flex:1;min-width:160px">
                 <div style="font-size:11px;color:#95A1AE;margin-bottom:6px">Dollar ceiling</div>
-                <input value="$25.00" style="width:100%;background:#0E141B;border:1px solid #2C3744;border-radius:6px;padding:11px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none" style-focus="border-color:#4FAAC0"/>
+                <input value="$25" style="width:100%;background:#0E141B;border:1px solid #2C3744;border-radius:6px;padding:11px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:14px;outline:none" style-focus="border-color:#4FAAC0"/>
                 <div style="font-size:11px;color:{{ ceilingHintColor }};margin-top:6px">{{ ceilingHintText }}</div>
               </div>
             </div>
@@ -186,7 +186,7 @@
               <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline">policy MRG-12.3 ↗</button>
               <span style="margin-left:auto;color:{{ policyStatusColor }}">{{ policyStatusText }}</span>
             </div>
-            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">≈ <button onClick="{{ openEstimate }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline" data-live="estimate.per_round_text">$0.52 per round</button> · hard stop at <span style="color:#B8C2CE">$25.00</span></div>
+            <div style="margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">≈ <button onClick="{{ openEstimate }}" style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline" data-live="estimate.per_round_text">— per round</button> · hard stop at <span style="color:#B8C2CE">$25</span></div>
           </div>
         </div>
 
@@ -317,7 +317,7 @@
         <div class="om-bar-stream" style="width:{{ pctWidth }};height:100%;border-radius:6px 0 0 6px"></div>
       </div>
       <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
-        <span>spend {{ spendLabel }} / $25.00 ceiling</span>
+        <span>spend {{ spendLabel }} / $25 ceiling</span>
         <span>cyan &lt;70% · amber 70–90% · danger &gt;90%</span>
       </div>
     </div>
@@ -354,14 +354,14 @@
       <div style="display:flex;flex-direction:column;gap:20px">
         <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;padding:20px 22px">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;margin-bottom:14px">SPEND · this run</div>
-          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#E8EDF3;font-weight:600">{{ spendLabel }}<span style="color:#95A1AE;font-size:14px;font-weight:400"> / $25.00</span></div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#E8EDF3;font-weight:600">{{ spendLabel }}<span style="color:#95A1AE;font-size:14px;font-weight:400"> / $25</span></div>
           <div style="height:10px;background:#11181F;border:1px solid #1D2630;border-radius:5px;overflow:hidden;margin-top:10px">
             <div style="width:{{ spendPctWidth }};height:100%;background:#316E7E"></div>
           </div>
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px">
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">last round</span><span style="color:#B8C2CE" data-live="running.last_round_cost">—</span></div>
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">avg / round</span><span style="color:#B8C2CE" data-live="running.avg_round_cost">—</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">projected</span><span style="color:#B8C2CE" data-live="estimate.projected_text">$9.12</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">projected</span><span style="color:#B8C2CE" data-live="estimate.projected_text">—</span></div>
           </div>
         </div>
 
@@ -483,7 +483,7 @@
           <span style="font-size:28px;color:#E8EDF3;font-weight:600;letter-spacing:-.01em">Conditional pass</span>
           <button onClick="{{ toggleVotes }}" title="Show vote breakdown" style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:#D4A341;background:#1D1A12;border:1px solid #3F361F;border-radius:5px;padding:4px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">4 / 5 votes <span style="color:#95A1AE;font-weight:400">{{ votesChevron }}</span></button>
         </div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE;margin-top:6px">r_8f3a · fraud_adapter@7c1d · {{ rounds }} rounds · sealed 14:14:38Z</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE;margin-top:6px">fraud_adapter@7c1d · {{ rounds }} rounds · sealed 14:14:38Z</div>
       </div>
       <div style="display:flex;gap:10px">
         <button onClick="{{ goConfigure }}" style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">↻ New run</button>
@@ -719,7 +719,7 @@
         </sc-for>
         <div style="margin-top:14px;display:flex;justify-content:space-between;font-family:'IBM Plex Mono',monospace;font-size:11.5px">
           <span style="color:#95A1AE">total tokens · 1.84M in · 312k out</span>
-          <span style="color:#E8EDF3;font-weight:600">$9.12</span>
+          <span style="color:#E8EDF3;font-weight:600">—</span>
         </div>
       </div>
     </div>
@@ -873,7 +873,7 @@
   <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
   <div style="position:fixed;top:0;right:0;bottom:0;width:440px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
-      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;letter-spacing:.08em"><span data-live="me.role_line">ROLE · admin · root</span></div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px"><span data-live="me.identity_line">m.chen · acme-fraud workspace</span></div></div>
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E5B5B0;letter-spacing:.08em"><span data-live="me.role_line">ROLE · admin · root</span></div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px"><span data-live="me.identity_line">anonymous · acme-fraud workspace</span></div></div>
       <button onClick="{{ close }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
     </div>
     <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
@@ -889,7 +889,7 @@
       </div>
       <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:13px 15px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.8">
         <div style="color:#7C8896;letter-spacing:.06em;font-size:10px;text-transform:uppercase;margin-bottom:6px">SESSION</div>
-        <div style="color:#B8C2CE">principal · <span style="color:#E8EDF3">m.chen@acme</span></div>
+        <div style="color:#B8C2CE">principal · <span style="color:#E8EDF3">anonymous</span></div>
         <div style="color:#B8C2CE">elevated since · <span style="color:#E8EDF3" data-live="role.elevated_since">—</span> · expires <span style="color:#E8C84A" data-live="role.elevation_expiry">—</span></div>
         <div style="color:#B8C2CE">overrides active · <span style="color:{{ activeOverrideColor }}">{{ activeOverridesText }}</span></div>
       </div>
@@ -1031,7 +1031,7 @@ class Component extends DCLogic {
       pctWidth: pctNum + '%',
       elapsedLabel: this.fmtTime(this.state.elapsedSec),
       etaLabel: '—', // no stub ETA; a real estimator lands with /estimate live wiring
-      spendLabel: this.state.liveSpendLabel || '$0.00',
+      spendLabel: this.state.liveSpendLabel || '—',
       spendPctWidth: this.state.liveSpendPctWidth || '0%',
       runStatusLabel: this.state.runDone ? 'COMPLETE' : (this.state.paused ? 'PAUSED' : 'RUNNING'),
       runHeadline: this.state.runDone ? 'Evaluation complete' : 'Evaluation in progress',
@@ -1110,10 +1110,10 @@ class Component extends DCLogic {
 
       roundsHintText:  this.state.liftRounds  ? 'integer · 1–5,000 · workspace cap 500 LIFTED' : 'integer · 1–500 · workspace cap 500',
       roundsHintColor: this.state.liftRounds  ? '#E5B5B0' : '#95A1AE',
-      ceilingHintText: this.state.liftCeiling ? 'USD · workspace ceiling $25.00 LIFTED to $500.00' : 'USD · capped at workspace ceiling $25.00',
+      ceilingHintText: this.state.liftCeiling ? 'USD · workspace ceiling $25 LIFTED to $500' : 'USD · capped at workspace ceiling $25',
       ceilingHintColor:this.state.liftCeiling ? '#E5B5B0' : '#95A1AE',
 
-      workspaceCeilingLabel: this.state.liftCeiling ? '$500.00 (lifted from $25.00)' : '$25.00',
+      workspaceCeilingLabel: this.state.liftCeiling ? '$500 (lifted from $25)' : '$25',
       policyStatusText:      this.state.liftCeiling ? '⚠ admin override' : '✓ within policy',
       policyStatusColor:     this.state.liftCeiling ? '#E5B5B0' : '#57C08A',
       policyRowBg:           this.state.liftCeiling ? '#1B1518' : '#11181F',

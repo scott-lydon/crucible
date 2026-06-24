@@ -211,7 +211,7 @@ real from a backend route or rendered as em-dash.
 
 ### C1 — slice-01 drawer copy (15 residual stubs)
 
-- [ ] **DONE-CRITERION** Zero raw stubs in the Inspect, Estimate, Role
+- [x] **DONE-CRITERION** Zero raw stubs in the Inspect, Estimate, Role
   drawers. Judge invocation row, role elevation since/expiry, prior-run
   table cells all read from real routes or render em-dash.
 - **FILE/PATH** `frontend/slice-01-run-launcher.dc.html`
