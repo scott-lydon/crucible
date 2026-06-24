@@ -116,7 +116,7 @@ pillar with real LLM calls inside the full loop.
 
 ### A4 — Retrainer versioning bug fixed
 
-- [ ] **DONE-CRITERION** `modules/blue/retrainer.py` writes the next
+- [x] **DONE-CRITERION** `modules/blue/retrainer.py` writes the next
   artifact as `fraud-v{n+1}.lgb` where `n` is the highest existing version
   on disk. A regression test in `modules/blue/tests/test_blue.py` asserts
   that running the Retrainer with `fraud-v1.lgb` already present writes

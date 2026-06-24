@@ -11,6 +11,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import pandas as pd
 import pytest
 
 from modules.blue import (
@@ -129,3 +131,48 @@ def test_apply_code_config_assembles_the_new_agent_version() -> None:
     assert applied.version == 2
     assert applied.system_prompt == "Be strict."
     assert applied.config == {"temperature": 0.0}
+
+
+def _tiny_fraud_csv(path: Path) -> None:
+    """Write a tiny but valid two-class fraud dataset for a fast retrain.
+
+    Just enough rows for a stratified 80/20 split with both classes present in
+    each side; the model quality is irrelevant here, only the artifact the
+    retrainer writes. Deterministic via a fixed seed.
+    """
+    rng = np.random.default_rng(0)
+    legit = pd.DataFrame(
+        {"V1": rng.normal(0.0, 1.0, 40), "V2": rng.normal(0.0, 1.0, 40), "Class": 0}
+    )
+    fraud = pd.DataFrame(
+        {"V1": rng.normal(4.0, 1.0, 20), "V2": rng.normal(4.0, 1.0, 20), "Class": 1}
+    )
+    pd.concat([legit, fraud], ignore_index=True).to_csv(path, index=False)
+
+
+def test_retrainer_bumps_version(tmp_path: Path) -> None:
+    """A retrain with fraud-v1.lgb already present writes fraud-v2.lgb, not v1.
+
+    Regression guard for the versioning bug (A4): the retrainer must emit the
+    next integer past the highest artifact on disk and never overwrite the
+    existing version. Uses a tiny synthetic dataset so the LightGBM pass is fast
+    and self-contained (no network, no real Kaggle data).
+    """
+    sentinel = "the original v1 artifact bytes"
+    (tmp_path / "fraud-v1.lgb").write_text(sentinel)
+    csv_path = tmp_path / "creditcard.csv"
+    _tiny_fraud_csv(csv_path)
+
+    patch = BluePatch(
+        patch_id=PatchId.new(),
+        target_type=TargetType.FRAUD,
+        kind="retrain",
+        detail={"adversarial_samples": [], "train_config": {}, "provenance": []},
+        audit=AuditTrace(summary="x", steps=()),
+    )
+    result = Retrainer(artifacts_dir=tmp_path, csv_path=csv_path).retrain_fraud(patch)
+
+    assert result.version == 2
+    assert (tmp_path / "fraud-v2.lgb").exists()
+    # The pre-existing v1 artifact is left untouched, not overwritten.
+    assert (tmp_path / "fraud-v1.lgb").read_text() == sentinel
