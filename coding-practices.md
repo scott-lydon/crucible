@@ -122,6 +122,24 @@ crashed for the Shape 1 fraud LightGBM classifier, or the agent-configuration di
 failed to apply for the Shape 2 code agent), the dashboard renders a typed error
 explaining the failure, not a sample value.
 
+### What "mock" means here, and the only three cases where it is allowed
+
+The word "mock" carries three meanings in this repo. The section 4 prohibition applies to meaning (1) only. Meanings (2) and (3) are required by the design and testing strategies and are allowed inside the paths listed below; using them anywhere else is a section 4 violation.
+
+1. **Data mock (forbidden, no exceptions).** A fabricated oracle verdict, metric tile, catalog row, corpus entry, blue patch diff, SR 11-7 figure, or any other operator-facing value. If the real number cannot be produced, render the typed error per the section 4 rule above.
+
+2. **Wireframe mock (allowed inside `design/`, `_design_bundle/`, `frontend/`, `website/`).** The Claude Design export delivers a happy-state, an empty-state, and an error-state mock per route per `design/claude-design-brief.md`. These are pictures of screens, not data presented as real output. They never read from the orchestrator and they never write to Postgres. The verbatim-copy rule in the brief keeps them in sync with the live tree.
+
+3. **Test double (allowed inside `tests/` and inside any module's unit tests).** The approved doubles are `ScriptedLlmClient` (canned LLM responses), the sandbox probe fixtures under `shared/sandbox/probes/`, the `DUMMY` target (slice-1 loop smoke), and the research-agent stub adapter (status surfaced via `/health`). Every oracle ships both a `ScriptedLlmClient` unit test and a real-CLI integration test; the real-CLI test is what proves the production path. Section 7's "Mock the database in integration tests" still holds: integration tests use real Postgres.
+
+When in doubt, the question is: would an operator ever see this value rendered as a real measurement on a real route? If yes, it is meaning (1) and forbidden. If no (it is a screen layout or a unit-test stand-in for a dependency), it is meaning (2) or (3) and allowed inside its named path.
+
+### Stub protocol for Claude Design handoff
+
+Every fabricated value in a Claude Design happy-state mock is wrapped in the canonical stub label so the downstream strip and audit scripts can find it deterministically. The single source of truth for the label format, the strip step, the audit step, and the wiring step is [`docs/STUB_PROTOCOL.md`](docs/STUB_PROTOCOL.md). The brief at `design/claude-design-brief.md` instructs Claude Design to honor the format. The scripts at `scripts/strip_design_stubs.py` and `scripts/audit_stubs.py` enforce it, the latter as a pre-merge gate.
+
+The audit returns four exit codes (clean, wire-pending, unstripped-stub, heuristic-fake) so a continuous-integration job can fail on the right signal. A slice cannot close while `audit_stubs.py` reports any finding inside `dashboard/src/`.
+
 ## 5. Commit and review conventions
 
 - **Dual-push to GitHub and GitLab on every commit.** `origin` carries two push URLs
