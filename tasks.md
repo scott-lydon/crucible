@@ -6,7 +6,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-4-sealed-spec-and-sandbox** (T). Docker sandbox with egress denied, `SealedSpec` server-side resolver, seal-probe integration test. Unblocked (Docker, no secret).
+- [ ] **slice-5-held-out-oracle** (T). First oracle on the LLM client (Opus generates held-out tests post-submit), plus the `specs` table and server-side `SpecResolver` it reads through.
 
 ## Blocked (awaiting secret)
 
@@ -14,7 +14,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Next slice
 
-- [ ] **slice-5-held-out-oracle** (T). First oracle on the LLM client (Opus generates held-out tests post-submit).
+- [ ] **slice-6-metamorphic-oracle** (T). Sonnet synthesizes metamorphic relations from spec invariants; runtime checks fire each.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -22,6 +22,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-4-sealed-spec-and-sandbox** (T). `shared/sandbox` Docker runner (`--network none`, no host env) plus the seal probe. Live seal test passes: from inside the sandbox both Postgres and the internet are unreachable, so the producer cannot read the verification artifacts. The `specs` table and resolver move to slice 5 (their consumer).
 - [x] **slice-3-code-agent-target** (T). `CodeAgentTarget` produces Python from a sealed spec via the LLM, scored by `ast.parse` validity; `/health/targets/{type}` self-test route; registered in wiring. Unit tests via the scripted client; live done-criterion test passes (real Claude emits ast-parseable Python).
 - [x] **slice-1-target-protocol** (T). `DummyTarget` implementing the Target Protocol, `orchestrator/wiring.py` registry, `orchestrator/loop.py` driving one round end to end, persisted as an attack row. All gates green (ruff, mypy --strict on 50 files, 18 tests on real Postgres).
 - [x] **slice-0-foundation** (A). Repo scaffold, value types, async Postgres persistence with Alembic, FastAPI (`POST /runs`, `GET /health`, SSE), pillar interface Protocols, module-boundary check, CI. All gates green (ruff, mypy --strict, 13 tests on real Postgres). Detail in Backlog below.
@@ -63,13 +64,13 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] Self-test route `/health/targets/{type}` returns a fast readiness probe (client, model, and whether `claude` is on PATH). Reconciled from the original sub-second "produce hello world" round trip, which a real LLM call cannot meet and which would burn quota on every poll.
   - [x] **Done criteria:** live integration test produces real Python that compiles via `ast.parse` (`tests/integration/test_code_agent_target.py`, opt-in real CLI).
 
-- [ ] **slice-4-sealed-spec-and-sandbox** (T).
-  - [ ] `shared/sandbox/`: Modal job wrapper. Strips env vars, denies network egress except to Claude.
-  - [ ] `shared/types/sealed_spec.py`: typed `SealedSpec` value object.
-  - [ ] Spec sealing: spec stored in Postgres `specs` table, read by oracles through a server-side resolver. Producer container has no Postgres credentials.
-  - [ ] "Seal Probe" fixture under `shared/sandbox/probes/` that, from inside the sandbox, tries to reach Postgres, Modal control plane, and the verification bucket. All three must time out.
-  - [ ] Integration test runs the seal probe and asserts all three probes failed.
-  - [ ] **Done criteria:** `tests/integration/test_sandbox_seal.py` passes; the test for "producer can read the spec from Postgres directly" fails as expected.
+- [x] **slice-4-sealed-spec-and-sandbox** (T).
+  - [x] `shared/sandbox/`: Docker job wrapper (`--network none`, no inherited env). Reconciled from Modal: Docker-first per the decision table. The sandbox executes produced code only, so full network denial replaces "egress except to Claude" (generation is orchestrator-side).
+  - [x] `shared/types/sealed_spec.py`: typed `SealedSpec` value object (landed in slice 0).
+  - [ ] Spec sealing via a Postgres `specs` table and server-side resolver moves to slice 5, its first consumer (the held-out oracle). The sealing SECURITY property is already enforced here by the network seal: with no network the producer cannot reach Postgres at all, credentials or not.
+  - [x] "Seal Probe" under `shared/sandbox/probes/seal_probe.py` tries to reach Postgres and the internet from inside the sandbox; both must fail.
+  - [x] Integration test runs the seal probe in the sandbox and asserts both unreachable, with a host positive-control proving the probe detects reachability.
+  - [x] **Done criteria:** `tests/integration/test_sandbox_seal.py` passes; the in-sandbox probe returns `{"postgres_reachable": false, "internet_reachable": false}`, so a producer cannot read the spec from Postgres.
 
 ### Per-pillar (parallel after slice 4)
 
