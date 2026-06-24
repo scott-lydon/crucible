@@ -15,7 +15,7 @@ from modules.oracles.held_out import HeldOutOracle
 from modules.oracles.llm_judge import LlmJudgeOracle
 from modules.oracles.metamorphic import MetamorphicOracle
 from modules.oracles.property_fuzz import PropertyFuzzOracle
-from modules.red import RedSearchAgent
+from modules.red import HybridSearch, RedSearchAgent
 from modules.targets.code_agent import CodeAgentTarget
 from modules.targets.dummy import DummyTarget
 from modules.targets.fraud import FraudTarget
@@ -81,7 +81,7 @@ def build_registry() -> Registry:
             LlmJudgeOracle(llm=llm),
         ),
         aggregator=VerdictAggregator(),
-        red=RedSearchAgent(llm=llm),
+        red=RedSearchAgent(llm=llm, hybrid=HybridSearch(llm=llm)),
     )
 
 

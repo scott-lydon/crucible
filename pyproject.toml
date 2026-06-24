@@ -68,6 +68,7 @@ exclude = ["shared/persistence/migrations/"]
 module = [
     "lightgbm.*",
     "sklearn.*",
+    "scipy.*",
     "sse_starlette.*",
     "modal.*",
     "asyncpg.*",

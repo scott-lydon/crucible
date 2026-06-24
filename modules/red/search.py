@@ -39,6 +39,8 @@ from shared.types import (
     SealedSpec,
 )
 
+from .hybrid import HybridSearch
+
 _DEFAULT_EVASION_THRESHOLD = 0.5
 _RAW_SNIPPET_CHARS = 400
 
@@ -121,6 +123,8 @@ class RedSearchAgent:
     white_box_model: LlmModel = LlmModel.OPUS
     evasion_threshold: float = _DEFAULT_EVASION_THRESHOLD
     system_prompt: str = _RESEARCH_SYSTEM
+    hybrid: HybridSearch | None = None
+    fallback_after: int = 3
 
     async def search(
         self,
@@ -135,6 +139,8 @@ class RedSearchAgent:
         attempts: list[Attack] = []
         transcript: list[str] = []
         spent = Money.zero()
+        consecutive_failures = 0
+        hybrid_fired = False
         # The informed white-box search gets the strongest model (US-14).
         model = self.white_box_model if white_box else self.model
 
@@ -164,25 +170,49 @@ class RedSearchAgent:
                 transcript.append(
                     f"attempt {ordinal}: the proposer returned no usable payload, skipped"
                 )
-                continue
-
-            score = await target.query_target(proposal.payload)
-            succeeded = score < self.evasion_threshold
-            attempts.append(
-                self._attack(
-                    run_id,
-                    tactic=proposal.tactic,
-                    payload=proposal.payload,
-                    succeeded=succeeded,
-                    white_box=white_box,
-                    dollars=result.dollars,
-                    audit=self._audit(proposal.reasoning, score, result.text),
+                succeeded = False
+            else:
+                score = await target.query_target(proposal.payload)
+                succeeded = score < self.evasion_threshold
+                attempts.append(
+                    self._attack(
+                        run_id,
+                        tactic=proposal.tactic,
+                        payload=proposal.payload,
+                        succeeded=succeeded,
+                        white_box=white_box,
+                        dollars=result.dollars,
+                        audit=self._audit(proposal.reasoning, score, result.text),
+                    )
                 )
-            )
-            outcome = "EVADED" if succeeded else "caught"
-            transcript.append(
-                f"attempt {ordinal}: tactic '{proposal.tactic}' scored {score:.4f} ({outcome})"
-            )
+                outcome = "EVADED" if succeeded else "caught"
+                transcript.append(
+                    f"attempt {ordinal}: tactic '{proposal.tactic}' scored {score:.4f} ({outcome})"
+                )
+
+            consecutive_failures = 0 if succeeded else consecutive_failures + 1
+
+            # Constraint satisfaction has failed several rounds running: hand off
+            # to the numeric search once, within remaining budget (US-13).
+            if (
+                self.hybrid is not None
+                and not hybrid_fired
+                and consecutive_failures >= self.fallback_after
+                and len(attempts) < budget.max_attempts
+                and spent.dollars < budget.max_dollars.dollars
+            ):
+                hybrid_attack = await self.hybrid.execute(
+                    spec, target, run_id, transcript, white_box=white_box
+                )
+                spent = spent + hybrid_attack.dollars_spent
+                attempts.append(hybrid_attack)
+                hybrid_fired = True
+                consecutive_failures = 0 if hybrid_attack.succeeded else consecutive_failures
+                transcript.append(
+                    f"hybrid fallback fired after {self.fallback_after} failed rounds: "
+                    f"tactic '{hybrid_attack.tactic}' "
+                    f"({'EVADED' if hybrid_attack.succeeded else 'caught'})"
+                )
 
         return attempts
 
