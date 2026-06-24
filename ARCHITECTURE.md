@@ -256,7 +256,7 @@ Postgres via the SSE backend.
 | Dashboard SPA stack | React 18 + Vite + Tailwind + Recharts + Router | Next.js, Streamlit | Existing architecture site palette and the team's React familiarity. | Scalability |
 | Producer sandbox to oracle communication | Output written to a write-only Postgres row by the orchestrator after the sandbox returns; oracles read from Postgres | Direct pipe sandbox to oracles | Direct pipe would require the sandbox to know oracle endpoints. | Security |
 
-## 6. Trade-offs (honest residuals)
+## 6. Trade-offs (residuals)
 
 - **Per-loop LLM cost and latency.** Accept: cache prompts, batch where shape allows,
   use Sonnet 4.6 on the inner loop. Bites at many co-evolution rounds; mitigation is

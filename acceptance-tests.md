@@ -168,11 +168,13 @@ the core bet is not just asserted but demonstrated.
 
 **Owner:** Targets-and-Oracles.
 
-### US-10. Honest dashboard metrics
+### US-10. Dashboard metrics
 
 **As an** operator or auditor, **I want** the headline numbers at `/metrics` to be
 measured from real runs, never sampled, never zero-defaulted, **so that** the SR 11-7
 model risk report carries weight.
+
+The dashboard does not advertise that its values are authentic; authentic values are the default expectation. The acceptance criteria below are an engineering contract, not UI copy. The callout in the interface is on empty or failed cases ("Not yet measured", typed errors), not on the populated case.
 
 - **Given** at least one run has completed,
 - **When** I open `/metrics`,

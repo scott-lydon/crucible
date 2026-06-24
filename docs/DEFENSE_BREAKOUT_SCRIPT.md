@@ -40,7 +40,7 @@ RID=$(curl -s -XPOST localhost:8000/runs -H 'content-type: application/json' \
 curl -s -XPOST localhost:8000/runs/$RID/start
 ```
 
-Open `/app/slice-04-honest-dashboard.dc.html?run=$RID`: the ASR readout updates
+Open `/app/slice-04-dashboard.dc.html?run=$RID`: the ASR readout updates
 live over SSE as attempts land. Click a verdict to open the per-oracle drill-down
 (`/runs/$RID/verdicts/:vid`): four mechanical oracles plus the half-weight LLM
 judge, US-4 evidence visible. The same red agent against the code-agent target is
@@ -54,7 +54,7 @@ recovers; `test_blue_fraud_recovery.py` proves it on real Kaggle data
 (detection_before 0.0 → detection_after > 0 on held-out missed frauds). Replay the
 same attack via `/app/slice-12-admin-debug.dc.html` and it is now blocked.
 
-## 9 to 10 min — the honest numbers
+## 9 to 10 min — the numbers
 
 - `/metrics` — black-box catch rate, white-box catch rate, and the gap side by
   side. The gap is the report card: a large gap means the verifier leaned on the
@@ -72,5 +72,5 @@ same attack via `/app/slice-12-admin-debug.dc.html` and it is now blocked.
 curl -s https://<service>.onrender.com/health          # {"status":"ok",...}
 curl -s https://<service>.onrender.com/metrics          # live catch rates
 curl -s -o /dev/null -w '%{http_code}\n' \
-  https://<service>.onrender.com/app/slice-04-honest-dashboard.dc.html
+  https://<service>.onrender.com/app/slice-04-dashboard.dc.html
 ```

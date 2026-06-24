@@ -48,8 +48,9 @@ evidence: the user story, the code that satisfies it, and the test that proves i
 - **Non-colluding oracles (US-4).** Four mechanical oracles at weight 1.0 plus the
   LLM judge at 0.5; the aggregator passes at a 2.0 threshold. Replay is byte-equal
   (`test_verdict_replay.py`).
-- **Honest metrics (US-10).** A tile with zero contributing runs reports
-  "not yet measured", never a sampled 0.0.
+- **Empty-state callout (US-10).** A tile with zero contributing runs reports
+  "not yet measured", never a sampled 0.0. Authenticity is the default, so
+  the platform calls out the empty case, not the populated one.
 
 ## The three questions to expect
 

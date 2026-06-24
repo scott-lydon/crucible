@@ -330,7 +330,7 @@ flowchart LR
       <div class="mermaid">
 flowchart LR
   TRACE["Agent step traces<br/><span class='sub'>+ every verdict</span>"]:::in
-  DASH["Honest dashboard<br/><span class='sub'>undetected-hack · validation vs held-out gap</span><br/><span class='sub'>recall · cost/hack · human-min/1k</span>"]:::dash
+  DASH["Dashboard<br/><span class='sub'>undetected-hack · validation vs held-out gap</span><br/><span class='sub'>recall · cost/hack · human-min/1k</span>"]:::dash
   CURVE["Curves<br/><span class='sub'>ASR · detection · red&harr;blue co-evolution</span>"]:::curve
   AUDIT["Audit trace per verdict<br/><span class='sub'>check fired · obligation · 1-click replay</span>"]:::audit
   ART["Artifacts<br/><span class='sub'>seeded corpus · leaderboard · SR 11-7 report</span>"]:::art
@@ -406,7 +406,7 @@ flowchart LR
         <div class="who">owner: traces, curves, dashboard, benchmark</div>
         <div class="pc">
           <div class="pros"><h5>Pros</h5><ul>
-            <li>A single honest number: undetected-hack rate.</li>
+            <li>A single headline number: undetected-hack rate.</li>
             <li>Per-verdict audit trace with one-click replay.</li>
             <li>Exported reusable benchmark; halt-certification at a red line.</li>
           </ul></div>
@@ -494,7 +494,7 @@ sequenceDiagram
   RED->>TGT: white-box re-attack (knows the scheme)
   Note over RED,MEAS: loop closes, each pass graded
       </div>
-      <div class="figcaption">The patch is always verified on <b>held-out</b> attacks, never the attacks used to build it. That is what keeps the recovered detection rate honest.</div>
+      <div class="figcaption">The patch is always verified on <b>held-out</b> attacks, never the attacks used to build it. That is what stops the recovered detection rate from being a memorization artifact.</div>
     </div>
   </div>
 </section>
@@ -529,9 +529,9 @@ sequenceDiagram
 <!-- TRADEOFFS -->
 <section id="tradeoffs">
   <div class="wrap">
-    <h2 class="sec">Honest limits</h2>
+    <h2 class="sec">Limits</h2>
     <h3 class="title">Trade-offs</h3>
-    <p class="intro">The deep limits are not solved. For each, Crucible shrinks the gap with a concrete mechanism, reports the residual as a number, and halts certification when that residual crosses a red line. Measuring the limits honestly is the artifact.</p>
+    <p class="intro">The deep limits are not solved. For each, Crucible shrinks the gap with a concrete mechanism, reports the residual as a number, and halts certification when that residual crosses a red line. The measured residual is the artifact.</p>
     <div class="tradeoffs">
       <div class="to">
         <h4>Per-loop LLM cost &amp; latency</h4>
@@ -571,8 +571,8 @@ sequenceDiagram
 <section id="metrics">
   <div class="wrap">
     <h2 class="sec">What Crucible reports</h2>
-    <h3 class="title">The honest dashboard</h3>
-    <p class="intro">These are the metrics the platform measures, listed and not valued. They populate from real runs at demo time; no number here is fabricated or placeheld.</p>
+    <h3 class="title">Dashboard metrics</h3>
+    <p class="intro">These are the metrics the platform measures, listed and not valued. They populate from real runs at demo time. When a metric cannot be measured, the tile renders a typed empty state, never a sample number.</p>
     <div class="measure-grid">
       <div class="m"><div class="h head">Validation vs held-out gap</div><div class="d">The headline metric: proxy reward R minus ground truth R*, the slack a producer learns to exploit.</div></div>
       <div class="m"><div class="h">Undetected-hack rate</div><div class="d">How often a cheat still gets through, as a single number.</div></div>

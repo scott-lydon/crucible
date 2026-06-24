@@ -81,7 +81,7 @@ a full run to `complete` under `MOCK_LLM`.
 ```bash
 curl -s https://<service>.onrender.com/health     # {"status":"ok","database":"connected"}
 curl -s https://<service>.onrender.com/metrics
-curl -s -o /dev/null -w '%{http_code}\n' https://<service>.onrender.com/app/slice-04-honest-dashboard.dc.html
+curl -s -o /dev/null -w '%{http_code}\n' https://<service>.onrender.com/app/slice-04-dashboard.dc.html
 # confirm the deployed commit matches 8391dd3 (Render dashboard "Deploys" tab)
 ```
 
@@ -125,7 +125,7 @@ GET /halt
   -> 200 {"halted":false,"recall":null,"threshold":0.7,"message":""}
 GET /metrics
   -> 200 {"black_box_catch_rate":{...},"white_box_catch_rate":{...},"catch_rate_gap":null}
-GET /app/slice-04-honest-dashboard.dc.html
+GET /app/slice-04-dashboard.dc.html
   -> 200, 58471 bytes (verbatim Claude Design bundle + injected live.js)
 POST /runs  (dummy target, sum-two-ints spec, budget 3 / $1)
   -> 201 {"run_id":"267e609e7a0e433ba97e6133dcab3e52","status":"pending"}
