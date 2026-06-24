@@ -231,3 +231,18 @@ async def test_design_bundle_served_with_live_sidecar(client: AsyncClient) -> No
     assert "CrucibleLive" in sidecar.text
     # Path traversal is refused.
     assert (await client.get("/app/../pyproject.toml")).status_code in (404, 400)
+
+
+async def test_policy_returns_operative_halt_policy(client: AsyncClient) -> None:
+    resp = await client.get("/policy")
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["halt_recall_threshold"] is not None
+    assert "recall" in body["operative_policy"]
+    assert "custom_policy_yaml" in body
+
+
+async def test_admin_overrides_is_a_list(client: AsyncClient) -> None:
+    resp = await client.get("/admin/overrides")
+    assert resp.status_code == 200, resp.text
+    assert isinstance(resp.json(), list)

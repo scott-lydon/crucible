@@ -42,6 +42,7 @@ from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
 from orchestrator.wiring import get_registry
+from shared.config import get_settings
 from shared.persistence import get_session, get_sessionmaker, ping
 from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import (
@@ -55,7 +56,9 @@ from shared.persistence.models import (
     LlmCall,
     ModelVersion,
     Run,
+    RunOverride,
     Spec,
+    WorkspacePolicy,
 )
 from shared.persistence.models import Verdict as VerdictRow
 from shared.sandbox.docker_sandbox import DEFAULT_SANDBOX_IMAGE
@@ -651,6 +654,55 @@ async def report_markdown(run_id: str, session: SessionDep) -> dict[str, Any]:
     except ReportRunNotFoundError as exc:
         raise HTTPException(status_code=404, detail="run not found") from exc
     return {"run_id": run_id, "markdown": markdown}
+
+
+@app.get("/policy")
+async def policy(session: SessionDep) -> dict[str, Any]:
+    """The workspace's operative governance policy (slice-15, C12).
+
+    Returns the real config-derived halt policy (certification halts when
+    white-box recall falls below the threshold) plus any custom policy stored in
+    the workspace_policy table. A fresh deployment with no stored policy still
+    returns the operative halt policy, so the page renders a real rule rather
+    than the design bundle's hardcoded MRG-* list.
+    """
+    stored = await session.get(WorkspacePolicy, "global")
+    threshold = get_settings().halt_recall_threshold
+    return {
+        "workspace": "default",
+        "halt_recall_threshold": threshold,
+        "operative_policy": (
+            f"certification halts when white-box recall < {threshold:.2f}"
+        ),
+        "custom_policy_yaml": stored.policy_yaml if stored is not None else None,
+        "updated_at": stored.updated_at.isoformat() if stored is not None else None,
+    }
+
+
+@app.get("/admin/overrides")
+async def admin_overrides(session: SessionDep) -> list[dict[str, Any]]:
+    """The admin override audit log, newest first (slice-12, C9).
+
+    Append-only record of every override the admin debug panel applied. Empty on
+    a fresh deployment, which the panel renders as "no overrides recorded"
+    instead of the design bundle's hardcoded audit rows.
+    """
+    rows = (
+        (await session.execute(select(RunOverride).order_by(RunOverride.created_at.desc())))
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "id": r.id,
+            "run_id": r.run_id,
+            "field": r.field,
+            "value": r.value,
+            "actor": r.actor,
+            "created_at": r.created_at.isoformat(),
+        }
+        for r in rows
+    ]
 
 
 @app.get("/specs/history")

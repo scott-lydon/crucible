@@ -408,3 +408,42 @@ class HaltState(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+
+
+class WorkspacePolicy(Base):
+    """The workspace's governance policy (slice-15, C12).
+
+    Stores the operative policy as a YAML/text document. Single-workspace today,
+    so a single row keyed ``global``; the route falls back to the real
+    config-derived halt policy when no custom policy has been stored, so /policy
+    is never empty on a fresh deployment.
+    """
+
+    __tablename__ = "workspace_policy"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    policy_yaml: Mapped[str] = mapped_column(Text, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class RunOverride(Base):
+    """An admin override action, append-only audit log (slice-12, C9).
+
+    Each row records one override the admin debug panel applied to a run (a
+    dev-mode toggle, a forced status), so the audit log the panel renders is real
+    and empty on a fresh deployment rather than the design bundle's hardcoded
+    entries.
+    """
+
+    __tablename__ = "run_overrides"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    run_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    field: Mapped[str] = mapped_column(String(64), nullable=False)
+    value: Mapped[str] = mapped_column(String(255), nullable=False)
+    actor: Mapped[str] = mapped_column(String(64), nullable=False, default="anonymous")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
