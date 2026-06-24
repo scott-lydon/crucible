@@ -403,7 +403,7 @@ real from a backend route or rendered as em-dash.
 
 ### D4 — Submit-gate verdict re-evaluated
 
-- [ ] **DONE-CRITERION** After A1 lands the headline number, re-read
+- [x] **DONE-CRITERION** After A1 lands the headline number, re-read
   `~/.claude/skills/submit-gate/SKILL.md` and re-issue the verdict in
   chat honestly. If A1 fails the gate, list what specifically failed.
 - **VERIFY** verdict in chat names every line of the gate's checklist.
