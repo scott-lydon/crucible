@@ -304,7 +304,7 @@ real from a backend route or rendered as em-dash.
 
 ### C9 — slice-12 admin debug (3 stubs)
 
-- [ ] **DONE-CRITERION** Backend `/admin/overrides` route added; page
+- [x] **DONE-CRITERION** Backend `/admin/overrides` route added; page
   reads it and renders an empty audit log when there are no overrides
   recorded. The toggles in the override bar become POSTs that persist to
   a `run_overrides` table.
@@ -343,7 +343,7 @@ real from a backend route or rendered as em-dash.
 
 ### C12 — slice-15 workspace policy (7 stubs)
 
-- [ ] **DONE-CRITERION** Backend `/policy` route added that returns the
+- [x] **DONE-CRITERION** Backend `/policy` route added that returns the
   workspace's policy YAML from a `workspace_policy` table; page renders
   the real policy.
 - **FILE/PATH** `frontend/slice-15-workspace-policy.dc.html`,

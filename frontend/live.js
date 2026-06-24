@@ -147,6 +147,27 @@
     return x === null || x === undefined ? "—" : String(x);
   }
 
+  async function wirePolicy() {
+    // slice-15 reads the real operative governance policy from /policy.
+    var p = await json("/policy");
+    if (!p) return;
+    setText("policy.operative", p.operative_policy || "—");
+    setText("policy.threshold", p.halt_recall_threshold);
+    setText("policy.custom", p.custom_policy_yaml || "no custom policy set");
+  }
+
+  function overrideRow(o) {
+    var div = document.createElement("div");
+    div.setAttribute("data-live-row", "overrides");
+    div.style.cssText =
+      "display:flex;gap:16px;padding:10px 18px;border-bottom:1px solid #1D2630;" +
+      "font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE";
+    div.textContent =
+      shortDate(o.created_at) + " · " + o.actor + " · " + o.field + " = " + o.value +
+      (o.run_id ? " · run " + String(o.run_id).slice(0, 8) : "");
+    return div;
+  }
+
   function healthCard(name, role, probe) {
     var status = (probe && probe.status) || "amber";
     var dot = status === "green" ? "#57C08A" : status === "red" ? "#E5736B" : "#D9A441";
@@ -482,6 +503,8 @@
       wireBluePatch(),
       wireHealthGrid(),
       wireList("runs", "/runs", runRow),
+      wirePolicy(),
+      wireList("overrides", "/admin/overrides", overrideRow),
       wireLauncher(),
     ]);
     wireSse();

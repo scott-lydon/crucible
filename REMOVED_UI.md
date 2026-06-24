@@ -34,3 +34,6 @@ listed below.
 | slice-13 (whole page) | Leaderboard export | PRD STRETCH goal, no backend route; REMAINING_WORK C10 sanctions removal | a /leaderboard route is built |
 | slice-04 dashboard | ASR/detection time-series curve, co-evolution panel, cost-per-hack histogram | No time-series/co-evolution backend (co-evolution is the removed slice-09); only point /metrics exists | a time-series metrics route exists |
 | slice-04 dashboard | 60-cell run-history sparkline strip + audit-row-replay preview | Fabricated run rows; real runs come from /runs (wired) and the audit replayer is slice-05 | n/a (replaced by real /runs list) |
+| slice-15 policy | Cost-ledger table (24h spend, per-run line items) | No cost-ledger backend; LLM spend is per-call (llm_calls), not a workspace ledger | a cost-ledger route exists |
+| slice-15 policy | Hardcoded MRG-* policy list + role member counts | Replaced by the real operative policy from /policy; the platform's enforced rule is the halt threshold | a policy-rules table is seeded |
+| slice-12 admin | Hardcoded override audit entries + feature-flag table | Replaced by the real /admin/overrides log (empty until an override is recorded); flag table has no backend | a feature-flag route exists |
