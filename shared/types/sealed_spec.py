@@ -151,3 +151,36 @@ def from_yaml(text: str) -> SealedSpec:
             f"sealed_spec: YAML must parse to a mapping, got {type(loaded).__name__}"
         )
     return from_dict(loaded)
+
+
+def to_dict(spec: SealedSpec) -> dict[str, object]:
+    """Serialize a SealedSpec to a plain JSON-safe mapping.
+
+    The inverse of :func:`from_dict`: ``from_dict(to_dict(spec)) == spec``. Used
+    to persist the sealed spec as JSON (e.g. in the Postgres ``specs`` table) so
+    the server-side resolver can rehydrate it without re-reading YAML from disk.
+    """
+    return {
+        "target_kind": spec.target_kind,
+        "obligations": list(spec.obligations),
+        "invariants": [
+            {
+                "name": inv.name,
+                "description": inv.description,
+                "kind": inv.kind,
+                "params": dict(inv.params),
+            }
+            for inv in spec.invariants
+        ],
+        "metamorphic_relations": [
+            {
+                "name": rel.name,
+                "description": rel.description,
+                "feature": rel.feature,
+                "direction": rel.direction,
+                "label_must_change": rel.label_must_change,
+            }
+            for rel in spec.metamorphic_relations
+        ],
+        "holdout_generator_kind": spec.holdout_generator_kind,
+    }

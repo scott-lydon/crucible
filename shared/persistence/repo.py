@@ -1,12 +1,45 @@
+import uuid
 from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.persistence.models import (AttackRow, BlueRoundRow, OracleVoteRow,
-                                       RoundRow, RunRow, TransactionRow,
+                                       RoundRow, RunRow, SpecRow, TransactionRow,
                                        VerdictRow)
+from shared.types import SealedSpec, sealed_spec_from_dict, sealed_spec_to_dict
 
 async def get_run(s: AsyncSession, run_id: str) -> RunRow | None:
     return await s.get(RunRow, run_id)
+
+
+async def store_spec(s: AsyncSession, run_id: str, spec: SealedSpec) -> str:
+    """Persist a run's SealedSpec server-side; return its ``spec_id``.
+
+    The spec is serialized to JSON and written with the app's own DB creds
+    (in-process). The producer never sees this path — it only ever receives its
+    input sample. Returns the generated ``spec_id`` so callers can resolve it.
+    """
+    spec_id = str(uuid.uuid4())
+    s.add(
+        SpecRow(
+            spec_id=spec_id,
+            run_id=run_id,
+            spec_json=sealed_spec_to_dict(spec),
+        )
+    )
+    await s.commit()
+    return spec_id
+
+
+async def resolve_spec(s: AsyncSession, spec_id: str) -> SealedSpec:
+    """Rehydrate a SealedSpec by ``spec_id`` (server-side, app DB creds).
+
+    Raises ``KeyError`` if no spec row exists for the id — a missing sealed spec
+    is a hard error, never a silent default.
+    """
+    row = await s.get(SpecRow, spec_id)
+    if row is None:
+        raise KeyError(f"no sealed spec for spec_id {spec_id!r}")
+    return sealed_spec_from_dict(row.spec_json)
 
 async def attacks_for_run(s: AsyncSession, run_id: str) -> Sequence[AttackRow]:
     res = await s.execute(select(AttackRow).where(AttackRow.run_id == run_id))

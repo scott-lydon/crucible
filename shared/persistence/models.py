@@ -8,6 +8,23 @@ def _now() -> datetime:
 class Base(DeclarativeBase):
     pass
 
+class SpecRow(Base):
+    """The sealed spec for a run, stored server-side.
+
+    The producer (sandboxed target code) is NEVER given DB creds or this row's
+    contents — only its input sample. The harness/oracles resolve the spec
+    server-side (in-process, with the app's DB creds) via the repo resolver.
+    Dialect-neutral: the serialized SealedSpec lives in a generic JSON column.
+    """
+
+    __tablename__ = "specs"
+    spec_id: Mapped[str] = mapped_column(String, primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"))
+    spec_json: Mapped[dict[str, object]] = mapped_column(JSON)
+    pillar: Mapped[str] = mapped_column(String, default="orchestrator")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class RunRow(Base):
     __tablename__ = "runs"
     id: Mapped[str] = mapped_column(String, primary_key=True)
