@@ -19,13 +19,18 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Depends, FastAPI, HTTPException, Request, Response
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import (
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
-from modules.measure import MetricsAggregator
+from modules.measure import CorpusExporter, MetricsAggregator
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
@@ -403,6 +408,34 @@ async def get_blue_patch(patch_id: str, session: SessionDep) -> dict[str, Any]:
             for m in versions
         ],
     }
+
+
+@app.get("/corpus")
+async def corpus(session: SessionDep) -> dict[str, Any]:
+    """The successful-attack corpus table plus its exact row count (US-11)."""
+    exporter = CorpusExporter(session=session)
+    return {"count": await exporter.count(), "rows": await exporter.rows()}
+
+
+@app.get("/corpus.jsonl")
+async def corpus_download() -> StreamingResponse:
+    """Download the corpus as JSONL; one line per successful attack (US-11).
+
+    Streams over its own session (the request session closes once the response
+    starts) and reads the same query as `/corpus`, so the downloaded row count
+    equals the table row count exactly.
+    """
+
+    async def generate() -> AsyncIterator[str]:
+        async with get_sessionmaker()() as session:
+            async for line in CorpusExporter(session=session).stream_jsonl():
+                yield line
+
+    return StreamingResponse(
+        generate(),
+        media_type="application/x-ndjson",
+        headers={"Content-Disposition": "attachment; filename=crucible-corpus.jsonl"},
+    )
 
 
 @app.get("/health/oracles/{name}")
