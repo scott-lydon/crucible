@@ -5,7 +5,14 @@ case; agents are natural language, so the AI attacker/defender operate directly
 
 from __future__ import annotations
 
-from modules.targets.agent.demos import DEMO_AGENTS, demo_agent
+from modules.targets.agent.demos import DEMO_AGENTS, DEMO_SPECS, demo_agent, demo_spec
 from modules.targets.agent.target import AGENT_KIND, AgentTarget
 
-__all__ = ["AGENT_KIND", "DEMO_AGENTS", "AgentTarget", "demo_agent"]
+__all__ = [
+    "AGENT_KIND",
+    "DEMO_AGENTS",
+    "DEMO_SPECS",
+    "AgentTarget",
+    "demo_agent",
+    "demo_spec",
+]

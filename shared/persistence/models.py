@@ -44,16 +44,54 @@ class Run(Base):
 
 class SpecRow(Base):
     """The sealed spec, read by oracles through a server-side resolver the producer
-    container cannot reach (constitution.md section 3)."""
+    container cannot reach (constitution.md section 3).
+
+    Versioning (cr-a2): a spec carries the human-written source it was compiled from
+    (``source_text``), how it was compiled (``compiler``), a ``version`` that bumps
+    when an operator edits the plain-English spec, and a ``parent_spec_id`` linking to
+    the prior version — so the dashboard can show spec history (cr-e3)."""
 
     __tablename__ = "specs"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"), nullable=False, index=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("runs.id"), nullable=True, index=True
+    )
     target_kind: Mapped[str] = mapped_column(String(40), nullable=False)
     shape: Mapped[str] = mapped_column(String(20), nullable=False)
     holdout_generator_kind: Mapped[str] = mapped_column(String(40), nullable=False)
     payload: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    compiler: Mapped[str] = mapped_column(String(40), nullable=False, default="deterministic")
+    source_text: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
+    parent_spec_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+
+class AgentConfigRow(Base):
+    """One version of a Shape-2 agent target: the editable system prompt over a fixed
+    vendor model (shared/types/agent.py AgentConfig). Blue's hardening emits a new
+    version (``source`` = 'blue'); demo/BYO agents start at version 1."""
+
+    __tablename__ = "agent_configs"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    created_at: Mapped[dt.datetime] = mapped_column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("runs.id"), nullable=True, index=True
+    )
+    name: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    model: Mapped[str] = mapped_column(String(80), nullable=False)
+    system_prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    params: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="byo")  # demo|byo|blue
+    parent_config_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
 
 class AttackRow(AuditMixin, Base):

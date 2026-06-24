@@ -23,7 +23,9 @@ PGHOST = os.environ.get("PGHOST", "127.0.0.1")
 PGPORT = int(os.environ.get("PGPORT", "55432"))
 PGUSER = os.environ.get("PGUSER", "crucible")
 PGPASSWORD = os.environ.get("PGPASSWORD", "crucible")
-_TABLES = "runs, specs, attacks, verdicts, llm_calls, sandbox_jobs, health_probes"
+_TABLES = (
+    "runs, specs, attacks, verdicts, llm_calls, sandbox_jobs, health_probes, agent_configs"
+)
 
 
 async def _admin_exec(database: str, sql: str) -> None:

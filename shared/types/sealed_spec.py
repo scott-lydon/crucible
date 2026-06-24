@@ -35,6 +35,33 @@ class Invariant:
 
 
 @dataclass(frozen=True, slots=True)
+class HumanSpec:
+    """The plain-English spec an operator writes for a Shape-2 agent (plan.md
+    section 5): what the agent is for, and what counts as failure. An LLM spec
+    compiler turns this into the checkable ``SealedSpec`` the oracles grade against.
+    ``hidden_tests`` are optional operator-supplied checks the producer never sees."""
+
+    task: str
+    failure_conditions: tuple[str, ...]
+    hidden_tests: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "task": self.task,
+            "failure_conditions": list(self.failure_conditions),
+            "hidden_tests": list(self.hidden_tests),
+        }
+
+    @classmethod
+    def from_dict(cls, raw: Mapping[str, Any]) -> HumanSpec:
+        return cls(
+            task=str(raw["task"]),
+            failure_conditions=tuple(str(c) for c in raw.get("failure_conditions", [])),
+            hidden_tests=tuple(str(t) for t in raw.get("hidden_tests", [])),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class SealedSpec:
     spec_id: str
     target_kind: str
