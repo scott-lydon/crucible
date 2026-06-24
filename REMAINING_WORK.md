@@ -220,13 +220,13 @@ real from a backend route or rendered as em-dash.
   test $(grep -cE '\$[0-9]+\.[0-9]+|r_[0-9a-f]{4}|m\.chen|amount_sign_flip' frontend/slice-01-run-launcher.dc.html) -eq 0
   ```
 
-### C2 — slice-04 honest dashboard (80 stubs, 1 hook)
+### C2 — slice-04 dashboard (80 stubs, 1 hook)
 
 - [x] **DONE-CRITERION** Same as C1, on this file.
-- **FILE/PATH** `frontend/slice-04-honest-dashboard.dc.html`
+- **FILE/PATH** `frontend/slice-04-dashboard.dc.html`
 - **VERIFY**
   ```bash
-  test $(grep -cE '\$[0-9]+\.[0-9]+|r_[0-9a-f]{4}' frontend/slice-04-honest-dashboard.dc.html) -eq 0
+  test $(grep -cE '\$[0-9]+\.[0-9]+|r_[0-9a-f]{4}' frontend/slice-04-dashboard.dc.html) -eq 0
   ```
 
 ### C3 — slice-06 strategy catalog (2 stubs)
@@ -371,7 +371,7 @@ real from a backend route or rendered as em-dash.
 
 ### D1 — Render autoDeploy connected to GitHub webhook
 
-- [ ] **DONE-CRITERION** A push to `feat/crucible-build` triggers a
+- [x] **DONE-CRITERION** A push to `feat/crucible-build` triggers a
   Render deploy automatically; no manual REST `POST /deploys` call is
   required. Confirm by pushing a docs-only commit and watching the deploy
   fire within 60 seconds.
