@@ -13,7 +13,7 @@ def test_oracles_list_length() -> None:
     comp = build_components(threshold=0.5)
     oracles = comp["oracles"]
     assert isinstance(oracles, list)
-    assert len(oracles) == 5
+    assert len(oracles) == 6
 
 
 def test_label_fn_callable() -> None:

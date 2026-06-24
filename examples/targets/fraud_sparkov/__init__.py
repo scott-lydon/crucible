@@ -42,6 +42,7 @@ from examples.targets.fraud_sparkov.second_model import (
     isoforest_is_fraud,
 )
 from examples.targets.fraud_sparkov.spec import SPEC_PATH, load_spec
+from examples.targets.fraud_sparkov.strategy import sparkov_strategy
 
 __all__ = [
     "AMT_HIGH",
@@ -69,6 +70,7 @@ __all__ = [
     "load_records",
     "load_spec",
     "raw_is_fraud",
+    "sparkov_strategy",
     "retrain_with_engineered",
     "retrain_with_features",
     "verify_checksum",

@@ -1,34 +1,8 @@
 from collections.abc import Mapping
 from typing import cast
 
-from shared.types import VerdictContext, OracleVote, OracleKind, Vote, feature
-
-# Comparison operators a `must_flag_when` invariant may use in its conditions.
-_OPS = ("eq", "gt", "lt", "ge", "le")
-
-
-def _condition_holds(sample: object, cond: Mapping[str, object]) -> bool:
-    """Evaluate one {"feature": <name>, "<op>": <value>} condition vs `sample`."""
-    name = cast(str, cond["feature"])
-    actual = feature(sample, name)
-    for op in _OPS:
-        if op not in cond:
-            continue
-        expected = cond[op]
-        if op == "eq":
-            return actual == expected
-        # Ordered comparisons require comparable (numeric) operands.
-        a = cast(float, actual)
-        e = cast(float, expected)
-        if op == "gt":
-            return a > e
-        if op == "lt":
-            return a < e
-        if op == "ge":
-            return a >= e
-        if op == "le":
-            return a <= e
-    raise ValueError(f"invariant condition has no known operator {tuple(_OPS)}: {dict(cond)}")
+from shared.types import VerdictContext, OracleVote, OracleKind, Vote
+from shared.types.invariant_eval import all_conditions_hold
 
 
 class InvariantOracle:
@@ -51,7 +25,7 @@ class InvariantOracle:
             if inv.kind != "must_flag_when":
                 continue
             all_of = cast(list[Mapping[str, object]], inv.params.get("all_of", []))
-            must_flag = all(_condition_holds(ctx.sample, cond) for cond in all_of)
+            must_flag = all_conditions_hold(ctx.sample, all_of)
             if must_flag and cleared:
                 violated.append(inv.name)
         is_violated = bool(violated)

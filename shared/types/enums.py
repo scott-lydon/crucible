@@ -22,6 +22,7 @@ class OracleKind(StrEnum):
     METAMORPHIC = "metamorphic"
     INVARIANT = "invariant"
     DIFFERENTIAL = "differential"
+    PROPERTY_FUZZ = "property_fuzz"
     LLM_JUDGE = "llm_judge"
 
 

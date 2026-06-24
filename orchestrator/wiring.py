@@ -11,6 +11,7 @@ from examples.targets.fraud_synth import (
     FlawedDetector,
     generate_batch,
     is_fraud,
+    synth_strategy,
 )
 from examples.targets import fraud_sparkov
 
@@ -24,6 +25,7 @@ from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
+from modules.oracles.property_fuzz.oracle import PropertyFuzzOracle
 from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from shared.llm import AnthropicApiProvider, MockProvider
 from shared.llm.base import LLMProvider
@@ -54,6 +56,15 @@ def build_components(threshold: float = DETECTOR_THRESHOLD) -> dict[str, object]
         # Synthetic victim ships no second-family model — the differential
         # oracle honestly ABSTAINS (weight 0), it is not a stub.
         DifferentialOracle(),
+        # Generative invariant-counterexample search (Hypothesis, no LLM):
+        # searches Transaction-space for an input that satisfies a declared
+        # must_flag_when invariant yet the detector clears. Seeded/deterministic.
+        PropertyFuzzOracle(
+            score_fn=detector.score,
+            strategy=synth_strategy(),
+            max_examples=100,
+            seed=8,
+        ),
         # Synth UNIT-TEST victim: a deterministic MockProvider test double keeps
         # the synth fixture offline/free. This is honestly the test fixture, not
         # the product — the real Opus judge lives in build_components_sparkov.
@@ -156,6 +167,16 @@ def build_components_sparkov(
         # on the real Sparkov data over a richer feature set that includes the
         # night `hour` the amt-reliant target ignores.
         DifferentialOracle(second_opinion_is_fraud=fraud_sparkov.isoforest_is_fraud),
+        # Generative invariant-counterexample search (Hypothesis, ZERO LLM calls):
+        # generatively searches SparkovTxn-space for an input that satisfies a
+        # declared must_flag_when invariant yet the amt-reliant detector clears.
+        # Seeded => deterministic; run-level probe surfaced per verdict.
+        PropertyFuzzOracle(
+            score_fn=detector.score,
+            strategy=fraud_sparkov.sparkov_strategy(),
+            max_examples=200,
+            seed=8,
+        ),
         # REAL Opus 4.8 judge (constitution §1: Opus on the judge). Live provider
         # by default, nothing mocked in the demo path; budgeted to bound spend.
         LlmJudgeOracle(

@@ -2,7 +2,7 @@ import dataclasses
 import json
 import os
 import pathlib
-from typing import Protocol
+from typing import Protocol, cast
 
 import pytest
 
@@ -11,6 +11,7 @@ from shared.types import (
     OracleKind,
     OracleVote,
     Vote,
+    SealedSpec,
     sealed_spec_from_dict,
     sealed_spec_from_yaml,
 )
@@ -20,8 +21,10 @@ from modules.oracles.held_out.oracle import HeldOutOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
+from modules.oracles.property_fuzz.oracle import PropertyFuzzOracle
 from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from modules.oracles.aggregator import FAIL_THRESHOLD, aggregate
+from hypothesis import strategies as st
 
 
 class _Oracle(Protocol):
@@ -229,6 +232,100 @@ def test_judge_live_opus_one_call() -> None:
     assert v.evidence["dollars"] > 0  # type: ignore[operator]
 
 
+# --- property-fuzz oracle (slice-8): generative invariant-counterexample search ---
+
+# A strategy generating Transactions across ranges that INCLUDE the invariant-
+# satisfying region (country_mismatch true AND velocity > 5) at LOW amount, so a
+# counterexample exists for an amt-reliant detector to be caught clearing.
+def _txn_strategy() -> st.SearchStrategy[Transaction]:
+    return st.builds(
+        Transaction,
+        txn_index=st.integers(min_value=0, max_value=1000),
+        amount=st.floats(min_value=0.0, max_value=2000.0,
+                         allow_nan=False, allow_infinity=False),
+        velocity=st.integers(min_value=0, max_value=30),
+        country_mismatch=st.booleans(),
+        merchant_risk=st.floats(min_value=0.0, max_value=1.0,
+                                allow_nan=False, allow_infinity=False),
+        hour_of_day=st.integers(min_value=0, max_value=23),
+    )
+
+
+# Deliberately amt-reliant score_fn (mirrors the flawed detector's blind spot):
+# only high `amount` clears the threshold; it ignores country/velocity. So a
+# country_mismatch+high-velocity LOW-amount txn satisfies the must_flag invariant
+# yet is cleared — exactly the counterexample the fuzzer must generate + shrink.
+def _amt_only_score(sample: object) -> float:
+    return 1.0 if cast(Transaction, sample).amount > 1000.0 else 0.0
+
+
+def _ctx_for(spec: object, sample: object) -> VerdictContext:
+    return VerdictContext(
+        sample=sample, detector_score=0.0, threshold=0.5, true_label=True,
+        original_sample=None, original_score=None, spec=cast(SealedSpec, spec))
+
+
+def test_property_fuzz_generates_counterexample_on_flawed_detector() -> None:
+    # slice-8 done-criteria: against an amt-reliant detector blind to
+    # country/velocity, the fuzzer GENERATES an invariant-satisfying input
+    # (country_mismatch true, velocity > 5) at low amt that the detector clears.
+    oracle = PropertyFuzzOracle(
+        score_fn=_amt_only_score, strategy=_txn_strategy(),
+        max_examples=200, seed=8)
+    v = oracle.vote(_ctx_for(SPEC, MISS_CTX.sample))
+    assert v.kind is OracleKind.PROPERTY_FUZZ
+    assert v.vote is Vote.FAIL and v.weight == 1.0
+    assert v.evidence.get("invariant_id") == "country_velocity_must_flag"
+    ce = cast(dict[str, object], v.evidence["counterexample"])
+    # The counterexample MUST satisfy the invariant (the property's precondition).
+    assert ce["country_mismatch"] is True and cast(int, ce["velocity"]) > 5
+    # ...and have been cleared by the detector (score < threshold).
+    assert cast(float, v.evidence["score"]) < 0.5
+
+
+def test_property_fuzz_passes_when_detector_flags_all_invariant_inputs() -> None:
+    # A score_fn that correctly flags EVERY invariant-satisfying input -> no
+    # counterexample exists -> PASS at full weight.
+    def correct_score(sample: object) -> float:
+        txn = cast(Transaction, sample)
+        return 1.0 if (txn.country_mismatch and txn.velocity > 5) else 0.0
+
+    oracle = PropertyFuzzOracle(
+        score_fn=correct_score, strategy=_txn_strategy(),
+        max_examples=200, seed=8)
+    v = oracle.vote(_ctx_for(SPEC, MISS_CTX.sample))
+    assert v.vote is Vote.PASS and v.weight == 1.0
+    assert v.evidence.get("run_level") is True
+
+
+def test_property_fuzz_is_deterministic_same_seed_same_counterexample() -> None:
+    # Same seed => byte-equal shrunk counterexample across two independent runs.
+    def run() -> object:
+        o = PropertyFuzzOracle(score_fn=_amt_only_score, strategy=_txn_strategy(),
+                               max_examples=200, seed=8)
+        return o.vote(_ctx_for(SPEC, MISS_CTX.sample)).evidence["counterexample"]
+
+    assert run() == run()
+
+
+def test_property_fuzz_memoizes_run_level_result() -> None:
+    # The search is a property of the detector+spec, not of ctx.sample: a second
+    # vote returns the SAME result without re-searching (examples_tried stable).
+    calls = {"n": 0}
+
+    def counting_score(sample: object) -> float:
+        calls["n"] += 1
+        return _amt_only_score(sample)
+
+    oracle = PropertyFuzzOracle(score_fn=counting_score, strategy=_txn_strategy(),
+                               max_examples=200, seed=8)
+    first = oracle.vote(_ctx_for(SPEC, MISS_CTX.sample))
+    after_first = calls["n"]
+    second = oracle.vote(_ctx_for(SPEC, MISS_CTX.sample))
+    assert calls["n"] == after_first  # provider/score_fn NOT touched again
+    assert first.evidence["counterexample"] == second.evidence["counterexample"]
+
+
 def test_aggregate_flags_missed_fraud() -> None:
     # Cross-family second opinion that flags the missed fraud -> differential
     # now contributes a 1.0 FAIL alongside held_out/metamorphic/invariant.
@@ -236,6 +333,9 @@ def test_aggregate_flags_missed_fraud() -> None:
                               MetamorphicOracle(label_fn=is_fraud),
                               InvariantOracle(),
                               DifferentialOracle(second_opinion_is_fraud=lambda s: True),
+                              PropertyFuzzOracle(
+                                  score_fn=_amt_only_score, strategy=_txn_strategy(),
+                                  max_examples=200, seed=8),
                               LlmJudgeOracle(
                                   provider=MockProvider(text=_FAIL_JSON))]
     verdict = aggregate([o.vote(MISS_CTX) for o in oracles])
