@@ -197,6 +197,32 @@ The job fails on any exit code from 1 upward, which holds the line that a
 shipped commit carries no unwired Claude Design stubs and no unmarked fake
 data.
 
+## Determinism boundary
+
+The audit step is fully deterministic: identical input produces identical
+findings. What is **not** deterministic, and cannot be without changing the
+input format, is the per-literal classification of "is this finding a real
+stub that needs a backend hook, or is it real product copy (a tab label, a
+column legend, a threshold annotation)?". That question requires reading
+the surrounding HTML, knowing the route inventory, and choosing a
+`data-live` key. The audit surfaces the literal; the human (or a future
+session of Claude) classifies it.
+
+Two consequences:
+
+1. The audit's exit code 3 list is a triage queue, not an automatic fix
+   list. Wiring every flagged literal blindly would tag UI labels with
+   non-existent backend keys, breaking the page.
+2. To shrink the queue safely, walk the queue slice by slice, decide
+   classification per literal, and either (a) add a `data-live` attribute
+   plus a wire function for real stubs, or (b) wrap the literal in
+   `__CLAUDE_DESIGN_STUB__[label.intent|enum|fixed UI label]__value__/CLAUDE_DESIGN_STUB__`
+   to declare it as accepted-product-copy. Both options strip the literal
+   from the unwired queue; only option (a) makes it dynamic at runtime.
+
+The per-slice queue with route hints lives at
+`/Users/scottlydon/Documents/Claude/Projects/Gauntlet/handoff-claude-design-wireup.md`.
+
 ## Re-running the protocol when the design re-exports
 
 `design/claude-design-brief.md` already lists the conditions under which

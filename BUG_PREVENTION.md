@@ -84,3 +84,14 @@ blue loop and white-box recall land, rather than trusting the 0.5 default.
 - After every re-export, run `uv run python scripts/strip_claude_design_stubs.py --bundle-dir _design_bundle/` to replace the labels with `CLAUDE_DESIGN_WIRE_ME_UP[<key>|<kind>]` placeholders and emit `_design_bundle/_claude_design_stub_manifest.json` as the wire-up work list.
 - The pre-merge gate runs `uv run python scripts/audit_claude_design_stubs.py`. Exit code 2 (unstripped `__CLAUDE_DESIGN_STUB__` in a code path) and exit code 3 (heuristic indicators of unmarked fake data in `dashboard/src/`) block the merge. Exit code 1 (`CLAUDE_DESIGN_WIRE_ME_UP` placeholders remaining) blocks the final ship but is allowed mid-build.
 - Apply the same checklist to any new product or feature that touches an operator-facing surface: every literal value must come from a hook reading real data, or render the typed "Not yet measured" sentinel from section 4.
+
+
+## 8. Wiring untagged Claude Design literals blindly
+
+**Issue.** `scripts/audit_claude_design_stubs.py` flags ~940 untagged literals across the 16 slice pages. The audit cannot tell a real stub (a $25.00 spend ceiling that should come from `/spend/current-month`) from real product copy (a "01" tab label, a "70%" threshold legend). Wiring every flagged literal as if it were dynamic would attach `data-live` keys to UI chrome, break the layout, and reintroduce the section 4 problem in reverse.
+
+**Prevention.**
+- Treat the audit's category 3 list as a triage queue. Walk it slice by slice. The per-slice queue with route hints lives at `/Users/scottlydon/Documents/Claude/Projects/Gauntlet/handoff-claude-design-wireup.md`.
+- For each finding, choose option (a) wire (add `data-live="<key>"` plus a wire function in `frontend/live.js` plus a FastAPI route if needed), or option (b) accept as product copy (wrap with `__CLAUDE_DESIGN_STUB__[label.intent|enum|UI label, never dynamic]__value__/CLAUDE_DESIGN_STUB__`).
+- Re-run `uv run python scripts/audit_claude_design_stubs.py --root . --summary` after each slice; the slice's count must drop to a justified small number (legends, thresholds explicitly tagged as fixed UI strings).
+- Do not extend `frontend/live.js` with wire functions that point at non-existent FastAPI routes; create the route in `orchestrator/api.py` first, then wire.
