@@ -6,7 +6,8 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-19-demo-polish** (A). Runbook, interview prep, website numbers, Render deploy verified end to end.
+_All slices 0 to 19 are landed; the only remaining step is the credential-gated
+Render authentication (see slice-19 reconciliation below)._
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -15,6 +16,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-19-demo-polish** (A). The demo and deploy surface. 10-minute runbook (`docs/DEFENSE_BREAKOUT_SCRIPT.md`) over the as-built routes; `AI_INTERVIEW_PREP.md` mapped to the section-3 rubric; `website/index.html` flipped to as-built (real fraud AUC 0.86, 134 tests) with no placeholder numbers. The deployable artifact (`Dockerfile` + `render.yaml` Blueprint + `.dockerignore`) was built and verified LOCALLY end to end: the 859MB image ran against a fresh Postgres, applied all nine migrations from scratch, booted, served `/health` `/metrics` `/halt` and the verbatim `/app` pages with the live sidecar, and drove a full run to `complete` under `MOCK_LLM`. The Render-hosted instance is the one credential-gated step remaining (`render login` is interactive, and deploying to a Render account is the operator's call); the runbook and `render.yaml` make it a single `render blueprint launch`.
 - [x] **slice-18-halt-cert** (M). Certification halt at the residual red line (US-13). `modules/measure/halt_rule.py`'s `HaltRule` sets a persisted `halt_state` flag (migration `ec4dc1906055`) when white-box verifier recall falls below the configured red line (default 0.7): `evaluate(run_id)` scopes recall to one run's white-box pass (called by the loop after its pass), `evaluate()` recomputes the global rate for the dashboard, `current()` reads the cheap flag the launch guard checks. `POST /runs` is refused with HTTP 409 and a typed body when halted; `GET /halt` returns the state and banner text, and the `live.js` sidecar pins that red banner to the top of every served route when halted. Done-criterion on real Postgres (`test_halt.py`): recall 0.25 halts (exact banner text) and refuses the launch with 409; recall 1.0 does not halt and the launch is accepted; no white-box verdicts means unmeasured and not halted.
 - [x] **slice-17-risk-report** (M). The SR 11-7 model risk report (US-12). `modules/measure/risk_report.py`'s `RiskReport` renders the six SR 11-7 sections from one run's real rows, every numeric field a Markdown link to the API route returning its source row (run, verdict, or blue-patch row), so clicking a number jumps to its Postgres row. `GET /reports/:runId` is the Markdown, `GET /reports/:runId.pdf` the PDF (dependency-free writer in `modules/measure/pdf.py`, no heavy PDF library added). Done-criterion on real Postgres (`test_risk_report.py`): all six sections render, numbers link to their source-row routes, the replay seed is recorded, the PDF is a valid `%PDF`, and unknown runs 404.
 - [x] **slice-16-corpus-export** (M). The seeded-hack benchmark as a JSONL download (US-11). `modules/measure/corpus_exporter.py`'s `CorpusExporter` streams every undetected hack (a `succeeded` attack) joined to its run's target type, oldest first, one line per attack in the US-11 shape; the stream and the `/corpus` table read the same query so their counts cannot drift. `GET /corpus` returns the table and exact count; `GET /corpus.jsonl` streams the attachment over its own session. Done-criterion proven on real Postgres (`test_corpus.py`): the downloaded JSONL line count equals the table row count exactly, only successful attacks are included, and each line carries the US-11 fields.
@@ -162,11 +164,12 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] `GET /halt` returns the state and the banner text "Certification halted: recall is X.XX, threshold is Y.YY" (US-13); the `live.js` sidecar injects that red banner pinned to the top of every served route when halted, with a link to `/metrics`.
   - [x] **Done criteria:** `test_halt.py` (real Postgres) drops white-box recall to 0.25, asserts `/halt` reports halted with the exact banner text and `POST /runs` is refused with 409 and the typed body; above the red line (recall 1.0) the platform is not halted and a launch is accepted; with no white-box verdicts recall is unmeasured and the platform is not halted.
 
-- [ ] **slice-19-demo-polish** (A).
-  - [ ] 10-minute runbook at `docs/DEFENSE_BREAKOUT_SCRIPT.md`.
-  - [ ] `AI_INTERVIEW_PREP.md` populated against `acceptance-tests.md` rubric mapping.
-  - [ ] Architecture website `website/index.html` updated for the as-built numbers.
-  - [ ] Render deployment verified end to end (built, deployed, restarted, behavior confirmed live).
+- [x] **slice-19-demo-polish** (A).
+  - [x] 10-minute runbook at `docs/DEFENSE_BREAKOUT_SCRIPT.md`, mapping the `acceptance-tests.md` section-4 arc onto the as-built routes (run trigger, SSE ASR, verdict drill-down, blue patch recovery, `/metrics`, `/corpus.jsonl`, `/reports/:id`, the halt banner) with the exact curl commands.
+  - [x] `AI_INTERVIEW_PREP.md` populated against the `acceptance-tests.md` section-3 rubric (Architecture / Scalability / Security / Testing), each dimension mapped to the code and the test that proves it, plus the as-built numbers (fraud ROC-AUC 0.86, 134 tests on real Postgres).
+  - [x] `website/index.html` updated: the proposal-stage disclaimer flipped to as-built (all nineteen slices, the real fraud AUC, the test count), keeping the catch-rate tiles number-free until a real run lands (no placeholders).
+  - [x] Deployable artifact built and verified end to end LOCALLY: `Dockerfile` (python:3.12-slim + libgomp1 for LightGBM, installs `.[ml]`, runs `alembic upgrade head` then uvicorn under `MOCK_LLM`), `render.yaml` Blueprint (Docker web service + free Postgres, `DATABASE_URL` from the database, health check `/health`), `.dockerignore`. The image was built (859MB) and run against a fresh Postgres on the compose network: all nine migrations applied from scratch, the app booted, `/health` `/metrics` `/halt` and the verbatim `/app` page (sidecar injected) served, and a full run drove both passes to `complete`.
+  - [~] **Done criteria (Render-hosted):** the live hosted instance is the one credential-gated step left. The Render CLI is installed but unauthenticated, and deploying to a Render account is an outward-facing action that needs the operator. To go live: run `render login` (interactive), then `render blueprint launch` from the repo root (or connect the GitHub repo as a Blueprint in the Render dashboard); the deployed URL then answers `/health`, `/metrics`, and the `/app` pages exactly as the locally-verified image does. Watch: Render's free Postgres `connectionString` is internal (no SSL param needed for asyncpg); the retrain path needs the 144MB dataset, which is gitignored and absent on Render, so blue retrain is a local-only demo.
 
 ### Stretch (only after slice 19 lands clean)
 

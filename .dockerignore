@@ -1,0 +1,15 @@
+# Keep the image small and the build reproducible. The committed model artifact
+# under artifacts/ IS included (the fraud target loads it at runtime); the raw
+# 144MB dataset under data/ is not (only training/retrain needs it).
+.venv/
+data/
+.git/
+.github/
+__pycache__/
+**/__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+docs/design-screenshots/
+*.log

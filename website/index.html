@@ -143,7 +143,7 @@
       <div class="stat"><div class="n" style="color:var(--amber)">&ge;3</div><div class="l">distinct evasion strategies in committed scope</div></div>
       <div class="stat"><div class="n" style="color:var(--red)">1</div><div class="l">headline number, how often a cheat still gets through</div></div>
     </div>
-    <div class="note">This page renders <code>ARCHITECTURE.md</code>. The architecture is derived from the project proposal; it is a proposal-stage design, so the dashboard metrics named below are unvalued. They populate from real runs, never from placeholders.</div>
+    <div class="note">This page renders <code>ARCHITECTURE.md</code>. The platform is now built end to end (all nineteen slices): three targets, five non-colluding oracles, the red search with white-box and a scipy hybrid fallback, the blue hardening loop, and the measure surface (metrics, corpus, SR 11-7 report, halt). The fraud target is a real Kaggle credit-card LightGBM model with a held-out ROC-AUC of 0.86, and the suite runs 134 tests against real Postgres. The catch-rate tiles below still populate from real runs, never from placeholders, so they read "not yet measured" until a run lands.</div>
   </div>
 </header>
 
