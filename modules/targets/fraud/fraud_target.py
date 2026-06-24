@@ -52,11 +52,16 @@ def _load(artifact_path: str, metadata_path: str) -> tuple[Any, list[str], dict[
 def feature_row(attack_input: dict[str, Any], features: list[str]) -> list[float]:
     """Build the model's feature vector from a transaction dict, in train order.
 
-    A feature absent from the transaction defaults to 0.0 (an absent signal);
-    present values are coerced to float. Order matches training exactly, so the
-    booster never sees transposed columns.
+    A feature absent from the transaction, or present but null or non-numeric
+    (a real red-search proposal can emit ``{"V5": null}`` or a string), defaults
+    to 0.0 (an absent signal); present numeric values are coerced to float.
+    Order matches training exactly, so the booster never sees transposed columns.
     """
-    return [float(attack_input.get(name, 0.0)) for name in features]
+    row: list[float] = []
+    for name in features:
+        value = attack_input.get(name)
+        row.append(float(value) if isinstance(value, (int, float)) else 0.0)
+    return row
 
 
 @dataclass(frozen=True, slots=True)

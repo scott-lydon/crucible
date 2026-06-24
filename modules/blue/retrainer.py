@@ -51,10 +51,15 @@ def feature_row(attack_input: dict[str, Any], features: list[str]) -> list[float
     """Build the model's feature vector from a transaction dict, in train order.
 
     Inlined rather than imported from modules.targets.fraud: the module-boundary
-    rule forbids a cross-module import, and this is the same five-line alignment
-    (absent feature defaults to 0.0, present values coerced to float).
+    rule forbids a cross-module import, and this is the same alignment (absent,
+    null, or non-numeric feature defaults to 0.0, present numeric values coerced
+    to float).
     """
-    return [float(attack_input.get(name, 0.0)) for name in features]
+    row: list[float] = []
+    for name in features:
+        value = attack_input.get(name)
+        row.append(float(value) if isinstance(value, (int, float)) else 0.0)
+    return row
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ARTIFACTS_DIR = _REPO_ROOT / "artifacts"
