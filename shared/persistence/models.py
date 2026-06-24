@@ -147,6 +147,34 @@ class HaltStateRow(Base):
     )
 
 
+class LlmCallRow(Base):
+    """One recorded LLM completion (US-2/US-3 Inspect + US-10 cost).
+
+    Written by ``shared.llm.persisting.PersistingLLMProvider`` AROUND each real
+    provider call — it RECORDS the call already happening, it never makes a new
+    one. ``pillar`` names the call site (``judge``/``red``/``blue``/``white_box``)
+    so the dashboard can group cost by pillar. ``prompt``/``system`` are the exact
+    inputs; ``raw_response`` is the provider's raw payload (JSON-serialized text);
+    ``parsed_output`` is the caller-side parse when known (left null here — the
+    wrapper records the response verbatim, parsing is the caller's concern). The
+    token + ``dollars`` fields mirror ``LLMResponse`` so cost is HONEST per model.
+    """
+
+    __tablename__ = "llm_calls"
+    id: Mapped[str] = mapped_column(String, primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("runs.id"))
+    pillar: Mapped[str] = mapped_column(String)
+    model: Mapped[str] = mapped_column(String)
+    prompt: Mapped[str] = mapped_column(String)
+    system: Mapped[str | None] = mapped_column(String, nullable=True)
+    raw_response: Mapped[str | None] = mapped_column(String, nullable=True)
+    parsed_output: Mapped[str | None] = mapped_column(String, nullable=True)
+    input_tokens: Mapped[int] = mapped_column(Integer)
+    output_tokens: Mapped[int] = mapped_column(Integer)
+    dollars: Mapped[float] = mapped_column(Float)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class BlueRoundRow(Base):
     """One blue recovery round: the defender's propose->retrain->validate arc."""
 

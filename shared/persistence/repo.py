@@ -3,9 +3,9 @@ from collections.abc import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from shared.persistence.models import (AttackRow, BlueRoundRow, HaltStateRow,
-                                       OracleVoteRow, RoundRow, RunRow, SpecRow,
-                                       TransactionRow, VerdictRow,
-                                       WhiteBoxMetricsRow)
+                                       LlmCallRow, OracleVoteRow, RoundRow,
+                                       RunRow, SpecRow, TransactionRow,
+                                       VerdictRow, WhiteBoxMetricsRow)
 from shared.types import SealedSpec, sealed_spec_from_dict, sealed_spec_to_dict
 
 _HALT_SINGLETON = "singleton"
@@ -121,6 +121,58 @@ async def set_halt_state(
     row.threshold = threshold
     row.source_run_id = source_run_id
     await s.commit()
+
+
+async def record_llm_call(
+    s: AsyncSession,
+    *,
+    run_id: str,
+    pillar: str,
+    model: str,
+    prompt: str,
+    system: str | None,
+    raw_response: str | None,
+    parsed_output: str | None,
+    input_tokens: int,
+    output_tokens: int,
+    dollars: float,
+) -> str:
+    """Persist one LLM completion record; return its generated id.
+
+    Records a call that ALREADY happened (the wrapper calls this AROUND a real
+    provider call) — it never makes a model call itself.
+    """
+    call_id = str(uuid.uuid4())
+    s.add(
+        LlmCallRow(
+            id=call_id,
+            run_id=run_id,
+            pillar=pillar,
+            model=model,
+            prompt=prompt,
+            system=system,
+            raw_response=raw_response,
+            parsed_output=parsed_output,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            dollars=dollars,
+        )
+    )
+    await s.commit()
+    return call_id
+
+
+async def llm_calls_for_run(s: AsyncSession, run_id: str) -> Sequence[LlmCallRow]:
+    res = await s.execute(
+        select(LlmCallRow)
+        .where(LlmCallRow.run_id == run_id)
+        .order_by(LlmCallRow.created_at)
+    )
+    return res.scalars().all()
+
+
+async def get_llm_call(s: AsyncSession, call_id: str) -> LlmCallRow | None:
+    return await s.get(LlmCallRow, call_id)
 
 
 async def blue_round_for_run(s: AsyncSession, run_id: str) -> BlueRoundRow | None:

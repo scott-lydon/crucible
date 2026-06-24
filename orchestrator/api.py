@@ -150,7 +150,15 @@ async def _execute_run(req: LaunchRequest, run_id: str) -> None:
         build_sparkov = cast(
             Callable[..., dict[str, object]], build_components_sparkov
         )
-        comp = build_sparkov(threshold=DEFAULT_THRESHOLD, **overrides)
+        # Thread the session factory + run_id so every real provider call (judge/
+        # red/blue/white-box) is wrapped to RECORD an ``llm_calls`` row (US-2/3/10).
+        # No new model call — the wrapper records the calls already happening.
+        comp = build_sparkov(
+            threshold=DEFAULT_THRESHOLD,
+            session_factory=sf,
+            run_id=run_id,
+            **overrides,
+        )
     else:
         comp = build_components(threshold=DEFAULT_THRESHOLD)
 
@@ -341,12 +349,79 @@ async def get_metrics(run_id: str) -> dict[str, object]:
         return not_measured
     # Single source of truth for the catch rates + gap: the nested ``white_box``
     # object (``None`` until the white-box pass has run). No flat duplicates.
+    #
+    # Cost tile (US-10): ``dollars_per_caught_hack`` is total recorded LLM dollars
+    # for the run / caught hacks — ``None`` (rendered "Not yet measured") when
+    # there are no caught hacks or no recorded LLM calls, never a fake 0.0.
+    # ``human_minutes_per_1k_outputs`` is honestly ``None``: there is no
+    # human-review signal in the system, so the tile stays "Not yet measured"
+    # rather than fabricating a number.
     return {
         "per_round": [dataclasses.asdict(r) for r in m.per_round],
         "baseline_validation_detection": m.baseline_validation_detection,
         "gap": m.gap,
         "white_box": white_box,
+        "dollars_per_caught_hack": m.dollars_per_caught_hack,
+        "human_minutes_per_1k_outputs": None,
     }
+
+
+_PREVIEW_LEN = 160
+
+
+@app.get("/runs/{run_id}/llm_calls")
+async def list_llm_calls(run_id: str) -> dict[str, object]:
+    """The recorded LLM calls for a run (US-2/US-3 Inspect list).
+
+    One row per real provider call (judge/red/blue/white-box), with a prompt
+    preview; the FULL record is at ``GET /llm_calls/{id}``. Reads only persisted
+    rows — no new LLM call. Honest empty state: ``{"count": 0, "llm_calls": []}``.
+    """
+    async with session_factory()() as s:
+        calls = await repo.llm_calls_for_run(s, run_id)
+        return {
+            "count": len(calls),
+            "llm_calls": [
+                {
+                    "id": c.id,
+                    "pillar": c.pillar,
+                    "model": c.model,
+                    "input_tokens": c.input_tokens,
+                    "output_tokens": c.output_tokens,
+                    "dollars": c.dollars,
+                    "created_at": c.created_at.isoformat(),
+                    "prompt_preview": c.prompt[:_PREVIEW_LEN],
+                }
+                for c in calls
+            ],
+        }
+
+
+@app.get("/llm_calls/{call_id}")
+async def get_llm_call(call_id: str) -> dict[str, object]:
+    """The FULL recorded LLM call the Inspect button opens (US-2/US-3).
+
+    Prompt, system, raw response, parsed output, token counts, dollar cost, and
+    model — read straight from the persisted row (404 if unknown). No LLM call.
+    """
+    async with session_factory()() as s:
+        c = await repo.get_llm_call(s, call_id)
+        if c is None:
+            raise HTTPException(404, "llm call not found")
+        return {
+            "id": c.id,
+            "run_id": c.run_id,
+            "pillar": c.pillar,
+            "model": c.model,
+            "prompt": c.prompt,
+            "system": c.system,
+            "raw_response": c.raw_response,
+            "parsed_output": c.parsed_output,
+            "input_tokens": c.input_tokens,
+            "output_tokens": c.output_tokens,
+            "dollars": c.dollars,
+            "created_at": c.created_at.isoformat(),
+        }
 
 
 @app.get("/runs/{run_id}/stream")

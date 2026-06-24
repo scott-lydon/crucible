@@ -18,6 +18,10 @@ class RunMetrics:
     per_round: list[RoundMetric]
     baseline_validation_detection: float | None
     gap: float | None
+    # US-10 cost tile: total LLM dollars for the run / number of caught hacks.
+    # ``None`` (never 0.0) when there are no caught hacks or no recorded LLM calls
+    # — the dashboard renders "Not yet measured".
+    dollars_per_caught_hack: float | None
 
 
 async def compute_run_metrics(s: AsyncSession, run_id: str) -> RunMetrics | None:
@@ -56,7 +60,13 @@ async def compute_run_metrics(s: AsyncSession, run_id: str) -> RunMetrics | None
     # adversarial holdout detection: last round, holdout slice
     last_det = per_round[-1].detection_rate if per_round else None
     gap = (baseline - last_det) if (baseline is not None and last_det is not None) else None
-    return RunMetrics(per_round=per_round, baseline_validation_detection=baseline, gap=gap)
+    dollars = await dollars_per_caught_hack_for_run(s, run_id)
+    return RunMetrics(
+        per_round=per_round,
+        baseline_validation_detection=baseline,
+        gap=gap,
+        dollars_per_caught_hack=dollars,
+    )
 
 
 async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
@@ -92,6 +102,24 @@ async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
 
     Returns ``None`` when no successful evasion received a verdict (catch rate is
     undefined, not zero) — including the zero-successful-evasion case.
+    """
+    counts = await _caught_hack_counts(s, run_id)
+    if counts is None:  # no successful evasion got a verdict (e.g. n_rounds == 1)
+        return None
+    caught, total = counts
+    return caught / total
+
+
+async def _caught_hack_counts(
+    s: AsyncSession, run_id: str
+) -> tuple[int, int] | None:
+    """``(caught, total)`` decisions for the run, or ``None`` when undefined.
+
+    The single source of truth for the catch-rate "caught" definition (a
+    successful evasion the ORACLES voted FAIL on), reused by both
+    ``catch_rate_for_run`` and the dollars-per-caught-hack tile. Returns ``None``
+    when no successful evasion received a verdict (rate is undefined, not zero) —
+    including the zero-successful-evasion case.
     """
     attacks = await repo.attacks_for_run(s, run_id)
     successful = [a for a in attacks if a.evaded and a.true_label_preserved]
@@ -131,4 +159,30 @@ async def catch_rate_for_run(s: AsyncSession, run_id: str) -> float | None:
     if not canonical:  # no successful evasion got a verdict (e.g. n_rounds == 1)
         return None
     caught = sum(1 for v in canonical.values() if not v.aggregate_pass)
-    return caught / len(canonical)
+    return caught, len(canonical)
+
+
+async def dollars_per_caught_hack_for_run(
+    s: AsyncSession, run_id: str
+) -> float | None:
+    """US-10 cost tile: total recorded LLM dollars for the run / caught hacks.
+
+    A caught hack reuses the catch-rate "caught" definition: a successful evasion
+    the ORACLES voted FAIL on. The numerator is the sum of ``dollars`` over the
+    run's persisted ``llm_calls`` (recorded by ``PersistingLLMProvider``).
+
+    Honest ``None`` (never 0.0 — the dashboard renders "Not yet measured") when
+    there are zero caught hacks OR zero recorded LLM calls, so the tile is never a
+    misleading sample.
+    """
+    counts = await _caught_hack_counts(s, run_id)
+    if counts is None:
+        return None
+    caught, _ = counts
+    if caught == 0:
+        return None
+    calls = await repo.llm_calls_for_run(s, run_id)
+    if not calls:
+        return None
+    total_dollars = sum(c.dollars for c in calls)
+    return total_dollars / caught

@@ -29,9 +29,11 @@ from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
 from modules.oracles.property_fuzz.oracle import PropertyFuzzOracle
 from modules.oracles.llm_judge.oracle import LlmJudgeOracle
-from shared.llm import AnthropicApiProvider, MockProvider
+from shared.llm import AnthropicApiProvider, MockProvider, PersistingLLMProvider
 from shared.llm.base import LLMProvider
 from shared.sandbox import LocalDockerSandbox
+
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
@@ -97,6 +99,8 @@ def build_components_sparkov(
     blue_max_iters: int = 3,
     blue_max_repairs: int = 1,
     blue_sandbox: object | None = None,
+    session_factory: async_sessionmaker[AsyncSession] | None = None,
+    run_id: str | None = None,
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
@@ -138,6 +142,23 @@ def build_components_sparkov(
     recovery.
     """
     spec = fraud_sparkov.load_spec()
+
+    def _wrap(inner: LLMProvider, pillar: str) -> LLMProvider:
+        """Record every call this provider makes to ``llm_calls`` (US-2/3/10).
+
+        Only wraps when a ``session_factory`` and ``run_id`` are threaded in (the
+        run path). Without them the raw provider is returned unchanged so unit
+        construction stays side-effect free. The decorator makes NO extra call.
+        """
+        if session_factory is None or run_id is None:
+            return inner
+        return PersistingLLMProvider(
+            inner=inner,
+            session_factory=session_factory,
+            run_id=run_id,
+            pillar=pillar,
+        )
+
     detector: Detector = LocalModelTarget(
         model_path=fraud_sparkov.MODEL_PATH,
         feature_names=fraud_sparkov.DETECTOR_FEATURES,
@@ -145,9 +166,12 @@ def build_components_sparkov(
     sparkov_is_fraud: Callable[[object], bool] = fraud_sparkov.is_fraud
     catalog = StrategyCatalog()
     llm_red = LlmRedAdversary(
-        provider=red_provider
-        if red_provider is not None
-        else AnthropicApiProvider(model="claude-sonnet-4-6"),
+        provider=_wrap(
+            red_provider
+            if red_provider is not None
+            else AnthropicApiProvider(model="claude-sonnet-4-6"),
+            "red",
+        ),
         spec=spec,
         score_fn=detector.score,
         label_fn=sparkov_is_fraud,
@@ -195,9 +219,12 @@ def build_components_sparkov(
         # REAL Opus 4.8 judge (constitution §1: Opus on the judge). Live provider
         # by default, nothing mocked in the demo path; budgeted to bound spend.
         LlmJudgeOracle(
-            provider=judge_provider
-            if judge_provider is not None
-            else AnthropicApiProvider(model="claude-opus-4-8"),
+            provider=_wrap(
+                judge_provider
+                if judge_provider is not None
+                else AnthropicApiProvider(model="claude-opus-4-8"),
+                "judge",
+            ),
             max_calls=judge_max_calls,
         ),
     ]
@@ -218,10 +245,13 @@ def build_components_sparkov(
         )
 
     blue_engineer = BlueCodeEngineer(
-        provider=blue_provider
-        if blue_provider is not None
-        # Opus 4.8 for blue CODE generation (documented §1 deviation; see docstring).
-        else AnthropicApiProvider(model="claude-opus-4-8"),
+        provider=_wrap(
+            blue_provider
+            if blue_provider is not None
+            # Opus 4.8 for blue CODE generation (documented §1 deviation; see docstring).
+            else AnthropicApiProvider(model="claude-opus-4-8"),
+            "blue",
+        ),
         max_iters=blue_max_iters,
         max_repairs=blue_max_repairs,
     )
@@ -231,9 +261,12 @@ def build_components_sparkov(
     # owns describe()/assembly) and wire the white-box red pass against it.
     scheme = verification_scheme(oracles)
     white_box_adversary: Adversary = WhiteBoxRedAdversary(
-        provider=white_box_provider
-        if white_box_provider is not None
-        else AnthropicApiProvider(model="claude-opus-4-8"),
+        provider=_wrap(
+            white_box_provider
+            if white_box_provider is not None
+            else AnthropicApiProvider(model="claude-opus-4-8"),
+            "white_box",
+        ),
         spec=spec,
         score_fn=detector.score,
         label_fn=sparkov_is_fraud,
