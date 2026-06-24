@@ -207,7 +207,7 @@
           <div style="background:#161E27;border:1px solid #2C3744;border-radius:8px;padding:16px">
             <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px">
               <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:600;color:#4FAAC0;border:1px solid #2E5560;border-radius:4px;padding:3px 7px;flex:none;letter-spacing:.04em;line-height:1">1&nbsp;/&nbsp;5</span>
-              <span style="font-size:12px;color:#B8C2CE;line-height:1.5">LLM judge carries <span style="color:#E8EDF3">one of five votes</span> and is adversarially gameable.</span>
+              <span style="font-size:12px;color:#B8C2CE;line-height:1.5">LLM judge carries <span style="color:#E8EDF3" data-live="oracles.judge_share_text">one of five votes</span> and is adversarially gameable.</span>
             </div>
             <label style="display:flex;align-items:flex-start;gap:9px;cursor:pointer">
               <span style="width:17px;height:17px;border-radius:4px;background:#16242A;border:1px solid #2E5560;flex:none;display:flex;align-items:center;justify-content:center;color:#4FAAC0;font-size:12px;font-weight:700;margin-top:1px">✓</span>
@@ -253,9 +253,9 @@
           </sc-for>
         </div>
         <div style="display:flex;justify-content:space-between;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
-          <span>May 24</span>
+          <span data-live="history.oldest_run_label">—</span>
           <span>Jun 08</span>
-          <span>Jun 22 · r_8f3a</span>
+          <span data-live="history.latest_run_label">—</span>
         </div>
       </div>
 
@@ -292,7 +292,7 @@
           <span class="om-pulse" style="width:9px;height:9px;border-radius:50%;background:#57C08A;flex:none"></span>{{ runStatusLabel }}
         </div>
         <div style="font-size:24px;color:#E8EDF3;font-weight:600;margin-top:8px;letter-spacing:-.01em">{{ runHeadline }}</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE;margin-top:4px">r_8f3a · fraud_adapter@7c1d · started 14:08:12Z</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE;margin-top:4px" data-live="running.run_header">no run started</div>
       </div>
       <div style="display:flex;gap:10px">
         <button onClick="{{ pause }}" disabled="{{ runDone }}" style="{{ pauseStyle }}">{{ pauseLabel }}</button>
@@ -359,8 +359,8 @@
             <div style="width:{{ spendPctWidth }};height:100%;background:#316E7E"></div>
           </div>
           <div style="margin-top:14px;display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px">
-            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">last round</span><span style="color:#B8C2CE">$0.21</span></div>
-            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">avg / round</span><span style="color:#B8C2CE">$0.19</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">last round</span><span style="color:#B8C2CE" data-live="running.last_round_cost">—</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">avg / round</span><span style="color:#B8C2CE" data-live="running.avg_round_cost">—</span></div>
             <div style="display:flex;justify-content:space-between"><span style="color:#95A1AE">projected</span><span style="color:#B8C2CE" data-live="estimate.projected_text">$9.12</span></div>
           </div>
         </div>
@@ -386,7 +386,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">CURRENT ROUND · #{{ currentRound }}</div>
         <div style="display:flex;gap:8px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
-          adversarial strategy <span style="color:#E8EDF3">amount_sign_flip_v4</span> · seed <span style="color:#E8EDF3">0x8f3a2b</span>
+          adversarial strategy <span style="color:#E8EDF3" data-live="running.current_tactic">—</span> · seed <span style="color:#E8EDF3" data-live="running.current_seed">—</span>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:18px">
@@ -559,8 +559,8 @@
       </div>
       <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;padding:18px 20px">
         <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.06em">SPEND</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;color:#E8EDF3;font-weight:600;margin-top:6px">$9.12</div>
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;margin-top:4px">$0.19 / round · ceiling $25.00</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;color:#E8EDF3;font-weight:600;margin-top:6px" data-live="estimate.projected_text">—</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;margin-top:4px" data-live="estimate.subtitle">—</div>
       </div>
     </div>
 
@@ -738,36 +738,36 @@
         <div style="color:#95A1AE;padding:8px 12px;border-bottom:1px solid #1D2630;text-align:right">spend</div>
         <div style="color:#95A1AE;padding:8px 0 8px 12px;border-bottom:1px solid #1D2630;text-align:right">verdict</div>
 
-        <div style="color:#E8EDF3;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630;background:#11181F">r_8f3a <span style="color:#4FAAC0">·current</span></div>
+        <div style="color:#E8EDF3;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630;background:#11181F" data-live="estimate.prior_runs.r1_id">— <span style="color:#4FAAC0">·current</span></div>
         <div style="color:#B8C2CE;padding:11px 12px;border-bottom:1px solid #1D2630;background:#11181F">v3.2.1 · 9f2a4c7b</div>
         <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;background:#11181F;text-align:right">92.7%</div>
         <div style="color:#D4A341;padding:11px 12px;border-bottom:1px solid #1D2630;background:#11181F;text-align:right">0.027</div>
-        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;background:#11181F;text-align:right">$9.12</div>
+        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;background:#11181F;text-align:right" data-live="estimate.prior_runs.r1_cost">—</div>
         <div style="color:#D4A341;padding:11px 0 11px 12px;border-bottom:1px solid #1D2630;background:#11181F;text-align:right;font-weight:600">caveat</div>
 
-        <div style="color:#B8C2CE;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630">r_7c1d</div>
+        <div style="color:#B8C2CE;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630" data-live="estimate.prior_runs.r2_id">—</div>
         <div style="color:#B8C2CE;padding:11px 12px;border-bottom:1px solid #1D2630">v3.2.0 · 8e1b3c2a</div>
         <div style="color:#57C08A;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">96.1%</div>
         <div style="color:#57C08A;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">0.018</div>
-        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">$7.92</div>
+        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right" data-live="estimate.prior_runs.r2_cost">—</div>
         <div style="color:#57C08A;padding:11px 0 11px 12px;border-bottom:1px solid #1D2630;text-align:right;font-weight:600">pass</div>
 
-        <div style="color:#B8C2CE;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630">r_6b09</div>
+        <div style="color:#B8C2CE;padding:11px 12px 11px 0;border-bottom:1px solid #1D2630" data-live="estimate.prior_runs.r3_id">—</div>
         <div style="color:#B8C2CE;padding:11px 12px;border-bottom:1px solid #1D2630">v3.1.4 · 7d0a8f1e</div>
         <div style="color:#57C08A;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">95.4%</div>
         <div style="color:#57C08A;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">0.021</div>
-        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right">$8.41</div>
+        <div style="color:#E8EDF3;padding:11px 12px;border-bottom:1px solid #1D2630;text-align:right" data-live="estimate.prior_runs.r3_cost">—</div>
         <div style="color:#57C08A;padding:11px 0 11px 12px;border-bottom:1px solid #1D2630;text-align:right;font-weight:600">pass</div>
 
-        <div style="color:#B8C2CE;padding:11px 12px 11px 0">r_5aa1</div>
+        <div style="color:#B8C2CE;padding:11px 12px 11px 0" data-live="estimate.prior_runs.r4_id">—</div>
         <div style="color:#B8C2CE;padding:11px 12px">v3.1.4 · 7d0a8f1e</div>
         <div style="color:#E5736B;padding:11px 12px;text-align:right">88.2%</div>
         <div style="color:#E5736B;padding:11px 12px;text-align:right">0.041</div>
-        <div style="color:#E8EDF3;padding:11px 12px;text-align:right">$9.10</div>
+        <div style="color:#E8EDF3;padding:11px 12px;text-align:right" data-live="estimate.prior_runs.r4_cost">—</div>
         <div style="color:#E5736B;padding:11px 0 11px 12px;text-align:right;font-weight:600">fail</div>
       </div>
       <div style="margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#95A1AE;line-height:1.7">
-        vs. last passing run (r_7c1d): <span style="color:#E5736B">−3.4pp pass rate</span> · <span style="color:#D4A341">+0.009 drift</span> · <span style="color:#E5736B">+$1.20 spend</span> · regression localised to metamorphic obligation
+        <span data-live="running.regression_summary">no prior comparable run on record</span>
       </div>
     </div>
 
@@ -841,7 +841,7 @@
     <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
       <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#95A1AE;line-height:1.7;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 12px">
         <div>model: <span style="color:#E8EDF3">claude-3-5-sonnet-20251022</span></div>
-        <div>temperature: <span style="color:#E8EDF3">0.0</span> · invoked <span style="color:#E8EDF3">14:07:47Z</span></div>
+        <div>temperature: <span style="color:#E8EDF3" data-live="judge.temperature">—</span> · invoked <span style="color:#E8EDF3" data-live="judge.invoked_at">—</span></div>
       </div>
       <div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:6px">PARSED OUTPUT</div>
@@ -861,7 +861,7 @@
     <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
       <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;line-height:1.8">
         <div>rounds <span style="color:#E8EDF3">{{ rounds }}</span></div>
-        <div>avg $/round <span style="color:#E8EDF3">$0.19 (last 12 fraud runs)</span></div>
+        <div>avg $/round <span style="color:#E8EDF3" data-live="estimate.avg_per_round_blurb">—</span></div>
         <div>oracle calls/round <span style="color:#E8EDF3">5</span> (4 + judge)</div>
       </div>
       <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE">rounds × avg_round_cost = <span style="color:#57C08A">{{ estRunLabel }} floor</span></div>
@@ -890,7 +890,7 @@
       <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:13px 15px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.8">
         <div style="color:#7C8896;letter-spacing:.06em;font-size:10px;text-transform:uppercase;margin-bottom:6px">SESSION</div>
         <div style="color:#B8C2CE">principal · <span style="color:#E8EDF3">m.chen@acme</span></div>
-        <div style="color:#B8C2CE">elevated since · <span style="color:#E8EDF3">14:01:48Z</span> · expires <span style="color:#E8C84A">in 27m</span></div>
+        <div style="color:#B8C2CE">elevated since · <span style="color:#E8EDF3" data-live="role.elevated_since">—</span> · expires <span style="color:#E8C84A" data-live="role.elevation_expiry">—</span></div>
         <div style="color:#B8C2CE">overrides active · <span style="color:{{ activeOverrideColor }}">{{ activeOverridesText }}</span></div>
       </div>
       <a href="slice-12-admin-debug.dc.html" style="display:inline-flex;align-items:center;gap:8px;background:#1B1518;border:1px solid #4A2528;border-radius:6px;padding:11px 14px;color:#E5B5B0;text-decoration:none;font-family:'IBM Plex Mono',monospace;font-size:12px">⚙ open /admin/debug · global controls →</a>
@@ -953,63 +953,19 @@ class Component extends DCLogic {
     const tabActive = tabBase + ';color:#E8EDF3;border-bottom-color:#4FAAC0;background:#11181F';
     const tabDisabled = tabBase + ';opacity:.45;cursor:not-allowed';
 
-    // per-oracle progress (live)
-    const mkOracle = (name, weight, scale) => {
-      const completed = Math.floor(cur * scale);
-      const failRate = name === 'metamorphic' ? 0.04 : name === 'differential' ? 0.025 : 0;
-      const pass = Math.max(0, Math.round(completed * (1 - failRate)));
-      const fail = Math.max(0, completed - pass);
-      const oPct = rounds > 0 ? Math.round((completed / rounds) * 100) : 0;
-      return {
-        name, dot: '#4FAAC0', pct: oPct + '%',
-        barColor: fail > 0 ? '#9B6E2F' : '#316E7E',
-        pass, fail, inc: 0,
-        detail: completed + ' / ' + rounds + ' rounds · ' + weight,
-      };
-    };
-    const oracles = [
-      mkOracle('held_out', 'weight 1/5', 1.0),
-      mkOracle('metamorphic', 'weight 1/5', 0.95),
-      mkOracle('differential', 'weight 1/5', 0.92),
-      mkOracle('fuzz', 'weight 1/5', 0.88),
-      mkOracle('llm_judge', 'weight 1/5 · gameable', 0.85),
-    ];
-
-    // recent activity, dependent on currentRound
-    const activity = [];
-    for (let i = 0; i < 6; i++) {
-      const r = Math.max(1, cur - i);
-      const minute = 8 + Math.floor((cur - i) * 0.05);
-      const sec = ((cur - i) * 7) % 60;
-      const t = '14:' + String(minute).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
-      const kinds = [
-        { tag: 'PASS', color: '#57C08A', msg: 'round #' + r + ' · held_out + metamorphic ok' },
-        { tag: 'JUDGE', color: '#4FAAC0', msg: 'round #' + r + ' · llm_judge returned pass' },
-        { tag: 'DIFF', color: '#D4A341', msg: 'round #' + r + ' · differential drift 0.024' },
-        { tag: 'PASS', color: '#57C08A', msg: 'round #' + r + ' · fuzz ok' },
-        { tag: 'PASS', color: '#57C08A', msg: 'round #' + r + ' · all oracles ok' },
-        { tag: 'FAIL', color: '#E5736B', msg: 'round #' + r + ' · metamorphic sign-flip mismatch' },
-      ];
-      activity.push({ t, ...kinds[(r + i) % kinds.length] });
-    }
-
-    // live round timeline (tab 2) — known failures at 17, 33, 41; caveat at 27
-    const failingRounds = new Set([17, 33, 41]);
-    const caveatRounds = new Set([27]);
-    const colorFor = (n, isDone) => {
-      if (n > cur) return '#1D2630';
-      if (failingRounds.has(n)) return '#7A3A36';
-      if (caveatRounds.has(n)) return '#D4A341';
-      return '#316E7E';
-    };
-    const labelFor = (n) => {
-      if (n > cur) return 'pending';
-      if (failingRounds.has(n)) return 'fail';
-      if (caveatRounds.has(n)) return 'caveat';
-      return 'pass';
-    };
-    const roundTimeline = [];
-    for (let n = 1; n <= rounds; n++) roundTimeline.push({ n, color: colorFor(n, false), label: labelFor(n) });
+    // -------------------------------------------------------------------------
+    // No-stub-data rule (CLAUDE.md): every array below previously held fabricated
+    // values that rendered as if they were measurements from a real run. They
+    // are now empty by default, so a fresh page renders honest empty slots
+    // instead of theatre. The live.js sidecar fills these via setState the
+    // moment a real run drives the backend (US-2 SSE + /runs/:id) — that is the
+    // slice-21+ wiring that lands next. Until a run is started the page is
+    // intentionally blank in the Running and Results tabs; the configure tab
+    // is the only useful surface in that state, which is the correct UX.
+    // -------------------------------------------------------------------------
+    const oracles = this.state.liveOracles || [];
+    const activity = this.state.liveActivity || [];
+    const roundTimeline = this.state.liveRoundTimeline || [];
     let tlPass = 0, tlFail = 0, tlCaveat = 0, tlPending = 0;
     roundTimeline.forEach(r => {
       if (r.label === 'pass') tlPass++;
@@ -1020,47 +976,25 @@ class Component extends DCLogic {
     const doneCount = tlPass + tlFail + tlCaveat;
     const tlRate = doneCount > 0 ? ((tlPass / doneCount) * 100).toFixed(1) + '%' : '—';
 
-    // sandbox health (varies a little with progress for verisimilitude)
-    const cpuPct = (62 + ((cur * 3) % 22)) + '%';
-    const memPct = (58 + ((cur * 5) % 14)) + '%';
-    const tokensUsed = cur * 38400;
-    const tokensPctNum = Math.min(100, (tokensUsed / 2200000) * 100);
-    const tokensLabel = (tokensUsed / 1000).toFixed(0) + 'k / 2.2M';
-    const tokensPct = tokensPctNum.toFixed(1) + '%';
+    // sandbox health: real readings only. Until a route exposes them, render —.
+    const cpuPct = this.state.liveCpuPct || '—';
+    const memPct = this.state.liveMemPct || '—';
+    const tokensLabel = this.state.liveTokensLabel || '—';
+    const tokensPct = this.state.liveTokensPct || '0%';
 
-    // results-tab timeline (all rounds resolved)
-    const resultsTimeline = [];
-    for (let n = 1; n <= rounds; n++) {
-      const label = failingRounds.has(n) ? 'fail' : caveatRounds.has(n) ? 'caveat' : 'pass';
-      const color = label === 'fail' ? '#7A3A36' : label === 'caveat' ? '#D4A341' : '#316E7E';
-      resultsTimeline.push({ n, label, color });
-    }
+    const resultsTimeline = this.state.liveResultsTimeline || [];
+    const costBreakdown = this.state.liveCostBreakdown || [];
 
-    const costBreakdown = [
-      { name: 'held_out',     pct: '22%', cost: '$2.01' },
-      { name: 'metamorphic',  pct: '28%', cost: '$2.55' },
-      { name: 'differential', pct: '24%', cost: '$2.18' },
-      { name: 'fuzz',         pct: '14%', cost: '$1.28' },
-      { name: 'llm_judge',    pct: '12%', cost: '$1.10' },
-    ];
-
-    // results data
-    const passCount = Math.max(0, rounds - 3);
-    const resultsOracles = [
-      { name: 'held_out',     dot: '#57C08A', passPct: '96%', failPct: '4%',  rate: '96.4%', note: 'obligation ≥ 95% · met', verdict: 'pass', verdictColor: '#57C08A' },
-      { name: 'metamorphic',  dot: '#D4A341', passPct: '92%', failPct: '8%',  rate: '91.7%', note: '2 violations on sign-flip · cross-border', verdict: 'caveat', verdictColor: '#D4A341' },
-      { name: 'differential', dot: '#D4A341', passPct: '94%', failPct: '6%',  rate: '93.8%', note: '1 round over 0.030 drift ceiling', verdict: 'caveat', verdictColor: '#D4A341' },
-      { name: 'fuzz',         dot: '#57C08A', passPct: '100%',failPct: '0%',  rate: '100%',  note: 'no crashes · 2.1k inputs', verdict: 'pass', verdictColor: '#57C08A' },
-      { name: 'llm_judge',    dot: '#4FAAC0', passPct: '100%',failPct: '0%',  rate: '100%',  note: 'weight 1/5 · gameable · advisory', verdict: 'pass', verdictColor: '#4FAAC0' },
-    ];
+    const passCount = this.state.livePassCount === undefined ? 0 : this.state.livePassCount;
+    const resultsOracles = this.state.liveResultsOracles || [];
 
     return {
       // tab routing
       isConfigure: tab === 'configure',
       isRunning: tab === 'running',
       isResults: tab === 'results',
-      crumbLabel: tab === 'configure' ? 'run launcher' : tab === 'running' ? 'runs / r_8f3a · live' : 'runs / r_8f3a · results',
-      runIdLabel: this.state.runStarted ? 'run · r_8f3a' : 'no run started',
+      crumbLabel: tab === 'configure' ? 'run launcher' : tab === 'running' ? 'runs / ' + (this.state.runId || '—') + ' · live' : 'runs / ' + (this.state.runId || '—') + ' · results',
+      runIdLabel: this.state.runStarted && this.state.runId ? 'run · ' + this.state.runId : 'no run started',
 
       // tab buttons
       tab1Style: tab === 'configure' ? tabActive : (this.state.runStarted ? tabDisabled : tabBase),
@@ -1085,17 +1019,20 @@ class Component extends DCLogic {
         if (!isNaN(v) && v > 0 && v <= cap) this.setState({ rounds: v });
         else if (e.target.value === '') this.setState({ rounds: 0 });
       },
-      estRunLabel: '$' + (rounds * 0.19).toFixed(2),
-      estSpendLabel: '$' + (rounds * 0.15).toFixed(2) + ' – $' + (rounds * 0.22).toFixed(2),
+      // Replaced by /estimate?target_type=...&rounds=... via live.js when a real
+      // target is selected. Until then, render em-dash rather than a fabricated
+      // per-round rate.
+      estRunLabel: this.state.liveEstRunLabel || '—',
+      estSpendLabel: this.state.liveEstSpendLabel || '—',
 
       // running
       currentRound: cur,
       pctLabel: pctNum + '% complete',
       pctWidth: pctNum + '%',
       elapsedLabel: this.fmtTime(this.state.elapsedSec),
-      etaLabel: this.state.runDone ? '—' : this.fmtTime(eta),
-      spendLabel: '$' + spend.toFixed(2),
-      spendPctWidth: spendPct.toFixed(1) + '%',
+      etaLabel: '—', // no stub ETA; a real estimator lands with /estimate live wiring
+      spendLabel: this.state.liveSpendLabel || '$0.00',
+      spendPctWidth: this.state.liveSpendPctWidth || '0%',
       runStatusLabel: this.state.runDone ? 'COMPLETE' : (this.state.paused ? 'PAUSED' : 'RUNNING'),
       runHeadline: this.state.runDone ? 'Evaluation complete' : 'Evaluation in progress',
       pauseStyle: 'background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit' + (this.state.runDone ? ';opacity:.4;cursor:not-allowed' : ''),
@@ -1119,92 +1056,22 @@ class Component extends DCLogic {
         { role: 'oracle · 4', name: 'fuzz',         vote: 'pass',  icon: '✓', color: '#57C08A', bg: '#11242A', border: '#2E5560' },
         { role: 'judge · 5',  name: 'llm_judge',    vote: 'pass',  icon: '✓', color: '#4FAAC0', bg: '#11242A', border: '#2C4E5A' },
       ],
-      voteRows: [
-        {
-          name: 'held_out', role: 'oracle · weight 1/5', vote: 'pass', icon: '✓', color: '#57C08A',
-          rationale: 'Pass rate 96.4% clears the 0.95 obligation across all 48 rounds. No regression vs. last approved spec (r_7c1d at 96.1%).',
-          basis: 'held_out_tests.pass_rate ≥ 0.95',
-          signed: '14:14:32Z',
-        },
-        {
-          name: 'metamorphic', role: 'oracle · weight 1/5', vote: 'block', icon: '✕', color: '#E5736B',
-          rationale: 'Sign-flip invariance violated on rounds 17 and 33 — both cross-border merchant categories. Obligation is strict equality; even one violation triggers a block vote.',
-          basis: 'metamorphic.invariance == true',
-          signed: '14:14:34Z',
-        },
-        {
-          name: 'differential', role: 'oracle · weight 1/5', vote: 'pass', icon: '⚠', color: '#D4A341',
-          rationale: 'Peak drift 0.034 on round 41 briefly exceeded the 0.030 ceiling but the rolling-window median stayed at 0.027. Voted pass with caveat per soft-ceiling clause.',
-          basis: 'differential.cross_family_drift ≤ 0.03 (median)',
-          signed: '14:14:35Z',
-        },
-        {
-          name: 'fuzz', role: 'oracle · weight 1/5', vote: 'pass', icon: '✓', color: '#57C08A',
-          rationale: 'No crashes, no panics across 2,113 fuzzed inputs. Adapter rejected malformed payloads with the correct error class.',
-          basis: 'fuzz.no_crash == true',
-          signed: '14:14:36Z',
-        },
-        {
-          name: 'llm_judge', role: 'judge · weight 1/5 · gameable', vote: 'pass', icon: '✓', color: '#4FAAC0',
-          rationale: 'Judge model assessed the overall trace as consistent with the sealed spec. Vote is advisory — adversarially gameable and explicitly weighted equally with each oracle.',
-          basis: 'claude-3-5-sonnet-20251022 · temp 0.0',
-          signed: '14:14:38Z',
-        },
-      ],
+      // Vote tables come from real verdict rows once a run is verified by the
+      // oracle ensemble (GET /runs/{id}/verdicts/{verdictId}). Empty until then,
+      // not fabricated rationales.
+      voteRows: this.state.liveVoteRows || [],
 
-      // recent runs · history strip (50 cells) + table
-      runHistory: (() => {
-        // verdict pattern: mostly certified, a few caveat & halted, current = halted
-        const arr = [];
-        const halts = new Set([7, 17, 28, 39, 45, 49]);     // halted runs
-        const caveats = new Set([3, 12, 23, 33, 42]);       // caveat / review-only
-        for (let i = 0; i < 50; i++) {
-          let color = '#57C08A', label = 'certified', op = ';opacity:.85';
-          if (halts.has(i))   { color = '#E5736B'; label = 'halted'; op = ''; }
-          else if (caveats.has(i)) { color = '#D9A441'; label = 'caveat'; op = ''; }
-          const isCurrent = i === 49;
-          arr.push({
-            title: 'r_' + (8533 + i).toString(16) + ' · ' + label,
-            color,
-            outline: isCurrent ? 'outline:2px solid #4FAAC0;outline-offset:1px' : 'opacity:.95' + op,
-          });
-        }
-        return arr;
-      })(),
+      // 50-cell run history strip + the recent-runs table both come from the
+      // real /runs route. Empty initial state instead of 50 fabricated cells
+      // and 6 fabricated rows (no-stub-data rule). live.js populates them.
+      runHistory: this.state.liveRunHistory || [],
+      recentRuns: this.state.liveRecentRuns || [],
 
-      recentRuns: [
-        { id: 'r_8f3a', started: '06-22 14:01Z', rounds: '35/48', verdict: 'halted',    verdictColor: '#E5B5B0', verdictDot: '#E5736B', metrics: '0.41 / 0.86', cost: '$14.20', spec: '9f2a4c7b · sealed' },
-        { id: 'r_8f39', started: '06-22 11:14Z', rounds: '48/48', verdict: 'certified', verdictColor: '#9BD9B5', verdictDot: '#57C08A', metrics: '0.18 / 0.94', cost: '$8.40',  spec: '9f2a4c7b · sealed' },
-        { id: 'r_8f38', started: '06-22 09:20Z', rounds: '48/48', verdict: 'certified', verdictColor: '#9BD9B5', verdictDot: '#57C08A', metrics: '0.16 / 0.95', cost: '$7.80',  spec: '9f2a4c7b · sealed' },
-        { id: 'r_8f37', started: '06-21 22:42Z', rounds: '29/48', verdict: 'halted',    verdictColor: '#E5B5B0', verdictDot: '#E5736B', metrics: '0.44 / 0.84', cost: '$11.10', spec: '9f2a4c7b · sealed' },
-        { id: 'r_8f36', started: '06-21 17:08Z', rounds: '48/48', verdict: 'certified', verdictColor: '#9BD9B5', verdictDot: '#57C08A', metrics: '0.19 / 0.93', cost: '$9.20',  spec: '9f2a4c7b · sealed' },
-        { id: 'r_8f35', started: '06-21 12:55Z', rounds: '48/48', verdict: 'caveat',    verdictColor: '#E8C84A', verdictDot: '#D9A441', metrics: '0.22 / 0.91', cost: '$8.90',  spec: '9f2a4c7b · sealed' },
-      ],
-
-      // audit replays · 24h heat strip + table
-      replayHeat: (() => {
-        const buckets = [
-          ['09:00Z', 0], ['10:00Z', 1], ['11:00Z', 2], ['12:00Z', 4], ['13:00Z', 3],
-          ['14:00Z', 6], ['15:00Z', 5], ['16:00Z', 2], ['17:00Z', 3], ['18:00Z', 1],
-          ['19:00Z', 1], ['20:00Z', 0], ['21:00Z', 1], ['22:00Z', 0], ['23:00Z', 0],
-          ['00:00Z', 0], ['01:00Z', 0], ['02:00Z', 14], ['03:00Z', 0], ['04:00Z', 0],
-          ['05:00Z', 0], ['06:00Z', 1], ['07:00Z', 2], ['08:00Z', 1],
-        ];
-        return buckets.map(([t, n]) => {
-          const pct = Math.max(6, Math.min(96, n * 7 + 6));
-          const color = n === 0 ? '#1D2630' : n >= 10 ? '#57C08A' : n >= 3 ? '#4FAAC0' : '#316E7E';
-          const note = t === '02:00Z' ? ' · nightly audit-bot' : t === '14:00Z' ? ' · r_8f3a halt triage' : '';
-          return { h: pct + '%', color, title: t + ' · ' + n + note };
-        });
-      })(),
-
-      replays: [
-        { at: '06-22 14:42Z', row: 'a_8f3a_017_meta_1',   by: 's.lydon@acme',           reason: 'manual triage · #17 fail', hash: '9c4b…2e10' },
-        { at: '06-22 14:38Z', row: 'a_8f3a_033_meta_1',   by: 's.lydon@acme',           reason: 'manual triage · #33 fail', hash: '7a21…d4f8' },
-        { at: '06-22 14:31Z', row: 'a_8f3a_041_diff_2',   by: 'k.osei@acme',            reason: 'manual triage · #41 drift', hash: 'b71d…8a44' },
-        { at: '06-22 14:25Z', row: 'a_8f3a_017_meta_1',   by: 'audit-bot · sample',    reason: '1% spot check',          hash: '9c4b…2e10' },
-        { at: '06-22 14:15Z', row: 'a_8f3a_005_held_1',   by: 'audit-bot · sample',    reason: '1% spot check',          hash: '5e88…1d07' },
-      ],
+      // 24-hour replay-activity histogram and the replays table both come from
+      // a future /audit/replays endpoint (slice 24 with the audit row replayer
+      // page). Empty until then.
+      replayHeat: this.state.liveReplayHeat || [],
+      replays: this.state.liveReplays || [],
 
       // actions
       start: () => this.setState({ runStarted: true, tab: 'running', currentRound: 0, elapsedSec: 0, runDone: false, paused: false }),

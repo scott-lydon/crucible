@@ -196,6 +196,38 @@
         "oracles.summary",
         nonJudge + (hasJudge ? " + judge" : ""),
       );
+      if (oracles.judge_share_text) {
+        setText("oracles.judge_share_text", oracles.judge_share_text);
+      }
+    }
+    // History strip + estimate-drawer prior-runs table read /runs (newest first).
+    var runs = await json("/runs");
+    if (Array.isArray(runs)) {
+      if (runs.length === 0) {
+        setText("history.latest_run_label", "no runs yet");
+        setText("history.oldest_run_label", "");
+        setText("estimate.prior_runs.r1_id", "no prior runs");
+      } else {
+        var newest = runs[0];
+        var oldest = runs[runs.length - 1];
+        setText(
+          "history.latest_run_label",
+          shortDate(newest.created_at) + " · " + newest.run_id.slice(0, 6),
+        );
+        setText("history.oldest_run_label", shortDate(oldest.created_at));
+        var slots = [1, 2, 3, 4];
+        slots.forEach(function (i) {
+          var row = runs[i - 1];
+          if (!row) {
+            setText("estimate.prior_runs.r" + i + "_id", "");
+            setText("estimate.prior_runs.r" + i + "_cost", "");
+            return;
+          }
+          var suffix = i === 1 ? ' <span style="color:#4FAAC0">·current</span>' : "";
+          setText("estimate.prior_runs.r" + i + "_id", row.run_id.slice(0, 8) + suffix);
+          setText("estimate.prior_runs.r" + i + "_cost", "—");
+        });
+      }
     }
     // /estimate runs over the page's default 48-round budget against the fraud
     // target (the selected card on the run launcher). The route returns nulls
@@ -208,6 +240,32 @@
           : money(est.cost_per_round_dollars) + " per round";
       setText("estimate.per_round_text", perRound);
       setText("estimate.projected_text", money(est.high_dollars));
+      // Estimate-drawer subtitle and avg-per-round narrative
+      var subtitle =
+        est.cost_per_round_dollars === null
+          ? "no prior runs to estimate from"
+          : money(est.cost_per_round_dollars) + " / round (n=" + est.sample_attacks + ")";
+      setText("estimate.subtitle", subtitle);
+      setText(
+        "estimate.avg_per_round_blurb",
+        est.cost_per_round_dollars === null
+          ? "not yet measured"
+          : money(est.cost_per_round_dollars) +
+              " (over " +
+              est.sample_attacks +
+              " prior fraud attacks)",
+      );
+    }
+    // Running tab: until a real run is selected via URL (?run=...), the run
+    // header, current strategy and per-round costs honestly say nothing is
+    // active. live SSE wiring fills these once the operator launches a run.
+    var runIdParam = new URLSearchParams(location.search).get("run");
+    if (!runIdParam) {
+      setText("running.run_header", "no run started");
+      setText("running.last_round_cost", "—");
+      setText("running.avg_round_cost", "—");
+      setText("running.current_tactic", "—");
+      setText("running.current_seed", "—");
     }
     var sandbox = await json("/sandbox/image");
     if (sandbox) {
