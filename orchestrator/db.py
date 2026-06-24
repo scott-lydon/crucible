@@ -22,6 +22,13 @@ async def init_db(url: str | None = None) -> None:
     ``url=None`` resolves from env (``CRUCIBLE_DATABASE_URL``) and defaults to the
     local Postgres container. Tests pass an explicit SQLite URL to stay fast and
     Postgres-free.
+
+    Schema posture: PROD/Postgres is migrated with Alembic (``alembic upgrade
+    head``; baseline in ``alembic/versions/``); TESTS keep this fast
+    ``create_all`` path on in-memory SQLite and never require Alembic/Postgres.
+    Low-risk choice: ``create_all`` stays the app default (idempotent — it skips
+    existing tables), Alembic is the migration tool run out-of-band, not wired
+    into startup.
     """
     global _session_factory
     engine = make_engine(url if url is not None else database_url())

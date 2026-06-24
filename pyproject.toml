@@ -8,6 +8,7 @@ dependencies = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.29",
   "sqlalchemy[asyncio]>=2.0",
+  "alembic>=1.13",
   "asyncpg>=0.29",
   "aiosqlite>=0.20",
   "pydantic>=2.6",
@@ -33,13 +34,17 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["scratchpad", ".venv"]
+# alembic/ is generated migration scaffolding (Alembic's own template style);
+# we do not lint it. Our code stays fully linted.
+extend-exclude = ["scratchpad", ".venv", "alembic"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
 plugins = []
-exclude = ["scratchpad/", "\\.venv/"]
+# alembic/ holds generated migrations + the env.py template; excluded from
+# --strict so its scaffolding does not gate our own typed code.
+exclude = ["scratchpad/", "\\.venv/", "alembic/"]
 
 # Untyped third-party libs (no stubs / py.typed). Scoped overrides keep
 # --strict in force for our own code while tolerating missing stubs here.
