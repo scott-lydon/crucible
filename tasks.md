@@ -6,11 +6,11 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Current slice
 
-- [ ] **slice-9-llm-judge-oracle** (T). Opus reads the output and votes pass / fail at half weight.
+- [ ] **slice-10-verdict-aggregator** (T). Vote tally (four oracles at 1.0, judge at 0.5, threshold 2.0), audit trace, replay determinism.
 
 ## Next slice
 
-- [ ] **slice-10-verdict-aggregator** (T). Vote tally (four oracles at 1.0, judge at 0.5, threshold 2.0), audit trace, replay determinism.
+- [ ] **slice-11-red-search** (R). Reason then propose then query then iterate; strategy catalog persisted.
 
 ## Shared infrastructure (landed ahead of its consuming slice)
 
@@ -19,6 +19,7 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
 
 ## Done
 
+- [x] **slice-9-llm-judge-oracle** (T). `LlmJudgeOracle` (Opus 4.8) reads the produced artifact, judges it against the sealed spec obligations, and returns a `{"decision","reason"}` JSON verdict parsed into a half-weight (0.5) `OracleVote`. An unparseable or empty response votes `unavailable` rather than guessing. Target-agnostic: source is read as-is, any structured output (a fraud score) is JSON-rendered first. Runs nothing in the sandbox, so no docker dependency. Registered as the fifth oracle in `wiring.py`. Live proof: real Opus passed a correct `add` and failed a subtracting one at 0.5 weight. Scripted CI covers pass / fail / unavailable / malformed-JSON / structured-artifact paths.
 - [x] **slice-8-property-fuzz-oracle** (T). `PropertyFuzzOracle` has Sonnet write a `fuzz()` function that random-samples inputs and asserts spec-guaranteed properties, run in the sealed sandbox via the shared check runner. Live proof: a correct impl passes, a broken one is caught with a concrete counterexample. Uses stdlib random rather than the hypothesis library, because the no-network sandbox cannot install it (doc reconciled).
 - [x] **slice-7-differential-oracle** (T, code mode). `DifferentialOracle` generates a second implementation from a different model family (Haiku) and concrete comparison inputs, runs both against the producer in the sealed sandbox, and flags disagreement without trusting either side. Live proof: a correct impl agrees on all inputs, a wrong one disagrees on 2 of 3. The fraud variant (LightGBM versus IsolationForest) is a documented follow-on.
 - [x] **slice-6-metamorphic-oracle** (T). `MetamorphicOracle` has Sonnet synthesize concrete-literal metamorphic relations from the spec invariants and checks them in the sealed sandbox via the shared check runner. Live proof: real Sonnet synthesized 5 relations, passed a correct impl, caught a wrong one. `metamorphic_rules` table added. Held-out oracle refactored onto the same shared runner (now returns UNAVAILABLE rather than a false FAIL when a generated check errors).
@@ -95,10 +96,10 @@ Convention: `pillar/slice-N-short-title`. Slices 0 to 4 are critical-path-sequen
   - [x] `modules/oracles/property_fuzz/`: Sonnet writes a `fuzz()` function that random-samples inputs (stdlib `random`, since the no-network sandbox cannot install `hypothesis`) and asserts spec invariants; runs in the sealed sandbox.
   - [x] **Done criteria:** the fuzzer finds at least one violation on a deliberately broken producer (live: a concrete counterexample), and the scripted test reproduces it in CI.
 
-- [ ] **slice-9-llm-judge-oracle** (T).
-  - [ ] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason.
-  - [ ] Judge gets 0.5 vote weight per `ARCHITECTURE.md` section 3.
-  - [ ] Verdict view marks the judge card "one vote" with the tooltip from `acceptance-tests.md` US-4.
+- [x] **slice-9-llm-judge-oracle** (T).
+  - [x] `modules/oracles/llm_judge/`: Opus 4.8 reads output and votes pass / fail with one-paragraph reason. Parses a `{"decision","reason"}` JSON verdict; an unparseable or empty response votes `unavailable`, never a guessed pass or fail.
+  - [x] Judge gets 0.5 vote weight per `ARCHITECTURE.md` section 3. Registered in `orchestrator/wiring.py` as the fifth oracle.
+  - [~] Verdict view marks the judge card "one vote" with the tooltip from `acceptance-tests.md` US-4. The 0.5 weight rides the `OracleVote` now; the card and tooltip are the slice-15 UI wiring (same pattern as the other oracle cards).
 
 - [ ] **slice-10-verdict-aggregator** (T).
   - [ ] `modules/oracles/aggregator.py`: vote tally per `ARCHITECTURE.md` section 3.
