@@ -133,6 +133,67 @@ async def test_malformed_proposal_becomes_a_clean_failed_attempt() -> None:
     assert attacks[0].succeeded is False
 
 
+class _CapturingLlmClient:
+    """Records the prompt and model of every call, returns one canned proposal."""
+
+    def __init__(self) -> None:
+        self.prompts: list[str] = []
+        self.models: list[LlmModel] = []
+
+    async def call(
+        self, prompt: str, *, model: LlmModel, system: str | None = None
+    ) -> LlmResult:
+        self.prompts.append(prompt)
+        self.models.append(model)
+        return LlmResult(
+            text=_THREE_TACTICS[0],
+            model=model,
+            dollars=Money.zero(),
+            tokens_in=0,
+            tokens_out=0,
+            session_id="cap",
+            raw={"cap": True},
+        )
+
+
+async def test_black_box_uses_sonnet_white_box_uses_opus() -> None:
+    cap = _CapturingLlmClient()
+    agent = RedSearchAgent(llm=cap)
+    await agent.search(_spec(), _FixtureDetector(), _budget(1), RunId.new(), white_box=False)
+    await agent.search(_spec(), _FixtureDetector(), _budget(1), RunId.new(), white_box=True)
+    assert cap.models == [LlmModel.SONNET, LlmModel.OPUS]
+
+
+async def test_oracle_scheme_is_injected_into_the_white_box_prompt() -> None:
+    cap = _CapturingLlmClient()
+    agent = RedSearchAgent(llm=cap)
+    scheme = "Disclosed verification scheme:\n- held_out: generates fresh tests\n\n"
+    await agent.search(
+        _spec(),
+        _FixtureDetector(),
+        _budget(1),
+        RunId.new(),
+        white_box=True,
+        oracle_scheme=scheme,
+    )
+    assert "Disclosed verification scheme" in cap.prompts[0]
+    assert "held_out: generates fresh tests" in cap.prompts[0]
+
+
+async def test_black_box_prompt_never_leaks_the_oracle_scheme() -> None:
+    cap = _CapturingLlmClient()
+    agent = RedSearchAgent(llm=cap)
+    await agent.search(
+        _spec(),
+        _FixtureDetector(),
+        _budget(1),
+        RunId.new(),
+        white_box=False,
+        oracle_scheme="Disclosed verification scheme: SECRET",
+    )
+    assert "Disclosed verification scheme" not in cap.prompts[0]
+
+
 def test_parse_proposal_accepts_a_well_formed_object() -> None:
     parsed = parse_proposal('{"tactic": "t", "payload": {"a": 1}, "reasoning": "r"}')
     assert parsed is not None

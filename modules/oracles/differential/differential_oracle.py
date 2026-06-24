@@ -77,6 +77,14 @@ class DifferentialOracle:
     input_model: LlmModel = LlmModel.SONNET
     min_inputs: int = 3
 
+    @property
+    def protocol_description(self) -> str:
+        return (
+            "Generates a second implementation from a different model family (Haiku) plus "
+            "concrete comparison inputs, runs both against your output in the sealed "
+            "sandbox, and flags disagreement without trusting either side as ground truth."
+        )
+
     async def verify(
         self,
         spec: SealedSpec,

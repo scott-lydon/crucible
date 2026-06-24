@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
+from modules.measure import MetricsAggregator
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.wiring import get_registry
@@ -185,6 +186,18 @@ async def catalog(session: SessionDep) -> list[dict[str, Any]]:
     """
     cat = StrategyCatalog(session=session, jsonl_path=_catalog_jsonl_path())
     return [entry.as_json() for entry in await cat.entries()]
+
+
+@app.get("/metrics")
+async def metrics(session: SessionDep) -> dict[str, Any]:
+    """Headline catch-rate metrics: black-box and white-box side by side (US-14).
+
+    Each is verifier recall (caught / judged) for that red pass, measured from
+    real verdicts only; the gap between them is the report card, how much catch
+    rate is borrowed from attacker ignorance. A box with zero judged attacks
+    reports a null rate the dashboard renders as "Not yet measured" (US-10).
+    """
+    return (await MetricsAggregator(session=session).catch_rates()).as_json()
 
 
 @app.get("/health/oracles/{name}")

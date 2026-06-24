@@ -28,6 +28,7 @@ class RedAgent(Protocol):
         run_id: RunId,
         *,
         white_box: bool,
+        oracle_scheme: str | None = None,
     ) -> list[Attack]:
         """Search for evasions until the budget is spent.
 
@@ -35,5 +36,9 @@ class RedAgent(Protocol):
         run an evasion was first discovered in (US-6). Returns every attempt
         made, each marked succeeded or not, so the dashboard can compute
         attack-success-rate over the whole search, not just the wins.
+
+        In white-box mode (US-14) `oracle_scheme` carries the disclosed oracle
+        ensemble protocol assembled by the loop; the agent injects it into the
+        search prompt so the informed attacker reasons about the real checks.
         """
         ...

@@ -31,6 +31,17 @@ class Oracle(Protocol):
         """
         ...
 
+    @property
+    def protocol_description(self) -> str:
+        """One-line description of what this oracle checks and how.
+
+        Disclosed to the red agent in the white-box pass (US-14), so the
+        informed attacker knows which checks fire, what relations they verify,
+        and how the held-out generator is structured. Owned by each oracle
+        (Targets-and-Oracles), assembled into the red prompt by the loop.
+        """
+        ...
+
     async def verify(
         self,
         spec: SealedSpec,

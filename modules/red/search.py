@@ -118,6 +118,7 @@ class RedSearchAgent:
 
     llm: LlmClient
     model: LlmModel = LlmModel.SONNET
+    white_box_model: LlmModel = LlmModel.OPUS
     evasion_threshold: float = _DEFAULT_EVASION_THRESHOLD
     system_prompt: str = _RESEARCH_SYSTEM
 
@@ -129,14 +130,19 @@ class RedSearchAgent:
         run_id: RunId,
         *,
         white_box: bool,
+        oracle_scheme: str | None = None,
     ) -> list[Attack]:
         attempts: list[Attack] = []
         transcript: list[str] = []
         spent = Money.zero()
+        # The informed white-box search gets the strongest model (US-14).
+        model = self.white_box_model if white_box else self.model
 
         while len(attempts) < budget.max_attempts and spent.dollars < budget.max_dollars.dollars:
-            prompt = self._prompt(spec, transcript, white_box=white_box)
-            result = await self.llm.call(prompt, model=self.model, system=self.system_prompt)
+            prompt = self._prompt(
+                spec, transcript, white_box=white_box, oracle_scheme=oracle_scheme
+            )
+            result = await self.llm.call(prompt, model=model, system=self.system_prompt)
             spent = spent + result.dollars
             ordinal = len(attempts) + 1
             proposal = parse_proposal(result.text)
@@ -225,15 +231,27 @@ class RedSearchAgent:
             )
         return AuditTrace(summary=summary, steps=steps)
 
-    def _prompt(self, spec: SealedSpec, transcript: list[str], *, white_box: bool) -> str:
+    def _prompt(
+        self,
+        spec: SealedSpec,
+        transcript: list[str],
+        *,
+        white_box: bool,
+        oracle_scheme: str | None = None,
+    ) -> str:
         obligations = "\n".join(f"- {o.id}: {o.description}" for o in spec.obligations)
         history = "\n".join(transcript) if transcript else "(no attempts yet)"
-        white_box_note = (
-            "You are in white-box mode: assume the defender's verification scheme "
-            "is known to you and aim for an evasion that survives it.\n\n"
-            if white_box
-            else ""
-        )
+        if not white_box:
+            white_box_note = ""
+        elif oracle_scheme:
+            # The loop hands over the disclosed oracle ensemble; prefer it over
+            # the generic note so the prompt names the exact checks (US-14).
+            white_box_note = oracle_scheme
+        else:
+            white_box_note = (
+                "You are in white-box mode: assume the defender's verification scheme "
+                "is known to you and aim for an evasion that survives it.\n\n"
+            )
         return (
             "You are a red-team adversary probing a detector. Your goal is to "
             "propose an input the detector scores as legitimate (a low score) "

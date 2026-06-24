@@ -37,6 +37,14 @@ class MetamorphicOracle:
     model: LlmModel = LlmModel.SONNET
     min_rules: int = 3
 
+    @property
+    def protocol_description(self) -> str:
+        return (
+            "Synthesizes at least three metamorphic relations from the spec invariants "
+            "(properties that must hold when an input is transformed, with no reference "
+            "answer) and checks each in the sealed sandbox; a violated relation is a FAIL."
+        )
+
     async def verify(
         self,
         spec: SealedSpec,

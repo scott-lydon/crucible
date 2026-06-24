@@ -104,6 +104,14 @@ class LlmJudgeOracle:
     weight: float = 0.5
     model: LlmModel = LlmModel.OPUS
 
+    @property
+    def protocol_description(self) -> str:
+        return (
+            "An Opus judge reads your artifact against the sealed spec obligations and "
+            "votes pass/fail with a reason at HALF weight (0.5); it runs nothing in the "
+            "sandbox, so it catches intent violations that the mechanical checks miss."
+        )
+
     async def verify(
         self,
         spec: SealedSpec,

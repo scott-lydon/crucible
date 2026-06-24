@@ -42,6 +42,15 @@ class PropertyFuzzOracle:
     model: LlmModel = LlmModel.SONNET
     seed: int = 1234
 
+    @property
+    def protocol_description(self) -> str:
+        return (
+            "Writes a fuzz() function that random-samples many inputs and asserts the "
+            "spec-guaranteed properties on each, run in the sealed sandbox; a single "
+            "counterexample is a FAIL, so a tactic that works only on hand-picked inputs "
+            "will be caught."
+        )
+
     async def verify(
         self,
         spec: SealedSpec,
