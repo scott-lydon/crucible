@@ -48,6 +48,29 @@
     if (h) setText("db_status", h.database);
   }
 
+  async function wireHalt() {
+    // The halt certification page (slice-08) reads the real /halt state: the
+    // platform halts certification when white-box recall falls below the red
+    // line (US-13). A fresh deployment with recall above the line is not halted,
+    // so the page honestly says "no active halt" rather than the design bundle's
+    // hardcoded active-halt scenario. The backend halt is a single current
+    // state; the design's blocked-run queue, halt history, and lift workflow
+    // have no backing route and were removed (see REMOVED_UI.md).
+    var h = await json("/halt");
+    if (!h) return;
+    if (h.halted) {
+      setText("halt.state_label", "Halt active");
+      setText("halt.recall", h.recall === null ? "—" : Number(h.recall).toFixed(2));
+      setText("halt.threshold", "recall >= " + Number(h.threshold).toFixed(2));
+      setText("halt.message", h.message || "certification halted");
+    } else {
+      setText("halt.state_label", "no active halt");
+      setText("halt.recall", h.recall === null ? "—" : Number(h.recall).toFixed(2));
+      setText("halt.threshold", "recall >= " + Number(h.threshold).toFixed(2));
+      setText("halt.message", "no active halt · certification is not blocked");
+    }
+  }
+
   async function wireList(key, path, render) {
     var host = document.querySelector('[data-live-list="' + key + '"]');
     if (!host) return;
@@ -277,6 +300,7 @@
     await Promise.all([
       wireMetrics(),
       wireHealth(),
+      wireHalt(),
       wireList("catalog", "/catalog", catalogRow),
       wireLauncher(),
     ]);

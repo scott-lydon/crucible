@@ -253,7 +253,7 @@ real from a backend route or rendered as em-dash.
 
 ### C5 — slice-08 halt certification (7 stubs)
 
-- [ ] **DONE-CRITERION** Zero raw stubs; page reads `/halt`; if
+- [x] **DONE-CRITERION** Zero raw stubs; page reads `/halt`; if
   `halted: false` the page shows `no active halt`; if `true` it shows the
   real reason and the timestamp.
 - **FILE/PATH** `frontend/slice-08-halt-certification.dc.html`
