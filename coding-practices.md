@@ -134,11 +134,11 @@ The word "mock" carries three meanings in this repo. The section 4 prohibition a
 
 When in doubt, the question is: would an operator ever see this value rendered as a real measurement on a real route? If yes, it is meaning (1) and forbidden. If no (it is a screen layout or a unit-test stand-in for a dependency), it is meaning (2) or (3) and allowed inside its named path.
 
-### Stub protocol for Claude Design handoff
+### Claude Design stub protocol
 
-Every fabricated value in a Claude Design happy-state mock is wrapped in the canonical stub label so the downstream strip and audit scripts can find it deterministically. The single source of truth for the label format, the strip step, the audit step, and the wiring step is [`docs/STUB_PROTOCOL.md`](docs/STUB_PROTOCOL.md). The brief at `design/claude-design-brief.md` instructs Claude Design to honor the format. The scripts at `scripts/strip_design_stubs.py` and `scripts/audit_stubs.py` enforce it, the latter as a pre-merge gate.
+Every fabricated value in a Claude Design happy-state mock is wrapped in the canonical `__CLAUDE_DESIGN_STUB__[key|kind|hint]__value__/CLAUDE_DESIGN_STUB__` label so the downstream strip and audit scripts can find it deterministically. The single source of truth for the label format, the strip step, the audit step, and the wiring step is [`docs/CLAUDE_DESIGN_STUB_PROTOCOL.md`](docs/CLAUDE_DESIGN_STUB_PROTOCOL.md). The brief at `design/claude-design-brief.md` instructs Claude Design to honor the format. The scripts at `scripts/strip_claude_design_stubs.py` and `scripts/audit_claude_design_stubs.py` enforce it, the latter as a pre-merge gate.
 
-The audit returns four exit codes (clean, wire-pending, unstripped-stub, heuristic-fake) so a continuous-integration job can fail on the right signal. A slice cannot close while `audit_stubs.py` reports any finding inside `dashboard/src/`.
+The audit returns four exit codes (clean, wire-pending, unstripped-stub, heuristic-fake) so a continuous-integration job can fail on the right signal. A slice cannot close while `audit_claude_design_stubs.py` reports any finding inside `dashboard/src/`.
 
 ## 5. Commit and review conventions
 
