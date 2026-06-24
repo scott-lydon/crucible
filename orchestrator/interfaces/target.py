@@ -17,7 +17,14 @@ from shared.types import ProbeResult, SealedSpec, TargetOutput, TargetType
 class Target(Protocol):
     """The system under test."""
 
-    target_type: TargetType
+    @property
+    def target_type(self) -> TargetType:
+        """Which target type this adapter implements (immutable identity).
+
+        Declared read-only so both a plain class attribute (DummyTarget) and a
+        frozen dataclass field (CodeAgentTarget and later targets) satisfy it.
+        """
+        ...
 
     async def submit(self, spec: SealedSpec, attack_input: dict[str, Any]) -> TargetOutput:
         """Run the target on one input and return its output plus a producer audit."""
