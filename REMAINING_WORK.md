@@ -242,7 +242,7 @@ real from a backend route or rendered as em-dash.
 
 ### C4 — slice-07 blue patch review (2 stubs)
 
-- [ ] **DONE-CRITERION** Zero raw stubs; the page reads its content from
+- [x] **DONE-CRITERION** Zero raw stubs; the page reads its content from
   `/blue/{patch_id}` where `patch_id` comes from a URL parameter;
   null/absent patch renders `no patch selected`.
 - **FILE/PATH** `frontend/slice-07-blue-patch-review.dc.html`

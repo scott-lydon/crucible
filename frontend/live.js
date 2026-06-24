@@ -120,6 +120,53 @@
     return wrap;
   }
 
+  function fmtNum(x) {
+    return x === null || x === undefined ? "—" : String(x);
+  }
+
+  async function wireBluePatch() {
+    // slice-07 reads /blue/{patchId} from a ?patch=<id> URL parameter and
+    // renders the real patch (kind, held-out detection before/after, the
+    // produced model version), or "no patch selected" when absent. The design
+    // bundle's fabricated reviewer-actions/approval workflow has no backing
+    // route and is removed (REMOVED_UI.md).
+    var host = document.querySelector('[data-live="blue_patch"]');
+    if (!host) return;
+    var id = new URLSearchParams(location.search).get("patch");
+    if (!id) { host.textContent = "no patch selected"; return; }
+    var p = await json("/blue/" + encodeURIComponent(id));
+    if (!p || !p.patch_id) { host.textContent = "no patch for id " + id; return; }
+    var ho = (p.holdout_runs && p.holdout_runs[0]) || {};
+    var mv = (p.model_versions && p.model_versions[0]) || {};
+    var rows = [
+      ["patch", p.patch_id],
+      ["target", p.target_type],
+      ["kind", p.kind],
+      ["held-out size", fmtNum(ho.holdout_size)],
+      ["detection before", fmtNum(ho.detection_before)],
+      ["detection after", fmtNum(ho.detection_after)],
+      ["recovered", ho.recovered === true ? "yes" : ho.recovered === false ? "no" : "—"],
+      ["model version", mv.version != null ? "v" + mv.version : "—"],
+      ["artifact", mv.artifact_ref || "—"],
+    ];
+    host.innerHTML = "";
+    rows.forEach(function (r) {
+      var line = document.createElement("div");
+      line.style.cssText =
+        "display:flex;justify-content:space-between;gap:18px;padding:9px 0;" +
+        "border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:13px";
+      var k = document.createElement("span");
+      k.style.color = "#B8C2CE";
+      k.textContent = r[0];
+      var v = document.createElement("span");
+      v.style.color = "#E8EDF3";
+      v.textContent = String(r[1]);
+      line.appendChild(k);
+      line.appendChild(v);
+      host.appendChild(line);
+    });
+  }
+
   async function wireReport() {
     // slice-14 renders the SR 11-7 report for a real run from /reports/{runId}
     // when a ?run=<id> URL parameter is present, else "no run selected". The
@@ -353,6 +400,7 @@
       wireList("catalog", "/catalog", catalogRow),
       wireList("specs_history", "/specs/history", specHistoryRow),
       wireReport(),
+      wireBluePatch(),
       wireLauncher(),
     ]);
     wireSse();
