@@ -707,6 +707,95 @@
     }).catch(logErr("/runs"));
   }
 
+  // slice-05 · Audit Row Replayer — deterministic replay + diff of a verdict
+  function bindReplay(root) {
+    if (document.getElementById("live-replay")) return;
+    var attack = qs.get("attack");
+    var prom = attack ? Promise.resolve(attack) : currentRun().then(function (run) {
+      if (!run) return null;
+      return jget("/runs/" + encodeURIComponent(run) + "/verdicts").then(function (vs) {
+        return vs && vs.length ? vs[0].attackId : null;
+      });
+    });
+    prom.then(function (aid) {
+      if (!aid) return;
+      return jget("/attacks/" + encodeURIComponent(aid) + "/replay").then(function (d) {
+        var p = mkPanel(root, "live-replay", "LIVE · DETERMINISTIC REPLAY · " + aid.slice(0, 14));
+        var s = d.stored || {}, rp = d.replayed || {};
+        p.body.innerHTML =
+          "<div style=\"font-family:'IBM Plex Mono',monospace;font-size:12px;display:flex;" +
+          'flex-direction:column;gap:6px">' +
+          kv("Seed", d.seed) +
+          kv("Stored", (s.outcome || "—") + " · tally " + (s.tally == null ? "—" : s.tally)) +
+          kv("Replayed", rp.outcome + " · tally " + rp.tally) +
+          kv("Byte-equal replay", d.identical ? "YES ✓" : "NO ✗") + "</div>";
+      });
+    }).catch(logErr("/replay"));
+  }
+
+  // slice-13 · Leaderboard — runs ranked by residual leakiness
+  function bindLeaderboard(root) {
+    if (document.getElementById("live-board")) return;
+    jget("/leaderboard").then(function (rows) {
+      var p = mkPanel(root, "live-board", "LIVE · LEADERBOARD · leakiest first");
+      if (!rows.length) { p.body.innerHTML = note("No runs yet."); return; }
+      var html = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+        '<tr style="color:#8A94A2;text-align:left">' + th("Agent") + th("Target") +
+        th("Final ASR") + th("Detection") + th("White-box recall") + th("Status") + "</tr>";
+      rows.forEach(function (r) {
+        html += '<tr style="border-top:1px solid #1D2630">' + td(r.agent) + td(r.target_kind) +
+          td(r.final_asr == null ? "—" : pct(r.final_asr)) +
+          td(r.final_detection == null ? "—" : pct(r.final_detection)) +
+          td(r.white_box_recall == null ? "—" : pct(r.white_box_recall)) + td(r.status) + "</tr>";
+      });
+      p.body.innerHTML = html + "</table>";
+    }).catch(logErr("/leaderboard"));
+  }
+
+  // slice-12 · Admin / Debug — system state from /debug
+  function bindDebug(root) {
+    if (document.getElementById("live-debug")) return;
+    jget("/debug").then(function (d) {
+      var p = mkPanel(root, "live-debug", "LIVE · ADMIN / DEBUG");
+      var t = d.totals || {};
+      var html = "<div style=\"font-family:'IBM Plex Mono',monospace;font-size:12px;display:" +
+        'grid;grid-template-columns:repeat(3,1fr);gap:10px">' +
+        kv("Runs", t.runs) + kv("Attacks", t.attacks) + kv("Verdicts", t.verdicts) +
+        kv("LLM calls", t.llm_calls) + kv("Agent configs", t.agent_configs) +
+        kv("Co-evo rounds", t.coevolution_rounds) +
+        kv("LLM spend", "$" + (d.llm_dollars_total || 0)) +
+        kv("By status", JSON.stringify(d.runs_by_status || {})) + "</div>";
+      if ((d.recent_errors || []).length) {
+        html += '<div style="color:#C0564F;margin-top:12px;font-size:12px">' +
+          d.recent_errors.length + " run(s) with errors</div>";
+      }
+      p.body.innerHTML = html;
+    }).catch(logErr("/debug"));
+  }
+
+  // slice-16 · Spec History — compiled obligations + their plain-English source
+  function bindSpecHistory(root) {
+    if (document.getElementById("live-spec")) return;
+    var run = qs.get("run");
+    var url = "/spec-history" + (run ? "?run_id=" + encodeURIComponent(run) : "");
+    jget(url).then(function (rows) {
+      var p = mkPanel(root, "live-spec", "LIVE · SPEC HISTORY");
+      if (!rows.length) { p.body.innerHTML = note("No specs yet."); return; }
+      p.body.innerHTML = rows.map(function (s) {
+        var src = s.source_text || {};
+        var obl = (s.obligations || []).map(function (o) {
+          return "• " + esc(o.description); }).join("<br>");
+        return '<div style="border:1px solid #1D2630;border-radius:6px;padding:12px;' +
+          'margin-bottom:10px"><div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;' +
+          'color:#8A94A2;margin-bottom:6px">v' + esc(s.version) + " · " + esc(s.compiler) +
+          " · " + esc(s.target_kind) + "</div>" +
+          (src.task ? '<div style="color:#E8EDF3;margin-bottom:6px">Task: ' + esc(src.task) +
+            "</div>" : "") +
+          '<div style="color:#B8C2CE;font-size:12px">' + obl + "</div></div>";
+      }).join("");
+    }).catch(logErr("/spec-history"));
+  }
+
   // ---- dispatch ----------------------------------------------------------
   if (/slice-01-run-launcher/.test(PAGE)) { whenRendered(bindAgentLauncher, true); whenRendered(bindLauncher, true); }
   else if (/slice-02-live-run-view/.test(PAGE)) whenRendered(bindLiveRun, false);
@@ -717,4 +806,8 @@
   else if (/slice-07-blue-patch-review/.test(PAGE)) whenRendered(bindBluePatch, false);
   else if (/slice-09-coevolution-curves/.test(PAGE)) whenRendered(bindCoevolution, false);
   else if (/slice-10-whitebox-selftest/.test(PAGE)) whenRendered(bindWhitebox, false);
+  else if (/slice-05-audit-row-replayer/.test(PAGE)) whenRendered(bindReplay, false);
+  else if (/slice-12-admin-debug/.test(PAGE)) whenRendered(bindDebug, false);
+  else if (/slice-13-leaderboard/.test(PAGE)) whenRendered(bindLeaderboard, false);
+  else if (/slice-16-spec-history/.test(PAGE)) whenRendered(bindSpecHistory, false);
 })();

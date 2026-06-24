@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
 
+from modules.measure.admin import debug_summary, leaderboard
 from modules.measure.corpus import export_corpus
 from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
@@ -32,14 +33,16 @@ from shared.persistence.models import (
     CoevolutionRoundRow,
     LLMCallRow,
     Run,
+    SpecRow,
     VerdictRow,
 )
+from shared.persistence.resolver import resolve_spec
 from shared.persistence.store import coevolution_series, save_agent_config
 from shared.telemetry.log import configure_logging
 from shared.types.agent import AgentConfig
-from shared.types.core import AttackBudget, TargetSpec
+from shared.types.core import Attack, AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
-from shared.types.ids import RunId
+from shared.types.ids import AttackId, RunId
 from shared.types.sealed_spec import HumanSpec, SealedSpec
 
 # Background loop tasks, kept referenced so they are not garbage-collected mid-run.
@@ -314,6 +317,88 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         "summary": row.audit_trace.get("patch_summary"),
         "new_system_prompt": cfg.system_prompt if cfg is not None else None,
     }
+
+
+@app.get("/attacks/{attack_id}/replay")
+async def replay_attack(attack_id: str) -> dict[str, object]:
+    """Deterministic replay + diff (cr-e4, spec US-5): re-run the verification ensemble on
+    the stored producer output and compare to the persisted verdict. With deterministic
+    oracles the replay is byte-equal — the audit-row replayer's proof that a verdict is
+    reproducible."""
+    container = get_container()
+    async with session_scope() as session:
+        atk = (
+            await session.execute(select(AttackRow).where(AttackRow.id == attack_id))
+        ).scalar_one_or_none()
+        if atk is None:
+            raise HTTPException(status_code=404, detail="attack not found")
+        verdict = (
+            await session.execute(select(VerdictRow).where(VerdictRow.attack_id == attack_id))
+        ).scalar_one_or_none()
+        spec = await resolve_spec(session, atk.run_id)
+    stored_output = dict(
+        verdict.producer_output if verdict is not None
+        else atk.audit_trace.get("producer_output", {}))
+    attack = Attack(
+        attack_id=AttackId(atk.id), run_id=RunId(atk.run_id), round_index=atk.round_index,
+        tactic=atk.tactic, payload=dict(atk.payload), rationale=atk.rationale,
+        seed=atk.seed, white_box=atk.white_box, hybrid=atk.hybrid)
+    oracles = container.oracles_for(spec.target_kind)
+    replayed = await container.verify(oracles, spec, attack, stored_output)
+    identical = (
+        verdict is not None
+        and abs(replayed.tally - verdict.tally) < 1e-9
+        and str(replayed.outcome) == verdict.outcome)
+    return {
+        "attackId": attack_id, "runId": atk.run_id, "seed": atk.seed,
+        "stored": None if verdict is None else {
+            "tally": verdict.tally, "outcome": verdict.outcome,
+            "fired": [v["oracle"] for v in verdict.votes if v.get("fired")]},
+        "replayed": {
+            "tally": replayed.tally, "outcome": str(replayed.outcome),
+            "fired": [str(v.oracle) for v in replayed.votes if v.fired]},
+        "identical": identical,
+    }
+
+
+@app.get("/spec-history")
+async def get_spec_history(run_id: str | None = None, limit: int = 50) -> list[dict[str, object]]:
+    """Spec versions (cr-e4, spec US-16): the compiled obligations + the plain-English
+    source they were compiled from, newest first. Filter by run."""
+    async with session_scope() as session:
+        query = select(SpecRow)
+        if run_id is not None:
+            query = query.where(SpecRow.run_id == run_id)
+        rows = (
+            await session.execute(query.order_by(SpecRow.created_at.desc()).limit(limit))
+        ).scalars().all()
+    return [
+        {
+            "specId": s.id, "runId": s.run_id, "version": s.version,
+            "compiler": s.compiler, "target_kind": s.target_kind,
+            "source_text": s.source_text, "parent_spec_id": s.parent_spec_id,
+            "obligations": s.payload.get("obligations", []),
+            "created_at": s.created_at.isoformat(),
+        }
+        for s in rows
+    ]
+
+
+@app.get("/leaderboard")
+async def get_leaderboard() -> list[dict[str, object]]:
+    """Per-run scoreboard (cr-e4, spec US-13): agents ranked by residual leakiness."""
+    async with session_scope() as session:
+        return await leaderboard(session)
+
+
+@app.get("/debug")
+async def get_debug() -> dict[str, object]:
+    """Admin/debug system state (cr-e4, spec US-12): run counts, totals, LLM spend."""
+    async with session_scope() as session:
+        summary = await debug_summary(session)
+        summary["health"] = {
+            name: s.status for name, s in (await get_container().sink.run_health()).items()}
+    return summary
 
 
 @app.get("/runs/{run_id}/llm_calls")
