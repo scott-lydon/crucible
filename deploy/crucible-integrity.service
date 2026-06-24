@@ -1,5 +1,5 @@
 [Unit]
-Description=Crucible Integrity research platform (fraud red/verify/harden/measure)
+Description=Crucible — stress-test ANY AI agent (real AI red/verify/blue/co-evolution)
 After=network.target docker.service
 
 [Service]
@@ -8,6 +8,18 @@ User=ubuntu
 WorkingDirectory=/home/ubuntu/crucible-rebuild
 Environment=DATABASE_URL=postgresql+asyncpg://crucible:crucible@127.0.0.1:55432/crucible
 Environment=CRUCIBLE_HALT_RECALL=0.0
+# Real Claude across the loop (cr-f5). The OpenRouter key is read from
+# ~/.config/crucible/openrouter.key by shared/config.py; no key is stored in this unit.
+Environment=CRUCIBLE_REAL_RED=1
+Environment=CRUCIBLE_REAL_JUDGE=1
+Environment=CRUCIBLE_REAL_BLUE=1
+Environment=CRUCIBLE_REAL_AGENT=1
+Environment=CRUCIBLE_REAL_HELDOUT=1
+Environment=CRUCIBLE_REAL_DIFFERENTIAL=1
+Environment=CRUCIBLE_REAL_SPEC=1
+# Hard global ceiling on real-LLM spend across ALL runs (cr-f4). Once reached, new runs
+# are refused (402) and in-flight runs halt. Raise/lower to taste.
+Environment=CRUCIBLE_GLOBAL_BUDGET=15.0
 ExecStart=/home/ubuntu/crucible-rebuild/.venv/bin/python -m uvicorn orchestrator.api:app --host 127.0.0.1 --port 8110
 Restart=on-failure
 RestartSec=3

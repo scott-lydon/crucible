@@ -28,9 +28,16 @@ front end's `live.js` calls the API with no CORS).
 - `CRUCIBLE_HALT_RECALL=0.0` on the public instance so the halt gate never blocks demo
   re-runs (the halt rule is fully exercised in tests at the default 0.7). Raise it to
   demonstrate halt-certification.
-- The LLM judge runs in **mock mode** (no `CRUCIBLE_REAL_JUDGE`), so the public
-  endpoint makes **no LLM calls and incurs no cost**. The fraud loop is otherwise
-  token-free. (Set `CRUCIBLE_REAL_JUDGE=1` + `OPENROUTER_API_KEY` to enable real Opus.)
+- **Real Claude is ON (cr-f5).** The unit sets `CRUCIBLE_REAL_RED/JUDGE/BLUE/AGENT/
+  HELDOUT/DIFFERENTIAL/SPEC=1`, so the live loop runs the real AI attacker (Sonnet), the
+  real agent under test (Sonnet), the real defender (Sonnet), and the Opus judge / held-out
+  / differential. The OpenRouter key is read from `~/.config/crucible/openrouter.key` by
+  `shared/config.py` — **no key is stored in the unit**.
+- **Budget cap (cr-f4) makes this safe:** `CRUCIBLE_GLOBAL_BUDGET=15.0` is a hard ceiling
+  on total real-LLM spend across all runs. Once reached, `POST /runs` returns 402 and any
+  in-flight run halts; each run is additionally bounded by its own `budget_dollars`. Check
+  the meter at `GET /budget`. To make the public endpoint free again, drop the
+  `CRUCIBLE_REAL_*` env lines and restart. The fraud demo is token-free regardless.
 
 ## Caddyfile block
 
