@@ -65,7 +65,7 @@ pillar with real LLM calls inside the full loop.
 
 ### A1 — End-to-end real-LLM run script
 
-- [ ] **DONE-CRITERION** A committed script at `scripts/run_e2e_real_llms.py`
+- [x] **DONE-CRITERION** A committed script at `scripts/run_e2e_real_llms.py`
   drives one POST /runs against the fraud target on the deployed Crucible,
   with every LLM call going to real models: `RedSearchAgent` calls real
   Sonnet for black-box and real Opus for white-box, `LlmJudgeOracle` calls
@@ -86,7 +86,7 @@ pillar with real LLM calls inside the full loop.
 
 ### A2 — Real-LLM run persisted in production database
 
-- [ ] **DONE-CRITERION** The same run from A1 also lands in the live Render
+- [x] **DONE-CRITERION** The same run from A1 also lands in the live Render
   Postgres so the dashboard reflects it. After the script completes,
   `GET https://crucible-zaag.onrender.com/runs` returns a row whose
   `target_type` is `fraud` and `status` is `complete`, and `GET /metrics`
@@ -100,7 +100,7 @@ pillar with real LLM calls inside the full loop.
 
 ### A3 — Real-LLM blue cycle persists v2 and measurable recall delta
 
-- [ ] **DONE-CRITERION** After A1's script runs, a `blue_patches` row
+- [x] **DONE-CRITERION** After A1's script runs, a `blue_patches` row
   exists for the fraud target, a `model_versions` row points at the
   produced v2 artifact, and the artifact `artifacts/fraud-v2.lgb` is
   committed (replacing the test-temp-only behavior).
@@ -138,7 +138,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B1 — `/metrics` shows real black-box and white-box catch rates
 
-- [ ] **DONE-CRITERION** Both `rate` fields are non-null floats on the
+- [x] **DONE-CRITERION** Both `rate` fields are non-null floats on the
   live service.
 - **VERIFY**
   ```bash
@@ -159,7 +159,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B3 — `/corpus.jsonl` exports real undetected attacks
 
-- [ ] **DONE-CRITERION** After A1, `curl https://crucible-zaag.onrender.com/corpus.jsonl`
+- [x] **DONE-CRITERION** After A1, `curl https://crucible-zaag.onrender.com/corpus.jsonl`
   returns at least one line whose `tactic` and `target_type` fields are
   real, not from a dummy run.
 - **VERIFY**
@@ -169,7 +169,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B4 — `/reports/:runId` SR 11-7 report renders against real run
 
-- [ ] **DONE-CRITERION** Fetching the report for A1's run_id returns
+- [x] **DONE-CRITERION** Fetching the report for A1's run_id returns
   Markdown whose numbers link back to row routes that resolve to real
   verdict/attack rows.
 - **VERIFY**
@@ -180,7 +180,7 @@ AFTER the A1 script has completed at least one real run.
 
 ### B5 — Strategy catalog has real entries
 
-- [ ] **DONE-CRITERION** `GET /catalog` returns at least one entry whose
+- [x] **DONE-CRITERION** `GET /catalog` returns at least one entry whose
   `target_type` is `fraud` and whose `reuse_count` is from a real run.
 - **VERIFY**
   ```bash
