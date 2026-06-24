@@ -282,7 +282,7 @@ real from a backend route or rendered as em-dash.
 
 ### C7 — slice-10 whitebox self-test (1 stub residual)
 
-- [ ] **DONE-CRITERION** Zero raw stubs; page reads `/metrics` plus
+- [x] **DONE-CRITERION** Zero raw stubs; page reads `/metrics` plus
   `/oracles/registered` to render the disclosure scheme.
 - **FILE/PATH** `frontend/slice-10-whitebox-selftest.dc.html`
 - **VERIFY**

@@ -23,3 +23,6 @@ listed below.
 | slice-16 specs | Reviewer signatures panel | No signature/governance backend; out of PRD scope | a signatures route exists |
 | slice-16 specs | Provenance-chain panel | No provenance/hash-chain backend; out of PRD scope | a provenance route exists |
 | slice-16 specs | Timeline approved/retired states + patch counts | `/specs/history` has no lifecycle state or patch count per spec | spec-lifecycle fields exist |
+| slice-10 whitebox | Per-family seeded-corpus recall table (6 families × 40) | No per-family recall backend; `/metrics` gives a single white-box recall | a per-family recall route exists |
+| slice-10 whitebox | Recall headline per-family bars + Wilson CI + "221 of 240" | Same: no per-family/seeded-corpus counts in the backend | a seeded-corpus route exists |
+| slice-10 whitebox | Signed disclosure-manifest line (run id, reviewer, date) | No disclosure-manifest backend; out of PRD scope | a manifest route exists |
