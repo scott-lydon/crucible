@@ -37,13 +37,19 @@ import pandas as pd
 from lightgbm import Booster
 
 from examples.targets.fraud_sparkov.constants import (
-    AMT_HIGH,
     DETECTOR_FEATURES,
-    NIGHT_HOURS,
     RISKY_CATEGORIES,
     TRAIN_CSV,
 )
 from examples.targets.fraud_sparkov.loader import load_dataframe
+
+# Held-out evasion construction: real frauds in the night window with a non-trivial
+# amount, whose amount we lower (label preserved) so the amount-sensitive,
+# behavior/time-blind victim clears them. A maker who engineers the temporal
+# ``hour`` signal from the raw timestamp recovers them. These thresholds are local
+# to the raw-surface holdout (the deployed detector no longer uses an hour rule).
+_HOLDOUT_NIGHT_HOURS: frozenset[int] = frozenset({22, 23, 0, 1, 2, 3})
+_HOLDOUT_AMT_HIGH: float = 250.0
 
 _RANDOM_STATE = 42
 _HERE: Path = Path(__file__).resolve().parent
@@ -69,10 +75,12 @@ RAW_COLUMNS: tuple[str, ...] = (
 )
 
 # The model's CURRENT base features (single point of truth: the victim
-# constants). ``amt`` is a raw column; ``cat_risk`` is the victim's trivial
-# category-risk base proxy, carried on every raw row so the harness can retrain
-# the base model without re-deriving it. The night-hour signal is NOT here — that
-# is precisely the blind spot the maker must discover and engineer.
+# constants). ``amt``/``city_pop`` are raw columns; ``cat_risk`` is the victim's
+# category-risk base proxy; ``merchant_risk`` is the per-merchant historical fraud
+# rate and ``age`` is derived from dob/txn-time — all carried on every raw row so
+# the harness can retrain the base model without re-deriving them. The BLIND
+# signals (velocity / hour / day_of_week / geo) are NOT here — that is precisely
+# the gap the maker must discover and engineer from the raw columns.
 BASE_FEATURES: tuple[str, ...] = tuple(DETECTOR_FEATURES)
 
 
@@ -81,7 +89,12 @@ def _cat_risk(category: object) -> int:
 
 
 def _row_dict(idx: int, row: "pd.Series[object]") -> dict[str, object]:
-    """One raw row as a plain dict: raw columns + base features + label."""
+    """One raw row as a plain dict: raw columns + base features + label.
+
+    Carries every ``RAW_COLUMNS`` value plus all of ``BASE_FEATURES``
+    (amt, cat_risk, merchant_risk, age, city_pop) so the harness can retrain the
+    base model and re-score the holdout without re-deriving the base features.
+    """
     out: dict[str, object] = {col: row[col] for col in RAW_COLUMNS}
     # Coerce the numeric raw columns to plain Python floats so the dict is
     # JSON-serializable for the sandbox transport (no numpy scalars).
@@ -89,6 +102,10 @@ def _row_dict(idx: int, row: "pd.Series[object]") -> dict[str, object]:
         out[num] = float(row[num])
     out["txn_index"] = idx
     out["cat_risk"] = _cat_risk(row["category"])  # base proxy, carried for retrain
+    # The remaining base features are derived by the loader (merchant_risk from the
+    # train split, age from dob); carry them so the base model retrains cleanly.
+    out["merchant_risk"] = round(float(row["merchant_risk"]), 6)
+    out["age"] = int(row["age"])
     out["is_fraud"] = int(row["is_fraud"])
     return out
 
@@ -125,8 +142,8 @@ def load_holdout_raw_rows(
     """
     df = load_dataframe(TRAIN_CSV, limit=None)
     night = df[
-        (df["hour"].isin(list(NIGHT_HOURS)))
-        & (df["amt"] > AMT_HIGH)
+        (df["hour"].isin(list(_HOLDOUT_NIGHT_HOURS)))
+        & (df["amt"] > _HOLDOUT_AMT_HIGH)
         & (df["is_fraud"] == 1)
     ]
     if limit < len(night):

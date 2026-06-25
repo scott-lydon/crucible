@@ -5,17 +5,20 @@ harness. The blue pillar (``modules/blue/``) is target-agnostic; it calls back
 into THIS function (injected as ``retrain_fn``) to produce a hardened detector.
 
 ``retrain_with_features`` trains a NEW LightGBM on the REAL fraudTrain.csv over a
-caller-supplied feature set, so passing ``["amt", "cat_risk", "hour", "distance"]``
-yields a model that uses the previously-blind ``hour``/``distance`` the current
-flawed detector ignores. The fit is deterministic (seeded), the dataset checksum
-is verified before training (external-input guard), and the artifact is written
-to ``artifacts/sparkov_blue_<hash>.lgb`` (gitignored). It returns the path so the
-generic ``LocalModelTarget`` can load the new model over the SAME feature order.
+caller-supplied feature set, so passing the deployed feature set PLUS a blind
+behavioral signal (e.g. ``"velocity"`` or ``"hour"``) yields a model that uses a
+signal the current victim ignores. The fit is deterministic (seeded), the dataset
+checksum is verified before training (external-input guard), and the artifact is
+written to ``artifacts/sparkov_blue_<hash>.lgb`` (gitignored). It returns the path
+so the generic ``LocalModelTarget`` can load the new model over the SAME feature
+order.
 
-``AVAILABLE_FEATURES`` is everything the victim CAN train on (the strong night
-``hour`` and the noise ``distance`` included). ``CURRENT_FEATURES`` mirrors the
-deployed flawed detector's narrow proxy set (``amt``, ``cat_risk``) — the blind
-spot the red loop exploits and the blue loop closes.
+``AVAILABLE_FEATURES`` is everything the victim CAN train on — the full rich menu
+(``constants.RICH_FEATURES``), including the behavioral/temporal/geo signals the
+deployed detector lacks. ``CURRENT_FEATURES`` mirrors the deployed victim's
+static/contextual set (``constants.DETECTOR_FEATURES``) — the blind set
+(``constants.BLIND_FEATURES``) is exactly the gap the red loop exploits and the
+blue loop closes.
 """
 
 import hashlib
@@ -28,6 +31,7 @@ from lightgbm import Booster
 
 from examples.targets.fraud_sparkov.constants import (
     DETECTOR_FEATURES,
+    RICH_FEATURES,
     TRAIN_CSV,
 )
 from examples.targets.fraud_sparkov.loader import load_dataframe, verify_checksum
@@ -36,14 +40,14 @@ _RANDOM_STATE = 42
 _HERE: Path = Path(__file__).resolve().parent
 _ARTIFACTS: Path = _HERE / "artifacts"
 
-# Everything the victim CAN train on. ``distance`` is the Step-1 noise feature
-# (fraud/legit share an identical distribution); ``hour`` is the dominant night
-# signal the deployed detector ignores. Both are exposed so the blue proposer
-# can reason over the full menu and the retrainer can honestly add them.
-AVAILABLE_FEATURES: tuple[str, ...] = ("amt", "cat_risk", "hour", "distance", "age", "city_pop")
+# Everything the victim CAN train on: the full rich menu, including the behavioral
+# (velocity), temporal (hour, day_of_week), and geo (geo_distance_km) signals the
+# deployed detector ignores. Exposed so the blue proposer can reason over the full
+# menu and the retrainer can honestly add the blind signals back.
+AVAILABLE_FEATURES: tuple[str, ...] = tuple(RICH_FEATURES)
 
-# The deployed flawed detector's feature set (single point of truth: the victim
-# constants). The blind spot is everything in AVAILABLE_FEATURES not in here.
+# The deployed victim's feature set (single point of truth: the victim constants).
+# The blind set is everything in AVAILABLE_FEATURES not in here.
 CURRENT_FEATURES: tuple[str, ...] = tuple(DETECTOR_FEATURES)
 
 

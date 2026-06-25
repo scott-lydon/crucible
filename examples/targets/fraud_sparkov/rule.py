@@ -1,30 +1,20 @@
-"""The DECLARED ground-truth fraud rule over interpretable features.
+"""Ground-truth label for the Sparkov victim.
 
-This is the sealed oracle's ground truth AND the red loop's ``label_fn``. It is
-derived from the Step-1 analysis of the REAL data and labels 95.3% of the real
-``is_fraud`` rows as fraud (recall vs the real labels; see the build report).
+RETIRED (Part B1): the old night-hour heuristic
+``hour in NIGHT_HOURS or (cat_risk and amt > 250)`` is gone. It was a single-axis
+proxy (high recall, ~2% precision) that the red loop could only attack by lowering
+``amt``. Ground truth is now the strong multi-signal REFERENCE model
+(``reference_model.reference_is_fraud``), which weighs the full rich feature set
+and credibly judges ANY transaction — including red-mutated ones.
 
-CAVEAT: this rule is a DELIBERATELY SIMPLIFIED ground-truth PROXY — high recall
-(~95%) but low precision (~2%): it over-flags night-hour transactions. The
-co-evolution gap measures recall loss against THIS declared spec, not catch
-rate against real fraud. See README.md (an instance of Crucible's "the spec is
-a proxy for intent; surface the residual" thesis).
-
-Design intent for the metamorphic relation: a transaction is fraud if it occurs
-in the night window REGARDLESS of amount. So lowering ``amt`` on a night-fraud
-preserves the fraud label, while the amount-reliant flawed detector clears it —
-a real, non-fabricated amt-lowering evasion.
+``is_fraud`` is re-exported here (delegating to the reference model) so the stable
+symbol name keeps working for the composition root and tests, while the BEHAVIOR
+is the reference model — the single point of truth for ground truth.
 """
 
-from typing import cast
-
-from examples.targets.fraud_sparkov.constants import AMT_HIGH, NIGHT_HOURS
-from examples.targets.fraud_sparkov.record import SparkovTxn
+from examples.targets.fraud_sparkov.reference_model import reference_is_fraud
 
 
 def is_fraud(sample: object) -> bool:
-    rec = cast(SparkovTxn, sample)
-    # Night-hour transactions are fraud regardless of amount (the dominant
-    # signal in the real data). OR: high-amount transactions in a risky
-    # category. cat_risk already encodes "category in risky set".
-    return rec.hour in NIGHT_HOURS or (rec.cat_risk == 1 and rec.amt > AMT_HIGH)
+    """Ground-truth fraud label = the reference model's calibrated decision."""
+    return reference_is_fraud(sample)

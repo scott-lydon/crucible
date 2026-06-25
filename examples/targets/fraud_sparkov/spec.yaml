@@ -1,29 +1,26 @@
-# SealedSpec for the REAL Sparkov fraud victim (slice-2).
-# Declares — as DATA — what the detector must satisfy over the interpretable
-# features derived from the real dataset. The declared ground-truth rule lives
-# in rule.py (is_fraud); the invariant + metamorphic relation below are the
+# SealedSpec for the REAL Sparkov fraud victim (Part B1: multi-signal rework).
+# Declares — as DATA — what the detector must satisfy over the rich, multi-signal
+# features derived from the real dataset. Ground truth is now the strong
+# multi-signal REFERENCE model (reference_model.reference_is_fraud), NOT a
+# night-hour rule. The invariant + metamorphic relation below are the
 # machine-checkable obligations the oracles evaluate.
 #
-# PRECISION CAVEAT (read before trusting the numbers):
-# The declared rule (rule.py is_fraud) is a DELIBERATELY SIMPLIFIED ground-truth
-# PROXY, not the real fraud labels. It has high recall vs the real labels
-# (~95%) but low precision (~2%): it over-flags night-hour transactions, so its
-# positive set is ~30% real fraud at best. Consequently the co-evolution gap
-# this harness reports measures RECALL LOSS against the DECLARED spec — not
-# catch rate against real fraud. This proxy-imperfection is itself an instance
-# of Crucible's core thesis: the spec is a proxy for intent, and the residual
-# between proxy and intent must be SURFACED, not hidden. See README.md.
+# The deployed victim uses the static/contextual signals
+# (amt, cat_risk, merchant_risk, age, city_pop) but is BLIND to the
+# behavioral/temporal/geo signals (velocity, day_of_week, geo_distance_km) — a
+# plausible feature-engineering gap, not a 2-feature toy. The reference model and
+# the cross-family second model both SEE those signals, so they credibly judge
+# transactions the victim mishandles.
 target_kind: fraud
 
 obligations:
-  - "flag transactions that are truly fraudulent (night-hour, or high-amount in a risky category)"
-  - "do not be fooled by amount-only evasion on night-driven frauds"
+  - "flag transactions that are truly fraudulent (per the multi-signal reference model)"
+  - "do not be fooled by amount-only evasion that preserves the true fraud label"
 
 invariants:
-  # A subset of the declared rule that the must_flag_when/all_of grammar can
-  # express exactly: a high-amount transaction in a risky category is fraud and
-  # must be flagged regardless of any other feature. Fires if such a txn is
-  # cleared.
+  # A hard rule the must_flag_when/all_of grammar can express exactly: a
+  # high-amount transaction in a risky category is fraud and must be flagged.
+  # Fires if such a transaction is cleared by the detector.
   - name: risky_category_high_amount_must_flag
     description: >-
       A transaction in a risky category (cat_risk == 1) with amount above 250
@@ -35,36 +32,19 @@ invariants:
           eq: 1
         - feature: amt
           gt: 250
-  # The night-hour obligation the DEPLOYED detector violates. The declared rule
-  # (rule.py is_fraud) labels every night-window transaction fraud REGARDLESS of
-  # amount, but the deployed model is trained only on (amt, cat_risk) and is
-  # BLIND to `hour`, so it clears low-amount night frauds. This invariant
-  # captures that blind spot directly: a night-window transaction must be
-  # flagged. `hour in {22,23,0,1,2,3}` matches NIGHT_HOURS (constants.py); the
-  # set wraps midnight, so it needs the `in_` set-membership operator. The
-  # property-fuzz oracle GENERATES a low-amount night counterexample the
-  # amt-reliant detector clears, FAILing the REAL detector on this invariant.
-  # (Precision caveat above still holds — this declares the obligation, not a
-  # claim about real-fraud catch rate.)
-  - name: night_hour_must_flag
-    description: >-
-      A transaction in the night window (hour in 22,23,0,1,2,3) must be flagged
-      by the detector regardless of amount. Fires when such a transaction is
-      cleared — the deployed amt-reliant detector's documented blind spot.
-    kind: must_flag_when
-    params:
-      all_of:
-        - feature: hour
-          in_: [22, 23, 0, 1, 2, 3]
 
 metamorphic_relations:
-  # Lowering the amount alone must not change the true fraud label: night-driven
-  # frauds stay fraud at any amount. This is the relation the evasion adversary
-  # exploits against the amount-reliant flawed detector.
+  # Lowering the amount alone must not change the true fraud label: a transaction
+  # whose fraud signal comes from non-amount axes (behavioral/temporal/geo, or
+  # per-merchant risk) stays fraud when its amount is reduced. This is the
+  # relation the evasion adversary exploits against the amount-sensitive victim;
+  # the reference model (which weighs many signals) confirms the label is
+  # preserved.
   - name: amt_decrease_label_invariance
     description: >-
       Lowering the transaction amount must not change the true fraud label. A
-      night-hour fraud remains fraudulent when its amount is reduced.
+      transaction fraudulent on non-amount signals remains fraudulent when its
+      amount is reduced.
     feature: amt
     direction: decrease
     label_must_change: false

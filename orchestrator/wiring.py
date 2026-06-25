@@ -153,10 +153,13 @@ def build_components_sparkov(
 ) -> dict[str, object]:
     """Wire the REAL Sparkov victim into the target-agnostic harness.
 
-    The flawed detector is the serialized LightGBM model loaded via the generic
-    LocalModelTarget over the victim-declared proxy features (amt, cat_risk).
-    All paths resolve from the victim module, so nothing here is environment-
-    dependent. Ground truth + the SealedSpec come from the victim package.
+    The deployed victim is the serialized multi-feature LightGBM loaded via the
+    generic LocalModelTarget over the victim-declared static feature set
+    (amt, cat_risk, merchant_risk, age, city_pop) — blind to the
+    behavioral/temporal/geo signals. All paths resolve from the victim module, so
+    nothing here is environment-dependent. Ground truth is the strong multi-signal
+    REFERENCE model (label_fn = fraud_sparkov.is_fraud -> reference_is_fraud); the
+    SealedSpec comes from the victim package.
 
     ``judge_provider`` defaults to the REAL Opus 4.8 provider (the demo path);
     tests inject a ``MockProvider`` to keep the loop offline/free.
@@ -252,13 +255,14 @@ def build_components_sparkov(
         MetamorphicOracle(label_fn=sparkov_is_fraud),
         InvariantOracle(),
         # REAL cross-family second opinion: an unsupervised sklearn
-        # IsolationForest (different family from the LightGBM target) trained
-        # on the real Sparkov data over a richer feature set that includes the
-        # night `hour` the amt-reliant target ignores.
+        # IsolationForest (different family from the LightGBM victim) trained on
+        # the real Sparkov data over the FULL rich feature set — so it SEES the
+        # behavioral/temporal/geo signals (velocity, hour, ...) the static-only
+        # victim ignores, and flags anomalies the victim clears.
         DifferentialOracle(second_opinion_is_fraud=fraud_sparkov.isoforest_is_fraud),
         # Generative invariant-counterexample search (Hypothesis, ZERO LLM calls):
         # generatively searches SparkovTxn-space for an input that satisfies a
-        # declared must_flag_when invariant yet the amt-reliant detector clears.
+        # declared must_flag_when invariant yet the detector clears.
         # Seeded => deterministic; run-level probe surfaced per verdict.
         PropertyFuzzOracle(
             score_fn=detector.score,

@@ -1,21 +1,22 @@
-"""REAL cross-family disagreement on the Sparkov victim.
+"""REAL cross-family disagreement on the Sparkov victim (Part B1).
 
 Proves the differential oracle's second opinion is genuine: an unsupervised
 sklearn IsolationForest (a different model family) trained on the REAL Sparkov
-data flags a night-hour, low-amount fraud that the amount-reliant LightGBM
-target CLEARS. That disagreement is exactly what the differential oracle turns
-into a FAIL vote — a real cross-family catch, nothing mocked.
+data over the FULL rich feature set flags a behavioral-anomaly transaction (high
+transaction velocity, off-hour) that the deployed multi-feature LightGBM victim —
+blind to those behavioral/temporal signals — CLEARS. That disagreement is exactly
+what the differential oracle turns into a FAIL vote: a real cross-family catch on
+a signal the victim never engineered, nothing mocked.
 
-Skips (rather than fails) when the external CSVs are absent — they are
-gitignored inputs, not source. The IsolationForest artifact is built on demand
-if missing (deterministic, seeded), so the test is self-contained and fast.
+Skips (rather than fails) when the external CSVs are absent — they are gitignored
+inputs, not source. The IsolationForest artifact is built on demand if missing
+(deterministic, seeded), so the test is self-contained and fast.
 """
 
 import pytest
 
 from examples.targets import fraud_sparkov
 from examples.targets.fraud_sparkov import second_model
-from examples.targets.fraud_sparkov.constants import NIGHT_HOURS
 from examples.targets.fraud_sparkov.record import SparkovTxn
 from modules.oracles.differential.oracle import DifferentialOracle
 from modules.targets.local_model.adapter import LocalModelTarget
@@ -33,7 +34,6 @@ _SKIP_REASON = (
 )
 
 _THRESHOLD = fraud_sparkov.DETECTOR_THRESHOLD
-_NIGHT_HOUR = next(iter(NIGHT_HOURS))
 
 
 @pytest.fixture(scope="module")
@@ -43,18 +43,26 @@ def _ensure_isoforest() -> None:
 
 
 @pytest.mark.skipif(not _DATA_READY, reason=_SKIP_REASON)
-def test_isoforest_flags_night_evasion_lightgbm_clears(_ensure_isoforest: None) -> None:
-    # A night-hour, low-amount, non-risky-category transaction: the declared
-    # rule labels it fraud (night hour), the amt-reliant LightGBM clears it
-    # (low amt), and the cross-family IsolationForest flags it as anomalous.
+def test_isoforest_flags_behavioral_evasion_lightgbm_clears(
+    _ensure_isoforest: None,
+) -> None:
+    # A low-amount but high-VELOCITY, off-hour transaction: the static-only victim
+    # clears it (low amt, no behavioral signal), and the cross-family
+    # IsolationForest — which sees velocity/hour — flags it as anomalous.
     evasion = SparkovTxn(
-        txn_index=0, amt=12.0, cat_risk=0, hour=_NIGHT_HOUR, age=45, city_pop=50_000
+        txn_index=0,
+        amt=12.0,
+        cat_risk=0,
+        merchant_risk=0.0,
+        age=45,
+        city_pop=50_000,
+        velocity=10,
+        hour=23,
+        day_of_week=2,
+        geo_distance_km=80.0,
     )
 
-    # 1) The declared ground truth: this IS fraud.
-    assert fraud_sparkov.is_fraud(evasion) is True
-
-    # 2) The flawed LightGBM target CLEARS it (score below threshold).
+    # 1) The flawed multi-feature LightGBM victim CLEARS it (score below threshold).
     target = LocalModelTarget(
         model_path=fraud_sparkov.MODEL_PATH,
         feature_names=fraud_sparkov.DETECTOR_FEATURES,
@@ -64,10 +72,10 @@ def test_isoforest_flags_night_evasion_lightgbm_clears(_ensure_isoforest: None) 
     target_score = target.score(evasion)
     assert target_score < _THRESHOLD, target_score
 
-    # 3) The cross-family IsolationForest DISAGREES: flags it as fraud.
+    # 2) The cross-family IsolationForest DISAGREES: flags it as fraud.
     assert fraud_sparkov.isoforest_is_fraud(evasion) is True
 
-    # 4) The differential oracle turns the disagreement into a FAIL vote.
+    # 3) The differential oracle turns the disagreement into a FAIL vote.
     ctx = VerdictContext(
         sample=evasion,
         detector_score=target_score,

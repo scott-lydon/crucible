@@ -2,18 +2,18 @@
 
 Loads a deterministic balanced batch of real records, runs the co-evolution
 loop for several rounds against a fresh in-memory SQLite, and asserts the
-HONEST story holds: as the amt-lowering adversary attacks the amount-reliant
-flawed detector, holdout detection falls / evasion climbs, and the gap between
-the clean validation baseline and the adversarial holdout is positive.
+HONEST story holds: as the amt-lowering adversary attacks the amount-sensitive
+multi-feature victim, holdout detection falls / evasion climbs, and the gap
+between the clean validation baseline and the adversarial holdout is positive.
 
 Skips (rather than fails) when the external CSVs or the trained artifact are
 absent — they are gitignored inputs, not source.
 
-Caveat on the numbers below: the declared rule (rule.py ``is_fraud``) is a
-DELIBERATELY SIMPLIFIED ground-truth PROXY — high recall vs the real labels
-(~95%) but low precision (~2%, it over-flags night-hour transactions). The
-co-evolution gap here measures recall loss against this DECLARED spec, NOT
-catch rate against real fraud. See ``examples/targets/fraud_sparkov/README.md``.
+Part B1: ground truth is now the strong multi-signal REFERENCE model
+(``is_fraud`` -> ``reference_is_fraud``, held-out AUC ~0.99), not a night-hour
+rule. The label-preservation of the amt-lowering evasion is judged credibly by
+that many-signal reference model, so the co-evolution gap reflects a real
+recall loss on transactions the reference model still calls fraud.
 """
 
 import uuid

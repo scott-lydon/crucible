@@ -1,13 +1,15 @@
-"""Property-fuzz BITES the REAL Sparkov detector via the night-hour invariant.
+"""Property-fuzz BITES the REAL Sparkov detector via a declared invariant.
 
-The deployed Sparkov detector is trained only on ``(amt, cat_risk)`` and is
-BLIND to ``hour``. The SealedSpec's ``night_hour_must_flag`` invariant declares
-the obligation it violates: every night-window transaction must be flagged
-regardless of amount. This test proves the obligation BITES the REAL model:
+Part B1: the deployed victim is a multi-feature LightGBM over the static set
+(amt, cat_risk, merchant_risk, age, city_pop), blind to the
+behavioral/temporal/geo signals. The SealedSpec's ``risky_category_high_amount``
+invariant declares a hard obligation: a high-amount transaction in a risky
+category must be flagged. This test proves the obligation BITES the REAL model:
 
-* The property-fuzz oracle GENERATES a low-amount night-hour counterexample the
-  amt-reliant detector clears -> FAIL on the REAL detector (not a fixture).
-* The InvariantOracle consistently FLAGS an observed night-hour miss.
+* The property-fuzz oracle GENERATES a high-amount risky-category counterexample
+  the victim clears (e.g. one with low per-merchant risk) -> FAIL on the REAL
+  detector (not a fixture).
+* The InvariantOracle consistently FLAGS such an observed miss.
 
 Skips (rather than fails) when the real CSV or the serialized LightGBM artifact
 is absent — they are gitignored external inputs, not source. ZERO LLM calls.
@@ -28,6 +30,7 @@ from shared.types.enums import OracleKind
 from shared.types.verdict import VerdictContext
 
 _THRESHOLD = fraud_sparkov.DETECTOR_THRESHOLD
+_INVARIANT = "risky_category_high_amount_must_flag"
 _ARTIFACTS_READY = (
     fraud_sparkov.constants.TRAIN_CSV.exists()
     and fraud_sparkov.constants.CHECKSUM_PATH.exists()
@@ -59,26 +62,27 @@ def _ctx(sample: object, detector: LocalModelTarget) -> VerdictContext:
     )
 
 
-def test_spec_declares_night_hour_invariant() -> None:
-    """The night-hour blind-spot obligation is declared in the SealedSpec, and
-    its hour set matches the rule's NIGHT_HOURS (single point of truth)."""
+def test_spec_declares_risky_category_invariant() -> None:
+    """The risky-category-high-amount obligation is declared in the SealedSpec
+    over the cat_risk/amt features (single point of truth), and the retired
+    night-hour invariant is GONE."""
     spec = fraud_sparkov.load_spec()
-    night = [i for i in spec.invariants if i.name == "night_hour_must_flag"]
-    assert night, "night_hour_must_flag invariant must be declared in spec.yaml"
-    all_of = cast(Sequence[Mapping[str, object]], night[0].params["all_of"])
-    cond = all_of[0]
-    assert cond["feature"] == "hour"
-    assert set(cast(Sequence[int], cond["in_"])) == set(fraud_sparkov.NIGHT_HOURS)
+    names = {i.name for i in spec.invariants}
+    assert _INVARIANT in names, names
+    assert "night_hour_must_flag" not in names, "night-hour invariant must be retired"
+    inv = next(i for i in spec.invariants if i.name == _INVARIANT)
+    all_of = cast(Sequence[Mapping[str, object]], inv.params["all_of"])
+    feats = {cast(str, c["feature"]) for c in all_of}
+    assert feats == {"cat_risk", "amt"}, feats
 
 
 @pytest.mark.skipif(not _ARTIFACTS_READY, reason=_SKIP_REASON)
-def test_property_fuzz_fails_real_sparkov_on_night_hour() -> None:
-    """Property-fuzz GENERATES a night-hour counterexample the REAL amt-reliant
-    detector clears, FAILing it on the night_hour_must_flag invariant."""
+def test_property_fuzz_fails_real_sparkov_on_invariant() -> None:
+    """Property-fuzz GENERATES a high-amount risky-category counterexample the
+    REAL victim clears, FAILing it on the risky_category_high_amount invariant."""
     detector = _real_detector()
-    # Any sample seeds the run-level probe; the search is over input space.
     seed_sample = SparkovTxn(
-        txn_index=0, amt=10.0, cat_risk=0, hour=23, age=40, city_pop=1000
+        txn_index=0, amt=10.0, cat_risk=1, merchant_risk=0.0, age=40, city_pop=1000
     )
     oracle = PropertyFuzzOracle(
         score_fn=detector.score,
@@ -90,32 +94,31 @@ def test_property_fuzz_fails_real_sparkov_on_night_hour() -> None:
 
     assert vote.kind is OracleKind.PROPERTY_FUZZ
     assert vote.vote is Vote.FAIL, vote.reason
-    assert vote.evidence["invariant_id"] == "night_hour_must_flag"
+    assert vote.evidence["invariant_id"] == _INVARIANT
     counterexample = vote.evidence["counterexample"]
     assert isinstance(counterexample, dict)
-    # The generated counterexample is a night-hour transaction the real detector
-    # cleared below threshold.
-    assert counterexample["hour"] in fraud_sparkov.NIGHT_HOURS
+    # The generated counterexample is a high-amount risky-category transaction the
+    # real detector cleared below threshold.
+    assert counterexample["cat_risk"] == 1
+    assert cast(float, counterexample["amt"]) > 250
     assert cast(float, vote.evidence["score"]) < _THRESHOLD
 
 
 @pytest.mark.skipif(not _ARTIFACTS_READY, reason=_SKIP_REASON)
-def test_invariant_oracle_flags_night_hour_miss_real_sparkov() -> None:
-    """The InvariantOracle consistently FLAGS an observed night-hour miss the
-    REAL detector clears (the same blind spot, checked rather than searched)."""
+def test_invariant_oracle_flags_miss_real_sparkov() -> None:
+    """The InvariantOracle consistently FLAGS an observed high-amount
+    risky-category miss the REAL detector clears (checked, not searched)."""
     detector = _real_detector()
-    # A low-amount, non-risky-category night transaction: declared rule says
-    # fraud (night hour), the amt-reliant detector clears it.
-    night_miss = SparkovTxn(
-        txn_index=1, amt=8.0, cat_risk=0, hour=1, age=30, city_pop=500
+    # A high-amount risky-category transaction with low per-merchant risk: the
+    # invariant says it must be flagged; the multi-feature detector (leaning on
+    # merchant_risk) clears it.
+    miss = SparkovTxn(
+        txn_index=1, amt=300.0, cat_risk=1, merchant_risk=0.0, age=30, city_pop=500
     )
-    assert fraud_sparkov.is_fraud(night_miss) is True
-    ctx = _ctx(night_miss, detector)
+    ctx = _ctx(miss, detector)
     assert ctx.detector_score < _THRESHOLD, ctx.detector_score
 
     vote = InvariantOracle().vote(ctx)
     assert vote.kind is OracleKind.INVARIANT
     assert vote.vote is Vote.FAIL, vote.reason
-    assert "night_hour_must_flag" in cast(
-        Sequence[str], vote.evidence["violated"]
-    )
+    assert _INVARIANT in cast(Sequence[str], vote.evidence["violated"])

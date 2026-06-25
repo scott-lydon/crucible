@@ -1,17 +1,21 @@
-"""REAL Sparkov fraud victim (slice-2).
+"""REAL Sparkov fraud victim (Part B1: multi-signal rework).
 
-A flawed, amount-reliant LightGBM detector trained on the real Sparkov dataset,
-a declared interpretable ground-truth rule, and a SealedSpec the oracles read.
-Only orchestrator/wiring.py (the composition root) may import from here.
+A realistic multi-feature LightGBM detector trained on the real Sparkov dataset
+(blind to a believable SET of behavioral/temporal/geo signals), a strong
+multi-signal REFERENCE model that serves as the ground-truth proxy, and a
+SealedSpec the oracles read. Only orchestrator/wiring.py (the composition root)
+may import from here.
 """
 
 from examples.targets.fraud_sparkov.constants import (
-    AMT_HIGH,
     BATCH_FRAUD_RATE,
+    BLIND_FEATURES,
     DETECTOR_FEATURES,
     DETECTOR_THRESHOLD,
     MODEL_PATH,
-    NIGHT_HOURS,
+    REFERENCE_MODEL_PATH,
+    REFERENCE_THRESHOLD,
+    RICH_FEATURES,
     RISKY_CATEGORIES,
 )
 from examples.targets.fraud_sparkov.generator import generate_batch
@@ -30,6 +34,7 @@ from examples.targets.fraud_sparkov.raw_surface import (
     retrain_with_engineered,
 )
 from examples.targets.fraud_sparkov.record import SparkovTxn
+from examples.targets.fraud_sparkov.reference_model import reference_is_fraud
 from examples.targets.fraud_sparkov.retrain import (
     AVAILABLE_FEATURES,
     CURRENT_FEATURES,
@@ -45,17 +50,19 @@ from examples.targets.fraud_sparkov.spec import SPEC_PATH, load_spec
 from examples.targets.fraud_sparkov.strategy import sparkov_strategy
 
 __all__ = [
-    "AMT_HIGH",
     "AVAILABLE_FEATURES",
     "BASE_FEATURES",
     "BATCH_FRAUD_RATE",
+    "BLIND_FEATURES",
     "CURRENT_FEATURES",
     "DETECTOR_FEATURES",
     "DETECTOR_THRESHOLD",
     "EngineeredDetector",
     "MODEL_PATH",
-    "NIGHT_HOURS",
     "RAW_COLUMNS",
+    "REFERENCE_MODEL_PATH",
+    "REFERENCE_THRESHOLD",
+    "RICH_FEATURES",
     "RISKY_CATEGORIES",
     "SECOND_MODEL_FEATURES",
     "SECOND_MODEL_PATH",
@@ -70,6 +77,7 @@ __all__ = [
     "load_records",
     "load_spec",
     "raw_is_fraud",
+    "reference_is_fraud",
     "sparkov_strategy",
     "retrain_with_engineered",
     "retrain_with_features",

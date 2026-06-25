@@ -1,28 +1,23 @@
 """A REAL second-family model: an unsupervised sklearn IsolationForest.
 
-This is the independent cross-family opinion the differential oracle compares
-the flawed LightGBM target against (constitution §1 / plan §3: "second
+This is the independent cross-family opinion the differential oracle compares the
+deployed LightGBM victim against (constitution §1 / plan §3: "second
 implementation from a different model family, require agreement").
 
-Why a different family: the target is a gradient-boosted tree (LightGBM) fit
-SUPERVISED on a deliberately narrow proxy set (``amt`` + ``cat_risk`` only).
-The IsolationForest here is an UNSUPERVISED anomaly detector — a genuinely
-different learning paradigm — fit on a RICHER feature set that INCLUDES the
-``hour`` signal the flawed detector ignores. Because night-hour is the dominant
-real fraud signal, the IsolationForest treats night-hour transactions (and
-other off-distribution combinations) as anomalous and flags them even when the
-amount has been lowered. That is exactly the amt-lowering night-hour evasion the
-amount-reliant LightGBM clears, so the two families DISAGREE — and the
-differential oracle catches it.
+Why a different family: the victim is a SUPERVISED gradient-boosted tree
+(LightGBM) fit on the static/contextual subset (``DETECTOR_FEATURES``). The
+IsolationForest here is an UNSUPERVISED anomaly detector — a genuinely different
+learning paradigm — fit on the FULL rich feature set (``RICH_FEATURES``), so it
+SEES the behavioral/temporal/geo signals the victim is blind to (velocity,
+day_of_week, geo_distance_km). When fraud manifests through those behavioral
+axes, the IsolationForest treats the transaction as anomalous and flags it even
+where the static-only victim clears it — exactly the disagreement the
+differential oracle catches.
 
-Feature set: ``amt, cat_risk, hour, age, city_pop`` — every interpretable field
-the victim record (:class:`SparkovTxn`) exposes, crucially including ``hour``.
-``distance`` is deliberately NOT used: the record carries no distance field and
-the Step-1 analysis showed fraud/legit have an identical distance distribution
-(pure noise; see record.py). Including a noise feature would only dilute the
-anomaly signal, so the richer-than-the-target set stops at the features that
-actually carry signal the target throws away (``hour``, plus the demographic
-context ``age``/``city_pop``).
+Feature set: ``RICH_FEATURES`` — the same rich menu the record carries and the
+reference model uses. Keeping the second model's feature COUNT consistent with
+the rich record (8 features) avoids the stale-artifact "N vs M" mismatch crashes;
+training and scoring share ``RICH_FEATURES`` as the single point of truth.
 
 The artifact is gitignored (an external trained input, not source). Build it:
     python -m examples.targets.fraud_sparkov.second_model
@@ -34,16 +29,16 @@ import joblib
 import numpy as np
 from sklearn.ensemble import IsolationForest
 
-from examples.targets.fraud_sparkov.constants import TRAIN_CSV
+from examples.targets.fraud_sparkov.constants import RICH_FEATURES, TRAIN_CSV
 from examples.targets.fraud_sparkov.loader import load_dataframe, verify_checksum
 from examples.targets.fraud_sparkov.record import SparkovTxn
 
 _RANDOM_STATE = 42
 
-# Richer feature set than the flawed target's (amt, cat_risk): adds the night
-# ``hour`` signal the target ignores, plus demographic context. Order is fixed
-# and shared by training and scoring.
-SECOND_MODEL_FEATURES: tuple[str, ...] = ("amt", "cat_risk", "hour", "age", "city_pop")
+# The cross-family model uses the FULL rich set (single point of truth shared by
+# training and scoring) — crucially the behavioral/temporal/geo signals the
+# static-only victim ignores.
+SECOND_MODEL_FEATURES: tuple[str, ...] = RICH_FEATURES
 
 _HERE: Path = Path(__file__).resolve().parent
 SECOND_MODEL_PATH: Path = _HERE / "artifacts" / "sparkov_isoforest.pkl"
@@ -54,25 +49,18 @@ _MODEL: IsolationForest | None = None
 
 def _vector(sample: object) -> list[float]:
     """Build the IsolationForest feature vector off an opaque ``SparkovTxn``."""
-    rec = sample if isinstance(sample, SparkovTxn) else None
-    if rec is None:  # defensive: harness always passes SparkovTxn
+    if not isinstance(sample, SparkovTxn):  # defensive: harness passes SparkovTxn
         raise TypeError(
             f"second_model: expected SparkovTxn sample, got {type(sample).__name__}"
         )
-    return [
-        float(rec.amt),
-        float(rec.cat_risk),
-        float(rec.hour),
-        float(rec.age),
-        float(rec.city_pop),
-    ]
+    return [float(getattr(sample, name)) for name in SECOND_MODEL_FEATURES]
 
 
 def train_and_serialize(out_path: Path = SECOND_MODEL_PATH) -> IsolationForest:
     """Train the IsolationForest on the REAL Sparkov data and serialize it.
 
-    Verifies the dataset checksum before training (external input guard). The
-    fit is deterministic (seeded ``random_state``).
+    Verifies the dataset checksum before training (external-input guard). The fit
+    is deterministic (seeded ``random_state``).
     """
     verify_checksum(TRAIN_CSV)
     df = load_dataframe(TRAIN_CSV, limit=None)
@@ -81,10 +69,9 @@ def train_and_serialize(out_path: Path = SECOND_MODEL_PATH) -> IsolationForest:
     model = IsolationForest(
         n_estimators=100,
         max_samples=4096,
-        # Anomaly band sized so the off-distribution night-hour region (only
-        # ~23% of legit traffic is night, vs ~85% of real fraud) lands on the
-        # anomalous side. Empirically catches ~half of the amt-lowered
-        # night-hour evasions the amt-reliant LightGBM clears (see main()).
+        # Anomaly band sized so off-distribution behavioral combinations (high
+        # velocity, unusual geo distance, atypical day) land on the anomalous
+        # side. These are precisely the axes the static-only victim ignores.
         contamination=0.15,
         random_state=_RANDOM_STATE,
         n_jobs=1,
@@ -124,27 +111,13 @@ def isoforest_is_fraud(sample: object) -> bool:
 
 
 def main() -> None:
-    model = train_and_serialize()
-    # Report whether the IsolationForest flags night-hour low-amt frauds that
-    # the amount-reliant LightGBM clears — the cross-family catch.
-    from examples.targets.fraud_sparkov.constants import NIGHT_HOURS
-
-    df = load_dataframe(TRAIN_CSV, limit=None)
-    night_fraud = df[(df["hour"].isin(list(NIGHT_HOURS))) & (df["is_fraud"] == 1)]
-    # Simulate the amt-lowering evasion: drop amt to a low value the target clears.
-    evaded = night_fraud.copy()
-    evaded["amt"] = 12.0
-    x = evaded[list(SECOND_MODEL_FEATURES)].to_numpy(dtype=float)
-    preds = model.predict(x)
-    flagged = int((preds == -1).sum())
-    total = int(len(evaded))
+    train_and_serialize()
     print("Sparkov second-family IsolationForest trained on REAL data.")
-    print(f"  features: {list(SECOND_MODEL_FEATURES)} (includes night `hour`)")
+    print(f"  features: {list(SECOND_MODEL_FEATURES)} (full rich set)")
     print(f"  serialized to: {SECOND_MODEL_PATH}")
     print(
-        f"  night-hour frauds with amt lowered to 12.0 flagged as anomalous: "
-        f"{flagged}/{total} ({(flagged / total * 100 if total else 0):.1f}%) "
-        "— the cross-family catch the amt-reliant LightGBM misses."
+        "  Sees the behavioral/temporal/geo signals the static-only victim "
+        "ignores — the cross-family disagreement the differential oracle catches."
     )
 
 

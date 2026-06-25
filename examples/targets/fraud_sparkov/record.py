@@ -1,15 +1,23 @@
 """The opaque sample record for the real Sparkov fraud victim.
 
 This is the victim-owned record the harness passes around as an opaque
-``sample``. It carries only the interpretable, derived features the declared
-rule and the flawed detector reason over — never the raw 23-column CSV row.
+``sample``. It carries a RICH, multi-signal feature set derived from the raw
+23-column CSV (loader.py), so the detector reasons over real fraud signals — not
+a 2-feature (amt + cat_risk) toy.
 
-The field set is chosen from the Step-1 data analysis (see the build report):
-``hour`` (night-hour is the dominant fraud signal, 84.8% of real frauds),
-``amt`` and ``cat_risk`` (the proxies the flawed detector over-relies on),
-plus ``age``/``city_pop`` carried for transparency. ``distance_km`` is
-deliberately NOT a feature: the real data shows fraud and legit have an
-identical distance distribution (median ~78km for both), so it is pure noise.
+The fields fall into three groups:
+
+* Static / contextual (the deployed victim USES these): ``amt``, ``cat_risk``,
+  ``merchant_risk`` (per-merchant historical fraud rate, computed from the TRAIN
+  split only), ``age``, ``city_pop``.
+* Behavioral / temporal / geo (the deployed victim is BLIND to these — the
+  realistic "we never engineered the behavioral features" gap): ``velocity``
+  (prior txns on the same card in a recent window), ``day_of_week``,
+  ``geo_distance_km`` (REAL haversine between cardholder and merchant).
+
+The strong REFERENCE model (ground truth) uses ALL of them; the deployed victim
+uses only the static/contextual ones; the cross-family second model uses the
+rich set. That asymmetry — not a hardcoded rule — is the exploitable gap.
 """
 
 from dataclasses import dataclass
@@ -19,16 +27,19 @@ from dataclasses import dataclass
 class SparkovTxn:
     # Harness convention: every sample exposes a stable index.
     txn_index: int
-    # Proxies the flawed detector leans on.
+    # --- Static / contextual signals (the deployed victim uses these) ------
     amt: float
     cat_risk: int  # 1 if category in the risky set, else 0
-    # The strong causal signal the flawed detector under-uses.
-    hour: int
-    # Carried for transparency / interpretability of the rule.
+    merchant_risk: float  # per-merchant historical fraud rate (TRAIN split only)
     age: int
     city_pop: int
-    # The Step-1 NOISE feature (fraud/legit share an identical distribution):
-    # cardholder<->merchant separation. Carried so the blue loop can honestly
-    # retrain on the full available menu (hour + distance) and we can show that
-    # the RECOVERY comes from the signal feature (hour), not the noise.
-    distance: float = 0.0
+    # --- Behavioral / temporal / geo signals (the victim is BLIND to these) -
+    # Prior transactions on the same card within VELOCITY_WINDOW_SECONDS.
+    velocity: int = 0
+    # Local hour-of-day of the transaction (0..23) — the night window carries a
+    # strongly elevated real fraud rate.
+    hour: int = 0
+    # Day of week of the transaction (0=Monday .. 6=Sunday).
+    day_of_week: int = 0
+    # REAL haversine distance (km) between cardholder and merchant location.
+    geo_distance_km: float = 0.0
