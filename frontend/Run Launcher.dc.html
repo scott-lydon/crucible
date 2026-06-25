@@ -709,6 +709,35 @@ STUB-MANIFEST · Run Launcher
       </div>
     </div>
 
+    <!-- ============== LLM CALLS · REASONING TRACE (US-2) ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;overflow:hidden;margin-top:20px">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">LLM CALLS · REASONING TRACE</div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">{{ llmCallCountLabel }}</span>
+      </div>
+
+      <!-- honest empty state -->
+      <sc-if value="{{ noLlmCalls }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:24px 22px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#5A6573">— no recorded LLM calls for this run.</div>
+      </sc-if>
+
+      <sc-if value="{{ hasLlmCalls }}" hint-placeholder-val="{{ true }}">
+        <div role="row" style="display:grid;grid-template-columns:54px 150px 1fr 170px 90px 64px;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;text-transform:uppercase">
+          <span>#</span><span>Pillar</span><span>Model</span><span>Tokens</span><span style="text-align:right">$ Cost</span><span></span>
+        </div>
+        <sc-for list="{{ llmCallRows }}" as="c" hint-placeholder-count="6">
+          <div role="row" style="display:grid;grid-template-columns:54px 150px 1fr 170px 90px 64px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+            <span style="color:#5A6573">{{ c.idx }}</span>
+            <span style="color:#4FAAC0">{{ c.pillar }}</span>
+            <span style="color:#B8C2CE;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.model }}</span>
+            <span style="color:#95A1AE">{{ c.tokens }}</span>
+            <span style="color:#E8EDF3;text-align:right">{{ c.cost }}</span>
+            <button onClick="{{ c.inspect }}" style="background:#1D2630;border:1px solid #3A4654;border-radius:6px;color:#4FAAC0;cursor:pointer;padding:5px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px">Inspect</button>
+          </div>
+        </sc-for>
+      </sc-if>
+    </div>
+
     <!-- ============== COMPARISON TO PRIOR RUNS ============== -->
     <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;padding:22px 26px;margin-top:20px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
@@ -845,6 +874,36 @@ STUB-MANIFEST · Run Launcher
   </div>
 </sc-if>
 
+<!-- ============== INSPECT · REAL LLM CALL (US-2) ============== -->
+<sc-if value="{{ showLlmCall }}" hint-placeholder-val="{{ false }}">
+  <div onClick="{{ close }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+  <div style="position:fixed;top:0;right:0;bottom:0;width:560px;max-width:94vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744;flex:none">
+      <div><div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">INSPECT · LLM CALL</div><div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">{{ llmCallPillar }} · {{ llmCallModel }}</div></div>
+      <button onClick="{{ close }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#95A1AE;line-height:1.7;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 12px">
+        <div>model: <span style="color:#E8EDF3">{{ llmCallModel }}</span></div>
+        <div>pillar: <span style="color:#E8EDF3">{{ llmCallPillar }}</span> · created <span style="color:#E8EDF3">{{ llmCallCreated }}</span></div>
+        <div>tokens in: <span style="color:#E8EDF3">{{ llmCallTokensIn }}</span> · tokens out: <span style="color:#E8EDF3">{{ llmCallTokensOut }}</span> · cost: <span style="color:#57C08A">{{ llmCallCost }}</span></div>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:6px">PROMPT</div>
+        <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto">{{ llmCallPrompt }}</pre>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:6px">RAW RESPONSE</div>
+        <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto">{{ llmCallRaw }}</pre>
+      </div>
+      <div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:6px">PARSED OUTPUT</div>
+        <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#57C08A;line-height:1.6;white-space:pre-wrap;word-break:break-word;max-height:280px;overflow-y:auto">{{ llmCallParsed }}</pre>
+      </div>
+    </div>
+  </div>
+</sc-if>
+
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
@@ -885,6 +944,9 @@ class Component extends DCLogic {
     verdictReplay: null,    // POST /runs/{id}/verdicts/{vid}/replay result
     replayLoading: false,   // in-flight replay request
     replayError: null,      // replay request failure message
+    // US-2: real LLM calls for this run (GET /runs/{id}/llm_calls)
+    llmCalls: [],           // array (oldest first) of real LLM call records
+    selectedLlmCall: null,  // the call record shown in the Inspect drawer
   };
 
   componentDidMount() {
@@ -921,10 +983,19 @@ class Component extends DCLogic {
   // --- attach to a run: poll GET /runs/{id} + open SSE /runs/{id}/stream ---
   attachRun(runId) {
     if (!runId) return;
-    this.setState({ streamAttacks: [], streamVerdicts: [], runDetail: null, verdictDetails: {}, runStatus: null });
+    this.setState({ streamAttacks: [], streamVerdicts: [], runDetail: null, verdictDetails: {}, runStatus: null, llmCalls: [] });
     this.refetchRun(runId);
+    this.loadLlmCalls(runId);
     this.openStream(runId);
-    this._poll = setInterval(() => this.refetchRun(runId), 4000);
+    this._poll = setInterval(() => { this.refetchRun(runId); this.loadLlmCalls(runId); }, 4000);
+  }
+
+  // US-2: real recorded LLM calls (prompt / raw response / parsed output / tokens / cost)
+  loadLlmCalls(runId) {
+    if (!runId) return;
+    fetch('/runs/' + runId + '/llm_calls').then(r => r.json())
+      .then(list => this.setState({ llmCalls: Array.isArray(list) ? list : [] }))
+      .catch(() => {});
   }
 
   refetchRun(runId) {
@@ -1186,9 +1257,57 @@ class Component extends DCLogic {
     });
     const tlRate = detNum != null ? (detNum * 100).toFixed(1) + '%' : EMD;
 
-    // SANDBOX HEALTH · cpu/memory/token live telemetry is not exposed by the API.
-    // Render honest em-dash rather than fabricate.
-    const cpuPct = EMD, memPct = EMD, tokensLabel = EMD, tokensPct = '0%';
+    // === REAL LLM CALLS (GET /runs/{id}/llm_calls) — US-2 reasoning trace ===
+    // Each call is a real recorded request: prompt, raw_response, parsed_output,
+    // token counts, and dollar cost. Never fabricated; empty -> honest empty trace.
+    const llmCalls = this.state.llmCalls || [];
+    const llmTokensIn = llmCalls.reduce((s, c) => s + (c.tokens_in != null ? Number(c.tokens_in) : 0), 0);
+    const llmTokensOut = llmCalls.reduce((s, c) => s + (c.tokens_out != null ? Number(c.tokens_out) : 0), 0);
+    const llmTokensTotal = llmTokensIn + llmTokensOut;
+    const llmDollars = llmCalls.reduce((s, c) => s + (c.dollars_spent != null ? parseFloat(c.dollars_spent) : 0), 0);
+    const fmtTok = (n) => Number(n).toLocaleString('en-US');
+    const llmCallRows = llmCalls.map((c, i) => {
+      const tin = c.tokens_in != null ? Number(c.tokens_in) : 0;
+      const tout = c.tokens_out != null ? Number(c.tokens_out) : 0;
+      return {
+        idx: '#' + (i + 1),
+        pillar: c.pillar || EMD,
+        model: c.model || EMD,
+        tokens: fmtTok(tin) + ' in · ' + fmtTok(tout) + ' out',
+        cost: c.dollars_spent != null ? usd(parseFloat(c.dollars_spent)) : EMD,
+        inspect: () => this.setState({ selectedLlmCall: c, drawer: 'llmcall' }),
+      };
+    });
+    const hasLlmCalls = llmCalls.length > 0;
+    const llmCallCountLabel = hasLlmCalls
+      ? (llmCalls.length + ' calls · ' + fmtTok(llmTokensTotal) + ' tokens · ' + usd(llmDollars))
+      : 'no recorded LLM calls for this run';
+
+    // SANDBOX HEALTH · cpu/memory not exposed by the API (honest em-dash).
+    // tokens used = real sum across recorded LLM calls when available.
+    const cpuPct = EMD, memPct = EMD;
+    const tokensLabel = hasLlmCalls ? fmtTok(llmTokensTotal) : EMD;
+    const tokensPct = '0%';
+
+    // === Inspect drawer: REAL selected LLM call ===
+    const sc = this.state.selectedLlmCall;
+    const prettyParsed = (() => {
+      if (!sc) return EMD;
+      const p = sc.parsed_output;
+      if (p == null) return EMD;
+      if (typeof p === 'string') {
+        try { return JSON.stringify(JSON.parse(p), null, 2); } catch (_) { return p; }
+      }
+      try { return JSON.stringify(p, null, 2); } catch (_) { return String(p); }
+    })();
+    const llmCallModel = sc ? (sc.model || EMD) : EMD;
+    const llmCallPillar = sc ? (sc.pillar || EMD) : EMD;
+    const llmCallPrompt = sc ? (sc.prompt != null ? String(sc.prompt) : EMD) : EMD;
+    const llmCallRaw = sc ? (sc.raw_response != null ? String(sc.raw_response) : EMD) : EMD;
+    const llmCallTokensIn = sc && sc.tokens_in != null ? fmtTok(sc.tokens_in) : EMD;
+    const llmCallTokensOut = sc && sc.tokens_out != null ? fmtTok(sc.tokens_out) : EMD;
+    const llmCallCost = sc && sc.dollars_spent != null ? usd(parseFloat(sc.dollars_spent)) : EMD;
+    const llmCallCreated = sc && sc.created_at ? String(sc.created_at) : EMD;
 
     // RESULTS-tab timeline (final, one cell per attack)
     const resultsTimeline = roundTimeline.filter(r => r.label !== 'pending');
@@ -1418,6 +1537,13 @@ class Component extends DCLogic {
       passCount, failCount, resultsOracles,
       resultsTimeline, costBreakdown,
 
+      // US-2: real LLM calls / reasoning trace
+      llmCallRows, hasLlmCalls, noLlmCalls: !hasLlmCalls, llmCallCountLabel,
+
+      // inspect drawer · selected real LLM call
+      llmCallModel, llmCallPillar, llmCallPrompt, llmCallRaw, llmCallParsed: prettyParsed,
+      llmCallTokensIn, llmCallTokensOut, llmCallCost, llmCallCreated,
+
       // verdict headline (selected verdict)
       verdictHeadline, tallyLabel,
       verdictPassed: selPassed,
@@ -1553,9 +1679,10 @@ class Component extends DCLogic {
       // drawers
       showInspect: this.state.drawer === 'inspect',
       showEstimate: this.state.drawer === 'estimate',
+      showLlmCall: this.state.drawer === 'llmcall',
       openInspect: () => this.setState({ drawer: 'inspect' }),
       openEstimate: () => this.setState({ drawer: 'estimate' }),
-      close: () => this.setState({ drawer: null }),
+      close: () => this.setState({ drawer: null, selectedLlmCall: null }),
 
       roundsHintText:  'integer · 1–500',
       roundsHintColor: '#95A1AE',
