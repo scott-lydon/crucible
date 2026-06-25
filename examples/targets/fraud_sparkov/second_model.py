@@ -16,7 +16,7 @@ differential oracle catches.
 
 Feature set: ``RICH_FEATURES`` — the same rich menu the record carries and the
 reference model uses. Keeping the second model's feature COUNT consistent with
-the rich record (8 features) avoids the stale-artifact "N vs M" mismatch crashes;
+the rich record (9 features) avoids the stale-artifact "N vs M" mismatch crashes;
 training and scoring share ``RICH_FEATURES`` as the single point of truth.
 
 The artifact is gitignored (an external trained input, not source). Build it:

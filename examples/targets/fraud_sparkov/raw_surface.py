@@ -129,8 +129,8 @@ def load_holdout_raw_rows(
 ) -> list[SimpleNamespace]:
     """Held-out evasions as RAW samples: real night-frauds with ``amt`` lowered.
 
-    Mirrors the metamorphic evasion the red loop lands — a night-hour fraud
-    (fraud REGARDLESS of amount per the declared rule) whose ``amt`` is scaled by
+    Mirrors the metamorphic evasion the red loop lands — a genuine fraud (per the
+    real committed ``is_fraud`` label) whose ``amt`` is scaled by
     ``evade_factor`` (the mutator's gentlest 0.5 ladder rung), enough to drop the
     high-amount fraud below the amt-reliant detector's bar while leaving a real,
     non-trivial amount the engineered night-hour feature can still flag. The label

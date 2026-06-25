@@ -12,8 +12,9 @@ The fields fall into three groups:
   split only), ``age``, ``city_pop``.
 * Behavioral / temporal / geo (the deployed victim is BLIND to these — the
   realistic "we never engineered the behavioral features" gap): ``velocity``
-  (prior txns on the same card in a recent window), ``day_of_week``,
-  ``geo_distance_km`` (REAL haversine between cardholder and merchant).
+  (prior txns on the same card in a recent window), ``hour`` (local hour-of-day),
+  ``day_of_week``, ``geo_distance_km`` (REAL haversine between cardholder and
+  merchant).
 
 The strong REFERENCE model (ground truth) uses ALL of them; the deployed victim
 uses only the static/contextual ones; the cross-family second model uses the
