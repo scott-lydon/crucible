@@ -287,6 +287,23 @@ section 8 master checklist is green.
 
 ### Stage R: record the acceptance-test video (one box per acceptance test)
 
+OPERATOR UPDATE 2026-06-25: deliver TWO complete videos, in order. (1) FIRST a
+complete LOCAL demo of all 15 scenarios against the local real-LLM server
+(http://localhost:8910, free `claude` CLI) — tight debug loop, no deploy
+variables. (2) THEN, once the local master passes bug + critique, a complete
+DEPLOYED demo of all 15 against https://crucible-zaag.onrender.com, using the
+admin panel project key (admin/pass → POST /admin/login) for the live-run
+scenarios. Read-only scenarios use the now-proper deploy (it was seeded with the
+real snapshot, commit 85bfff2). The boxes below are recorded per-video; tag each
+clip local/ vs deploy/ in demo/clips/. The deploy can run real Claude now via the
+admin API-key fallback (re-clear the active key with POST /llm-key/clear after
+recording so the public URL isn't left armed). Local server was restarted to the
+current code on 2026-06-25 (PID 96022): /llm-provider mode "cli", data intact
+(runs 10, metrics black-box 0.86). US-1..US-5 live in the Run Launcher tabs
+(Configure/Running/Results + Oracles/Inspect); US-8 health, US-9 sandbox seal,
+US-11 corpus surfaces still need locating in the new design while recording —
+if a US-n has no surface, that is a Bug-Watcher finding, route to Builder.
+
 Each box is ticked only when that US-n's own Given/When/Then is shown on screen
 and narrated. Read the cited acceptance-tests.md lines before recording so the
 clip demonstrates the actual Then-clauses, not a paraphrase. Each recording box
