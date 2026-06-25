@@ -206,3 +206,14 @@ Confirmed present in HEAD and on the running server (curl against :8910):
 - BUG-R7 (generate-all-attacks-upfront → UI sits at attack 0/N during generation)
   remains OPEN; mitigated by rounds=3 (the stuck window shrank from ~96 to ~6
   attacks) but not eliminated. Logged as a careful follow-up.
+
+## BUG-R9 extended: US-14 surface is also a stub (2026-06-25)
+Same class as US-13. frontend/slice-02-whitebox-selftest.dc.html is a STUB
+(STUB-MANIFEST, hardcoded recall "0.92" etc.), NOT wired to a real white-box
+self-test endpoint. So US-14 ("white-box self-test on every pass") cannot be
+honestly recorded against slice-02 as-is. By contrast the other run-dependent
+surfaces ARE real and wired (verified 0 stub markers): slice-03-blue-patch-review
+(US-7, fetches /blue/:patchId), slice-08-sr-117-report (US-12, fetches
+/reports/:runId), and the Run Launcher (US-2..US-5). So the only TWO scenarios
+blocked on stub surfaces are US-13 (slice-06 halt) and US-14 (slice-02 whitebox);
+both need their views wired to real data (Builder + possible design reconcile).

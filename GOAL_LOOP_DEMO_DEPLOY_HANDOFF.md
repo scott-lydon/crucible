@@ -412,9 +412,16 @@ shown in that clip equals the live run's real API response, no pre-baked number.
       /metrics white_box 39/45 undetected → 86.7%, rate 0.1333 → recall 13.3%,
       gap -0.0298 → -3.0%; no cost field → "Not yet measured" (not faked zero);
       all three layers agree; consoleErrs/failed = [].
-- [ ] [Recording] US-11 export the seeded-hack corpus (L190): export from
-      `/corpus` / `/corpus.jsonl`.
-- [ ] [Integrity] US-11 exported rows equal the route payload.
+- [x] [Recording] US-11 export the seeded-hack corpus (L190): export from
+      `/corpus` / `/corpus.jsonl`. EVIDENCE 2026-06-25: clip drove slice-01 which
+      shows "95 tactics in the sealed attack corpus" AND the "export JSON ↗" link
+      → /corpus.jsonl. Narration RE-AUTHORED from stale "one successful evasion"
+      to the live counts (95-tactic catalog + 91-entry corpus export) →
+      demo/clips/local/us11.mp4. 0 console errors.
+- [ ] [Integrity] US-11 exported rows equal the route payload. (pending
+      independent review — will batch with US-2..US-5; self-checked: /corpus
+      count=91, /corpus.jsonl=91 rows, /catalog=95, all equal narration + on
+      screen.)
 - [ ] [Recording] US-12 generate an SR 11-7 report (L204): report from
       `/reports/:runId`, real markdown.
 - [ ] [Integrity] US-12 report numbers equal the report route.
