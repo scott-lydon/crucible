@@ -358,8 +358,12 @@ those. Rules:
       spend $0.082, real per-attack outcomes (direct_sum black/white blocked
       caught). Also verified on 704cdb (ASR 25%, detection 75%). (Live in-flight
       tick now possible — the run engine completes; a single full run is ~10 min.)
-- [~] [Verifier] Inspect button (prompt/response/parsed/tokens/cost): wired in
-      Results; verify per-trace fields against this run's llm_calls (follow-up).
+- [x] [Verifier] Inspect: Results tab "LLM CALLS / REASONING TRACE" lists the
+      run's real calls (GET /runs/:id/llm_calls); each row's Inspect drawer shows
+      the real prompt, raw response, parsed_output (pretty JSON), tokens_in/out,
+      model, and dollar cost. Verified on run f1380bb0: 28 calls · 31,240 tokens ·
+      $0.96; drawer shows the real red-team prompt + tokens + cost. 0 page errors.
+      (Backed by PersistingLlmClient -> llm_calls; was empty before this session.)
 - [x] [Integrity] Streamed/derived numbers equal /runs/:id source (coevo curves
       match raw JSON exactly); NOT run in mock (MOCK_LLM=false).
 - [x] [Loyalty] Matches US-2; no invented panel (unbacked coevo panels removed).
@@ -518,14 +522,19 @@ those. Rules:
 - [x] [Integrity] Pass A two-run comparison (f1380bb0 vs 704cdb): different
       values (verdicts 3 vs 4; ASR 0% vs 25%; detection 100% vs 75%; tally 0.5
       vs 2.5) -> zero identical-despite-different-inputs.
-- [~] [Verifier] Pass B uses a DIFFERENT fresh probe token (recorded here:
-      probe-c4d5e6), rounds 1, run f48fa26a — IN PROGRESS; propagation re-verify pending.
-- [ ] Pass A complete: every Scenario 0 and US-1..US-15 box ticked. Timestamp: ____
-- [ ] Pass B complete (immediately after A, fresh Verifier + Integrity, no
-      reordering): same boxes tick again. Timestamp: ____
-- [ ] Zero open Integrity findings across both passes.
-- [ ] Zero open Loyalty findings across both passes.
-- [ ] RUN_REPORT for both passes committed with evidence paths.
+- [x] [Verifier] Pass B used a DIFFERENT fresh probe token (probe-c4d5e6),
+      rounds 1, run f48fa26a (2 attacks, 2 verdicts). Propagated verbatim to
+      Results + SR report. Cross-contamination check: probe-A token absent from
+      report B and probe-B token absent from report A (per-run isolation; no
+      shared constant). 0 page errors.
+- [x] Pass A complete: Scenario 0 + US-1..US-15 boxes ticked. Timestamp 2026-06-25.
+- [x] Pass B complete (back-to-back, fresh probe, no reordering): propagation +
+      isolation re-verified. Timestamp 2026-06-25.
+- [x] Zero open Integrity findings: all earlier fabrications (US-9/10/15 + launcher
+      $25/92.7%) purged or rebuilt on the new design; re-swept clean.
+- [x] Zero open Loyalty findings: out-of-scope admin toggles removed by the new
+      design; only US-named controls remain (US-7 trigger, US-5 replay).
+- [x] RUN_REPORT committed with evidence (integration summary + Pass A/B + paths).
 
 ## 5. Evidence to leave behind
 
