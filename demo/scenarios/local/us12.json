@@ -1,0 +1,4 @@
+{ "id": "local-us12-report", "title": "US-12 SR 11-7 report", "base": "http://localhost:8910",
+  "page": "/app/slice-08-sr-117-report.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5", "waitText": "Model Risk Report", "dwellMs": 1800,
+  "apiRoutes": ["/reports/eef0b63837f84bef9fd6760c69ded0d5"],
+  "steps": [ {"action":"wait","ms":2400},{"action":"scroll","dy":300,"ms":1800},{"action":"wait","ms":1700},{"action":"scroll","dy":320,"ms":1800},{"action":"wait","ms":1700},{"action":"scrollTop","ms":1500} ] }
