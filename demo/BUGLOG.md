@@ -54,3 +54,26 @@ then the affected scenario is re-recorded and re-checked.
 - US-10's five metric tiles are correct + honest (undetected 0.0%, gap -14.3%,
   recall 100.0% vs 0.70 red line, cost/human-min "Not yet measured"); only the
   two trailing placeholder panels are the issue. Re-record US-10 after the fix.
+
+## BUG-R3 — target selector is non-functional (Run Launcher) — OPEN, SEVERE
+- Lane: Bug-Watcher (US-1). Found by the OPERATOR, missed by the demo because the
+  recording filmed the static Configure tab + a pre-existing seeded run instead of
+  DRIVING the real flow (select target -> seal -> Start -> watch a launched run).
+  This is a reward-hack on the recording side and is being corrected.
+- Shown: the "Code Agent" target box (Run Launcher.dc.html line ~138) has
+  cursor:pointer + a hover style but NO onClick handler. The Configure tab's only
+  onClick handlers are openInspect, sealSpec, unsealSpec, openEstimate, start —
+  none selects a target. `selectedTarget: 'fraud'` (line ~931) is the initial
+  state and is NEVER changed by any setState. So clicking Code Agent does nothing;
+  the run is permanently locked to the fraud target.
+- Expected (US-1): "select a target (Shape 1 fraud OR Shape 2 code_agent) ... click
+  Start ... navigates to /runs/:runId ... first round within ten seconds." The UI
+  must let the operator actually choose code_agent (and fraud), reflect the
+  selection (✓ + load that target's default-spec), and launch.
+- Fix: wire onClick on BOTH target boxes to set selectedTarget (fraud|code_agent),
+  move the ✓ / selected styling to the chosen one, and reload the sealed-spec draft
+  from that target's /targets/<type>/default-spec. Builder, smallest change.
+- CORRECTIVE ACTION: after the fix, DRIVE the real end-to-end flow on camera —
+  click code_agent, confirm it selects, seal the spec, click Start, watch a real
+  run launch and its first round — and re-record US-1..US-5 against THAT launched
+  run (not a seeded one). Until then US-1..US-5 are un-ticked.

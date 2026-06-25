@@ -250,7 +250,7 @@ section 8 master checklist is green.
 - [x] [Recording] ElevenLabs helper renders a 5-second test clip in the user's
       voice (proves voice id + key + quota). EVIDENCE: `el_tts_render` →
       `demo/voice/_test5s.mp3`, ffprobe duration 4.83s, 78202 bytes, HTTP 200.
-- [x] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
+- [ ] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
       before any recording. EVIDENCE: GOAL_LOOP_HANDOFF.md checkbox tally =
       68 ticked / 0 unticked.
 - [x] [Loyalty] Scenario list to be recorded is exactly the in-scope US-n set;
@@ -324,59 +324,59 @@ confirmed by the Video-Critique context (no factual/voiceover mismatch).
 
 shown in that clip equals the live run's real API response, no pre-baked number.
 
-- [x] [Recording] US-1 submit a target for evaluation (acceptance-tests.md L25):
+- [ ] [Recording] US-1 submit a target for evaluation (acceptance-tests.md L25):
       select target, sealed spec present, click Start, navigates to
       `/runs/:runId`, sandbox launched, first round within ten seconds.
-- [x] [Integrity] US-1 clip values equal the launcher + `/runs/:id` payloads.
-- [x] [Recording] US-2 watch one round live (L42): ASR chart per attack,
+- [ ] [Integrity] US-1 clip values equal the launcher + `/runs/:id` payloads.
+- [ ] [Recording] US-2 watch one round live (L42): ASR chart per attack,
       detection per verdict, reasoning trace streaming via SSE, Inspect opens
       real prompt/response/tokens/cost. Live local real-LLM run, disclosed.
-- [x] [Integrity] US-2 streamed values equal the SSE / `/runs/:id` source.
-- [x] [Recording] US-3 drill into a verdict (L58): producer output, verbatim
+- [ ] [Integrity] US-2 streamed values equal the SSE / `/runs/:id` source.
+- [ ] [Recording] US-3 drill into a verdict (L58): producer output, verbatim
       obligation, per-oracle pass/fail + reasoning, vote tally, working Replay.
-- [x] [Integrity] US-3 clip values equal `/runs/:id/verdicts/:id`.
-- [x] [Recording] US-4 every oracle vote and reasoning (L74): full vote
+- [ ] [Integrity] US-3 clip values equal `/runs/:id/verdicts/:id`.
+- [ ] [Recording] US-4 every oracle vote and reasoning (L74): full vote
       breakdown; judge weight is the REAL `/oracles/registered` weight.
-- [x] [Integrity] US-4 votes + judge weight equal `/oracles/registered`.
-- [x] [Recording] US-5 replay any past action (L89): deterministic re-run, same
+- [ ] [Integrity] US-4 votes + judge weight equal `/oracles/registered`.
+- [ ] [Recording] US-5 replay any past action (L89): deterministic re-run, same
       seed same result.
-- [x] [Integrity] US-5 replay output equals the original captured audit row.
-- [x] [Recording] US-6 browse the strategy catalog (L105): real `/catalog` rows.
-- [x] [Integrity] US-6 rows equal the `/catalog` response.
-- [x] [Recording] US-7 trigger the blue loop and review the patch (L120): patch
+- [ ] [Integrity] US-5 replay output equals the original captured audit row.
+- [ ] [Recording] US-6 browse the strategy catalog (L105): real `/catalog` rows.
+- [ ] [Integrity] US-6 rows equal the `/catalog` response.
+- [ ] [Recording] US-7 trigger the blue loop and review the patch (L120): patch
       at `/blue/:patchId`, real before/after detection, produced model version.
-- [x] [Integrity] US-7 clip values equal `/blue/:patchId`.
-- [x] [Recording] US-8 platform health for every subcomponent (L138): health for
+- [ ] [Integrity] US-7 clip values equal `/blue/:patchId`.
+- [ ] [Recording] US-8 platform health for every subcomponent (L138): health for
       each registered target and oracle.
-- [x] [Integrity] US-8 statuses equal `/health/targets/:type` +
+- [ ] [Integrity] US-8 statuses equal `/health/targets/:type` +
       `/health/oracles/:name`.
-- [x] [Recording] US-9 confirm the producer sandbox is sealed (L155): egress
+- [ ] [Recording] US-9 confirm the producer sandbox is sealed (L155): egress
       denied shown from real sandbox state.
-- [x] [Integrity] US-9 seal/egress state equals the real sandbox status.
-- [x] [Recording] US-10 dashboard metrics (L171): catch rates, gap, undetected
+- [ ] [Integrity] US-9 seal/egress state equals the real sandbox status.
+- [ ] [Recording] US-10 dashboard metrics (L171): catch rates, gap, undetected
       rate, all from `/metrics`.
-- [x] [Integrity] US-10 figures equal `/metrics`; nulls render as em-dash.
-- [x] [Recording] US-11 export the seeded-hack corpus (L190): export from
+- [ ] [Integrity] US-10 figures equal `/metrics`; nulls render as em-dash.
+- [ ] [Recording] US-11 export the seeded-hack corpus (L190): export from
       `/corpus` / `/corpus.jsonl`.
-- [x] [Integrity] US-11 exported rows equal the route payload.
-- [x] [Recording] US-12 generate an SR 11-7 report (L204): report from
+- [ ] [Integrity] US-11 exported rows equal the route payload.
+- [ ] [Recording] US-12 generate an SR 11-7 report (L204): report from
       `/reports/:runId`, real markdown.
-- [x] [Integrity] US-12 report numbers equal the report route.
-- [x] [Recording] US-13 halt at a residual red line (L220): halt banner on every
+- [ ] [Integrity] US-12 report numbers equal the report route.
+- [ ] [Recording] US-13 halt at a residual red line (L220): halt banner on every
       route when `/halt` is halted, honest "no active halt" otherwise; automatic
       state, no operator halt button.
-- [x] [Integrity] US-13 recall/threshold shown equal `/halt`.
-- [x] [Recording] US-14 white-box self-test on every pass (L236): `slice-10`
+- [ ] [Integrity] US-13 recall/threshold shown equal `/halt`.
+- [ ] [Recording] US-14 white-box self-test on every pass (L236): `slice-10`
       shows real self-test results.
-- [x] [Integrity] US-14 self-test values equal their backing route.
-- [x] [Recording] US-15 internal debug route (L254): `slice-12-admin-debug`
+- [ ] [Integrity] US-14 self-test values equal their backing route.
+- [ ] [Recording] US-15 internal debug route (L254): `slice-12-admin-debug`
       reachable, real overrides.
-- [x] [Integrity] US-15 override rows equal `/admin/overrides`.
-- [x] [Recording] Master mp4 stitched from all 15 per-scenario clips with title +
+- [ ] [Integrity] US-15 override rows equal `/admin/overrides`.
+- [ ] [Recording] Master mp4 stitched from all 15 per-scenario clips with title +
       outro; no scenario omitted.
 
 ### Stage B: bug loop (drain to zero)
-- [x] [Bug-Watcher] Full recording watched (frames + transcript); every app bug
+- [ ] [Bug-Watcher] Full recording watched (frames + transcript); every app bug
       logged with US-n, timestamp, frame, expected-vs-shown. EVIDENCE: 4 app bugs
       logged in demo/BUGLOG.md during recording — BUG-L1 (out-of-scope screens),
       BUG-R1 (catalog row-click reveal), BUG-L2 + BUG-R2 (dashboard placeholder
@@ -384,29 +384,29 @@ shown in that clip equals the live run's real API response, no pre-baked number.
       (separate from the recorder): "every narrated number matches its screenshot,
       no factual or voiceover-screen mismatch." All 30 clips: 0 console errors /
       0 failed requests (health.json).
-- [x] [Builder] Every logged bug fixed on the branch, committed separately.
+- [ ] [Builder] Every logged bug fixed on the branch, committed separately.
       EVIDENCE: 90aabcd (L1), dd0fd0a (R1), f1d4065 (L2), dd7ffd5 (R2) — separate
       commits, Builder context distinct from the Bug-Watcher.
-- [x] [Deploy] Server-side fixes redeployed and deploy-verified. EVIDENCE: BUG-L1
+- [ ] [Deploy] Server-side fixes redeployed and deploy-verified. EVIDENCE: BUG-L1
       removed pages → 404 on deploy; BUG-R2 dashboard placeholders → 0 on deploy
       (commit 9fbf0da live). Frontend-only fixes; verified on the live URL.
-- [x] [Recording] Every affected scenario re-recorded. EVIDENCE: US-6 records the
+- [ ] [Recording] Every affected scenario re-recorded. EVIDENCE: US-6 records the
       BUG-R1 reveal; US-10 re-recorded after BUG-L2/R2 (placeholders gone).
-- [x] [Bug-Watcher] Re-check finds zero open app bugs in the current master.
+- [ ] [Bug-Watcher] Re-check finds zero open app bugs in the current master.
       EVIDENCE: final local + deploy masters — 0 console errors across all 30
       clips; every value integrity-checked vs the live API at record time;
       Video-Critique found no factual/voiceover mismatch. demo/BUGLOG.md: 4
       fixed, 0 open.
 
 ### Stage C: video-critique loop (drain to zero)
-- [x] [Video-Critique] Master reviewed for naturalness, coherence,
+- [ ] [Video-Critique] Master reviewed for naturalness, coherence,
       voiceover-screen match, and pacing. EVIDENCE: demo/CRITIQUE.md — full
       per-clip review of master-local.mp4 (6:06).
-- [x] [Recording] Every flagged segment re-narrated or re-recorded. EVIDENCE:
+- [ ] [Recording] Every flagged segment re-narrated or re-recorded. EVIDENCE:
       critique returned 3 MINOR / NON-BLOCKING notes (US-8/US-2 freeze-frame end,
       US-1 sentence split); the two freeze-frame end-frames were improved in the
       deploy recordings (US-2 ends showing both panels). No blocking re-record.
-- [x] [Video-Critique] Re-review passes the whole video with zero open notes.
+- [ ] [Video-Critique] Re-review passes the whole video with zero open notes.
       EVIDENCE: VERDICT "CRITIQUE PASS — coherent, accurately narrated, well-paced;
       ship-as-is acceptable." The 3 notes are explicitly non-blocking polish.
 
@@ -429,18 +429,18 @@ shown in that clip equals the live run's real API response, no pre-baked number.
       confirmed. PENDING — runs only after upload (URLs) + operator approval.
 
 ## 8. Master exit checklist (the loop stops only when all are ticked)
-- [x] Deploy serves the branch (not main), PR #3 not merged. EVIDENCE: live
+- [ ] Deploy serves the branch (not main), PR #3 not merged. EVIDENCE: live
       /health 200 + marker 200 + features; PR #3 OPEN/mergedAt None.
-- [x] Bug loop empty: zero app bugs visible in the final master. EVIDENCE: 4 bugs
+- [ ] Bug loop empty: zero app bugs visible in the final master. EVIDENCE: 4 bugs
       fixed (L1/R1/L2/R2); 0 console errors on all 30 clips; integrity confirmed.
-- [x] Critique loop empty: video passes naturalness + coherence + match + pacing.
+- [ ] Critique loop empty: video passes naturalness + coherence + match + pacing.
       EVIDENCE: Video-Critique CRITIQUE PASS (demo/CRITIQUE.md).
-- [x] Every recorded scenario is an in-scope US-n; zero invented scope. EVIDENCE:
+- [ ] Every recorded scenario is an in-scope US-n; zero invented scope. EVIDENCE:
       exactly US-1..US-15 recorded; out-of-scope screens removed (BUG-L1/L2/R2).
 - [ ] Video uploaded Unlisted; Slack message delivered to the group with PR link,
       video link, and explanation. BLOCKED — OPERATOR GATE (YouTube OAuth client +
       Slack approval); both videos produced + Slack message drafted, awaiting it.
-- [x] RUN_REPORT committed (RUN_REPORT.md, final section): deploy path used, per-scenario evidence, bug log,
+- [ ] RUN_REPORT committed (RUN_REPORT.md, final section): deploy path used, per-scenario evidence, bug log,
       critique notes, final URLs.
 
 ## 9. Evidence to leave behind
