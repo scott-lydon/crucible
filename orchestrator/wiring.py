@@ -20,6 +20,7 @@ from examples.targets.code_agent import CodeAgentEngine, CodeAgentProducer
 
 from modules.targets.local_model.adapter import LocalModelTarget
 from modules.blue.code_engineer import BlueCodeEngineer
+from modules.blue.code_config_blue import BlueConfigEngineer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
 from modules.red.hybrid.adversary import HybridAdversary
@@ -404,6 +405,8 @@ def build_components_code_agent(
     red_max_calls: int | None = 12,
     white_box_provider: LLMProvider | None = None,
     white_box_max_calls: int | None = 8,
+    blue_provider: LLMProvider | None = None,
+    blue_max_iters: int = 2,
 ) -> dict[str, object]:
     """Wire the code-agent produce-victim into the target-agnostic harness.
 
@@ -486,6 +489,19 @@ def build_components_code_agent(
             "implementation. The verifier:\n" + scheme
         ),
     )
+    # BLUE config-hardening maker: harden the producer's CONFIG (system prompt —
+    # the makers' shared surface) so it stops reward-hacking; held-out pass-rate
+    # recovery is re-measured under the patched config. This pillar WRITES PROSE (a
+    # config prompt), not code, so the constitution §1 inner-loop tier applies:
+    # Sonnet 4.6 by default. Tests inject a deterministic provider (ZERO real calls).
+    blue_config_engineer = BlueConfigEngineer(
+        provider=(
+            blue_provider
+            if blue_provider is not None
+            else AnthropicApiProvider(model="claude-sonnet-4-6")
+        ),
+        max_iters=blue_max_iters,
+    )
     return {
         "detector": None,
         "engine": engine,
@@ -493,6 +509,7 @@ def build_components_code_agent(
         "adversary": _NoMutationAdversary(),
         "code_red_adversary": code_red,
         "white_box_adversary": white_box_red,
+        "blue_config_engineer": blue_config_engineer,
         "verification_scheme": scheme,
         "oracles": oracles,
         "catalog": catalog,

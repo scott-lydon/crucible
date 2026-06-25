@@ -35,6 +35,12 @@ from typing import Any, Protocol, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from modules.blue.code_config_blue import (
+    BlueConfigEngineer,
+    CodeBlueResult,
+    ConfigurableProducer,
+    run_code_blue_round,
+)
 from modules.oracles.aggregator import aggregate
 from modules.red.code_red.adversary import CodeRedAdversary, HackResult
 from orchestrator.interfaces import Oracle
@@ -42,6 +48,7 @@ from orchestrator.loop import GenerateFn
 from shared.persistence import repo
 from shared.persistence.models import (
     AttackRow,
+    BlueRoundRow,
     OracleVoteRow,
     RoundRow,
     TransactionRow,
@@ -255,3 +262,97 @@ async def run_code_red_loop(
                 run.error = f"{type(exc).__name__}: {exc}"
                 await s.commit()
         raise
+
+
+def _config_iteration_trail(result: CodeBlueResult) -> list[dict[str, object]]:
+    """The full per-iteration config-hardening trail as JSON (audit-friendly)."""
+    return [
+        {
+            "rationale": it.rationale,
+            "system_prompt": it.system_prompt,
+            "pass_rate_after": it.pass_rate_after,
+            "recovered": it.recovered,
+        }
+        for it in result.iterations
+    ]
+
+
+async def run_code_blue(
+    session_factory: async_sessionmaker[AsyncSession],
+    *,
+    run_id: str,
+    landed: Sequence[HackResult],
+    producer: ConfigurableProducer,
+    oracle: Oracle,
+    spec: SealedSpec,
+    engineer_agent: BlueConfigEngineer,
+    catalog: object = None,
+) -> CodeBlueResult | None:
+    """Run the BLUE config-hardening arc after a code-red run, persist the round.
+
+    Completes the red->catch->blue->recover arc for the code-agent victim: blue
+    hardens the producer's CONFIG (its system prompt — the makers' shared surface),
+    NOT the produced code, and the held-out PASS-RATE is re-measured under the
+    patched config on the exact tasks the red hacked.
+
+    Returns ``None`` (and persists no row) when the red loop landed no hack — there
+    is nothing for blue to recover (honest: no fabricated round). Otherwise runs
+    the bounded config-hardening round, persists a ``BlueRoundRow`` carrying the
+    objective held-out pass-rate before/after (recovery may be ``0`` — an honest
+    fail), and returns the result. The ``ctx_factory`` mirrors the produce-shape
+    context the held-out oracle reads (SPOT with ``_persist_produce_verdict``).
+    """
+    hacked_tasks = [
+        h.variant for h in landed if h.landed and h.variant is not None
+    ]
+    if not hacked_tasks:
+        return None
+
+    def ctx_factory(task: object, code: str) -> VerdictContext:
+        return VerdictContext(
+            sample=task,
+            detector_score=0.0,
+            threshold=0.5,
+            true_label=True,
+            original_sample=None,
+            original_score=None,
+            spec=spec,
+            output=code,
+        )
+
+    result = run_code_blue_round(
+        # The red loop's catalog of landed reward-hack tactics — what blue hardens
+        # against. ``None`` is tolerated (the maker simply sees no prior tactics).
+        catalog=catalog,
+        producer=producer,
+        hacked_tasks=hacked_tasks,
+        oracle=oracle,
+        ctx_factory=ctx_factory,
+        engineer_agent=engineer_agent,
+    )
+
+    async with session_factory() as s:
+        await repo.add_blue_round(
+            s,
+            BlueRoundRow(
+                id=str(uuid.uuid4()),
+                run_id=run_id,
+                # The code-agent blue patches the producer CONFIG (not a feature):
+                # record the hardened-prompt marker when a patch was applied.
+                features_added=(
+                    ["hardened_system_prompt"]
+                    if result.hardened_system_prompt is not None
+                    else []
+                ),
+                detection_before=result.pass_rate_before,
+                detection_after=result.pass_rate_after,
+                recovered=result.recovered,
+                n_holdout=result.n_tasks,
+                proposer_rationale=result.rationale,
+                # The full hardened system prompt (the applied config patch), or
+                # None on an honest fail where no patch beat the baseline.
+                new_model_ref=result.hardened_system_prompt,
+                iteration_trail=_config_iteration_trail(result),
+            ),
+        )
+    return result

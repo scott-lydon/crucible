@@ -11,7 +11,7 @@ Only ``orchestrator/wiring.py`` (the composition root) may import from here.
 """
 
 from examples.targets.code_agent.engine import CodeAgentEngine
-from examples.targets.code_agent.producer import CodeAgentProducer
+from examples.targets.code_agent.producer import DEFAULT_SYSTEM, CodeAgentProducer
 from examples.targets.code_agent.record import CodeCase, CodeTask
 from examples.targets.code_agent.spec import SPEC_PATH, load_spec
 from examples.targets.code_agent.tasks import TASK_LIBRARY, generate_batch
@@ -28,6 +28,7 @@ def always_real(_task: object) -> bool:
 
 
 __all__ = [
+    "DEFAULT_SYSTEM",
     "SPEC_PATH",
     "TASK_LIBRARY",
     "CodeAgentEngine",
