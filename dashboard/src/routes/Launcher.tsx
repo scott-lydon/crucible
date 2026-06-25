@@ -104,7 +104,7 @@ export default function Launcher() {
 
   return (
     <Layout>
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
+      <div style={{ maxWidth: 920, margin: "0 auto" }}>
         <SectionLabel>Run Launcher · US-1</SectionLabel>
         <h1 style={{ color: C.textHi, fontSize: 22, fontWeight: 600, margin: "0 0 18px" }}>Launch a Crucible run</h1>
         <Card>
@@ -161,25 +161,27 @@ export default function Launcher() {
               </p>
             </div>
 
-            <div>
-              <label style={labelStyle} htmlFor="seed">
-                Seed
-              </label>
-              <input id="seed" type="text" value={seed} onChange={(e) => setSeed(e.target.value)} style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle} htmlFor="rounds">
-                Rounds (1–5)
-              </label>
-              <input
-                id="rounds"
-                type="number"
-                min={1}
-                max={5}
-                value={rounds}
-                onChange={(e) => setRounds(Number(e.target.value))}
-                style={inputStyle}
-              />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div>
+                <label style={labelStyle} htmlFor="seed">
+                  Seed
+                </label>
+                <input id="seed" type="text" value={seed} onChange={(e) => setSeed(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle} htmlFor="rounds">
+                  Rounds (1–5)
+                </label>
+                <input
+                  id="rounds"
+                  type="number"
+                  min={1}
+                  max={5}
+                  value={rounds}
+                  onChange={(e) => setRounds(Number(e.target.value))}
+                  style={inputStyle}
+                />
+              </div>
             </div>
             <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.text }}>
               <input type="checkbox" checked={runBlue} onChange={(e) => setRunBlue(e.target.checked)} />
