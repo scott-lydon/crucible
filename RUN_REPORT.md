@@ -158,3 +158,48 @@ FAIL pending launcher port), US-6, US-8, US-11, US-12, US-13, US-14. Integrity
 FAILs recorded: US-9 ("0 attempts"), US-10 ($1,847 spend / 0.90 red line),
 US-15 (fake MOCK-LLM/cassette). Blocked on new-design port: US-1..US-5. Blocked
 on trigger surface: US-7.
+
+---
+
+## Design-integration + functionality build (2026-06-24/25)
+
+Operator directive: integrate the new Claude Design (zip-3, YAML-input launcher)
+and, as the goal-loop's purpose, FIND and BUILD missing functionality + update
+architecture. Result: the new React-harness design is the live app on :8910,
+every view wired to real APIs, and four backend gaps were built.
+
+### New design integrated (commit add80a9 + per-slice wiring)
+9 views (Run Launcher + slice-01..08 + Canvas + slice-09 admin) on the new React
+`support.js`; old `data-live` frontend archived under frontend/_old_design_archive/.
+Every view verified rendering real API data, all prototype constants purged
+($1,847, 92.7%, $25, v1.4.2, 240-cheats, halt-history, leaderboard, etc.).
+
+### Functionality built (the gaps the loop existed to catch)
+1. **Run engine fix** — runs launched via the UI were FAILING (`claude CLI timed
+   out after 180s` on sonnet/opus). Added `CRUCIBLE_LLM_MODEL_OVERRIDE` +
+   `CRUCIBLE_LLM_TIMEOUT_SECONDS` (shared/llm/client.py). A full haiku run now
+   completes end-to-end.
+2. **US-7 blue trigger** — `POST /runs/{id}/blue` (orchestrator/api.py) +
+   `?run=` trigger button on slice-03. Verified: patch 4f56b60e with real
+   LLM-proposed prompt-config + provenance.
+3. **US-5 replay** — `POST /runs/{id}/verdicts/{id}/replay` (deterministic
+   re-derivation) + launcher Results Replay UI. Verified deterministic on 704cdb.
+4. **US-2 Inspect / US-10 spend** — nothing persisted `llm_calls`, so Inspect was
+   empty and `/spend` always $0. Added `PersistingLlmClient` (orchestrator/
+   persisting_llm.py) wired per-run; `GET /runs/{id}/llm_calls` exposes them.
+   Verified: probe-A -> 3 real llm_calls; /spend now $0.137 real.
+5. **US-15 admin/debug** — built a NEW honest read-only admin view
+   (slice-09-admin-debug) backed by /admin/overrides + /me + /workspace + /policy
+   + /runs, linked from Canvas. Replaces the archived fabricated slice-12.
+All five documented in ARCHITECTURE.md.
+
+### Pass A (adversarial novelty probe) — PASS
+- Token `probe-7f3a91`, non-default rounds 2, run f1380bb0 (4 attacks, 3 verdicts).
+- Token found verbatim in: run record spec_title, launcher Running header,
+  Results tab, SR-117 report. No hardcoding tell.
+- Two-run comparison f1380bb0 vs 704cdb: verdicts 3 vs 4, ASR 0% vs 25%,
+  detection 100% vs 75%, tally 0.5 vs 2.5 — zero identical-despite-different-inputs.
+
+### Pass B — in progress
+- Token `probe-c4d5e6`, rounds 1, run f48fa26a. Propagation re-verify + llm_calls
+  endpoint deploy/verify pending its completion (cannot restart mid-run).
