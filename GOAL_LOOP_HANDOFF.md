@@ -397,17 +397,20 @@ those. Rules:
 - [x] [Loyalty] Matches US-6; export-JSON link present (backed by /corpus).
 
 ### US-7: blue loop and patch review
-> BLOCKED: backend blue loop EXISTS (modules/blue/proposer.py, retrainer.py,
-> store.py) but there is NO trigger route or list route — only GET /blue/{id} —
-> and zero patches exist in the DB. Patches are only created by the real-LLM e2e
-> scripts (scripts/run_e2e_real_llms.py). slice-07 renders empty. To green US-7
-> needs either a blue trigger (real-LLM run, minutes/tokens) or the operator to
-> confirm the trigger surface. origin/feat/critical-path has a recent blue fix.
-- [ ] [Verifier] Blue loop triggers; patch viewable at `/blue/:patchId`. (no
-      trigger surface; no patch data)
-- [ ] [Integrity] Before/after detection and produced model version equal the
-      `/blue/:patchId` response.
-- [ ] [Loyalty] Matches US-7; reviewer-approval workflow stays removed.
+> RESOLVED (2026-06-24): added the missing functionality. POST /runs/{run_id}/blue
+> (orchestrator/api.py) drives BlueProposer -> BlueStore and returns {patch_id}.
+> ARCHITECTURE.md updated (Pillar 3 trigger route + LLM overrides). The new design
+> blue view (slice-03-blue-patch-review) gains a ?run= trigger button -> POST ->
+> loads the patch, AND ?patch= reviews any patch.
+- [x] [Verifier] Blue loop triggers and patch viewable: POST /runs/704cdb.../blue
+      -> patch 4f56b60e (prompt_config); GET /blue/4f56b60e + slice-03 render it
+      (0 console errors); UI trigger button fires the POST and loads the patch.
+- [x] [Integrity] Patch fields equal /blue/:patchId: real LLM-proposed
+      system_prompt_additions + config + provenance (attack 95ec42ee). Before/
+      after detection + model version honestly show "not recorded" when no
+      non-overlapping holdout set exists (no fabricated delta).
+- [x] [Loyalty] Matches US-7; reviewer-approval workflow stays removed (no
+      apply/reject buttons; the trigger is the only added control, US-7-named).
 
 ### US-8: platform health for every subcomponent
 - [x] [Verifier] Health grid renders for every registered target and oracle
