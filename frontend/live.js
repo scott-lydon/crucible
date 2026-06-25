@@ -11,6 +11,14 @@
 (function () {
   "use strict";
 
+  // The old Claude-Design mockup pages are retired in favour of the single-page app at
+  // /app/ (index.html + app.js). Anyone landing here from a stale bookmark/cache is sent
+  // to the new app immediately, before the mockup renders.
+  if (/\.dc\.html$|\/Canvas|\/Run Launcher/i.test(location.pathname)) {
+    location.replace("/app/#/launch");
+    return;
+  }
+
   var PAGE = (location.pathname.split("/").pop() || "").toLowerCase();
   var qs = new URLSearchParams(location.search);
 

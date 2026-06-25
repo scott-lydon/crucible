@@ -9,6 +9,7 @@ import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.responses import RedirectResponse
@@ -537,9 +538,19 @@ async def root() -> RedirectResponse:
     return RedirectResponse(url="/app/")
 
 
-# Serve the Claude Design front end (PR #1) statically at /app. The pages cross-link
-# relative .dc.html files; support.js renders them in-browser. The JSON API routes
-# above are matched first; this mount is the catch-all for the dashboard.
+class _NoCacheStatic(StaticFiles):
+    """Serve the dashboard with no-store so browsers never pin a stale shell. Without
+    this, a cached index.html (an old build redirected to a mockup) keeps loading even
+    after a redeploy — the user never sees the new app until they clear their cache."""
+
+    async def get_response(self, path: str, scope: Any) -> Response:
+        response = await super().get_response(path, scope)
+        response.headers["Cache-Control"] = "no-store, must-revalidate"
+        return response
+
+
+# Serve the single-page dashboard at /app. The JSON API routes above are matched first;
+# this mount is the catch-all for the SPA shell + its assets.
 _FRONTEND = Path(__file__).resolve().parents[1] / "frontend"
 if _FRONTEND.is_dir():
-    app.mount("/app", StaticFiles(directory=str(_FRONTEND), html=True), name="frontend")
+    app.mount("/app", _NoCacheStatic(directory=str(_FRONTEND), html=True), name="frontend")

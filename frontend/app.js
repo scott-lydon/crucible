@@ -40,7 +40,10 @@
   function card(title) {
     var c = h("div", { class: "card" });
     if (title) c.append(h("h2", {}, title));
-    [].slice.call(arguments, 1).forEach(function (n) { if (n) c.append(n); });
+    [].slice.call(arguments, 1).flat().forEach(function (n) {
+      if (n == null || n === false) return;
+      c.append(n.nodeType ? n : document.createTextNode(String(n)));
+    });
     return c;
   }
   function pct(x) { return x == null ? "—" : Math.round(x * 100) + "%"; }
