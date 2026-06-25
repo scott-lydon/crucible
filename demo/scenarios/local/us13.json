@@ -1,0 +1,4 @@
+{ "id": "local-us13-halt", "title": "US-13 Halt at residual red line", "base": "http://localhost:8910",
+  "page": "/app/slice-06-halt-certification.dc.html", "waitText": "recall", "dwellMs": 2000,
+  "apiRoutes": ["/halt"],
+  "steps": [ {"action":"wait","ms":2600},{"action":"scroll","dy":240,"ms":1900},{"action":"wait","ms":2000},{"action":"scroll","dy":240,"ms":1900},{"action":"scrollTop","ms":1700} ] }
