@@ -1,0 +1,256 @@
+# Crucible goal-loop handoff: video-recorded acceptance tests, deploy, share
+
+This briefs a multi-agent goal loop to: record a narrated demo video of
+Crucible's acceptance tests running against a live deploy, fix any bug the
+recording reveals, deploy Crucible to Render WITHOUT merging the pull request to
+main, upload the finished video online, and post it to the Slack group with
+Gustavo, Julian, and Ruijing. It is fully self contained: a fresh session with
+no memory of the prior conversation can execute it. State lives in the section 7
+checklists, not in any agent's memory.
+
+This loop depends on the functional loop. The app must already pass
+`GOAL_LOOP_HANDOFF.md` (functional + data-integrity verification) before a frame
+is recorded. A demo of broken functionality is worthless. If functional
+verification is not green, run that loop first.
+
+## 0. Prime directive: demo only what the spec says, fix what the demo reveals
+
+- The acceptance tests demoed are `acceptance-tests.md` section 1 (US-1..US-15).
+  Demo only behavior that traces to a US-n OR is plainly entailed by the PRD as
+  part of delivering a named US-n. Do not stage, narrate, or imply any feature
+  the spec does not have. No invented scope, no faked screens, no rehearsed
+  result that is not the live run's real output (global NO-FAKE-DATA rule).
+- The video shows REAL runs against the REAL deploy. Narration may not claim a
+  number the screen does not show. If a value on screen is wrong, that is a bug
+  to fix, not to talk around.
+- Every bug the recording or the watcher reveals is fixed by the coding agent,
+  reverified, and the affected segment re-recorded. The video is not "done"
+  while a known app bug is visible in it.
+
+## 1. Agent team arrangement (separation of duties, no self-certification)
+
+The agent that writes a fix never confirms it. The agent that records the video
+never judges whether it is good. Distinct contexts:
+
+### A. Builder / Coding agent (writes code, may NOT sign off the result)
+- Tools: Read, Write, Edit, shell, backend tests. Fixes bugs handed to it by the
+  Bug-Watcher with the smallest change that satisfies the cited US-n. Commits
+  each fix separately on `feat/crucible-build`. Never closes its own finding.
+
+### B. Recording agent (drives the live UI, captures the screen + voice)
+- Tools: Chrome MCP (navigate, computer, get_page_text), shell (ffmpeg /
+  screencapture, the ElevenLabs helper), Read.
+- Walks each in-scope acceptance scenario through the browser against the live
+  deploy while screen-recording, and lays the user's ElevenLabs voice narration
+  over it (section 4). Produces per-scenario clips plus a stitched master.
+
+### C. Bug-Watcher agent (watches the video, finds app bugs, fixes nothing)
+- Tools: Read (the recorded file frames / transcript), Chrome MCP screenshot,
+  shell to extract frames (ffmpeg). No Edit/Write.
+- Watches the recording (frame extraction at 1 to 2 fps plus the audio
+  transcript, since an agent cannot stream video natively) and the live screens,
+  and identifies APP bugs: wrong values, broken controls, error states, a screen
+  that does not match the US-n it claims to show. Writes a bug packet (US-n,
+  timestamp, frame path, expected-vs-shown) and hands it to the Builder. Does not
+  fix. Is a different context from the Builder so it cannot rationalize the code.
+
+### D. Video-Critique agent (judges the video as a video, not the code)
+- Tools: Read (frames + transcript), shell (ffmpeg, whisper for the audio). No
+  Edit/Write.
+- Reviews the stitched master for naturalness and sense: does the narration
+  sound unnatural or rushed, does the voiceover match what is on screen, do the
+  segments flow, is anything confusing, mistimed, or contradictory. If it fails
+  on naturalness, coherence, voiceover-screen mismatch, or pacing, it sends the
+  video BACK with a specific re-record/re-narrate note to the Recording agent.
+  It judges the artifact, never the code; app bugs are the Bug-Watcher's lane.
+
+### E. Deploy agent (Render, without merging the PR)
+- Tools: shell (git, curl, Render API or `render` CLI), Read. Implements the
+  no-merge deploy in section 3 and verifies the live URL serves the branch code.
+
+### F. Publish + Notify agent (upload, then Slack)
+- Tools: shell / Chrome MCP for the upload, Slack MCP for the message. Uploads
+  the approved video Unlisted, then posts to the Slack group. The Slack send is
+  the one irreversible external action: it runs only after the operator approves
+  the drafted message (section 6).
+
+### Orchestrator (the loop)
+- Routes packets, never lets a writer certify its own work, drives the section 7
+  checklist to all-green. Holds no opinion on the code or the video.
+
+## 2. Environment and prerequisites
+
+- Repo `/Users/scottlydon/Desktop/Clutter/iOS/crucible`, branch
+  `feat/crucible-build`, PR #3 (`https://github.com/scott-lydon/crucible/pull/3`,
+  base `main`). Do NOT merge this PR.
+- Live functional app for recording: prefer the Render deploy from section 3;
+  the local HEAD server (`http://localhost:8910/app`, see `GOAL_LOOP_HANDOFF.md`
+  section 2) is the fallback if the deploy is mid-flight. The video must show the
+  deploy URL once section 3 is green.
+- Secrets to confirm present before starting (fail loudly if missing, never
+  fake): `ELEVENLABS_API_KEY`, `ELEVENLABS_VOICE_ID` (the user's trained voice),
+  Render credentials (`RENDER_API_KEY` is in `.env`), `MODAL_TOKEN_ID` /
+  `MODAL_TOKEN_SECRET` (already provided, in `.env`), a YouTube-capable session
+  for the upload, and Slack access to the group.
+- ElevenLabs voice pipeline already exists and is REUSED, not rebuilt:
+  `~/.claude/skills/assignment-conveyor/lib/elevenlabs_tts.sh` (`el_tts_render`)
+  and the pace-checked muxing pattern in
+  `~/.claude/skills/assignment-conveyor/lib/phase_14a_elevenlabs.sh`. Voice id
+  and key come from env; the pace detector re-renders rushed narration.
+- Upload target: YouTube, visibility Unlisted (set Unlisted in the wizard BEFORE
+  Save; Public is never the default for this).
+- Slack group: the direct-message group containing Gustavo Hornedo, Julian, and
+  Ruijing Wang. Resolve its channel id by those member names via the Slack MCP;
+  do not guess an id.
+- Machine-load rule: one heavy job at a time (ffmpeg encode, a real-LLM Crucible
+  run, a Render build). Check `uptime` before launching another.
+
+## 3. Deploy to Render without merging PR #3
+
+Decision (the operator left the method to the loop): deploy the working branch
+directly, no merge, no parallel repo unless forced. Render deploys whatever
+branch a service tracks, so point the existing `crucible` service at
+`feat/crucible-build`.
+
+Primary path (no parallel repo):
+1. In the Render service `crucible`, set the tracked branch from `main` to
+   `feat/crucible-build` (Render dashboard service Settings, or the Render API
+   `PATCH /services/{id}` with `branch`). `autoDeploy: true` then builds the
+   branch head on every push.
+2. Trigger a deploy of the branch head (push, or Render API
+   `POST /services/{id}/deploys`). Migrations run on container start per the
+   Dockerfile CMD.
+3. Verify the live URL serves the BRANCH code, not stale main: hit `/health`
+   (200, db connected) and a branch-only marker (for example the new
+   `GET /targets/code_agent/default-spec` returns 200, which main does not have).
+   That endpoint is the deploy-asymmetry proof: if it 404s, Render is on old code.
+
+Fallback (only if branch deploy is blocked by plan or policy): create a deploy
+mirror repo `crucible-deploy`, push `feat/crucible-build` to its `main`, point a
+new Render Blueprint at it, and keep it in sync by pushing the branch to the
+mirror on each change. Document which path was used in RUN_REPORT. Do not modify
+PR #3's base or merge it under any path.
+
+Render runs `MOCK_LLM=true` (no `claude` CLI on Render). So the DEPLOY shows the
+dashboard and every read route on real persisted data, and the live red/blue
+walk-through in the video is recorded against the LOCAL real-LLM server. The
+narration must disclose, once and plainly, which segments are the live local run
+versus the deployed dashboard. Never present the mock dashboard as a live run.
+
+## 4. Record the narrated acceptance-test video
+
+1. Script per scenario from the US-n Given/When/Then (US-1..US-15, in scope
+   only). One short narration block per scenario, spoken-prose style: short
+   sentences, contractions, no dashes, lead with what the screen shows.
+2. Render each narration block to the user's voice via `el_tts_render` (reuse the
+   helper; the pace detector re-renders anything rushed).
+3. Screen-record the Chrome MCP walk of each scenario against the live app
+   (ffmpeg avfoundation screen capture, or `screencapture -v`), then mux the
+   voice over the screen clip with ffmpeg, matching narration to the on-screen
+   action. Keep per-scenario clips so a single failed scenario can be re-recorded
+   without redoing the whole video.
+4. Stitch the clips into one master mp4 with a short title and an outro frame.
+5. Every value spoken must match the value on screen for that real run. The
+   adversarial-probe discipline from `GOAL_LOOP_HANDOFF.md` applies: if a number
+   looks pre-baked, it is a bug, route it to the Bug-Watcher.
+
+## 5. Bug-fix and critique loops (both must drain to zero)
+
+- Bug loop: Bug-Watcher finds an app bug in the recording or live screen ->
+  Builder fixes on the branch -> Deploy agent redeploys if the fix is server-side
+  (deploy-verify, do not trust the edit) -> Recording agent re-records the
+  affected scenario -> Bug-Watcher re-checks. Repeat until zero open app bugs.
+- Critique loop: Video-Critique agent reviews the stitched master -> if
+  unnatural, incoherent, mismatched, or mistimed, sends a specific note back ->
+  Recording agent re-narrates or re-records the flagged segment -> re-stitch ->
+  re-critique. Repeat until the critique agent passes the whole video.
+- A re-record for a bug fix re-enters BOTH loops (the new segment must pass
+  critique too). The video is final only when both loops are empty at once.
+
+## 6. Upload and Slack message
+
+- Upload the critique-approved, bug-clean master to YouTube as Unlisted. Capture
+  the watch URL.
+- Draft the Slack message to the group (Gustavo, Julian, Ruijing). It must
+  contain exactly three things: the PR link
+  (`https://github.com/scott-lydon/crucible/pull/3`), the demo video link, and a
+  brief plain explanation of what is being shared and what it shows. Teammate DM,
+  so the links belong here (this is not a public post, the no-public-demo-URL
+  rule does not apply).
+- The operator approves the drafted message text before send (the one human
+  gate; sending to colleagues is irreversible). Then the Notify agent sends it
+  via the Slack MCP. Confirm delivery.
+
+## 7. Iteration checklists (the loop's persisted state)
+
+Rules: a box is ticked only by the bracketed agent, in a fresh context, with
+evidence (file path, frame, URL, or API response). The writer never ticks the
+reviewer's box. A regression unticks the box. The loop is done only when the
+section 8 master checklist is green.
+
+### Stage P: prerequisites
+- [ ] [Deploy] All secrets in section 2 confirmed present; missing ones surfaced
+      to the operator, not faked.
+- [ ] [Recording] ElevenLabs helper renders a 5-second test clip in the user's
+      voice (proves voice id + key + quota).
+- [ ] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
+      before any recording.
+- [ ] [Loyalty] Scenario list to be recorded is exactly the in-scope US-n set;
+      nothing out of scope staged.
+
+### Stage D: deploy to Render without merging PR #3
+- [ ] [Deploy] Render `crucible` service set to track `feat/crucible-build` (or
+      fallback mirror documented); PR #3 untouched, not merged.
+- [ ] [Deploy] Branch head deployed; build succeeded in the Render log.
+- [ ] [Deploy] Live URL serves BRANCH code: `/health` 200 AND
+      `/targets/code_agent/default-spec` returns 200 (the branch-only marker).
+- [ ] [Loyalty] Deploy exposes no out-of-scope route or screen.
+
+### Stage R: record the acceptance-test video (per scenario)
+- [ ] [Recording] US-1 recorded with narration matching the live screen.
+- [ ] [Recording] US-2 recorded (live local real-LLM run; disclosed as such).
+- [ ] [Recording] US-3..US-15 recorded, each matching its US-n.
+- [ ] [Recording] Master mp4 stitched from per-scenario clips with title + outro.
+- [ ] [Integrity] Every spoken value matches the on-screen value for that real
+      run; no pre-baked number narrated as live.
+
+### Stage B: bug loop (drain to zero)
+- [ ] [Bug-Watcher] Full recording watched (frames + transcript); every app bug
+      logged with US-n, timestamp, frame, expected-vs-shown.
+- [ ] [Builder] Every logged bug fixed on the branch, committed separately.
+- [ ] [Deploy] Server-side fixes redeployed and deploy-verified.
+- [ ] [Recording] Every affected scenario re-recorded.
+- [ ] [Bug-Watcher] Re-check finds zero open app bugs in the current master.
+
+### Stage C: video-critique loop (drain to zero)
+- [ ] [Video-Critique] Master reviewed for naturalness, coherence,
+      voiceover-screen match, and pacing.
+- [ ] [Recording] Every flagged segment re-narrated or re-recorded.
+- [ ] [Video-Critique] Re-review passes the whole video with zero open notes.
+
+### Stage U: upload + notify
+- [ ] [Publish] Master uploaded to YouTube as Unlisted; watch URL captured.
+- [ ] [Notify] Slack message drafted with PR link + video link + brief
+      explanation; resolved the group channel id by member names.
+- [ ] [Operator] Drafted message text approved.
+- [ ] [Notify] Message sent to the Gustavo/Julian/Ruijing group; delivery
+      confirmed.
+
+## 8. Master exit checklist (the loop stops only when all are ticked)
+- [ ] Deploy serves the branch (not main), PR #3 not merged.
+- [ ] Bug loop empty: zero app bugs visible in the final master.
+- [ ] Critique loop empty: video passes naturalness + coherence + match + pacing.
+- [ ] Every recorded scenario is an in-scope US-n; zero invented scope.
+- [ ] Video uploaded Unlisted; Slack message delivered to the group with PR link,
+      video link, and explanation.
+- [ ] RUN_REPORT committed: deploy path used, per-scenario evidence, bug log,
+      critique notes, final URLs.
+
+## 9. Evidence to leave behind
+- `demo/` with per-scenario clips, the stitched master, the narration scripts,
+  and the rendered voice mp3s.
+- `RUN_REPORT.md`: which deploy path was used, the branch-marker check output,
+  the bug log with fixes (commit hashes), the critique notes and resolutions, the
+  YouTube URL, and the Slack delivery confirmation.
+- Commits: one logical fix each, Conventional Commits, `Assisted-by` trailer, all
+  on `feat/crucible-build`.
