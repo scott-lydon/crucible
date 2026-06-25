@@ -48,7 +48,6 @@ See STUB_PROTOCOL.md for the grep recipe.
     STUB:series source=api.dashboard.series.asr_30d              count=30 shape=number[] note="amber line"
     STUB:series source=api.dashboard.series.detection_30d        count=30 shape=number[] note="cyan line"
     STUB:series source=api.dashboard.halts_30d                   shape={run_id,ts} note="halt markers r.117 r.131"
-    STUB:series source=api.dashboard.coevolution.last12_rounds   count=13 shape={round,red,blue}
     STUB:series source=api.dashboard.cost_per_hack.histogram     shape=number[] note="bar heights"
     STUB:series source=api.dashboard.health.subsystems           shape={name,status,latency_ms}
     STUB:series source=api.dashboard.runs.list?window=30d        count=8  shape={id,started_at,rounds,verdict,asr,det,cost_usd,mins,spec,audit}
@@ -234,17 +233,8 @@ LEGEND   kind one of: id metric series text link time user cost count status cod
     </div>
 
 
-    <!-- ============== TWO-COL ROW: CO-EVOLUTION + COST/HACK ============== -->
-    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:20px">
-
-      <!-- co-evolution -->
-      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:20px 22px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Red &harr; Blue co-evolution</h2>
-          <button class="om-info" aria-label="About co-evolution" title="Red invents new attacks; blue patches the verifier. The curves narrowing means the system is stabilizing.">i</button>
-        </div>
-        <div style="padding:36px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No co-evolution rounds recorded yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
-      </div>
+    <!-- ============== COST/HACK ROW ============== -->
+    <div style="display:grid;grid-template-columns:1fr;gap:20px;margin-bottom:20px">
 
       <!-- cost / hack histogram -->
       <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:20px 22px">
