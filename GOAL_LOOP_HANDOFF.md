@@ -198,6 +198,143 @@ continuous pass with a fresh Verifier and a fresh Integrity Reviewer:
 Only when all four hold for one uninterrupted run is the work done. A green from
 the Builder alone never closes the loop.
 
+## 6. Iteration checklists (the loop's persisted state)
+
+State lives HERE, in these checkboxes, not in any agent's memory. On every
+iteration an agent reads this section, finds the unticked boxes, and works only
+those. Rules:
+
+- A box is ticked ONLY by the agent named in brackets, in a fresh context, with
+  evidence (screenshot path + backing JSON). The Builder never ticks a Verifier,
+  Integrity, or Loyalty box.
+- If any later change regresses a behavior, the responsible reviewer UNticks the
+  box and writes why next to it. Unticking is expected, not failure.
+- A scenario is "green" only when all four of its boxes are ticked at once. The
+  loop is done only when section 4's master boxes are all ticked on two back to
+  back passes (record the two pass timestamps).
+- Do not add a checkbox that has no US-n. If a box would describe out-of-scope
+  behavior, delete it instead and note the REMOVED_UI.md / section-2 reason.
+
+### Scenario 0: launcher renders (regression, blocks everything)
+- [ ] [Builder] Root cause of the blank blue screen identified (CDN mount vs
+      `live.js` throw vs both), written in RUN_REPORT with console + network
+      evidence.
+- [ ] [Builder] Fix applied; launcher renders all panels after Cmd+Shift+R.
+- [ ] [Verifier] Fresh-context load of `/app` shows the rendered launcher, not a
+      blank screen; console has zero app errors.
+- [ ] [Integrity] First-paint screenshot captured; no fabricated values on the
+      launcher (target cards, est/spend, sandbox image all real or em-dash).
+- [ ] [Loyalty] Nothing on the launcher works that lacks a US-n.
+
+### US-1: submit a target for evaluation
+- [ ] [Loyalty] Section-0 spec reconciliation on the default-spec endpoint is
+      resolved (spec updated OR auto-fill removed); code and spec agree.
+- [ ] [Verifier] Target selectable (Fraud and Code Agent); sealed spec present
+      per the resolved decision; rounds/budget set; Start clicked.
+- [ ] [Verifier] App navigates to `/runs/:runId`; spec accepted, sandbox
+      launched, first attack round visible within ten seconds.
+- [ ] [Integrity] Every value on the launcher and the landing run view equals its
+      backing API response; no prototype constants.
+- [ ] [Loyalty] Asserted behavior matches `acceptance-tests.md` US-1 Then-clauses
+      verbatim; no extra capability graded.
+
+### US-2: watch one round live
+- [ ] [Verifier] ASR chart updates once per attack; detection chart once per
+      verdict; reasoning trace streams via SSE.
+- [ ] [Verifier] Each trace line's Inspect button opens the real prompt, raw
+      response, parsed output, token count, and dollar cost.
+- [ ] [Integrity] Streamed numbers equal the SSE/`/runs/:id` source; if run in
+      MOCK, every View is labeled MOCK and this US is NOT signed off.
+- [ ] [Loyalty] Matches US-2 Then-clauses; no invented panel.
+
+### US-3: drill into a verdict
+- [ ] [Verifier] Producer output, verbatim obligation, one card per oracle with
+      pass/fail + reasoning, vote tally, and a working deterministic Replay.
+- [ ] [Verifier] Page renders within one second on cached audit data.
+- [ ] [Integrity] Oracle/vote values equal `/runs/:id/verdicts/:id`.
+- [ ] [Loyalty] Matches US-3 Then-clauses.
+
+### US-4: every oracle vote and reasoning
+- [ ] [Verifier] Full vote breakdown visible with each oracle's reasoning.
+- [ ] [Integrity] Judge weight is the REAL weight from `/oracles/registered`, not
+      the prototype's `one of five`; all vote values match source.
+- [ ] [Loyalty] Matches US-4.
+
+### US-5: replay any past action
+- [ ] [Verifier] Replay re-runs deterministically (same seed -> same result).
+- [ ] [Integrity] Replayed values match the original captured audit row.
+- [ ] [Loyalty] Matches US-5.
+
+### US-6: strategy catalog
+- [ ] [Verifier] `/catalog` rows render from real data.
+- [ ] [Integrity] Rows equal the `/catalog` response.
+- [ ] [Loyalty] Matches US-6.
+
+### US-7: blue loop and patch review
+- [ ] [Verifier] Blue loop triggers; patch viewable at `/blue/:patchId`.
+- [ ] [Integrity] Before/after detection and produced model version equal the
+      `/blue/:patchId` response.
+- [ ] [Loyalty] Matches US-7; reviewer-approval workflow stays removed.
+
+### US-8: platform health for every subcomponent
+- [ ] [Verifier] Health grid renders for every registered target and oracle.
+- [ ] [Integrity] Statuses equal `/health/targets/:type` and
+      `/health/oracles/:name`.
+- [ ] [Loyalty] Matches US-8.
+
+### US-9: producer sandbox is sealed
+- [ ] [Verifier] Sandbox view shows egress denied.
+- [ ] [Integrity] Egress/seal state equals the real sandbox status, not a static
+      "0 attempts" constant.
+- [ ] [Loyalty] Matches US-9.
+
+### US-10: dashboard metrics
+- [ ] [Verifier] Dashboard renders catch rates, gap, undetected rate.
+- [ ] [Integrity] Every figure equals `/metrics`; nulls render as em-dash, never
+      as `92.7%` or any prototype number.
+- [ ] [Loyalty] Matches US-10.
+
+### US-11: export the seeded-hack corpus
+- [ ] [Verifier] Corpus exports from `/corpus` / `/corpus.jsonl`.
+- [ ] [Integrity] Exported rows equal the route payload.
+- [ ] [Loyalty] Matches US-11.
+
+### US-12: SR 11-7 report
+- [ ] [Verifier] Report generates at `/reports/:runId`.
+- [ ] [Integrity] Rendered markdown numbers equal the report route; no static KPI
+      grid.
+- [ ] [Loyalty] Matches US-12.
+
+### US-13: halt at the residual red line
+- [ ] [Verifier] When `/halt` is halted, the banner appears on every route; when
+      not halted, it honestly says no active halt.
+- [ ] [Integrity] Recall/threshold shown equal `/halt`.
+- [ ] [Loyalty] Halt is an automatic state; NO operator halt button is wired.
+
+### US-14: white-box self-test on every pass
+- [ ] [Verifier] `slice-10` self-test renders real pass results.
+- [ ] [Integrity] Self-test values equal their backing route.
+- [ ] [Loyalty] Matches US-14.
+
+### US-15: internal debug route
+- [ ] [Verifier] `slice-12-admin-debug` reachable and renders real overrides.
+- [ ] [Integrity] Override rows equal `/admin/overrides`.
+- [ ] [Loyalty] Matches US-15.
+
+### Cross-cutting cleanup (Loyalty-driven, no US-n owner)
+- [ ] [Loyalty + Builder] Every launcher control with no US-n is removed or
+      em-dashed (tab chrome that duplicates page nav, pause, lift-ceiling,
+      lift-rounds, mock-llm toggle, allow-egress, request-access `href="#"`),
+      with the REMOVED_UI.md / section-2 reason noted.
+
+## 4b. Master exit checklist (tick only when section 6 is fully green twice)
+- [ ] Pass A complete: every Scenario 0 and US-1..US-15 box ticked. Timestamp: ____
+- [ ] Pass B complete (immediately after A, fresh Verifier + Integrity, no
+      reordering): same boxes tick again. Timestamp: ____
+- [ ] Zero open Integrity findings across both passes.
+- [ ] Zero open Loyalty findings across both passes.
+- [ ] RUN_REPORT for both passes committed with evidence paths.
+
 ## 5. Evidence to leave behind
 
 - A `verification/` directory with one subfolder per pass, holding the Integrity
