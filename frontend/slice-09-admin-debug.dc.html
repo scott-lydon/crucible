@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<!--
+====================================================================
+slice-09-admin-debug · internal debug route (US-15)
+====================================================================
+  Read-only admin/debug surface. Renders REAL backend state only.
+  NO mock / cassette / override fabrication. The old mock-llm and
+  cassette toggles were removed as out-of-scope: this view has no
+  behavior-changing controls.
+
+  Bindings -> endpoints (all live, fetched in componentDidMount):
+    identity row        <- GET /me        (display_name, role, audit_log_target)
+    workspace row       <- GET /workspace (name, monthly_ceiling_dollars)
+    policy rows         <- GET /policy     (halt_recall_threshold, operative_policy)
+    run-overrides table <- GET /admin/overrides  (array; honest empty state when [])
+    recent-runs list    <- GET /runs       (run_id, status, target_type, spec_title)
+    debug-surface links -> /health, /halt (api) + slice-06 halt cert
+====================================================================
+-->
+
+<div data-screen-label="Admin · debug" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <span style="color:#E8EDF3">/admin · debug</span>
+      </span>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ healthColor }}">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ healthDot }};flex:none"></span>
+        {{ healthLabel }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== READ-ONLY BANNER ============== -->
+  <div style="background:#11181F;border-bottom:1px solid #2C3744;color:#B8C2CE">
+    <div style="max-width:1100px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+      <span style="font-weight:600;letter-spacing:.04em;color:#7C8896">READ-ONLY</span>
+      <span style="color:#4A5462">·</span>
+      <span>Internal debug route. Shows real backend state. No behavior-changing toggles (the old mock-llm / cassette controls were removed as out-of-scope).</span>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1100px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="margin-bottom:24px">
+      <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Admin · debug</h1>
+      <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">internal debug route · live backend state, read-only</div>
+    </div>
+
+    <!-- ============== IDENTITY + WORKSPACE + POLICY ============== -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:24px">
+
+      <!-- IDENTITY -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Identity · GET /me</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">display_name</span><span style="color:#E8EDF3">{{ meDisplayName }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">role</span><span style="color:{{ meRoleColor }}">{{ meRole }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">audit_log_target</span><span style="color:#B8C2CE">{{ meAuditTarget }}</span></div>
+        </div>
+      </div>
+
+      <!-- WORKSPACE -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Workspace · GET /workspace</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">name</span><span style="color:#E8EDF3">{{ wsName }}</span></div>
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">monthly_ceiling</span><span style="color:#B8C2CE">{{ wsCeiling }}</span></div>
+        </div>
+      </div>
+
+      <!-- POLICY -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Policy · GET /policy</span>
+        </div>
+        <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+          <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">halt_recall_threshold</span><span style="color:#E8EDF3">{{ polThreshold }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:5px"><span style="color:#8A94A2">operative_policy</span><span style="color:#B8C2CE;line-height:1.55">{{ polOperative }}</span></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ============== RUN OVERRIDES ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Run overrides · GET /admin/overrides</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2">{{ overridesCount }}</span>
+      </div>
+
+      <sc-if value="{{ hasOverrides }}">
+      <div role="row" style="display:grid;grid-template-columns:160px 1fr 1fr 160px;gap:14px;padding:9px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Run</span><span>Field</span><span>Value</span><span>Set</span>
+      </div>
+      <sc-for list="{{ overrides }}" as="o">
+      <div role="row" style="display:grid;grid-template-columns:160px 1fr 1fr 160px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#E8EDF3">{{ o.runShort }}</span>
+        <span style="color:#B8C2CE">{{ o.field }}</span>
+        <span style="color:#B8C2CE">{{ o.value }}</span>
+        <span style="color:#8A94A2">{{ o.setAt }}</span>
+      </div>
+      </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ noOverrides }}">
+      <div style="padding:22px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2;line-height:1.6">
+        No run overrides recorded.
+      </div>
+      </sc-if>
+    </div>
+
+    <!-- ============== RECENT RUNS ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Recent runs · GET /runs</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2">{{ runsCount }}</span>
+      </div>
+
+      <sc-if value="{{ hasRuns }}">
+      <div role="row" style="display:grid;grid-template-columns:170px 120px 150px 1fr;gap:14px;padding:9px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Run</span><span>Status</span><span>Target</span><span>Spec</span>
+      </div>
+      <sc-for list="{{ runs }}" as="r">
+      <div role="row" style="display:grid;grid-template-columns:170px 120px 150px 1fr;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <a href="{{ r.href }}" style="color:#4FAAC0;text-decoration:underline">{{ r.runShort }}</a>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:{{ r.statusColor }}"><span style="width:7px;height:7px;border-radius:50%;background:{{ r.statusDot }};flex:none"></span>{{ r.status }}</span>
+        <span style="color:#B8C2CE">{{ r.targetType }}</span>
+        <span style="color:#B8C2CE">{{ r.specTitle }}</span>
+      </div>
+      </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ noRuns }}">
+      <div style="padding:22px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2;line-height:1.6">
+        No runs recorded.
+      </div>
+      </sc-if>
+    </div>
+
+    <!-- ============== OTHER DEBUG SURFACES ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Other debug surfaces</span>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <div style="display:flex;gap:12px;align-items:baseline">
+          <a href="/health" style="color:#4FAAC0;text-decoration:underline;min-width:120px">/health</a>
+          <span style="color:#8A94A2">liveness + database connectivity (raw JSON)</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:baseline">
+          <a href="/halt" style="color:#4FAAC0;text-decoration:underline;min-width:120px">/halt</a>
+          <span style="color:#8A94A2">current halt state (raw JSON)</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:baseline">
+          <a href="slice-06-halt-certification.dc.html" style="color:#4FAAC0;text-decoration:underline;min-width:120px">halt certification</a>
+          <span style="color:#8A94A2">rendered halt view (slice-06)</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:baseline">
+          <a href="/metrics" style="color:#4FAAC0;text-decoration:underline;min-width:120px">/metrics</a>
+          <span style="color:#8A94A2">process metrics (raw)</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    me: null,         // GET /me
+    workspace: null,  // GET /workspace
+    policy: null,     // GET /policy
+    overrides: null,  // GET /admin/overrides (array)
+    runs: null,       // GET /runs (array)
+    health: null,     // GET /health
+  };
+
+  componentDidMount() {
+    const get = (url, key) =>
+      fetch(url).then(r => r.json()).then(d => this.setState({ [key]: d })).catch(() => {});
+    get('/me', 'me');
+    get('/workspace', 'workspace');
+    get('/policy', 'policy');
+    get('/admin/overrides', 'overrides');
+    get('/runs', 'runs');
+    get('/health', 'health');
+  }
+
+  renderVals() {
+    const me = this.state.me;
+    const ws = this.state.workspace;
+    const pol = this.state.policy;
+    const ov = this.state.overrides;
+    const runs = this.state.runs;
+    const health = this.state.health;
+
+    const short = (id) => (id ? String(id).slice(0, 8) + '…' : '—');
+
+    // ---- health chrome ----
+    let healthLabel = 'checking…', healthColor = '#B8C2CE', healthDot = '#5A6573';
+    if (health) {
+      const ok = health.status === 'ok' && health.database === 'connected';
+      healthLabel = ok ? 'backend ok · db connected' : 'backend ' + (health.status || '?') + ' · db ' + (health.database || '?');
+      healthColor = ok ? '#9BD9B5' : '#E5B5B0';
+      healthDot   = ok ? '#57C08A' : '#E5736B';
+    }
+
+    // ---- identity ----
+    const meRole = (me && me.role) ? me.role : 'anonymous · no role';
+    const meRoleColor = (me && me.role) ? '#E8EDF3' : '#8A94A2';
+
+    // ---- run overrides (NEVER fabricated) ----
+    const ovArr = Array.isArray(ov) ? ov : [];
+    const overrideRows = ovArr.map((o) => ({
+      runShort: short(o.run_id),
+      field: o.field != null ? String(o.field) : '—',
+      value: o.value != null ? String(o.value) : '—',
+      setAt: o.set_at != null ? String(o.set_at) : '—',
+    }));
+
+    // ---- recent runs ----
+    const statusStyle = (s) => {
+      switch (s) {
+        case 'complete': return { c: '#9BD9B5', d: '#57C08A' };
+        case 'running':  return { c: '#7FC5D9', d: '#4FAAC0' };
+        case 'pending':  return { c: '#E8C84A', d: '#D9A441' };
+        case 'failed':   return { c: '#E5B5B0', d: '#E5736B' };
+        default:         return { c: '#B8C2CE', d: '#5A6573' };
+      }
+    };
+    const runArr = Array.isArray(runs) ? runs : [];
+    const runRows = runArr.map((r) => {
+      const st = statusStyle(r.status);
+      return {
+        runShort: short(r.run_id),
+        href: 'Run Launcher.dc.html?run=' + encodeURIComponent(r.run_id || ''),
+        status: r.status != null ? String(r.status) : '—',
+        statusColor: st.c,
+        statusDot: st.d,
+        targetType: r.target_type != null ? String(r.target_type) : '—',
+        specTitle: r.spec_title != null ? String(r.spec_title) : '—',
+      };
+    });
+
+    return {
+      healthLabel, healthColor, healthDot,
+
+      meDisplayName: (me && me.display_name) ? me.display_name : '—',
+      meRole, meRoleColor,
+      meAuditTarget: (me && me.audit_log_target) ? me.audit_log_target : 'none',
+
+      wsName: (ws && ws.name) ? ws.name : '—',
+      wsCeiling: (ws && ws.monthly_ceiling_dollars != null)
+        ? '$' + ws.monthly_ceiling_dollars
+        : 'no ceiling',
+
+      polThreshold: (pol && pol.halt_recall_threshold != null)
+        ? Number(pol.halt_recall_threshold).toFixed(2)
+        : '—',
+      polOperative: (pol && pol.operative_policy) ? pol.operative_policy : '—',
+
+      hasOverrides: overrideRows.length > 0,
+      noOverrides: ov != null && overrideRows.length === 0,
+      overrides: overrideRows,
+      overridesCount: ov == null ? 'loading…' : overrideRows.length + ' recorded',
+
+      hasRuns: runRows.length > 0,
+      noRuns: runs != null && runRows.length === 0,
+      runs: runRows,
+      runsCount: runs == null ? 'loading…' : runRows.length + ' total',
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

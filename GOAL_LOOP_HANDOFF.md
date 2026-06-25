@@ -488,16 +488,18 @@ those. Rules:
 ### US-15: internal debug route
 - [x] [Verifier] `slice-12-admin-debug` reachable and renders; 0 console errors.
       Evidence: verification/pass-A/US15_admindebug.png
-> RECONCILED (2026-06-24): the new Claude Design bundle has NO admin-debug slice;
-> the old slice-12-admin-debug (fabricated MOCK-LLM/cassette panel) is archived
-> under frontend/_old_design_archive/ and no longer served. The new design's
-> "internal route" surface is Canvas.dc.html (the index of all views). Decision
-> needed from operator: either (a) accept Canvas as the US-15 internal route, or
-> (b) build a real admin/debug view backed by /admin/overrides. Until decided,
-> US-15 is OUT of the served surface (not a fabrication anymore — it's removed).
-- [ ] [Verifier] Pending operator decision on US-15 surface (Canvas vs new view).
-- [ ] [Integrity] Old fabricated admin-debug removed from serve path.
-- [ ] [Loyalty] Out-of-scope mock-llm/cassette controls no longer served.
+> RESOLVED (2026-06-24): built a NEW honest admin/debug view in the new design
+> style, slice-09-admin-debug.dc.html (read-only, real data only), linked from
+> Canvas. The old fabricated slice-12 (MOCK-LLM/cassette toggles) is archived and
+> not served. Per CLAUDE rule #6 this extends the new design with a US-required
+> surface backed by real endpoints, no fabrication.
+- [x] [Verifier] slice-09-admin-debug reachable (/app/slice-09-admin-debug.dc.html,
+      linked from Canvas) and renders real overrides; 0 console/page errors.
+- [x] [Integrity] Override rows equal /admin/overrides ([] -> honest "No run
+      overrides recorded."); identity/workspace/policy/runs all equal their
+      endpoints (/me anonymous·no role, workspace default·no ceiling, policy 0.70,
+      7 real runs). No fabricated values; mock-llm/cassette toggles gone.
+- [x] [Loyalty] Read-only debug surface; no behavior-changing/out-of-scope toggles.
 
 ### Cross-cutting cleanup (Loyalty-driven, no US-n owner)
 - [ ] [Loyalty + Builder] PENDING (resolved by the new design, not yet in code):
