@@ -1,0 +1,37 @@
+{
+  "/metrics": {
+    "black_box_catch_rate": {
+      "box": "black_box",
+      "judged": 58,
+      "caught": 6,
+      "undetected": 52,
+      "rate": 0.10344827586206896,
+      "latest_at": "2026-06-25T16:47:43.378376+00:00"
+    },
+    "white_box_catch_rate": {
+      "box": "white_box",
+      "judged": 45,
+      "caught": 6,
+      "undetected": 39,
+      "rate": 0.13333333333333333,
+      "latest_at": "2026-06-25T16:47:43.378376+00:00"
+    },
+    "catch_rate_gap": -0.029885057471264367
+  },
+  "/spend/current-month": {
+    "spent_dollars": 35.612713,
+    "ceiling_dollars": null,
+    "period_start": "2026-06-01T00:00:00+00:00"
+  },
+  "/halt": {
+    "halted": true,
+    "recall": 0,
+    "threshold": 0.7,
+    "message": "Certification halted: recall is 0.00, threshold is 0.70",
+    "override": false
+  },
+  "/health": {
+    "status": "ok",
+    "database": "connected"
+  }
+}

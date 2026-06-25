@@ -368,21 +368,50 @@ shown in that clip equals the live run's real API response, no pre-baked number.
 - [ ] [Recording] US-5 replay any past action (L89): deterministic re-run, same
       seed same result.
 - [ ] [Integrity] US-5 replay output equals the original captured audit row.
-- [ ] [Recording] US-6 browse the strategy catalog (L105): real `/catalog` rows.
-- [ ] [Integrity] US-6 rows equal the `/catalog` response.
+- [x] [Recording] US-6 browse the strategy catalog (L105): real `/catalog` rows.
+      EVIDENCE 2026-06-25 (honest re-record against live data): recorder drove
+      slice-01 strategy catalog, view shows "95 tactics in the sealed attack
+      corpus · GET /catalog", clicks mock-evasion → tactic detail (score 0.0000
+      vs evasion threshold 0.5). 0 console errors. Narration re-authored to the
+      live count (was stale "two tactics / reused eight times") → demo/clips/
+      local/us6.mp4. webm demo/clips/local-us6-catalog.webm.
+- [x] [Integrity] US-6 rows equal the `/catalog` response.
+      EVIDENCE: independent reviewer PASS — /catalog returns exactly 95 rows;
+      mock-evasion detail (score ~0, evaded, threshold 0.5) matches rendered +
+      narration; consoleErrs/failed = [].
 - [ ] [Recording] US-7 trigger the blue loop and review the patch (L120): patch
       at `/blue/:patchId`, real before/after detection, produced model version.
 - [ ] [Integrity] US-7 clip values equal `/blue/:patchId`.
-- [ ] [Recording] US-8 platform health for every subcomponent (L138): health for
-      each registered target and oracle.
-- [ ] [Integrity] US-8 statuses equal `/health/targets/:type` +
-      `/health/oracles/:name`.
-- [ ] [Recording] US-9 confirm the producer sandbox is sealed (L155): egress
-      denied shown from real sandbox state.
-- [ ] [Integrity] US-9 seal/egress state equals the real sandbox status.
-- [ ] [Recording] US-10 dashboard metrics (L171): catch rates, gap, undetected
-      rate, all from `/metrics`.
-- [ ] [Integrity] US-10 figures equal `/metrics`; nulls render as em-dash.
+- [x] [Recording] US-8 platform health for every subcomponent (L138): health for
+      each registered target and oracle. EVIDENCE 2026-06-25: recorder drove the
+      System health panel; capture-defect fixed (us8.json apiRoute
+      /health/targets/fraud_adapter → /health/targets/fraud, was 404). Shows 3
+      targets green (code_agent, fraud, dummy) + 5 oracles green, TOTAL WEIGHT
+      4.5 · PASS THRESHOLD 2. 0 console errors → demo/clips/local/us8.mp4.
+- [x] [Integrity] US-8 statuses equal `/health/targets/:type` +
+      `/health/oracles/:name`. EVIDENCE: independent reviewer PASS — all 3
+      targets green via /health/targets/*; /oracles/registered = 5 oracles,
+      total_weight 4.5, pass_threshold 2.0; matches narration + rendered;
+      consoleErrs/failed = [].
+- [x] [Recording] US-9 confirm the producer sandbox is sealed (L155): egress
+      denied shown from real sandbox state. EVIDENCE 2026-06-25: clip shows
+      "network · sealed (egress deny)" + "python:3.12-slim" from /sandbox/image.
+      0 console errors → demo/clips/local/us9.mp4.
+- [x] [Integrity] US-9 seal/egress state equals the real sandbox status.
+      EVIDENCE: independent reviewer PASS — /sandbox/image: image
+      "python:3.12-slim", egress_blocked=true, network "sealed (egress deny)";
+      matches narration + rendered; consoleErrs/failed = [].
+- [x] [Recording] US-10 dashboard metrics (L171): catch rates, gap, undetected
+      rate, all from `/metrics`. EVIDENCE 2026-06-25: clip shows undetected-hack
+      rate 86.7% (39 of 45 white box), val−heldout gap -3.0% (black 10.3% / white
+      13.3%), recall 13.3% vs 0.70 red line, cost "Not yet measured". Narration
+      RE-AUTHORED from stale seeded numbers (was "0% / -14.3% / 100%") to the live
+      figures → demo/clips/local/us10.mp4. 0 console errors.
+- [x] [Integrity] US-10 figures equal `/metrics`; nulls render as em-dash.
+      EVIDENCE: independent reviewer PASS (scrutinized hardest as the rewrite) —
+      /metrics white_box 39/45 undetected → 86.7%, rate 0.1333 → recall 13.3%,
+      gap -0.0298 → -3.0%; no cost field → "Not yet measured" (not faked zero);
+      all three layers agree; consoleErrs/failed = [].
 - [ ] [Recording] US-11 export the seeded-hack corpus (L190): export from
       `/corpus` / `/corpus.jsonl`.
 - [ ] [Integrity] US-11 exported rows equal the route payload.
@@ -396,9 +425,15 @@ shown in that clip equals the live run's real API response, no pre-baked number.
 - [ ] [Recording] US-14 white-box self-test on every pass (L236): `slice-10`
       shows real self-test results.
 - [ ] [Integrity] US-14 self-test values equal their backing route.
-- [ ] [Recording] US-15 internal debug route (L254): `slice-12-admin-debug`
-      reachable, real overrides.
-- [ ] [Integrity] US-15 override rows equal `/admin/overrides`.
+- [x] [Recording] US-15 internal debug route (L254): `slice-12-admin-debug`
+      reachable, real overrides. EVIDENCE 2026-06-25: clip drove slice-09 admin
+      debug; overrides log empty (0 recorded, shown honestly), identity
+      anonymous, workspace default, policy "certification halts when white-box
+      recall < 0.70". 0 console errors → demo/clips/local/us15.mp4.
+- [x] [Integrity] US-15 override rows equal `/admin/overrides`.
+      EVIDENCE: independent reviewer PASS — /admin/overrides=[] (empty); /me
+      anonymous; /workspace default; /policy halt_recall_threshold 0.7; matches
+      narration + rendered; consoleErrs/failed = [].
 - [ ] [Recording] Master mp4 stitched from all 15 per-scenario clips with title +
       outro; no scenario omitted.
 

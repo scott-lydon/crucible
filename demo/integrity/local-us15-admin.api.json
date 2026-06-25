@@ -1,0 +1,19 @@
+{
+  "/admin/overrides": [],
+  "/me": {
+    "display_name": "anonymous",
+    "role": null,
+    "audit_log_target": null
+  },
+  "/workspace": {
+    "name": "default",
+    "monthly_ceiling_dollars": null
+  },
+  "/policy": {
+    "workspace": "default",
+    "halt_recall_threshold": 0.7,
+    "operative_policy": "certification halts when white-box recall < 0.70",
+    "custom_policy_yaml": null,
+    "updated_at": null
+  }
+}

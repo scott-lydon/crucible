@@ -187,3 +187,22 @@ displayed recall equals the halt message. NOTE design-fidelity: confirm whether
 the Claude Design has a cross-route halt banner; if not, reconcile with the
 operator/design before adding UI (do not invent banner UI not in the design).
 Until BUG-R9 is fixed, US-13 cannot be honestly recorded.
+
+## Peer fixes integrated + verified live (2026-06-25)
+Confirmed present in HEAD and on the running server (curl against :8910):
+- BUG-R5 (Pause/Halt UI-only) — RESOLVED by BuilderLauncher 81bce75: out-of-scope
+  Halt button removed (served markup has 0 "■ Halt"); Pause relabeled "Pause
+  updates"/"Resume updates" and now honestly freezes the LIVE VIEW client-side
+  only (terminal status still tears down the poll). Matches US-13 "no operator
+  halt button".
+- BUG-R6 (static sealed preview) — RESOLVED by BuilderLauncher 0a90fe0: the
+  read-only sealed-spec preview now renders real obligations/invariants via
+  sealedSpecLines (sc-for over defaultSpec). Served markup: 6 sealedSpecLines
+  refs, 0 placeholder strings.
+- BUG-R8 rounds default — RESOLVED by BuilderLauncher f9789dd: rounds 48 -> 3
+  (served markup shows rounds: 3). The ~25s/call CLI subprocess overhead is
+  inherent to the free-CLI path; BuilderToggle 3c8876b adds the "prefer API for
+  runs" toggle (POST /llm-provider/prefer, live, 200) as the fast alternative.
+- BUG-R7 (generate-all-attacks-upfront → UI sits at attack 0/N during generation)
+  remains OPEN; mitigated by rounds=3 (the stuck window shrank from ~96 to ~6
+  attacks) but not eliminated. Logged as a careful follow-up.
