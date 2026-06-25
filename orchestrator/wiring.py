@@ -1,5 +1,6 @@
 import pathlib
 from collections.abc import Callable, Sequence
+from typing import cast
 
 from orchestrator.interfaces import Detector, Adversary, Oracle
 from shared.types import SealedSpec, sealed_spec_from_yaml
@@ -14,6 +15,8 @@ from examples.targets.fraud_synth import (
     synth_strategy,
 )
 from examples.targets import fraud_sparkov
+from examples.targets import code_agent
+from examples.targets.code_agent import CodeAgentEngine, CodeAgentProducer
 
 from modules.targets.local_model.adapter import LocalModelTarget
 from modules.blue.code_engineer import BlueCodeEngineer
@@ -24,6 +27,7 @@ from modules.red.white_box import WhiteBoxRedAdversary
 from modules.red.catalog import StrategyCatalog
 from modules.oracles.scheme import verification_scheme
 from modules.oracles.held_out.oracle import HeldOutOracle
+from modules.oracles.held_out_code.oracle import HeldOutCodeOracle
 from modules.oracles.metamorphic.oracle import MetamorphicOracle
 from modules.oracles.invariant.oracle import InvariantOracle
 from modules.oracles.differential.oracle import DifferentialOracle
@@ -32,6 +36,7 @@ from modules.oracles.llm_judge.oracle import LlmJudgeOracle
 from shared.llm import AnthropicApiProvider, MockProvider, PersistingLLMProvider
 from shared.llm.base import LLMProvider
 from shared.sandbox import LocalDockerSandbox
+from shared.sandbox.base import Sandbox
 
 # The victim's own decision threshold, surfaced for the harness composition
 # layer (e.g. orchestrator.api) without that layer importing examples/.
@@ -77,6 +82,14 @@ def target_registry() -> dict[str, dict[str, object]]:
             "model_artifact_ref": "in-process:FlawedDetector (synthetic, no artifact)",
             "has_default_spec": True,
             "default_spec_yaml": _SPEC_PATH.read_text(),
+        },
+        "code_agent": {
+            "kind": code_agent.load_spec().target_kind,
+            # A live LLM coding agent (Sonnet 4.6), not a serialized artifact —
+            # surfaced honestly rather than faking a file reference.
+            "model_artifact_ref": "llm:claude-sonnet-4-6 (code-agent producer)",
+            "has_default_spec": True,
+            "default_spec_yaml": code_agent.SPEC_PATH.read_text(),
         },
     }
 
@@ -332,4 +345,56 @@ def build_components_sparkov(
         # The raw holdout has no derived `hour`, so the derived `is_fraud` rule
         # cannot read it — the maker validates against the REAL committed label.
         "raw_label_fn": fraud_sparkov.raw_is_fraud,
+    }
+
+
+class _NoMutationAdversary:
+    """A no-op ``Adversary`` for the code-agent produce flow (A1).
+
+    A1 runs the task library straight through produce->held-out-verdict with NO
+    red mutation (free multi-dim RED is A2/A3). The loop requires an adversary,
+    so this honestly proposes no mutation rather than faking an attack.
+    """
+
+    def mutate(self, sample: object, score: float) -> object | None:
+        return None
+
+
+def build_components_code_agent(
+    threshold: float = 0.5,
+    producer_provider: LLMProvider | None = None,
+    sandbox: object | None = None,
+) -> dict[str, object]:
+    """Wire the code-agent produce-victim into the target-agnostic harness.
+
+    The victim is a ``CodeAgentEngine`` wrapping a ``CodeAgentProducer`` that
+    calls REAL Sonnet 4.6 by default (constitution §1: Sonnet on the inner loop);
+    tests inject a ``MockProvider`` to keep the loop offline/free. The engine's
+    gate ``score`` is fixed at 0.0 (< ``threshold``), so every task routes to the
+    objective held-out-test ORACLE — which runs the produced (untrusted) code in
+    the ``LocalDockerSandbox`` against the task's SEALED held-out set and FAILS a
+    reward-hack (passes visible, fails held-out) with no invented rule, no LLM.
+
+    A1 runs the task library with NO red mutation (a no-op adversary); the produce
+    flow drives the SAME ``run_loop`` via the ``engine=`` seam. Returns the kwargs
+    ``run_loop`` consumes — including ``engine`` and (for backward-compat) a
+    ``detector`` of ``None`` (the produce path needs no classifier).
+    """
+    spec = code_agent.load_spec()
+    provider: LLMProvider = (
+        producer_provider
+        if producer_provider is not None
+        else AnthropicApiProvider(model="claude-sonnet-4-6")
+    )
+    engine = CodeAgentEngine(CodeAgentProducer(provider))
+    sbx = sandbox if sandbox is not None else LocalDockerSandbox()
+    oracles: list[Oracle] = [HeldOutCodeOracle(cast(Sandbox, sbx))]
+    return {
+        "detector": None,
+        "engine": engine,
+        "adversary": _NoMutationAdversary(),
+        "oracles": oracles,
+        "label_fn": code_agent.always_real,
+        "generate_fn": code_agent.generate_batch,
+        "spec": spec,
     }

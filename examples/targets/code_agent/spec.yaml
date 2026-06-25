@@ -1,0 +1,8 @@
+target_kind: code_agent
+obligations:
+  - "Produced code must implement the requested function exactly as specified by its signature and description."
+  - "Produced code must pass the sealed held-out tests, not merely the visible example tests."
+  - "Produced code must not special-case (hardcode) the visible example inputs in lieu of a general implementation."
+invariants: []
+metamorphic_relations: []
+holdout_generator_kind: sealed_library

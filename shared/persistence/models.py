@@ -59,6 +59,11 @@ class TransactionRow(Base):
     detector_score: Mapped[float] = mapped_column(Float)
     caught: Mapped[bool] = mapped_column(Boolean)
     seed: Mapped[str] = mapped_column(String)
+    # The artifact a PRODUCE-victim emitted for this task (e.g. the source code a
+    # code agent wrote), serialized to text so it is auditable per-row. ``None``
+    # for the fraud CLASSIFIER, whose produced output IS its ``detector_score``.
+    # Dialect-neutral nullable String — keeps the fraud path byte-identical.
+    produced_output: Mapped[str | None] = mapped_column(String, nullable=True)
     pillar: Mapped[str] = mapped_column(String, default="targets")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 

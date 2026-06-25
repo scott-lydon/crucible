@@ -1,12 +1,18 @@
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import asdict, dataclass
-from typing import Any, Protocol, cast
+from dataclasses import asdict, dataclass, is_dataclass
+from typing import cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from modules.oracles.aggregator import aggregate
-from orchestrator.interfaces import Adversary, Detector, Oracle
+from orchestrator.interfaces import (
+    Adversary,
+    Detector,
+    Evaluation,
+    Oracle,
+    TargetEngine,
+)
 from shared.persistence import repo
 from shared.persistence.models import (
     AttackRow,
@@ -20,38 +26,34 @@ from shared.types import SealedSpec, TxnSlice, Origin, VerdictContext
 LabelFn = Callable[[object], bool]
 GenerateFn = Callable[[str, int], list[object]]
 
+# Re-export the produce-shape seam types (defined in ``orchestrator.interfaces``
+# so an ``examples/`` victim can construct them without importing this module).
+# Callers have always imported them from ``orchestrator.loop``; keep that stable.
+__all__ = ["Evaluation", "TargetEngine", "ClassifyEngine", "run_loop"]
 
-@dataclass(frozen=True, slots=True)
-class Evaluation:
-    """The result of running the victim on one task: what it PRODUCED, a scalar
-    the loop compares to ``threshold`` to decide "caught", and the produced
-    artifact for the oracles.
 
-    For the fraud classifier (degenerate producer) ``score`` IS the produced
-    output and ``output`` is ``None`` — keeping the persisted row + every fraud
-    oracle's view byte-identical. A produce-victim returns its produced artifact
-    in ``output`` and a scalar gate in ``score`` (e.g. 0.0 vs a 0.5 threshold to
-    always route through the oracle verdict path).
+def _features_of(task: object) -> dict[str, object]:
+    """Serialize a task to a JSON-safe mapping for ``TransactionRow.features_json``.
+
+    Generic over the victim: a dataclass task (both fraud victims, the code task)
+    serializes via ``asdict``; any other shape falls back to a safe ``str`` repr
+    under a single key rather than crashing the loop. SPOT for task serialization.
     """
+    if is_dataclass(task) and not isinstance(task, type):
+        return asdict(task)
+    return {"repr": repr(task)}
 
-    score: float
-    output: object | None
 
+def _output_text(output: object | None) -> str | None:
+    """Render a produced artifact to text for ``TransactionRow.produced_output``.
 
-class TargetEngine(Protocol):
-    """The target-shaped seam the generic loop delegates to.
-
-    The loop owns persistence, slicing, the adversary call and the oracle
-    aggregation — all victim-agnostic. Everything that depends on whether the
-    victim CLASSIFIES or PRODUCES is isolated behind this protocol, so a
-    produce-victim (code agent) drives the SAME loop by supplying a different
-    engine. ``ClassifyEngine`` is the fraud adapter and reproduces today's exact
-    behavior.
+    ``None`` (the fraud classifier, whose output is its score) persists ``None`` —
+    keeping that column NULL and the fraud path byte-identical. A produce-victim's
+    artifact persists as its string form (already a ``str`` for the code agent).
     """
-
-    def evaluate(self, task: object) -> Evaluation:
-        """Run the victim on ``task``; return its produced output + gate score."""
-        ...
+    if output is None:
+        return None
+    return output if isinstance(output, str) else repr(output)
 
 
 @dataclass(frozen=True, slots=True)
@@ -78,21 +80,26 @@ async def run_loop(
     n_rounds: int,
     batch_size: int,
     threshold: float,
-    detector: Detector,
+    detector: Detector | None = None,
     adversary: Adversary,
     oracles: Sequence[Oracle],
     label_fn: LabelFn,
     generate_fn: GenerateFn,
     spec: SealedSpec,
-    engine: "TargetEngine | None" = None,
+    engine: TargetEngine | None = None,
 ) -> None:
     # The loop is generic over the produce shape: it delegates "run the victim on
     # a task" to a ``TargetEngine``. ``engine=None`` wraps the classifier
     # ``detector`` in the degenerate-producer ``ClassifyEngine`` — byte-identical
     # to the pre-seam fraud path. A produce-victim (code agent) passes its own
-    # engine to drive this SAME loop. ``detector`` stays in the signature both for
-    # backward compatibility and because the default engine needs it.
-    target: TargetEngine = engine if engine is not None else ClassifyEngine(detector)
+    # ``engine`` and need NOT pass a ``detector`` (its engine produces); a fraud
+    # run passes ``detector`` and lets ``engine`` default. Exactly one must be set.
+    if engine is None:
+        if detector is None:
+            raise ValueError("run_loop requires either a detector or an engine")
+        target: TargetEngine = ClassifyEngine(detector)
+    else:
+        target = engine
     try:
         batch: list[object] = generate_fn(seed, batch_size)
         # deterministic split: even indices = validation, odd = holdout
@@ -128,7 +135,7 @@ async def run_loop(
                             run_id=run_id,
                             round_id=round_id,
                             txn_index=idx,
-                            features_json=asdict(cast(Any, txn)),
+                            features_json=_features_of(txn),
                             true_label=label_fn(txn),
                             origin=origin.value,
                             txn_slice=slices[idx].value,
@@ -136,6 +143,9 @@ async def run_loop(
                             detector_score=score,
                             caught=caught,
                             seed=seed,
+                            # The produced artifact (code-agent source); NULL for
+                            # the fraud classifier so its row stays byte-identical.
+                            produced_output=_output_text(evaluation.output),
                         )
                     )
                     await s.commit()
@@ -154,8 +164,8 @@ async def run_loop(
                                     txn_id=txn_row_id,
                                     parent_txn_id=txn_row_id,
                                     mutation_json={
-                                        "from_features": asdict(cast(Any, txn)),
-                                        "to_features": asdict(cast(Any, mutated)),
+                                        "from_features": _features_of(txn),
+                                        "to_features": _features_of(mutated),
                                     },
                                     pre_score=score,
                                     post_score=post_score,
