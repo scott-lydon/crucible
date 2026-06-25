@@ -12,8 +12,10 @@ from .active_key import (
     KeySource,
     clear_active_key,
     get_active_key,
+    get_prefer_api,
     key_hint,
     set_active_key,
+    set_prefer_api,
 )
 from .api_client import AnthropicApiClient, parse_api_json
 from .client import (
@@ -44,9 +46,11 @@ __all__ = [
     "clear_active_key",
     "get_active_key",
     "get_llm_client",
+    "get_prefer_api",
     "key_hint",
     "parse_api_json",
     "parse_cli_json",
     "resolve_provider_mode",
     "set_active_key",
+    "set_prefer_api",
 ]

@@ -88,6 +88,25 @@ slice-10-admin-llm · LLM provider admin (deploy-time API fallback)
       </div>
     </div>
 
+    <!-- ============== RUN PROVIDER PREFERENCE (API vs CLI) ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Run provider · POST /llm-provider/prefer</span>
+      </div>
+      <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+        <label style="display:flex;align-items:center;gap:12px;cursor:pointer">
+          <input type="checkbox" checked="{{ preferApi }}" onChange="{{ onPreferApi }}" style="width:18px;height:18px;accent-color:#4FAAC0;cursor:pointer;flex:none">
+          <span style="color:#E8EDF3;font-weight:600;font-size:13.5px">Use the Anthropic API for runs (faster; metered)</span>
+        </label>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2;line-height:1.7">
+          On = runs call the Anthropic API (needs a key set above), ~1-3s/call. Off = local Claude CLI, free but ~10-40s/call.
+        </div>
+        <sc-if value="{{ preferMsg }}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:{{ preferColor }};line-height:1.6">{{ preferMsg }}</div>
+        </sc-if>
+      </div>
+    </div>
+
     <!-- ============== ADMIN LOGIN (project key) ============== -->
     <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
       <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
@@ -144,6 +163,8 @@ class Component extends DCLogic {
     loginOk: false,
     keyMsg: '',
     keyOk: false,
+    preferMsg: '',
+    preferOk: true,
   };
 
   componentDidMount() {
@@ -192,6 +213,25 @@ class Component extends DCLogic {
       .catch(() => this.setState({ keyMsg: 'Save request failed.', keyOk: false }));
   }
 
+  onPreferApi(e) {
+    const want = !!e.target.checked;
+    fetch('/llm-provider/prefer', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ prefer_api: want }),
+    }).then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        const on = !!(d && d.prefer_api);
+        const msg = ok
+          ? (on ? 'Runs will use the Anthropic API (mode: ' + (d.mode || '?') + ').'
+                : 'Runs will use the local CLI (mode: ' + (d.mode || '?') + ').')
+          : ((d && d.detail) || 'Could not update preference.');
+        this.setState({ preferMsg: msg, preferOk: ok });
+        this.loadProvider();
+      })
+      .catch(() => this.setState({ preferMsg: 'Preference request failed.', preferOk: false }));
+  }
+
   doClearKey() {
     fetch('/llm-key/clear', { method: 'POST' })
       .then(r => r.json())
@@ -233,9 +273,14 @@ class Component extends DCLogic {
       onAdminUser: (e) => this.onAdminUser(e),
       onAdminPass: (e) => this.onAdminPass(e),
       onUserKey: (e) => this.onUserKey(e),
+      onPreferApi: (e) => this.onPreferApi(e),
       doLogin: () => this.doLogin(),
       doSaveKey: () => this.doSaveKey(),
       doClearKey: () => this.doClearKey(),
+
+      preferApi: !!(p && p.prefer_api),
+      preferMsg: this.state.preferMsg,
+      preferColor: this.state.preferOk ? '#9BD9B5' : '#E5B5B0',
 
       loginMsg: this.state.loginMsg,
       loginColor: this.state.loginOk ? '#9BD9B5' : '#E5B5B0',

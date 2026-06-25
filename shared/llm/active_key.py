@@ -57,6 +57,26 @@ def get_active_key() -> ActiveKey | None:
     return _active
 
 
+# Process-level run-provider preference: when True, runs prefer the Anthropic
+# API (fast, metered) over the local `claude` CLI even when the CLI is on PATH.
+# In-memory only, single-operator scope like `_active`: a restart reverts it to
+# the default (False), so the safe, free CLI path is always the unprimed state.
+# SECURITY: the API path spends the active key owner's money per run, so this
+# defaults OFF; it only changes the selection when an active key already exists.
+_prefer_api: bool = False
+
+
+def set_prefer_api(value: bool) -> None:
+    """Set whether runs should prefer the Anthropic API over the local CLI."""
+    global _prefer_api
+    _prefer_api = value
+
+
+def get_prefer_api() -> bool:
+    """Whether runs prefer the Anthropic API over the local CLI (default False)."""
+    return _prefer_api
+
+
 def key_hint(value: str) -> str:
     """A safe display hint for a key: never the full value, only the last four."""
     tail = value[-4:] if len(value) >= 4 else value

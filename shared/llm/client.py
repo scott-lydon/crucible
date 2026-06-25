@@ -21,7 +21,7 @@ from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from shared.config import Settings, get_settings
-from shared.llm.active_key import KeySource, get_active_key
+from shared.llm.active_key import ActiveKey, KeySource, get_active_key, get_prefer_api
 from shared.llm.api_client import AnthropicApiClient
 from shared.llm.errors import LlmCallError, NoLlmProviderError
 from shared.llm.models import LlmModel, LlmResult
@@ -222,23 +222,35 @@ def resolve_provider_mode(settings: Settings | None = None) -> ProviderMode:
 
     Single-sourced so the `/llm-provider` indicator and the actual selection
     can never disagree. Resolution order:
-      1. MOCK_LLM set         -> MOCK   (keeps the existing mock test path)
-      2. `claude` on PATH     -> CLI    (the local operator path, unchanged)
-      3. an active key store  -> PROJECT_KEY or USER_KEY (deployed fallback)
-      4. otherwise            -> NONE   (no real provider; never silent mock)
+      1. MOCK_LLM set                 -> MOCK   (keeps the existing mock test path)
+      2. prefer-API on AND active key -> PROJECT_KEY or USER_KEY (operator chose
+         the metered API for speed, so it wins over the CLI even when present)
+      3. `claude` on PATH             -> CLI    (the local operator path)
+      4. an active key store          -> PROJECT_KEY or USER_KEY (deployed fallback)
+      5. otherwise                    -> NONE   (no real provider; never silent mock)
     """
     resolved = settings if settings is not None else get_settings()
     if resolved.mock_llm:
         return ProviderMode.MOCK
-    if _cli_available():
-        return ProviderMode.CLI
-    active = get_active_key()
-    if active is not None:
+
+    def _key_mode(key: ActiveKey) -> ProviderMode:
         return (
             ProviderMode.PROJECT_KEY
-            if active.source is KeySource.PROJECT
+            if key.source is KeySource.PROJECT
             else ProviderMode.USER_KEY
         )
+
+    active = get_active_key()
+    # The operator's "prefer API for runs" toggle: when on and a key exists, the
+    # metered API path wins over the local CLI so runs are fast (~1-3s vs the
+    # CLI's ~10-40s). When the toggle is on but no key is set, fall through to
+    # the CLI (or NONE) honestly rather than claiming an API that cannot run.
+    if get_prefer_api() and active is not None:
+        return _key_mode(active)
+    if _cli_available():
+        return ProviderMode.CLI
+    if active is not None:
+        return _key_mode(active)
     return ProviderMode.NONE
 
 

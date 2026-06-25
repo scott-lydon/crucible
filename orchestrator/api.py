@@ -91,7 +91,7 @@ from shared.llm import (
     resolve_provider_mode,
     set_active_key,
 )
-from shared.llm.active_key import get_active_key
+from shared.llm.active_key import get_active_key, get_prefer_api, set_prefer_api
 from shared.types import VerdictId
 
 log = get_logger("orchestrator.api")
@@ -883,6 +883,12 @@ class LlmKeyRequest(BaseModel):
     api_key: str
 
 
+class PreferApiRequest(BaseModel):
+    """The POST /llm-provider/prefer body: the run-provider preference toggle."""
+
+    prefer_api: bool
+
+
 @app.post("/admin/login")
 async def admin_login(req: AdminLoginRequest, response: Response) -> dict[str, Any]:
     """Authenticate the single operator and enable the server's project key.
@@ -951,13 +957,29 @@ async def clear_llm_key() -> dict[str, Any]:
     return {"ok": True}
 
 
+@app.post("/llm-provider/prefer")
+async def set_provider_preference(req: PreferApiRequest) -> dict[str, Any]:
+    """Toggle whether runs prefer the Anthropic API over the local `claude` CLI.
+
+    SECURITY NOTE: turning this on routes every run through the active key, which
+    spends that key owner's Anthropic credit per call (the project key after an
+    admin login, or the visitor's own pasted key). It defaults OFF and only
+    changes the selection when a key is already active; with no key the resolver
+    falls back to the CLI honestly. Returns the resulting resolved mode so the UI
+    reflects what runs will actually use (single-sourced with /llm-provider).
+    """
+    set_prefer_api(req.prefer_api)
+    return {"ok": True, "prefer_api": get_prefer_api(), "mode": resolve_provider_mode().value}
+
+
 @app.get("/llm-provider")
 async def llm_provider() -> dict[str, Any]:
     """The active LLM provider state for the central indicator and admin panel.
 
     Computed by the same resolution `get_llm_client` uses, so the chip can never
     claim a provider the run loop would not pick. Never returns the full key,
-    only a last-four hint when a key is active.
+    only a last-four hint when a key is active. `prefer_api` reflects the
+    run-provider toggle so the admin panel can show its state.
     """
     mode = resolve_provider_mode()
     active = get_active_key()
@@ -973,6 +995,7 @@ async def llm_provider() -> dict[str, Any]:
         "model_family": LlmModel.OPUS.value,
         "key_hint": key_hint(active.value) if active is not None else None,
         "source_label": labels[mode],
+        "prefer_api": get_prefer_api(),
     }
 
 

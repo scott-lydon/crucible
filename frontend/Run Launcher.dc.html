@@ -1215,12 +1215,18 @@ class Component extends DCLogic {
     const sandboxNetwork = (this.state.sandbox && this.state.sandbox.network) || '';
 
     // --- central LLM provider chip (GET /llm-provider) ---
+    // When the operator's "prefer API for runs" toggle routes runs through the
+    // active key, the resolved mode is project_key/user_key; the chip reads
+    // "API · <hint>" so the header reflects that runs are going through the API
+    // (and which key), not the local CLI.
     const llmMode = (this.state.llmProvider && this.state.llmProvider.mode) || null;
+    const llmHint = (this.state.llmProvider && this.state.llmProvider.key_hint) || '';
+    const apiLabel = 'LLM · API' + (llmHint ? ' · ' + llmHint : '');
     const llmChip = (m => {
       switch (m) {
         case 'cli':         return { label: 'LLM · local CLI', c: '#9BD9B5', d: '#57C08A' };
-        case 'project_key': return { label: 'LLM · project key', c: '#7FC5D9', d: '#4FAAC0' };
-        case 'user_key':    return { label: 'LLM · your key', c: '#7FC5D9', d: '#4FAAC0' };
+        case 'project_key': return { label: apiLabel, c: '#7FC5D9', d: '#4FAAC0' };
+        case 'user_key':    return { label: apiLabel, c: '#7FC5D9', d: '#4FAAC0' };
         case 'mock':        return { label: 'LLM · mock', c: '#E8C84A', d: '#D9A441' };
         case 'none':        return { label: 'LLM · none', c: '#E5B5B0', d: '#E5736B' };
         default:            return { label: 'LLM · …', c: '#B8C2CE', d: '#5A6573' };
