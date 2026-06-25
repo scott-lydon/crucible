@@ -181,9 +181,10 @@ async def create_run(req: RunRequest, session: SessionDep) -> RunCreated:
     The loop that drives rounds against a registered target lands in slice 1;
     slice 0 deliberately does not fake any rounds.
     """
-    halt = await HaltRule(session=session).current()
-    if halt.halted:
-        raise HTTPException(status_code=409, detail=halt.as_json())
+    # Certification halt is informational, not a launch gate: a failing verifier
+    # is exactly when you need to run MORE evaluations to diagnose and harden it,
+    # so a low white-box recall must not freeze the platform. The halt state is
+    # still computed and surfaced as a banner via /halt (US-13).
     spec = SealedSpec.from_payload(req.spec)
     target = TargetSpec(
         target_type=_parse_target_type(req.target_type),

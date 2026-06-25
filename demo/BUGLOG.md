@@ -77,3 +77,73 @@ then the affected scenario is re-recorded and re-checked.
   click code_agent, confirm it selects, seal the spec, click Start, watch a real
   run launch and its first round — and re-record US-1..US-5 against THAT launched
   run (not a seeded one). Until then US-1..US-5 are un-ticked.
+
+## BUG-R4 — run latency: a round takes ~8-15 min, not the US-1 "<10s first round" — OPEN
+- Lane: Bug-Watcher (US-1, perf). Found by DRIVING the real flow (the corrective
+  action after BUG-R3). A code_agent run launched via the fixed UI reaches its
+  first finalized attack/verdict only after ~8-15 minutes, not "first round within
+  ten seconds" (acceptance-tests.md US-1).
+- Root cause: each round fires many SEQUENTIAL `claude` CLI calls (red proposes,
+  target attempts, 5 oracles judge, blue), and every call spawns a fresh `claude`
+  subprocess (auth + cold start overhead per call). CRUCIBLE_LLM_MODEL_OVERRIDE=haiku
+  forces the model but does not parallelize or reduce call count, so runs stay slow.
+- Impact on the DEMO: a run cannot be shown completing "live" in a short clip. The
+  honest demo shows the REAL launch (US-1, driven on camera) and then the REAL
+  results of that run after it completes (US-2..US-5), not pre-seeded data.
+- Possible fixes (operator decision): parallelize the 5 oracle calls; reuse a warm
+  CLI/SDK connection instead of a subprocess per call; or accept ~10-min runs and
+  demo launch + completed-results. Not fixing blindly — surfaced for the operator.
+
+## Findings from driving the real flow + fresh review (2026-06-25, after the reward-hack reset)
+
+### BUG-R4 — run latency (oracle scoring) — FIXED (commit 9f2bd81)
+Oracles scored sequentially; now concurrent (asyncio.gather), semantics/order preserved, tests pass.
+
+### BUG-R5 — Pause/Halt buttons are UI-only (Running tab) — OPEN (scope decision)
+BuilderTarget: pause/halt only flip client state (this.state.paused / runDone), NO backend POST. Clicking Halt does not stop the server run. NOTE US-13 says halt is AUTOMATIC with "no operator halt button" — so these buttons may be OUT OF SCOPE and should be REMOVED (like other out-of-scope controls), not wired. Operator decision: remove vs wire.
+
+### BUG-R6 — sealed-spec read-only preview pane is static YAML — OPEN (minor)
+BuilderTarget: the read-only sealed preview (Run Launcher ~lines 187-194) shows hardcoded obligation strings, not the selected target's real obligations. The EDITABLE draft textarea IS real/dynamic (from /targets/<type>/default-spec). Low severity unless the demo zooms the preview. Fix: bind the preview to real obligations, or accept.
+
+### BUG-R7 — run latency: generate-all-attacks-upfront — OPEN (the 0/50 UX)
+_red_pass calls red.search() which generates ALL attacks before driving any, so the UI sits at "attack 0/N" through the whole generation phase. Fix: stream/yield attacks so attempt 1 starts as soon as the first is generated (has catalog-adaptation correctness implications — separate careful ticket).
+
+### BUG-R8 — run latency: ~9s/call CLI subprocess overhead — being addressed (CLI/API toggle)
+Each `claude` CLI call pays ~9s subprocess+auth overhead on top of generation (~10-16s tiny, ~30-45s for the run's big prompts). Mitigation: UI toggle to run via the Anthropic API (BuilderToggle). Also: launcher default rounds=48 (line 914) makes every run ~96 attacks — drop to a small default (D).
+
+### CAPTURE-DEFECT US-8 (not an app bug) — OPEN
+demo capture probed /health/targets/fraud_adapter (404) instead of /health/targets/fraud; api.json contradicts the (correct) on-screen fraud-green badge. Live app is right (GET /health/targets/fraud -> green, AUC 0.8607, sha 05274c2a). Fix the capture apiRoutes token fraud_adapter->fraud + re-capture US-8.
+
+## Resolutions (2026-06-25, continued)
+
+### BUG-R3 — target selector "Clicking Code Agent does nothing" — VERIFIED FIXED
+Driven end-to-end through the real UI with demo/flow_drive.mjs (headless Playwright,
+DOM-level assertions, NOT static screens). 5/5 assertions PASS, 0 console errors:
+1. Fraud is the default selection (✓ chip on Fraud card).
+2. Clicking "Code Agent" moves the ✓ selected indicator to the Code Agent card.
+3. Seal spec enables the Run-evaluation (Start) button.
+4. Run evaluation creates a NEW run with target=code_agent (correct target propagated —
+   if the click did nothing the run would default to fraud).
+5. UI navigates to the Running view.
+Video: demo/clips/flow-drive-code_agent.webm. This is the honest US-1 material.
+
+### BUG-R5 — Halt vs Pause — RESOLVED (halt is now informational, not a launch gate)
+Diagnosis (figure-out-what-happened): global white-box recall = 6/45 = 0.133, which
+auto-halts certification (threshold 0.70). Per-run breakdown proved the halt is NOT
+corruption: all 5 code_agent runs are at recall 1.00; the entire halt is driven by ONE
+run, the operator's fraud run 26bac723, which ran on REAL models (sonnet/opus, no
+override) and legitimately caught 0/39 white-box attacks — the true, expected result
+that an informed attacker beats a static fraud classifier. The only actual corruption
+was my 4 haiku-override runs (already deleted). 26bac723 is real data and is KEPT.
+The halt is mathematically stuck (would need ~85 more caught white-box attacks to clear),
+so it cannot recover while the real fraud finding exists, and deleting real data to
+un-stick it would be a reward-hack. Per the operator's lean ("remove halt, keep pause"),
+removed the create_run 409 launch-gate (orchestrator/api.py): a failing verifier is
+exactly when you need to run MORE evaluations, so it must not freeze the platform. The
+/halt banner + white-box recall metric stay (the SR 11-7 finding remains visible).
+Verified: POST /runs returns 201 while /halt still reports halted=true. Pause stays as
+the manual in-run control.
+
+### Launcher rounds default — DONE
+Run Launcher.dc.html rounds default is now 3 (line 907), down from 48 — every demo run
+is ~6 attacks instead of ~96, so runs complete quickly on camera.
