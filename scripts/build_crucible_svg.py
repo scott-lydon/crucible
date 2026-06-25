@@ -35,8 +35,9 @@ y_top = 220
 y_bot = 470
 xs = [200, 500, 800, 1100]   # 4 columns
 
-NODES = [
-    # (key, col, row, title, sub, icon)
+# (key, col, row, title, sub, icon)
+NodeRow = tuple[str, int, str, str, str, str]
+NODES: list[NodeRow] = [
     ("RED",  0, "T", "Red Agent",          "LLM semantic search\n+ persistent catalog",            "anthropic"),
     ("TGT",  1, "T", "Target Protocol",    "fraud, code-agent,\nresearch behind 1 port",           "target"),
     ("ORS",  2, "T", "Oracle ensemble",    "5 non-colluding checks\nheld-out, metamorphic,\ndifferential, fuzz, judge", "oracle"),
@@ -52,7 +53,7 @@ for key, col, row, *_ in NODES:
     positions[key] = (xs[col], y_top if row == "T" else y_bot)
 
 # helpers ---------------------------------------------------------------
-def node_svg(key):
+def node_svg(key: str) -> str:
     x, y = positions[key]
     title, sub, ic = next((t, s, i) for (k, c, r, t, s, i) in NODES if k == key)
     nx, ny = x - NODE_W / 2, y - NODE_H / 2
@@ -72,7 +73,18 @@ def node_svg(key):
     return "".join(body)
 
 
-def labeled_line(x1, y1, x2, y2, *, label=None, dashed=False, color=EDGE_FWD, width=2.0, label_offset=(0, -8)):
+def labeled_line(
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    *,
+    label: str | None = None,
+    dashed: bool = False,
+    color: str = EDGE_FWD,
+    width: float = 2.0,
+    label_offset: tuple[float, float] = (0, -8),
+) -> str:
     dash = ' stroke-dasharray="6 4"' if dashed else ""
     path = (
         f'<path d="M {x1:.1f} {y1:.1f} L {x2:.1f} {y2:.1f}" '
@@ -91,7 +103,18 @@ def labeled_line(x1, y1, x2, y2, *, label=None, dashed=False, color=EDGE_FWD, wi
     return path + lbl
 
 
-def labeled_arc(x1, y1, x2, y2, peak_y, *, label=None, dashed=False, color=EDGE_FWD, width=2.0):
+def labeled_arc(
+    x1: float,
+    y1: float,
+    x2: float,
+    y2: float,
+    peak_y: float,
+    *,
+    label: str | None = None,
+    dashed: bool = False,
+    color: str = EDGE_FWD,
+    width: float = 2.0,
+) -> str:
     """Quadratic Bezier with control point at midpoint x and explicit peak_y."""
     cx = (x1 + x2) / 2
     cy = peak_y
@@ -113,10 +136,20 @@ def labeled_arc(x1, y1, x2, y2, peak_y, *, label=None, dashed=False, color=EDGE_
     return path + lbl
 
 
-def right_edge(key):    return positions[key][0] + NODE_W / 2, positions[key][1]
-def left_edge(key):     return positions[key][0] - NODE_W / 2, positions[key][1]
-def top_edge(key):      return positions[key][0], positions[key][1] - NODE_H / 2
-def bottom_edge(key):   return positions[key][0], positions[key][1] + NODE_H / 2
+def right_edge(key: str) -> tuple[float, float]:
+    return positions[key][0] + NODE_W / 2, positions[key][1]
+
+
+def left_edge(key: str) -> tuple[float, float]:
+    return positions[key][0] - NODE_W / 2, positions[key][1]
+
+
+def top_edge(key: str) -> tuple[float, float]:
+    return positions[key][0], positions[key][1] - NODE_H / 2
+
+
+def bottom_edge(key: str) -> tuple[float, float]:
+    return positions[key][0], positions[key][1] + NODE_H / 2
 
 
 edges = []
@@ -162,8 +195,8 @@ parts.append(f'  <text x="{W/2}" y="44" text-anchor="middle" font-family="Helvet
 parts.append(f'  <text x="{W/2}" y="68" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="{MUTED}">top row: one round of verification  ·  bottom row: cross-round infrastructure</text>')
 for e in edges:
     parts.append("  " + e)
-for k, *_ in NODES:
-    parts.append("  " + node_svg(k))
+for node in NODES:
+    parts.append("  " + node_svg(node[0]))
 parts.append('</svg>')
 
 Path("/Users/scottlydon/Desktop/Clutter/iOS/crucible/docs/diagrams/crucible-overview-handauthored.svg").write_text("\n".join(parts))

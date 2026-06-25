@@ -32,6 +32,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from modules.measure import HaltRule
 from modules.red import StrategyCatalog, compose_white_box_brief
 from orchestrator.errors import RunNotFoundError
+from orchestrator.interfaces.oracle import Oracle
 from orchestrator.wiring import Registry
 from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import DifferentialRun, FuzzFinding, JudgeVote, Run
@@ -297,7 +298,7 @@ class Loop:
         """
         obligation_id = spec.obligations[0].id if spec.obligations else None
 
-        async def _one(oracle) -> OracleVote:
+        async def _one(oracle: Oracle) -> OracleVote:
             # Oracles are independent (each verifies the same attack), so they
             # run concurrently; the first attack no longer waits for all five
             # claude-CLI subprocess calls to finish one-after-another. Each

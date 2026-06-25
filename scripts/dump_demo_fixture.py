@@ -14,6 +14,7 @@ import os
 import sys
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
 for line in open(".env"):
     line = line.strip()
@@ -30,7 +31,7 @@ from shared.persistence.base import Base  # noqa: E402
 from shared.persistence.engine import get_engine, use_database  # noqa: E402
 
 
-def enc(v):
+def enc(v: Any) -> Any:
     if isinstance(v, datetime):
         return {"__dt__": v.isoformat()}
     if isinstance(v, date):
@@ -40,21 +41,22 @@ def enc(v):
     return v  # str/int/float/bool/None/dict/list (JSONB) are JSON-native
 
 
-async def main():
+async def main() -> None:
     use_database(os.environ["DATABASE_URL"])
     eng = get_engine()
-    out = {"__marker_table__": "runs", "tables": {}}
+    tables: dict[str, list[dict[str, Any]]] = {}
     async with eng.begin() as conn:
         for table in Base.metadata.sorted_tables:
             rows = (await conn.execute(select(table))).mappings().all()
             cols = [c.name for c in table.columns]
-            out["tables"][table.name] = [
+            tables[table.name] = [
                 {c: enc(r[c]) for c in cols} for r in rows
             ]
-    total = sum(len(v) for v in out["tables"].values())
+    out: dict[str, Any] = {"__marker_table__": "runs", "tables": tables}
+    total = sum(len(v) for v in tables.values())
     json.dump(out, open("seed/crucible_demo.json", "w"), indent=0)
     print("wrote seed/crucible_demo.json  tables:",
-          {k: len(v) for k, v in out["tables"].items() if v}, " total rows:", total)
+          {k: len(v) for k, v in tables.items() if v}, " total rows:", total)
 
 
 asyncio.run(main())

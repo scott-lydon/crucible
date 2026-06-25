@@ -11,14 +11,16 @@ FONT = "/System/Library/Fonts/Supplemental/Arial.ttf"
 FONTB = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 
 
-def font(path, size):
+def font(path: str, size: int) -> ImageFont.FreeTypeFont:
     try:
         return ImageFont.truetype(path, size)
     except Exception:
         return ImageFont.truetype(FONT, size)
 
 
-def centered(text, f, y, fill):
+def centered(
+    text: str, f: ImageFont.FreeTypeFont, y: int, fill: tuple[int, int, int]
+) -> None:
     w = d.textbbox((0, 0), text, font=f)[2]
     d.text(((W - w) / 2, y), text, font=f, fill=fill)
 

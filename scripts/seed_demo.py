@@ -25,17 +25,19 @@ import asyncio
 import json
 import os
 import sys
+from collections.abc import Callable
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any
 
-_TAG_DECODERS = {
+_TAG_DECODERS: dict[str, Callable[[str], object]] = {
     "__dt__": datetime.fromisoformat,
     "__date__": date.fromisoformat,
     "__dec__": Decimal,
 }
 
 
-def _dec(v):
+def _dec(v: Any) -> Any:
     if isinstance(v, dict) and len(v) == 1:
         (k, val), = v.items()
         if k in _TAG_DECODERS:

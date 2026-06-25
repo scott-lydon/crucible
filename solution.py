@@ -44,7 +44,7 @@ _TRANSACTION = {
 }
 
 
-def predict(transaction: dict) -> float:
+def predict(transaction: dict[str, float]) -> float:
     meta = json.loads(_METADATA.read_text(encoding="utf-8"))
     features: list[str] = meta["features"]
     booster = lgb.Booster(model_file=str(_ARTIFACT))
