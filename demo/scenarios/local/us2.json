@@ -1,0 +1,4 @@
+{ "id": "local-us2-round", "title": "US-2 Watch one round live", "base": "http://localhost:8910",
+  "page": "/app/Run%20Launcher.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5", "waitText": "Running", "dwellMs": 2500,
+  "apiRoutes": ["/runs/eef0b63837f84bef9fd6760c69ded0d5", "/runs/eef0b63837f84bef9fd6760c69ded0d5/llm_calls"],
+  "steps": [ {"action":"wait","ms":2500},{"action":"clickText","text":"Running","ms":2500},{"action":"scroll","dy":280,"ms":1900},{"action":"wait","ms":1800},{"action":"clickText","text":"Inspect","ms":2800},{"action":"wait","ms":2400} ] }
