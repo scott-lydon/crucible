@@ -115,6 +115,18 @@ async def run_loop(
         prev_score: dict[int, float] = {}
 
         for round_index in range(n_rounds):
+            # Cooperative cancel: a ``POST /runs/{id}/stop`` set the flag (possibly
+            # in a DIFFERENT process). Check it BETWEEN rounds via a fresh session
+            # so the request crosses the worker-subprocess boundary; if set, mark
+            # the run terminal-``stopped`` and exit gracefully — no partial round.
+            async with session_factory() as s:
+                if await repo.is_cancel_requested(s, run_id):
+                    run = await repo.get_run(s, run_id)
+                    if run is not None:
+                        run.status = "stopped"
+                        await s.commit()
+                    return
+
             round_id = str(uuid.uuid4())
             async with session_factory() as s:
                 s.add(RoundRow(id=round_id, run_id=run_id, round_index=round_index))

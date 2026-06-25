@@ -92,6 +92,14 @@ async def run_with_blue(
         spec=spec,
     )
 
+    # If the red loop was cooperatively cancelled it left the run terminal-
+    # ``stopped``; do NOT run the blue arc (which would re-open work and flip the
+    # status). Honest: a stopped run keeps its ``stopped`` status with no blue row.
+    async with session_factory() as s:
+        run = await repo.get_run(s, run_id)
+    if run is not None and run.status == "stopped":
+        return
+
     async with session_factory() as s:
         attacks = await repo.attacks_for_run(s, run_id)
     successful = [a for a in attacks if a.evaded and a.true_label_preserved]

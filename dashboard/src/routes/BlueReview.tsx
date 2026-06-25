@@ -5,10 +5,10 @@
 // blue round we render.
 
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
-import { getBlue, HttpError, type BlueRound } from "../api"
+import { useNavigate, useParams } from "react-router-dom"
+import { getBlue, getRuns, HttpError, type BlueRound, type RunSummary } from "../api"
 import Layout from "../components/Layout"
-import { Card, Mono, Pill, SectionLabel } from "../components/ui"
+import { Card, Mono, Pill, RunPicker, SectionLabel } from "../components/ui"
 import { C, MONO } from "../theme"
 
 function pct(v: number | null | undefined): string {
@@ -17,12 +17,29 @@ function pct(v: number | null | undefined): string {
 
 export default function BlueReview() {
   const { patchId } = useParams<{ patchId: string }>()
+  const navigate = useNavigate()
+  const [runs, setRuns] = useState<RunSummary[]>([])
   const [blue, setBlue] = useState<BlueRound | null>(null)
   const [missing, setMissing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Load the recent-runs index for the picker and DEFAULT to the newest run when
+  // the URL carries none (route reached as bare /blue, no :patchId).
+  useEffect(() => {
+    getRuns()
+      .then((rs) => {
+        setRuns(rs)
+        if (!patchId && rs.length > 0) navigate(`/blue/${rs[0].run_id}`, { replace: true })
+      })
+      .catch(() => setRuns([]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   useEffect(() => {
     if (!patchId) return
+    setBlue(null)
+    setMissing(false)
+    setError(null)
     getBlue(patchId)
       .then(setBlue)
       .catch((e) => {
@@ -37,6 +54,10 @@ export default function BlueReview() {
       <h1 style={{ color: C.textHi, fontSize: 20, fontWeight: 600, margin: "0 0 16px" }}>
         Blue patch <Mono style={{ color: C.primary }}>{patchId}</Mono>
       </h1>
+
+      <Card style={{ marginBottom: 16 }}>
+        <RunPicker runs={runs} value={patchId ?? ""} onChange={(id) => navigate(`/blue/${id}`)} />
+      </Card>
 
       {missing && <p style={{ color: C.textMut }}>No blue recovery round ran for this run.</p>}
       {error && <Card style={{ borderColor: C.danger }}><span style={{ color: C.danger }}>{error}</span></Card>}

@@ -11,6 +11,7 @@ import {
   getLlmCall,
   getLlmCalls,
   getVerdicts,
+  stopRun,
   subscribeRun,
   type AttackEvent,
   type CompleteEvent,
@@ -21,7 +22,7 @@ import {
   type VerdictSummary,
 } from "../api"
 import Layout from "../components/Layout"
-import { Button, Card, Mono, Pill, SectionLabel } from "../components/ui"
+import { Button, Card, ConfirmDialog, isTerminalStatus, Mono, Pill, SectionLabel, statusTone } from "../components/ui"
 import { C, MONO } from "../theme"
 
 type AsrPoint = { n: number; asr: number | null }
@@ -40,8 +41,30 @@ export default function RunView() {
   const [llmCalls, setLlmCalls] = useState<LlmCallSummary[]>([])
   const [inspect, setInspect] = useState<LlmCallDetail | null>(null)
   const [inspectErr, setInspectErr] = useState<string | null>(null)
+  const [confirmStop, setConfirmStop] = useState(false)
+  const [stopping, setStopping] = useState(false)
+  const [stopErr, setStopErr] = useState<string | null>(null)
   const nAttack = useRef(0)
   const nVerdict = useRef(0)
+
+  // Confirmed Stop: call the backend, reflect the returned status, and surface any
+  // failure inline. Gated behind the confirm dialog — never fires on first click.
+  function handleStop() {
+    if (!id) return
+    setStopping(true)
+    setStopErr(null)
+    setConfirmStop(false)
+    stopRun(id)
+      .then((r) => setStatus(r.status))
+      .catch((e) => setStopErr(e instanceof Error ? e.message : "Failed to stop run"))
+      .finally(() => setStopping(false))
+  }
+
+  const terminal = isTerminalStatus(status)
+  const showStop = !terminal
+  // The button is busy both while the request is in flight and while the run is in
+  // the ``stopping`` state (halt requested, awaiting the checkpoint).
+  const stopBusy = stopping || status === "stopping"
 
   useEffect(() => {
     if (!id) return
@@ -87,12 +110,31 @@ export default function RunView() {
   return (
     <Layout>
       <SectionLabel>Live Run View · US-2</SectionLabel>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
         <h1 style={{ color: C.textHi, fontSize: 20, fontWeight: 600, margin: 0 }}>
           Run <Mono style={{ color: C.primary }}>{id}</Mono>
         </h1>
-        <Pill tone={status === "complete" ? "pass" : status === "failed" ? "fail" : "info"}>{status}</Pill>
+        <Pill tone={statusTone(status)}>{status}</Pill>
+        {showStop && (
+          <div style={{ marginLeft: "auto" }}>
+            <Button variant="danger" onClick={() => setConfirmStop(true)} disabled={stopBusy}>
+              {stopBusy ? "Stopping…" : "Stop run"}
+            </Button>
+          </div>
+        )}
       </div>
+      {stopErr && <p style={{ color: C.danger, fontSize: 13, marginTop: -8, marginBottom: 16 }}>{stopErr}</p>}
+
+      {confirmStop && (
+        <ConfirmDialog
+          title="Stop this run?"
+          body="The campaign will halt at the next checkpoint. Work already completed is preserved."
+          confirmLabel="Stop run"
+          confirmDisabled={stopping}
+          onConfirm={handleStop}
+          onCancel={() => setConfirmStop(false)}
+        />
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         <Card>

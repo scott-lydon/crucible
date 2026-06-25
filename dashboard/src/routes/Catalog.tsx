@@ -4,11 +4,11 @@
 // dollars-to-succeed. Sourced from the real persisted catalog (GET /catalog),
 // NOT reconstructed from any single run's corpus. Honest empty-state.
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { getCatalog, type CatalogRow } from "../api"
+import { getCatalog, getRuns, type CatalogRow, type RunSummary } from "../api"
 import Layout from "../components/Layout"
-import { Button, Card, Mono, Pill, SectionLabel } from "../components/ui"
+import { Button, Card, Mono, Pill, RunPicker, SectionLabel } from "../components/ui"
 import { C, MONO } from "../theme"
 
 function dollars(v: number | null): string {
@@ -17,10 +17,37 @@ function dollars(v: number | null): string {
 
 export default function Catalog() {
   const [params, setParams] = useSearchParams()
+  const runId = params.get("run_id") ?? ""
   const [pending, setPending] = useState(params.get("target_type") ?? "")
-  const [targetType, setTargetType] = useState(params.get("target_type") ?? "")
+  const [runs, setRuns] = useState<RunSummary[]>([])
   const [rows, setRows] = useState<CatalogRow[] | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  // Load the recent-runs index for the picker, defaulting to the newest run when
+  // neither a run nor an explicit target_type filter is in the URL.
+  useEffect(() => {
+    getRuns()
+      .then((rs) => {
+        setRuns(rs)
+        if (!runId && !params.get("target_type") && rs.length > 0) {
+          setParams({ run_id: rs[0].run_id }, { replace: true })
+        }
+      })
+      .catch(() => setRuns([]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // The active target_type filter: an explicit ?target_type= wins; otherwise it is
+  // derived from the picked run's target (catalog rows are keyed by target_type).
+  const targetType = useMemo(() => {
+    const explicit = params.get("target_type")
+    if (explicit) return explicit
+    return runs.find((r) => r.run_id === runId)?.target ?? ""
+  }, [params, runId, runs])
+
+  useEffect(() => {
+    setPending(targetType)
+  }, [targetType])
 
   useEffect(() => {
     setRows(null)
@@ -40,10 +67,17 @@ export default function Catalog() {
       </p>
 
       <Card style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 14 }}>
+          <RunPicker
+            runs={runs}
+            value={runId}
+            label="Run (filters by its target)"
+            onChange={(id) => setParams({ run_id: id })}
+          />
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            setTargetType(pending)
             setParams(pending ? { target_type: pending } : {})
           }}
           style={{ display: "flex", gap: 10 }}
@@ -51,7 +85,7 @@ export default function Catalog() {
           <input
             value={pending}
             onChange={(e) => setPending(e.target.value)}
-            placeholder="filter by target_type (optional)"
+            placeholder="or filter by target_type (optional)"
             style={{
               flex: 1,
               fontFamily: MONO,

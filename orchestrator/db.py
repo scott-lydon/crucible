@@ -56,3 +56,30 @@ def session_factory() -> async_sessionmaker[AsyncSession]:
     if _session_factory is None:
         raise RuntimeError("init_db must be called before session_factory")
     return _session_factory
+
+
+def is_subprocess_visible_db(url: str | None = None) -> bool:
+    """Whether the active DB can be opened by a *separate* worker process.
+
+    A worker subprocess opens its OWN engine from the same URL, so it can only
+    reach the run's rows if the database is durable/shared across processes:
+    Postgres (a network server) and a FILE-backed SQLite both qualify. An
+    in-memory SQLite (``:memory:`` or a bare ``sqlite://``) lives only in the
+    parent process's address space, so a subprocess would see an EMPTY DB — for
+    that case the run must execute INLINE in the API process instead.
+
+    This is the dispatch switch for ``create_run``: subprocess-visible => offload
+    the campaign to ``orchestrator.worker`` (API loop never blocks); in-memory
+    SQLite (the test suite) => keep the current inline ``BackgroundTasks`` path.
+    Decided from the active DB URL/dialect, never a brittle env guess.
+    """
+    resolved = url if url is not None else active_database_url()
+    if not resolved.startswith("sqlite"):
+        # Postgres (or any networked server dialect) is process-shared.
+        return True
+    # SQLite: file-backed is shareable; in-memory (":memory:" / bare "sqlite://"
+    # / "mode=memory") is not. Normalize the path portion after the scheme.
+    after_scheme = resolved.split("://", 1)[1] if "://" in resolved else resolved
+    path = after_scheme.split("?", 1)[0]
+    is_in_memory = path in ("", "/:memory:", ":memory:") or "mode=memory" in resolved
+    return not is_in_memory

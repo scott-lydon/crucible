@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String
+from sqlalchemy import (JSON, Boolean, DateTime, Float, ForeignKey, Integer,
+                        String, false)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 def _now() -> datetime:
@@ -35,6 +36,15 @@ class RunRow(Base):
     threshold: Mapped[float] = mapped_column(Float)
     params_json: Mapped[dict[str, object]] = mapped_column(JSON, default=dict)
     error: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Cooperative-cancel flag (US stop-run). Set by ``POST /runs/{id}/stop``; the
+    # run loop checks it between rounds and exits to the ``stopped`` terminal
+    # status. Crosses the worker-subprocess boundary via the DB (the worker polls
+    # it over its own session), so it works whether the run is inline or offloaded.
+    # Defaulted (not NULL) so existing rows read False; nullable keeps the Alembic
+    # ADD COLUMN dialect-neutral on a populated table.
+    cancel_requested: Mapped[bool] = mapped_column(
+        Boolean, nullable=True, default=False, server_default=false()
+    )
     pillar: Mapped[str] = mapped_column(String, default="orchestrator")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
 

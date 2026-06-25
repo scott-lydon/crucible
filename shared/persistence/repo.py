@@ -15,6 +15,57 @@ async def get_run(s: AsyncSession, run_id: str) -> RunRow | None:
     return await s.get(RunRow, run_id)
 
 
+async def recent_runs(s: AsyncSession, limit: int = 50) -> Sequence[RunRow]:
+    """The most recent runs, newest first — backs ``GET /runs`` (run picker).
+
+    Ordered by ``created_at`` descending so the launcher can offer past runs to
+    open instead of memorizing an id. ``target`` and ``rounds`` for each row come
+    from the run's ``params_json``; this returns the raw rows and lets the
+    endpoint shape them. Honest empty sequence when no runs exist.
+    """
+    res = await s.execute(
+        select(RunRow).order_by(RunRow.created_at.desc()).limit(limit)
+    )
+    return res.scalars().all()
+
+
+# Terminal statuses a run can rest in: a completed/failed/stopped run is final.
+TERMINAL_STATUSES = ("complete", "failed", "stopped")
+
+
+async def request_cancel(s: AsyncSession, run_id: str) -> RunRow | None:
+    """Flag a RUNNING run for cooperative cancellation; return the row (or None).
+
+    Sets ``cancel_requested`` and moves a still-running run to the transient
+    ``stopping`` status (the loop flips it to the terminal ``stopped`` when it
+    next checks the flag). Idempotent and safe on an already-terminal run: the
+    flag is set but the terminal status is NOT overwritten, so the caller can
+    report the existing terminal status. Returns ``None`` if the run is unknown.
+    """
+    run = await s.get(RunRow, run_id)
+    if run is None:
+        return None
+    run.cancel_requested = True
+    if run.status not in TERMINAL_STATUSES:
+        run.status = "stopping"
+    await s.commit()
+    return run
+
+
+async def is_cancel_requested(s: AsyncSession, run_id: str) -> bool:
+    """Whether a cancel has been requested for ``run_id`` (loop's poll, own session).
+
+    The loop calls this between rounds via its OWN session so the flag is read
+    fresh from the DB — that is how the request crosses the worker-subprocess
+    boundary. Unknown run => False (nothing to cancel).
+    """
+    run = await s.get(RunRow, run_id)
+    if run is None:
+        return False
+    await s.refresh(run)
+    return bool(run.cancel_requested)
+
+
 async def store_spec(s: AsyncSession, run_id: str, spec: SealedSpec) -> str:
     """Persist a run's SealedSpec server-side; return its ``spec_id``.
 

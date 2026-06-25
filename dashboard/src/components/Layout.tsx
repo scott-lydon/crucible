@@ -7,8 +7,11 @@ import { Link, useLocation } from "react-router-dom"
 import { getHalt, type HaltStatus } from "../api"
 import { C, MONO, SANS } from "../theme"
 
-const NAV: { to: string; label: string }[] = [
+// `exact` nav items light up only on an exact pathname match. `/runs` needs this
+// so it doesn't stay active on a `/runs/:id` live-run view (a different page).
+const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/", label: "Launcher" },
+  { to: "/runs", label: "Runs", exact: true },
   { to: "/metrics", label: "Metrics" },
   { to: "/catalog", label: "Catalog" },
   { to: "/health", label: "Health" },
@@ -118,7 +121,8 @@ export default function Layout({ children, mock = false }: { children: ReactNode
           </Link>
           <nav style={{ display: "flex", gap: 4, marginLeft: 20 }}>
             {NAV.map((n) => {
-              const active = n.to === "/" ? loc.pathname === "/" : loc.pathname.startsWith(n.to)
+              const active =
+                n.to === "/" || n.exact ? loc.pathname === n.to : loc.pathname.startsWith(n.to)
               return (
                 <Link
                   key={n.to}

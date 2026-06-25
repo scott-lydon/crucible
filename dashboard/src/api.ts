@@ -112,6 +112,32 @@ export function getRun(runId: string): Promise<RunStatus> {
   return getJson<RunStatus>(`/runs/${runId}`)
 }
 
+// A row in the recent-runs index (GET /runs). Newest first. Powers the Runs-list
+// page and the run pickers on Metrics/Blue/Catalog so an operator no longer has
+// to memorize a run id.
+export type RunSummary = {
+  run_id: string
+  target: string
+  status: string
+  created_at: string
+  rounds: number
+}
+
+export async function getRuns(limit = 50): Promise<RunSummary[]> {
+  const data = await getJson<{ runs: RunSummary[] }>(`/runs?limit=${limit}`)
+  return data.runs
+}
+
+// Request a graceful stop of a still-running campaign. The backend halts at the
+// next checkpoint, so the returned status is ``stopping`` (then eventually
+// ``stopped``). Idempotent: a terminal run returns its terminal status. Only the
+// operator's confirmed Stop action calls this.
+export async function stopRun(runId: string): Promise<{ run_id: string; status: string }> {
+  const r = await fetch(url(`/runs/${runId}/stop`), { method: "POST" })
+  if (!r.ok) throw new HttpError(r.status, await safeBody(r))
+  return (await r.json()) as { run_id: string; status: string }
+}
+
 export type RoundMetric = {
   round_index: number
   asr: number | null

@@ -36,8 +36,12 @@ from shared.persistence.models import AttackRow, VerdictRow
 # Poll cadence + a hard wall-clock cap. The cap stops a stuck/never-terminal run
 # from streaming forever; the client gets a final ``complete`` with timed_out set.
 _POLL_INTERVAL_S = 0.2
-_MAX_WALL_S = 60.0
-_TERMINAL = {"complete", "failed"}
+# A real run is ~3–4 min; the old 60s cap killed the live charts mid-run. 900s
+# comfortably covers a full run while still bounding a stuck/never-terminal run
+# so the stream always closes cleanly. The terminal-``complete`` early exit
+# (below) still ends a finished run's stream promptly, well before this cap.
+_MAX_WALL_S = 900.0
+_TERMINAL = {"complete", "failed", "stopped"}
 
 
 def _sse(event: str, payload: dict[str, object]) -> str:

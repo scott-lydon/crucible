@@ -1,4 +1,6 @@
+import asyncio
 import dataclasses
+import sys
 import uuid
 from collections.abc import Callable, Sequence
 from contextlib import asynccontextmanager
@@ -19,7 +21,7 @@ from modules.measure.health import (
 )
 from modules.measure.metrics import compute_run_metrics
 from modules.measure.risk_report import render_risk_report
-from orchestrator.db import active_database_url
+from orchestrator.db import active_database_url, is_subprocess_visible_db
 from orchestrator.db import init_db as init_db  # re-export for tests
 from orchestrator.db import session_factory
 from orchestrator.full_run import (
@@ -152,12 +154,31 @@ async def post_seal_probe() -> dict[str, object]:
     return run_live_seal_probe(_health_inputs().sandbox)
 
 
+async def execute_run_by_id(run_id: str) -> None:
+    """Drive a persisted run to completion, reconstructing its request from the row.
+
+    The single entry point for BOTH dispatch paths: the inline FastAPI background
+    task (in-memory SQLite test suite) and the offloaded worker subprocess
+    (Postgres / file-backed SQLite). Reads the run's ``params_json`` — written by
+    ``create_run`` from ``LaunchRequest.model_dump()`` — and rehydrates the
+    ``LaunchRequest`` so the build/seal/run path is identical regardless of who
+    invoked it. Raises if the run row is missing (a programming error: the row is
+    committed before dispatch).
+    """
+    async with session_factory()() as s:
+        run = await repo.get_run(s, run_id)
+    if run is None:
+        raise RuntimeError(f"run {run_id!r} not found; cannot execute")
+    req = LaunchRequest.model_validate(run.params_json)
+    await _execute_run(req, run_id)
+
+
 async def _execute_run(req: LaunchRequest, run_id: str) -> None:
     """Build the requested target's components and drive the run to completion.
 
-    Runs as a FastAPI background task. ``run_loop`` / ``run_with_blue`` own the
-    running->complete/failed transitions (and mark failed on exception), so any
-    error here is captured against the run row, never swallowed.
+    ``run_loop`` / ``run_with_blue`` own the running->complete/failed transitions
+    (and mark failed on exception), so any error here is captured against the run
+    row, never swallowed.
     """
     sf = session_factory()
     batch_size = req.resolved_batch_size()
@@ -340,8 +361,87 @@ async def create_run(
             )
         )
         await s.commit()
-    background_tasks.add_task(_execute_run, req, run_id)
+
+    # Dispatch the campaign OFF the API event loop when the DB is reachable from a
+    # SEPARATE process (Postgres or a file-backed SQLite): spawn a worker
+    # subprocess that opens its OWN async engine/loop and drives the run to
+    # completion, then return immediately so the API loop NEVER blocks on the
+    # heavy synchronous work (Anthropic HTTP, LightGBM, the Docker sandbox).
+    #
+    # When the DB is an IN-MEMORY SQLite (the test suite), a subprocess cannot see
+    # the parent's in-process DB, so keep the CURRENT inline behavior — the run
+    # executes within the request lifecycle as a FastAPI background task. The
+    # branch is decided from the active DB URL/dialect, not an env guess.
+    if is_subprocess_visible_db():
+        await _spawn_worker(run_id)
+    else:
+        background_tasks.add_task(execute_run_by_id, run_id)
     return {"run_id": run_id}
+
+
+# In-process registry of live worker subprocesses (run_id -> Process). Used ONLY
+# to terminate a worker PROMPTLY on stop, so a long mid-round stretch does not
+# delay the cancel; the cooperative DB flag remains the source of truth for the
+# final ``stopped`` status. Best-effort: the dict lives in the API process, so it
+# is empty after a restart — a stop then falls back to the DB flag alone, which
+# the worker still honors. Inline (in-memory SQLite) runs have no entry here.
+_worker_procs: dict[str, asyncio.subprocess.Process] = {}
+
+
+async def _spawn_worker(run_id: str) -> None:
+    """Spawn ``python -m orchestrator.worker <run_id>`` as a detached subprocess.
+
+    Its own process => its own event loop + asyncpg connections, so there is NO
+    cross-loop hazard (the bug we hit when an async engine was shared across
+    loops). We do not await the child: ``create_run`` returns immediately and the
+    worker drives the run to a terminal status on its own, persisting failures.
+    The handle is registered so a stop request can ``terminate()`` it promptly.
+    """
+    proc = await asyncio.create_subprocess_exec(
+        sys.executable, "-m", "orchestrator.worker", run_id
+    )
+    _worker_procs[run_id] = proc
+
+
+def _terminate_worker(run_id: str) -> None:
+    """Best-effort: terminate a registered worker subprocess so a stop is prompt.
+
+    The cooperative DB flag is the source of truth for the final ``stopped``
+    status; killing the process only ends a long mid-round stretch sooner. If the
+    process already exited (or was never registered — inline run / post-restart),
+    there is nothing to do and we ignore it.
+    """
+    proc = _worker_procs.pop(run_id, None)
+    if proc is None:
+        return
+    try:
+        proc.terminate()
+    except ProcessLookupError:
+        pass  # already gone
+
+
+@app.post("/runs/{run_id}/stop")
+async def stop_run(run_id: str) -> dict[str, object]:
+    """Request cooperative cancellation of a run (stop-run).
+
+    Sets the run's ``cancel_requested`` flag (which the loop checks between rounds
+    and crosses the worker-subprocess boundary via the DB) and moves a still-
+    running run to the transient ``stopping`` status; the loop flips it to the
+    terminal ``stopped``. Also best-effort ``terminate()``s the worker subprocess
+    AFTER setting the flag, so a long mid-round stretch does not delay the stop —
+    the flag stays the source of truth for the final status.
+
+    404 if the run is unknown. Idempotent: on an already-terminal run the flag is
+    set but the terminal status is preserved and returned unchanged (no error).
+    """
+    async with session_factory()() as s:
+        run = await repo.request_cancel(s, run_id)
+    if run is None:
+        raise HTTPException(404, "run not found")
+    # Terminate the worker only AFTER the flag is durably set, so even if the kill
+    # races the worker's own exit the cooperative status is already requested.
+    _terminate_worker(run_id)
+    return {"run_id": run_id, "status": run.status}
 
 
 @app.get("/targets")
@@ -367,6 +467,34 @@ async def get_target_spec(name: str) -> str:
         return default_spec_yaml(name)
     except KeyError as exc:
         raise HTTPException(404, f"unknown target {name!r}") from exc
+
+
+@app.get("/runs")
+async def list_runs(limit: int = 50) -> dict[str, object]:
+    """Recent runs, newest first — lets the UI pick a past run by id (US-2).
+
+    ``target`` and ``rounds`` are read from each run's ``params_json`` (what the
+    launcher submitted); ``rounds`` falls back to the ``n_rounds`` column when the
+    params lack it. Honest empty list when no runs exist.
+    """
+    async with session_factory()() as s:
+        runs = await repo.recent_runs(s, limit)
+    return {
+        "runs": [
+            {
+                "run_id": r.id,
+                "target": cast(dict[str, object], r.params_json or {}).get(
+                    "target", ""
+                ),
+                "status": r.status,
+                "created_at": r.created_at.isoformat(),
+                "rounds": cast(dict[str, object], r.params_json or {}).get(
+                    "rounds", r.n_rounds
+                ),
+            }
+            for r in runs
+        ]
+    }
 
 
 @app.get("/runs/{run_id}")

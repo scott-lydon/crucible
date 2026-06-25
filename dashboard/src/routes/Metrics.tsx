@@ -6,9 +6,9 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import { getCorpus, getMetrics, isNotMeasured, type Metrics } from "../api"
+import { getCorpus, getMetrics, getRuns, isNotMeasured, type Metrics, type RunSummary } from "../api"
 import Layout from "../components/Layout"
-import { Button, Card, Mono, SectionLabel, Tile } from "../components/ui"
+import { Button, Card, Mono, RunPicker, SectionLabel, Tile } from "../components/ui"
 import { C, MONO } from "../theme"
 
 function pct(v: number | null | undefined): string | null {
@@ -17,12 +17,29 @@ function pct(v: number | null | undefined): string | null {
 
 export default function MetricsView() {
   const [params, setParams] = useSearchParams()
-  const initial = params.get("run_id") ?? ""
-  const [runId, setRunId] = useState(initial)
-  const [pending, setPending] = useState(initial)
+  const runId = params.get("run_id") ?? ""
+  const [pending, setPending] = useState(runId)
+  const [runs, setRuns] = useState<RunSummary[]>([])
   const [metrics, setMetrics] = useState<Metrics | null>(null)
   const [corpusCount, setCorpusCount] = useState<number | null>(null)
   const [loaded, setLoaded] = useState(false)
+
+  // Load the recent-runs index for the picker and DEFAULT to the newest run when
+  // the URL carries none — so the operator lands on the latest run's metrics.
+  useEffect(() => {
+    getRuns()
+      .then((rs) => {
+        setRuns(rs)
+        if (!runId && rs.length > 0) setParams({ run_id: rs[0].run_id }, { replace: true })
+      })
+      .catch(() => setRuns([]))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Keep the free-text box in sync when the run changes via the picker.
+  useEffect(() => {
+    setPending(runId)
+  }, [runId])
 
   useEffect(() => {
     if (!runId) return
@@ -62,10 +79,12 @@ export default function MetricsView() {
       </p>
 
       <Card style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 14 }}>
+          <RunPicker runs={runs} value={runId} onChange={(id) => setParams({ run_id: id })} />
+        </div>
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            setRunId(pending)
             setParams(pending ? { run_id: pending } : {})
           }}
           style={{ display: "flex", gap: 10, alignItems: "center" }}
@@ -73,7 +92,7 @@ export default function MetricsView() {
           <input
             value={pending}
             onChange={(e) => setPending(e.target.value)}
-            placeholder="run id"
+            placeholder="or paste a run id"
             style={{
               flex: 1,
               fontFamily: MONO,
@@ -89,7 +108,7 @@ export default function MetricsView() {
         </form>
       </Card>
 
-      {!runId && <p style={{ color: C.textMut }}>Enter a run id to load its measured metrics.</p>}
+      {!runId && <p style={{ color: C.textMut }}>Select or enter a run id to load its measured metrics.</p>}
 
       {runId && (
         <>
