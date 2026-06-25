@@ -46,3 +46,11 @@ class CodeTask:
     visible_tests: tuple[CodeCase, ...]
     # SEALED: oracle-only. The producer never sees these.
     held_out_tests: tuple[CodeCase, ...] = field(default=())
+    # A KNOWN-CORRECT implementation of the function's true contract, used ONLY by
+    # the code-red's validity guard (never shown to the producer, never part of a
+    # verdict). The guard runs this faithful reference against the held-out set
+    # under a red's task VARIANT: if a faithful solution would still fail held-out
+    # under the variant, the variant CONTRADICTS the contract (red lied) rather
+    # than exposing a gameable proxy, so the "hack" is rejected as invalid. ``None``
+    # disables the guard for that task (the red's variant is then trusted as-is).
+    reference_solution: str | None = field(default=None)

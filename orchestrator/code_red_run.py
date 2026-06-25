@@ -222,6 +222,7 @@ async def run_code_red_loop(
                         mutation_json={
                             "tactic": result.tactic,
                             "rationale": result.rationale,
+                            "ops": list(result.ops),
                             "from_visible_tests": _n_visible(task),
                             "to_visible_tests": _n_visible(result.variant),
                         },

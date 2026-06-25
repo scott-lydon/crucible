@@ -385,6 +385,17 @@ def _code_ctx_factory(spec: SealedSpec) -> Callable[[object, str], VerdictContex
     return factory
 
 
+def _reference_solver(task: object) -> str | None:
+    """Return a task's known-correct reference solution for the red's validity guard.
+
+    Read STRUCTURALLY off ``reference_solution`` so the adversary stays victim-
+    agnostic. ``None`` (the field is unset / absent) disables the guard for that
+    task — the guard only ever REJECTS on positive evidence of a contradiction.
+    """
+    ref = getattr(task, "reference_solution", None)
+    return ref if isinstance(ref, str) and ref.strip() else None
+
+
 def build_components_code_agent(
     threshold: float = 0.5,
     producer_provider: LLMProvider | None = None,
@@ -449,6 +460,7 @@ def build_components_code_agent(
         ctx_factory=ctx_factory,
         max_calls=red_max_calls,
         catalog=catalog,
+        reference_solver=_reference_solver,
     )
     # WHITE-BOX code red: the same autonomous task-space search, but the prompt
     # carries the oracle scheme so the red knows held-out tests will run (it can
@@ -466,6 +478,7 @@ def build_components_code_agent(
         ctx_factory=ctx_factory,
         max_calls=white_box_max_calls,
         catalog=catalog,
+        reference_solver=_reference_solver,
         prompt_suffix=(
             "WHITE-BOX INFORMATION — the produced code will be run against a "
             "SEALED held-out test set after you submit. Use this to target "

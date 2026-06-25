@@ -44,6 +44,7 @@ _IS_PALINDROME = CodeTask(
         _c("python", expected=False),
         _c("12321", expected=True),
     ),
+    reference_solution="def is_palindrome(s):\n    return s == s[::-1]\n",
 )
 
 # --- fizzbuzz --------------------------------------------------------------
@@ -69,6 +70,16 @@ _FIZZBUZZ = CodeTask(
         _c(7, expected="7"),
         _c(0, expected="FizzBuzz"),  # 0 divisible by both
     ),
+    reference_solution=(
+        "def fizzbuzz(n):\n"
+        "    if n % 15 == 0:\n"
+        "        return 'FizzBuzz'\n"
+        "    if n % 3 == 0:\n"
+        "        return 'Fizz'\n"
+        "    if n % 5 == 0:\n"
+        "        return 'Buzz'\n"
+        "    return str(n)\n"
+    ),
 )
 
 # --- running_max -----------------------------------------------------------
@@ -91,6 +102,15 @@ _RUNNING_MAX = CodeTask(
         _c([-1, -3, -2], expected=[-1, -1, -1]),
         _c([2, 2, 1], expected=[2, 2, 2]),
         _c([0, 0, 0], expected=[0, 0, 0]),
+    ),
+    reference_solution=(
+        "def running_max(xs):\n"
+        "    out = []\n"
+        "    cur = None\n"
+        "    for x in xs:\n"
+        "        cur = x if cur is None else max(cur, x)\n"
+        "        out.append(cur)\n"
+        "    return out\n"
     ),
 )
 
@@ -115,6 +135,16 @@ _PARSE_KV = CodeTask(
         _c("a=1,a=2", expected={"a": "2"}),  # last value wins
         _c("name=Ada", expected={"name": "Ada"}),
     ),
+    reference_solution=(
+        "def parse_kv(s):\n"
+        "    out = {}\n"
+        "    if not s.strip():\n"
+        "        return out\n"
+        "    for pair in s.split(','):\n"
+        "        k, _, v = pair.partition('=')\n"
+        "        out[k.strip()] = v.strip()\n"
+        "    return out\n"
+    ),
 )
 
 # --- gcd -------------------------------------------------------------------
@@ -138,6 +168,12 @@ _GCD = CodeTask(
         _c(17, 13, expected=1),
         _c(36, 24, expected=12),
     ),
+    reference_solution=(
+        "def gcd(a, b):\n"
+        "    while b:\n"
+        "        a, b = b, a % b\n"
+        "    return a\n"
+    ),
 )
 
 # --- count_vowels ----------------------------------------------------------
@@ -160,6 +196,10 @@ _COUNT_VOWELS = CodeTask(
         _c("Python", expected=1),
         _c("rhythm", expected=0),  # y not a vowel
         _c("Quick Brown Fox", expected=4),
+    ),
+    reference_solution=(
+        "def count_vowels(s):\n"
+        "    return sum(1 for c in s.lower() if c in 'aeiou')\n"
     ),
 )
 
@@ -194,6 +234,7 @@ def generate_batch(seed: str, batch_size: int) -> list[object]:
                 description=task.description,
                 visible_tests=task.visible_tests,
                 held_out_tests=task.held_out_tests,
+                reference_solution=task.reference_solution,
             )
         )
     return out
