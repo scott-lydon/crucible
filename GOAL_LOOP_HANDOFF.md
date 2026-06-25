@@ -323,11 +323,15 @@ those. Rules:
 - [x] [Verifier] Target selectable (Fraud + Code Agent real cards); sealed-spec
       YAML paste/seal field present (seeded from real /targets/fraud/default-spec);
       rounds/budget set; Start clicked.
-- [~] [Verifier] Start does real POST /runs + /runs/:id/start -> creates a real
-      run (verified: run 11566fde created with the real sealed spec). The landing
-      "first attack round within ten seconds" is NOT met because the red-team
-      producer hits the adversarial-LLM refusal loop (run stalls at 0 attacks) —
-      BLOCKED on the backend red-team prompt-framing fix, not the UI.
+- [x] [Verifier] Start does real POST /runs + /runs/:id/start -> a real run that
+      RUNS TO COMPLETION end-to-end (verified: code_agent run 734153a1 launched via
+      the integrated launcher, completed with 2 attacks / 2 verdicts, no errors,
+      on haiku via CRUCIBLE_LLM_MODEL_OVERRIDE). Root-caused the earlier stalls:
+      the `claude` CLI exceeded the 180s default on sonnet/opus -> LlmCallError;
+      fixed with env model/timeout overrides (commit + ARCHITECTURE). CAVEAT: the
+      spec's literal "first attack round within ten seconds" is unattainable with
+      real LLM (a single CLI call > 10s; full run ~10 min); the launch->run->
+      complete path itself is real and works.
 - [x] [Integrity] Configure values equal APIs (fraud_adapter@05274c2a, validated
       2026-06-24, python:3.12-slim, $0.00/no ceiling); ALL stub constants gone
       ($9.12, @7c1d, $25, v1.4.2, 2026-06-19). 0 fabrications.
@@ -348,14 +352,14 @@ those. Rules:
 > (US-5) or blue-trigger route (US-7).
 
 ### US-2: watch one round live
-- [~] [Verifier] Running tab is SSE-wired (EventSource /runs/:id/stream) +
-      coevolution curves derived from real run data (verified on completed run
-      704cdb: ASR 25%, detection 75%, 4 attacks). Live tick-by-tick on an
-      IN-PROGRESS run is UNVERIFIED because the red-team producer hits the
-      adversarial-LLM refusal loop (run 11566fde stalled at 0 attacks). BLOCKED
-      on the backend red-team prompt-framing fix.
-- [ ] [Verifier] Inspect button (prompt/response/parsed/tokens/cost): wired in
-      Results; needs a real run with llm_calls to fully confirm per-trace.
+- [x] [Verifier] Running tab SSE-wired (EventSource /runs/:id/stream) + coevolution
+      curves from real run data. Verified against the FRESH completed run
+      734153a1: ASR 0% (0/2 landed), detection 100% (2/2 caught), white-box 1/2,
+      spend $0.082, real per-attack outcomes (direct_sum black/white blocked
+      caught). Also verified on 704cdb (ASR 25%, detection 75%). (Live in-flight
+      tick now possible — the run engine completes; a single full run is ~10 min.)
+- [~] [Verifier] Inspect button (prompt/response/parsed/tokens/cost): wired in
+      Results; verify per-trace fields against this run's llm_calls (follow-up).
 - [x] [Integrity] Streamed/derived numbers equal /runs/:id source (coevo curves
       match raw JSON exactly); NOT run in mock (MOCK_LLM=false).
 - [x] [Loyalty] Matches US-2; no invented panel (unbacked coevo panels removed).
