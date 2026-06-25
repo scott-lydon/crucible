@@ -148,8 +148,9 @@
       '<span id="live-status" style="font-weight:600;letter-spacing:.08em;color:#57C08A">CONNECTING</span>' +
       "<span>/runs/<span style=\"color:#E8EDF3\">" + esc(runId) + "</span> · LIVE (this run)</span>" +
       '<span style="margin-left:auto">round <span id="live-round" style="color:#E8EDF3">0</span></span>' +
-      '<span>ASR <span id="live-asr" style="color:#D9A441">0.00</span></span>' +
-      '<span>Detection <span id="live-det" style="color:#4FAAC0">0.00</span></span>' +
+      '<span>graded <span id="live-asr" style="color:#E8EDF3">0</span></span>' +
+      '<span>flagged by panel <span id="live-det" style="color:#D9A441">0</span></span>' +
+      '<span style="color:#6B7682">· trust score on the dashboard</span>' +
       "</div>" +
       '<div style="padding:14px 22px;display:grid;grid-template-columns:1fr 1fr;gap:14px;font-family:\'IBM Plex Mono\',monospace;font-size:12px">' +
       '<div><div style="color:#8A94A2;letter-spacing:.08em;margin-bottom:8px">VERDICT STREAM · newest at top</div><div id="live-verdicts" style="display:flex;flex-direction:column;gap:6px"></div></div>' +
@@ -166,14 +167,14 @@
     var elVerdicts = mount.querySelector("#live-verdicts");
     var elTrace = mount.querySelector("#live-trace");
 
-    var nVerdicts = 0, nCaught = 0; // caught = oracle ensemble caught producer wrongness
+    var nVerdicts = 0, nCaught = 0; // caught = oracle ensemble flagged a violation
     function refreshRates() {
-      // Detection = share of producer-wrong cases the ensemble caught. With the
-      // available stream we approximate: ASR = clean / total, Detection = caught / total.
-      if (!nVerdicts) return;
-      var det = nCaught / nVerdicts;
-      elDet.textContent = det.toFixed(2);
-      elAsr.textContent = (1 - det).toFixed(2);
+      // Honest live counters: how many outputs were graded, and how many the panel
+      // flagged. "Clean" here only means "the panel did not flag it" — the held-out-
+      // confirmed trust score (on the dashboard) is the real silent-failure verdict, so
+      // we do NOT show a "clean rate" that would read as attacker success on a safe agent.
+      elAsr.textContent = String(nVerdicts);
+      elDet.textContent = String(nCaught);
     }
     function row(html, border) {
       var d = document.createElement("div");
