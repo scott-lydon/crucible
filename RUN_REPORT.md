@@ -276,3 +276,38 @@ black-box 6/7=0.86 + white-box 6/6=1.00, /halt recall=1.0 (all real, were 0%/hal
 admin/pass -> project_key_configured, /llm-provider mode project_key (key_hint
 sk-…bgAA); wrong creds 401; active key then cleared to safe "none". Loyalty
 removed pages still 404. Build dep-d8ujj4navr4c73a4uj0g live.
+
+---
+
+## FINAL — both demo videos produced; Stage U at operator gate (2026-06-25)
+
+Deploy path: PRIMARY (no mirror) — Render `crucible` tracks feat/crucible-build,
+PR #3 OPEN/not merged. Live URL serves branch + features + real seeded data.
+
+Videos (each 6:06, title + US-1..US-15 + outro; every value real, 0 console errors):
+- demo/master-local.mp4  — local real-LLM run (Claude Max CLI).
+- demo/master-deploy.mp4 — live deploy (snapshot-disclosed title; live runs via
+  the Anthropic API admin key).
+
+Bug log (demo/BUGLOG.md): 4 found + fixed + verified — BUG-L1 (out-of-scope
+co-evolution/leaderboard screens, 90aabcd), BUG-R1 (catalog row-click reveal,
+dd0fd0a), BUG-L2 (dashboard co-evolution panel, f1d4065), BUG-R2 (dashboard
+placeholder panels, dd7ffd5). 0 open.
+
+Critique (demo/CRITIQUE.md): Video-Critique CRITIQUE PASS — 3 minor non-blocking
+notes; coherent, accurately narrated, well-paced.
+
+Feature work this loop (beyond recording): admin panel + Anthropic API-key
+fallback so the deploy can run real Claude (shared/llm/api_client.py +
+active_key.py + resolver; orchestrator endpoints; admin UI + provider chip);
+seed-on-boot of the real-LLM snapshot into the deploy DB (scripts/seed_demo.py).
+All deploy-verified live.
+
+Stage U (OPERATOR GATE, by design):
+- YouTube upload: youtubeuploader installed but no GCP OAuth client; operator
+  provides client_secrets.json (then I upload both Unlisted) OR uploads manually
+  and supplies the two watch URLs.
+- Slack: message drafted (demo/SLACK_DRAFT.md, PR + 2 video links + explanation);
+  send only after operator approval (the one irreversible external action).
+
+URLs: <pending upload>. Slack delivery: <pending approval>.
