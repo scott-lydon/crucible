@@ -533,9 +533,14 @@ async def get_report(run_id: str, format: str = "markdown") -> Response:
     return Response(content=markdown, media_type="text/markdown")
 
 
+# Bumped whenever the SPA shell changes, so the redirect target is a fresh cache key and
+# a browser that cached an older /app/ index can't keep serving it (cr UI deploy hardening).
+_APP_VERSION = "2"
+
+
 @app.get("/")
 async def root() -> RedirectResponse:
-    return RedirectResponse(url="/app/")
+    return RedirectResponse(url="/app/?v=" + _APP_VERSION)
 
 
 class _NoCacheStatic(StaticFiles):

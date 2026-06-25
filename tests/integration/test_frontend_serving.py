@@ -18,7 +18,14 @@ _SCREENS = (
 def test_root_redirects_to_app(client: TestClient) -> None:
     resp = client.get("/", follow_redirects=False)
     assert resp.status_code in (302, 307)
-    assert resp.headers["location"].rstrip("/").endswith("/app")
+    # Cache-busted so a browser holding an older /app/ shell can't keep serving it.
+    assert resp.headers["location"].startswith("/app/")
+
+
+def test_app_served_no_store_no_external_fonts(client: TestClient) -> None:
+    resp = client.get("/app/")
+    assert resp.headers.get("cache-control") == "no-store, must-revalidate"
+    assert "fonts.googleapis.com" not in resp.text  # no render-blocking external dependency
 
 
 def test_spa_shell_and_app_served(client: TestClient) -> None:

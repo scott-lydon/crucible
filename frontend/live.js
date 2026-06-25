@@ -13,9 +13,12 @@
 
   // The old Claude-Design mockup pages are retired in favour of the single-page app at
   // /app/ (index.html + app.js). Anyone landing here from a stale bookmark/cache is sent
-  // to the new app immediately, before the mockup renders.
+  // to the new app. The ?v=<unique> query forces a FRESH fetch of index.html — without it,
+  // a cached old index.html (which itself redirected to a mockup) would bounce straight
+  // back here, an infinite loop. The cache-busted URL serves the new SPA, which never
+  // redirects, so the loop is broken and stale visitors auto-recover.
   if (/\.dc\.html$|\/Canvas|\/Run Launcher/i.test(location.pathname)) {
-    location.replace("/app/#/launch");
+    location.replace("/app/?v=" + Date.now() + "#/launch");
     return;
   }
 
