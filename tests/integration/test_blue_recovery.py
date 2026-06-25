@@ -223,3 +223,18 @@ async def test_blue_recovers_on_real_evasions(
     print(f"  detection_after        = {v.detection_after:.3f}")
     print(f"  recovered              = {v.recovered:.3f}")
     print(f"  iterations             = {len(result.iterations)}")
+
+
+def test_blue_train_sample_is_bounded() -> None:
+    """Regression: the blue train sample MUST stay bounded.
+
+    ``_TRAIN_SAMPLE_N = None`` loaded the full ~1.3M-row dataset, which OOM-killed
+    the offloaded worker subprocess mid-retrain. Because ``run_loop`` had already
+    set the run status to ``complete``, the kill silently produced NO blue round
+    (no error, no row) — the live red->catch->blue->recover arc looked done but had
+    no blue. Keep the sample bounded so ``run_with_blue``'s blue arc actually runs.
+    """
+    from orchestrator.full_run import _TRAIN_SAMPLE_N
+
+    assert _TRAIN_SAMPLE_N is not None, "blue train sample must be bounded, not None"
+    assert 0 < _TRAIN_SAMPLE_N <= 100_000

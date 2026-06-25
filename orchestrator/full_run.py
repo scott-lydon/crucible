@@ -37,12 +37,15 @@ from shared.sandbox.base import Sandbox
 from shared.types import SealedSpec
 
 # The raw training set for the engineered retrain. ``None`` = the FULL dataset:
-# the fraud base rate is ~0.6%, so a subsample starves the engineered feature of
-# signal and recovery collapses. The sandbox VET runs over a small bounded prefix
-# only (so the untrusted-execution cost stays tiny); the trusted retrain uses all
-# rows. The maker's single engineered feature recovers a real ~0.2 share — honest,
-# bounded, not a rigged number (amt still dominates the model).
-_TRAIN_SAMPLE_N: int | None = None
+# the fraud base rate is ~0.6%. The sandbox VET runs over a small bounded prefix
+# (so untrusted-execution cost stays tiny); the trusted retrain then uses the
+# whole loaded sample. That sample MUST be bounded: loading the full ~1.3M-row
+# dataset (limit=None) OOM-killed the worker subprocess mid-retrain — and because
+# run_loop had already marked the run 'complete', the kill silently produced NO
+# blue round (no error, no row). A bounded sample still recovers a real share (the
+# engineered feature finds the victim's blind signal, e.g. hour); honest, not
+# rigged (amt still dominates the model). Keep this comfortably under memory.
+_TRAIN_SAMPLE_N: int | None = 5000
 _HOLDOUT_N = 200
 
 
@@ -90,11 +93,15 @@ async def run_with_blue(
         label_fn=label_fn,
         generate_fn=generate_fn,
         spec=spec,
+        # Defer the terminal status: run_loop must NOT mark the run 'complete'
+        # after the red loop, or the run would read 'complete' while blue is still
+        # running for minutes in the worker (which looked like blue never ran). We
+        # mark complete below, once the WHOLE arc (incl. blue) finishes.
+        mark_complete=False,
     )
 
     # If the red loop was cooperatively cancelled it left the run terminal-
-    # ``stopped``; do NOT run the blue arc (which would re-open work and flip the
-    # status). Honest: a stopped run keeps its ``stopped`` status with no blue row.
+    # ``stopped``; do NOT run the blue arc or mark complete.
     async with session_factory() as s:
         run = await repo.get_run(s, run_id)
     if run is not None and run.status == "stopped":
@@ -103,54 +110,61 @@ async def run_with_blue(
     async with session_factory() as s:
         attacks = await repo.attacks_for_run(s, run_id)
     successful = [a for a in attacks if a.evaded and a.true_label_preserved]
-    if not successful:
-        # The red loop found no gap — nothing for blue to recover. Honest: no row.
-        return
+    # Blue runs only when the red loop found a gap AND there is a holdout to
+    # validate against; otherwise there is honestly no blue row. Either way we
+    # fall through to marking the run complete below.
+    if successful:
+        # The maker works on RAW rows: a BOUNDED training sample (``_TRAIN_SAMPLE_N``
+        # — unbounded OOM-killed the worker) and a held-out set of RAW evasions.
+        # Seeded off the run seed for reproducibility.
+        row_seed = abs(hash(seed)) % (2**31)
+        train_rows = load_raw_rows(limit=_TRAIN_SAMPLE_N, seed=row_seed)
+        holdout_rows = load_holdout_raw_rows(limit=_HOLDOUT_N, seed=row_seed)
+        if holdout_rows:
+            result = run_blue_round(
+                catalog=catalog,
+                base_features=base_features,
+                raw_columns=raw_columns,
+                train_rows=train_rows,
+                holdout_rows=holdout_rows,
+                sandbox=sandbox,
+                engineer_agent=engineer_agent,
+                retrain_engineered_fn=retrain_engineered_fn,
+                # The raw holdout carries no derived `hour`; validate against the
+                # REAL committed label, not the derived `is_fraud` rule.
+                label_fn=raw_label_fn,
+                threshold=threshold,
+                old_detector=detector,
+            )
+            v = result.validation
+            async with session_factory() as s:
+                await repo.add_blue_round(
+                    s,
+                    BlueRoundRow(
+                        id=str(uuid.uuid4()),
+                        run_id=run_id,
+                        # The engineered feature the BEST iteration added (empty
+                        # on an honest fail where nothing recovered).
+                        features_added=(
+                            [result.feature_name] if result.new_detector else []
+                        ),
+                        detection_before=v.detection_before,
+                        detection_after=v.detection_after,
+                        recovered=v.recovered,
+                        n_holdout=v.n,
+                        proposer_rationale=result.rationale,
+                        new_model_ref=None,
+                        iteration_trail=_iteration_trail(result),
+                    ),
+                )
 
-    # The maker works on RAW rows: a bounded training sample and a held-out set of
-    # RAW evasions (real night-frauds with amt lowered — the same evasion the red
-    # loop just landed). Seeded off the run seed for reproducibility.
-    row_seed = abs(hash(seed)) % (2**31)
-    train_rows = load_raw_rows(limit=_TRAIN_SAMPLE_N, seed=row_seed)
-    holdout_rows = load_holdout_raw_rows(limit=_HOLDOUT_N, seed=row_seed)
-    if not holdout_rows:
-        return
-
-    result = run_blue_round(
-        catalog=catalog,
-        base_features=base_features,
-        raw_columns=raw_columns,
-        train_rows=train_rows,
-        holdout_rows=holdout_rows,
-        sandbox=sandbox,
-        engineer_agent=engineer_agent,
-        retrain_engineered_fn=retrain_engineered_fn,
-        # The raw holdout carries no derived `hour`; validate against the REAL
-        # committed label, not the derived `is_fraud` rule used by the red loop.
-        label_fn=raw_label_fn,
-        threshold=threshold,
-        old_detector=detector,
-    )
-
-    v = result.validation
+    # The full arc (red -> verify -> measure -> blue) is done: mark terminal now
+    # (run_loop deferred it). Never override a cooperatively-``stopped`` run.
     async with session_factory() as s:
-        await repo.add_blue_round(
-            s,
-            BlueRoundRow(
-                id=str(uuid.uuid4()),
-                run_id=run_id,
-                # The engineered feature the BEST iteration added (empty on an
-                # honest fail where nothing recovered).
-                features_added=[result.feature_name] if result.new_detector else [],
-                detection_before=v.detection_before,
-                detection_after=v.detection_after,
-                recovered=v.recovered,
-                n_holdout=v.n,
-                proposer_rationale=result.rationale,
-                new_model_ref=None,
-                iteration_trail=_iteration_trail(result),
-            ),
-        )
+        run = await repo.get_run(s, run_id)
+        if run is not None and run.status != "stopped":
+            run.status = "complete"
+            await s.commit()
 
 
 async def run_white_box_pass(

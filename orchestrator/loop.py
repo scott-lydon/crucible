@@ -87,6 +87,7 @@ async def run_loop(
     generate_fn: GenerateFn,
     spec: SealedSpec,
     engine: TargetEngine | None = None,
+    mark_complete: bool = True,
 ) -> None:
     # The loop is generic over the produce shape: it delegates "run the victim on
     # a task" to a ``TargetEngine``. ``engine=None`` wraps the classifier
@@ -245,7 +246,10 @@ async def run_loop(
 
         async with session_factory() as s:
             run = await repo.get_run(s, run_id)
-            if run is not None:
+            # When the loop is one phase of a larger arc (run_with_blue), the
+            # caller defers the terminal status until blue finishes, so the run
+            # does not read 'complete' while blue is still running in the worker.
+            if run is not None and mark_complete:
                 run.status = "complete"
                 await s.commit()
 
