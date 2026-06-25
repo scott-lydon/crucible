@@ -167,6 +167,18 @@ prior tactic: the search starts cold, which is expected, not a failure.
 | `retrainer.py` | Apply the patch. For the fraud target: run a LightGBM training pass and emit a new `.lgb` artifact. For the code-agent target: apply the prompt-and-configuration diff and emit a new agent-config row. The vendor language model the code agent talks to is never modified. | None | `artifacts/fraud-vN.lgb` (next integer) for fraud, `agent_configs` row (next version) for code-agent; `model_versions` table records both under one schema |
 | `holdout_validator.py` | Re-evaluate detection on a held-out attack set defined up front (never the patch's training attacks) | None | `holdout_runs` table |
 
+**Trigger route.** `POST /runs/{run_id}/blue` (added 2026-06-24, US-7) is the
+operator-facing entry that drives the blue loop for a completed run: it reads the
+run's undetected attacks (falls back to all attacks when the ensemble caught
+everything), calls `BlueProposer.propose_patch`, persists the patch via
+`BlueStore`, and returns `{patch_id, kind}`. The blue-patch review view
+(`slice-03-blue-patch-review`, `GET /blue/{patch_id}`) renders the result.
+Before this route existed there was no API path to create a patch, so the review
+view could only ever show an empty state. Held-out before/after detection is
+recorded only when a non-overlapping held-out attack set exists for the run;
+otherwise the review honestly shows "no held-out validation recorded" rather than
+a fabricated delta.
+
 **Failure modes.** The held-out attack set overlaps the patch's training attacks: the
 orchestrator refuses to apply the patch and returns a typed `HoldoutContamination`
 error (US-7). Retrain crashes: `RetrainFailed` naming the artifact version it was
@@ -252,6 +264,7 @@ Postgres via the SSE backend.
 | Stop rule | Halt certification at residual red line | Ship regardless of residual | Capability-threshold gating, per Responsible Scaling Policy spirit. | Security |
 | Persistence | Postgres 16 | SQLite | Concurrent writes from pillars break SQLite. | Scalability |
 | LLM access | Local `claude` CLI on the Claude Max subscription | Metered Anthropic API key | The subscription is already paid, so local runs and the demo cost nothing per token; the CLI still reports per-call cost for the dashboard. A metered key is the server-deploy fallback. | Scalability |
+| LLM model/timeout override | `CRUCIBLE_LLM_MODEL_OVERRIDE` (forces every call to one model, e.g. `claude-haiku-4-5-20251001` for a cheap/fast validation pass) and `CRUCIBLE_LLM_TIMEOUT_SECONDS` (raises the per-call CLI timeout, default 180s) | Hardcoded per-agent models only | A full real run drives ~7+ sequential `claude` CLI calls (red ×N, target, 4 oracles, judge); on sonnet/opus a single call could exceed the 180s default and fail the whole run. The env overrides let a run be validated on haiku first, then promoted to sonnet/opus. Defaults unchanged when unset. | Operability |
 | Sandbox | Docker (`--network none`) first, Modal as the hosted target | nsjail | Docker is already on the dev machine and seals egress with no new account; Modal becomes the hosted path once a token is added. | Security |
 | Dashboard SPA stack | React 18 + Vite + Tailwind + Recharts + Router | Next.js, Streamlit | Existing architecture site palette and the team's React familiarity. | Scalability |
 | Producer sandbox to oracle communication | Output written to a write-only Postgres row by the orchestrator after the sandbox returns; oracles read from Postgres | Direct pipe sandbox to oracles | Direct pipe would require the sandbox to know oracle endpoints. | Security |

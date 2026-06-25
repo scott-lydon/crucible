@@ -65,7 +65,10 @@ from shared.persistence.models import Verdict as VerdictRow
 from shared.sandbox.docker_sandbox import DEFAULT_SANDBOX_IMAGE
 from shared.telemetry import configure_logging, get_logger
 from shared.types import (
+    Attack,
     AttackBudget,
+    AttackId,
+    AuditTrace,
     DomainValidationError,
     Money,
     RunId,
@@ -74,6 +77,8 @@ from shared.types import (
     TargetSpec,
     TargetType,
 )
+from modules.blue import BlueProposer, BlueStore
+from shared.llm import get_llm_client
 
 log = get_logger("orchestrator.api")
 
@@ -596,6 +601,59 @@ async def get_verdict(run_id: str, verdict_id: str, session: SessionDep) -> dict
             {"decision": d.decision, "reason": d.reason} for d in differential
         ],
     }
+
+
+@app.post("/runs/{run_id}/blue", status_code=201)
+async def trigger_blue(run_id: str, session: SessionDep) -> dict[str, str]:
+    """Run the blue hardening loop for a run and persist a patch (US-7).
+
+    Reads the run's undetected attacks (falls back to all attacks), proposes a
+    hardening patch via the blue proposer, and persists it so
+    GET /blue/{patch_id} can render the review. This is the operator-facing
+    trigger the blue-patch view links to; previously no route created a patch,
+    so the view could never show real data.
+    """
+    run = await session.get(Run, run_id)
+    if run is None:
+        raise HTTPException(status_code=404, detail="run not found")
+    rows = (
+        (await session.execute(select(AttackRow).where(AttackRow.run_id == run_id)))
+        .scalars()
+        .all()
+    )
+    if not rows:
+        raise HTTPException(
+            status_code=409, detail="run has no attacks to harden from; run it first"
+        )
+
+    def _value(r: AttackRow) -> Attack:
+        return Attack(
+            attack_id=AttackId(r.id),
+            run_id=RunId(r.run_id),
+            tactic=r.tactic,
+            payload=r.payload or {},
+            succeeded=r.succeeded,
+            white_box=r.white_box,
+            hybrid=r.hybrid,
+            dollars_spent=Money.zero(),
+            audit=AuditTrace(summary="from run attack", steps=()),
+        )
+
+    undetected = [_value(r) for r in rows if r.succeeded]
+    slice_attacks = undetected or [_value(r) for r in rows]
+    patch = await BlueProposer(llm=get_llm_client()).propose_patch(
+        TargetType(run.target_type), slice_attacks
+    )
+    await BlueStore(session=session).save_patch(patch)
+    await session.commit()
+    log.info(
+        "blue_patch_created",
+        run_id=run_id,
+        patch_id=patch.patch_id.value,
+        kind=patch.kind,
+        from_undetected=len(undetected),
+    )
+    return {"patch_id": patch.patch_id.value, "kind": patch.kind}
 
 
 @app.get("/blue/{patch_id}")
