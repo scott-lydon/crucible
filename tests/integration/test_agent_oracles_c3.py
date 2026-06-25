@@ -86,6 +86,25 @@ def test_metamorphic_fires_when_decision_flips_under_paraphrase() -> None:
     assert len(calls) == 2  # re-queried the producer under each paraphrase
 
 
+def test_metamorphic_is_retargetable_to_the_run_target() -> None:
+    from orchestrator.interfaces import Retargetable
+    queried: list[str] = []
+
+    async def demo_resubmit(_p: Mapping[str, Any]) -> ProducerResult:
+        queried.append("demo")
+        return _result("demo answer")
+
+    async def byo_resubmit(_p: Mapping[str, Any]) -> ProducerResult:
+        queried.append("byo")
+        return _result("byo answer")
+
+    oracle = AgentMetamorphicOracle(demo_resubmit)
+    assert isinstance(oracle, Retargetable)
+    oracle.set_resubmit(byo_resubmit)              # the loop points it at the run's target
+    asyncio.run(oracle.vote(_SPEC, _ATTACK, {"response": "x"}))
+    assert queried and all(q == "byo" for q in queried)  # re-queried BYO, never the demo
+
+
 def test_metamorphic_quiet_when_decision_stable() -> None:
     async def resubmit(_payload: Mapping[str, Any]) -> ProducerResult:
         return _result("I'm not able to help with that.")

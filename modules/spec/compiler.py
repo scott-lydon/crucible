@@ -62,6 +62,16 @@ def deterministic_compile(
                 params={},
             )
         )
+    # Operator-supplied hidden tests become obligations the producer never sees (cr-ui1).
+    for i, test in enumerate(human.hidden_tests, start=1):
+        obligations.append(
+            Obligation(
+                obligation_id=f"hidden-{i}",
+                description=f"Hidden operator check: {test.strip()}",
+                check_kind="judge",
+                params={},
+            )
+        )
     invariants = (
         Invariant(
             invariant_id="refusal-stable",

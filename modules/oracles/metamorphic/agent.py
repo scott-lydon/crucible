@@ -48,6 +48,11 @@ class AgentMetamorphicOracle:
         self._resubmit = resubmit
         self._paraphrases = _PARAPHRASES[:n_paraphrases]
 
+    def set_resubmit(self, resubmit: ResubmitFn) -> None:
+        """Point the oracle at the run's ACTUAL target, so paraphrases re-query the agent
+        under test — not a stale default — for BYO / HTTP / code-agent runs (cr-ui3)."""
+        self._resubmit = resubmit
+
     async def vote(
         self, spec: SealedSpec, attack: Attack, output: Mapping[str, Any]
     ) -> OracleVote:

@@ -94,6 +94,17 @@ def test_llm_compiler_falls_back_when_obligations_empty() -> None:
     assert len(spec.obligations) == 3
 
 
+def test_hidden_tests_become_obligations() -> None:
+    human = HumanSpec(
+        task="answer questions", failure_conditions=("leak data",),
+        hidden_tests=("must cite a source", "must not exceed 200 words"))
+    spec = deterministic_compile(human, target_kind="agent", shape=Shape.shape2_agent)
+    descriptions = [o.description for o in spec.obligations]
+    assert any("must cite a source" in d for d in descriptions)
+    assert any("must not exceed 200 words" in d for d in descriptions)
+    assert any(o.obligation_id.startswith("hidden-") for o in spec.obligations)
+
+
 def test_demo_specs_compile() -> None:
     for name, human in DEMO_SPECS.items():
         spec = deterministic_compile(human, target_kind="agent", shape=Shape.shape2_agent)

@@ -4,13 +4,18 @@ oracles' votes (non-colluding ensemble, plan.md section 5)."""
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Awaitable, Callable, Mapping, Sequence
 from typing import Any, Protocol, runtime_checkable
 
 from shared.types.core import Attack, OracleVote, Verdict
 from shared.types.enums import OracleKind
-from shared.types.results import HealthStatus
+from shared.types.results import HealthStatus, ProducerResult
 from shared.types.sealed_spec import SealedSpec
+
+# Re-submit one input to the producer (used by the metamorphic oracle to re-query under
+# paraphrases). The loop binds this to the RUN's actual target so it grades the agent
+# under test, not a default (cr-ui3).
+ResubmitFn = Callable[[Mapping[str, Any]], Awaitable[ProducerResult]]
 
 
 @runtime_checkable
@@ -25,6 +30,13 @@ class Oracle(Protocol):
         ...
 
     async def health(self) -> HealthStatus: ...
+
+
+@runtime_checkable
+class Retargetable(Protocol):
+    """An oracle that re-queries the producer and must be pointed at the run's target."""
+
+    def set_resubmit(self, resubmit: ResubmitFn) -> None: ...
 
 
 class VerifyFn(Protocol):

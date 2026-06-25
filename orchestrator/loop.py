@@ -16,6 +16,7 @@ from orchestrator.interfaces import (
     Oracle,
     Primable,
     RedAgent,
+    Retargetable,
     SchemeAware,
     Target,
 )
@@ -119,6 +120,15 @@ async def _enforce_budget(run_id: RunId, per_run_cap: float) -> None:
     reason = should_halt(spent, per_run_cap, total, global_cap)
     if reason is not None:
         raise _BudgetHaltError(reason)
+
+
+def _retarget_oracles(oracles: list[Oracle], target: Target) -> None:
+    """Point re-querying oracles (metamorphic) at the run's actual target so they grade
+    the agent under test, not a default (cr-ui3). Shared oracle instances, so this is
+    per-run state — fine for sequential runs."""
+    for oracle in oracles:
+        if isinstance(oracle, Retargetable):
+            oracle.set_resubmit(target.submit)
 
 
 async def _resolve_target(
@@ -246,6 +256,7 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         target = await _resolve_target(container, target_kind, agent_config_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
+        _retarget_oracles(oracles, target)
 
         # Reuse across runs (cr-b2): seed the attacker with the most evasive tactics the
         # strategy catalog distilled from PRIOR runs against this target type.
@@ -376,6 +387,7 @@ async def run_coevolution(
             global_round = 0
             for r in range(coevo_rounds):
                 target = factory(current_config)
+                _retarget_oracles(oracles, target)
                 total_caught = 0
                 failed: list[Attack] = []        # attacks where the agent actually violated
                 caught_failures = 0
