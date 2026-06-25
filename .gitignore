@@ -19,3 +19,16 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+
+# Local scratch: throwaway debug scripts and one-off target outputs that land
+# at the repo root during demo runs. Real targets live under modules/targets/.
+scratchpad/
+/fraud_predict.py
+/sum_two_integers.py
+/verify_asserts.py
+
+# Intermediate video-stitching artifacts produced while building the demo reel.
+demo/_stitch_tmp/
+
+# Throwaway integrity capture (superseded by the canonical local-us6-catalog.*).
+demo/integrity/us6-LOCALTEST.*
