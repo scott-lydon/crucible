@@ -19,16 +19,27 @@ The single source of truth for "what should work" is, in this order:
 
 Hard rules for every agent in this loop:
 
-- **Verify only behavior that traces to a US-n acceptance test.** If a control,
-  number, panel, or page cannot be traced to a specific US-n, it is not a
-  feature to make work. Do not assert it, do not wire it, do not grade it.
-- **Never invent a user story.** If you find yourself adding a capability that
-  no US-n names (operator pause button, admin override toggles, halt-as-action,
-  multi-tenant, a spec compiler, mobile layout), STOP. Those are out of scope
-  per `acceptance-tests.md` section 2 and `REMOVED_UI.md`.
-- **The honest fix for an unspecified, non-functional control is removal or an
+- **Verify only behavior that is in scope.** In scope means it traces to a
+  specific US-n acceptance test, OR it is plainly entailed by the PRD as part of
+  delivering a named US-n (the obvious supporting affordance a reasonable reader
+  expects, even if no US enumerates it). Behavior that is neither traceable to a
+  US-n nor plainly entailed by the PRD is not a feature to make work: do not
+  assert it, do not wire it, do not grade it.
+- **The PRD-entailed allowance is narrow, not a loophole.** It covers the
+  unavoidable mechanics of a named story (for example: the Start button US-1
+  names, the Inspect button US-2 names, an empty/error/loading state for a
+  required view, a back link out of a drilled-in page). It does NOT cover a new
+  capability. When in doubt whether something is "entailed" or "invented," treat
+  it as invented and run the reconciliation step below.
+- **Never invent a user story.** If you find yourself adding a capability that no
+  US-n names and the PRD does not plainly entail (operator pause button, admin
+  override toggles, halt-as-action, multi-tenant, a spec compiler, mobile
+  layout), STOP. Those are out of scope per `acceptance-tests.md` section 2 and
+  `REMOVED_UI.md`.
+- **The honest fix for an out-of-scope, non-functional control is removal or an
   em-dash placeholder, not a new backing route.** A dead button that no US
-  requires gets deleted or disabled, never "made to work."
+  requires and the PRD does not entail gets deleted or disabled, never "made to
+  work."
 - **If a real US-n behavior genuinely needs something the spec did not state,
   do not silently build it.** Add it to `acceptance-tests.md` / `ARCHITECTURE.md`
   first, flag the contradiction to the operator, and only then implement. This
@@ -176,10 +187,11 @@ displayed-vs-source; the Loyalty Reviewer confirms scope.
 - **US-14.** White-box self-test runs on every pass (`slice-10`).
 - **US-15.** Internal debug route reachable (`slice-12-admin-debug`).
 
-For any control encountered that maps to none of the above (tab chrome that
-duplicates real page nav, pause, lift-ceiling / lift-rounds / mock-llm / egress
-admin toggles, request-access links), the Loyalty Reviewer rules it out of
-scope and the Builder removes or em-dashes it. It is never wired.
+For any control encountered that neither maps to a US-n above nor is plainly
+entailed by the PRD (tab chrome that duplicates real page nav, pause,
+lift-ceiling / lift-rounds / mock-llm / egress admin toggles, request-access
+links), the Loyalty Reviewer rules it out of scope and the Builder removes or
+em-dashes it. It is never wired.
 
 ## 4. Exit criterion (when the loop stops)
 
@@ -212,8 +224,9 @@ those. Rules:
 - A scenario is "green" only when all four of its boxes are ticked at once. The
   loop is done only when section 4's master boxes are all ticked on two back to
   back passes (record the two pass timestamps).
-- Do not add a checkbox that has no US-n. If a box would describe out-of-scope
-  behavior, delete it instead and note the REMOVED_UI.md / section-2 reason.
+- Do not add a checkbox for behavior that neither traces to a US-n nor is
+  plainly entailed by the PRD. If a box would describe out-of-scope behavior,
+  delete it instead and note the REMOVED_UI.md / section-2 reason.
 
 ### Scenario 0: launcher renders (regression, blocks everything)
 - [ ] [Builder] Root cause of the blank blue screen identified (CDN mount vs
@@ -224,7 +237,8 @@ those. Rules:
       blank screen; console has zero app errors.
 - [ ] [Integrity] First-paint screenshot captured; no fabricated values on the
       launcher (target cards, est/spend, sandbox image all real or em-dash).
-- [ ] [Loyalty] Nothing on the launcher works that lacks a US-n.
+- [ ] [Loyalty] Nothing on the launcher works that neither traces to a US-n nor
+      is plainly entailed by the PRD.
 
 ### US-1: submit a target for evaluation
 - [ ] [Loyalty] Section-0 spec reconciliation on the default-spec endpoint is
