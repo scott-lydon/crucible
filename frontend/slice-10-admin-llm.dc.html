@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<!--
+====================================================================
+slice-10-admin-llm · LLM provider admin (deploy-time API fallback)
+====================================================================
+  Admin surface for the deployed instance, where the `claude` CLI is
+  unavailable. Locally the app uses the CLI and no key is needed; the
+  controls here apply to the deployed app.
+
+  Bindings -> endpoints (all live):
+    provider chip + rows  <- GET  /llm-provider  (mode, source_label, key_hint)
+    admin login           -> POST /admin/login   {username, password}
+    use your own key      -> POST /llm-key        {api_key}  (masked, never echoed)
+    clear key             -> POST /llm-key/clear
+
+  No fabricated values: the provider chip renders the real resolved mode.
+====================================================================
+-->
+
+<div data-screen-label="Admin · LLM provider" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <span style="color:#E8EDF3">/admin · LLM provider</span>
+      </span>
+      <div style="flex:1"></div>
+      <!-- live provider chip -->
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #2C3744;border-radius:7px;background:#161E27;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ chipColor }}">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ chipDot }};flex:none"></span>
+        {{ chipLabel }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:920px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="margin-bottom:8px">
+      <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">LLM provider</h1>
+      <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">deploy-time Anthropic API fallback to the local CLI</div>
+    </div>
+
+    <!-- helper: local vs deployed -->
+    <div style="margin:14px 0 24px;border:1px solid #2C3744;border-radius:10px;background:#11181F;padding:14px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2;line-height:1.7">
+      Locally the app calls the <span style="color:#B8C2CE">claude CLI</span> on the operator's Claude Max session, so no key is needed.
+      The key options below apply to the <span style="color:#B8C2CE">deployed app</span>, where the CLI is unavailable.
+    </div>
+
+    <!-- ============== ACTIVE PROVIDER ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Active provider · GET /llm-provider</span>
+      </div>
+      <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">mode</span><span style="color:{{ chipColor }}">{{ provMode }}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">source</span><span style="color:#E8EDF3">{{ provSource }}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">model_family</span><span style="color:#B8C2CE">{{ provModel }}</span></div>
+        <div style="display:flex;justify-content:space-between;gap:14px"><span style="color:#8A94A2">key</span><span style="color:#B8C2CE">{{ provKeyHint }}</span></div>
+      </div>
+    </div>
+
+    <!-- ============== ADMIN LOGIN (project key) ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Admin login · enable project key</span>
+      </div>
+      <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2;line-height:1.6">
+          Sign in to enable the server's own Anthropic key (ANTHROPIC_API_KEY) as the fallback. The project key only works if the operator set it on the server.
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input value="{{ adminUser }}" onInput="{{ onAdminUser }}" placeholder="username" style="flex:1;min-width:180px;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:10px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <input value="{{ adminPass }}" onInput="{{ onAdminPass }}" type="password" placeholder="password" style="flex:1;min-width:180px;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:10px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px">
+        </div>
+        <div>
+          <button onClick="{{ doLogin }}" style="background:#316E7E;border:1px solid #4FAAC0;border-radius:7px;padding:10px 18px;color:#E8EDF3;font-weight:600;font-size:13px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif">Sign in</button>
+        </div>
+        <sc-if value="{{ loginMsg }}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:{{ loginColor }};line-height:1.6">{{ loginMsg }}</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ============== USER KEY ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Use your own Anthropic API key</span>
+      </div>
+      <div style="padding:18px;display:flex;flex-direction:column;gap:14px">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2;line-height:1.6">
+          No admin needed. Your key is held in server memory for this deploy, never stored to disk and never echoed back. A deployed run then spends your key.
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <input value="{{ userKey }}" onInput="{{ onUserKey }}" type="password" placeholder="sk-ant-…" style="flex:1;min-width:240px;background:#0E141B;border:1px solid #2C3744;border-radius:7px;padding:10px 12px;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <button onClick="{{ doSaveKey }}" style="background:#316E7E;border:1px solid #4FAAC0;border-radius:7px;padding:10px 18px;color:#E8EDF3;font-weight:600;font-size:13px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif">Save key</button>
+          <button onClick="{{ doClearKey }}" style="background:#161E27;border:1px solid #2C3744;border-radius:7px;padding:10px 18px;color:#B8C2CE;font-weight:600;font-size:13px;cursor:pointer;font-family:'IBM Plex Sans',sans-serif">Clear</button>
+        </div>
+        <sc-if value="{{ keyMsg }}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:{{ keyColor }};line-height:1.6">{{ keyMsg }}</div>
+        </sc-if>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    provider: null,   // GET /llm-provider
+    adminUser: '',
+    adminPass: '',
+    userKey: '',
+    loginMsg: '',
+    loginOk: false,
+    keyMsg: '',
+    keyOk: false,
+  };
+
+  componentDidMount() {
+    this.loadProvider();
+  }
+
+  loadProvider() {
+    fetch('/llm-provider').then(r => r.json())
+      .then(provider => this.setState({ provider })).catch(() => {});
+  }
+
+  onAdminUser(e) { this.setState({ adminUser: e.target.value }); }
+  onAdminPass(e) { this.setState({ adminPass: e.target.value }); }
+  onUserKey(e)   { this.setState({ userKey: e.target.value }); }
+
+  doLogin() {
+    fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ username: this.state.adminUser, password: this.state.adminPass }),
+    }).then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        const msg = ok ? (d.message || 'Admin session started.')
+                       : (d.detail || 'Login failed.');
+        this.setState({ loginMsg: msg, loginOk: ok });
+        this.loadProvider();
+      })
+      .catch(() => this.setState({ loginMsg: 'Login request failed.', loginOk: false }));
+  }
+
+  doSaveKey() {
+    const k = (this.state.userKey || '').trim();
+    if (!k) { this.setState({ keyMsg: 'Enter a key first.', keyOk: false }); return; }
+    fetch('/llm-key', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ api_key: k }),
+    }).then(r => r.json().then(d => ({ ok: r.ok, d })))
+      .then(({ ok, d }) => {
+        const msg = ok ? ('Key saved · ' + (d.key_hint || 'stored'))
+                       : (d.detail || 'Could not save key.');
+        // never keep the raw key in component state after a successful save
+        this.setState({ keyMsg: msg, keyOk: ok, userKey: ok ? '' : this.state.userKey });
+        this.loadProvider();
+      })
+      .catch(() => this.setState({ keyMsg: 'Save request failed.', keyOk: false }));
+  }
+
+  doClearKey() {
+    fetch('/llm-key/clear', { method: 'POST' })
+      .then(r => r.json())
+      .then(() => { this.setState({ keyMsg: 'Key cleared.', keyOk: true, userKey: '' }); this.loadProvider(); })
+      .catch(() => this.setState({ keyMsg: 'Clear request failed.', keyOk: false }));
+  }
+
+  renderVals() {
+    const p = this.state.provider;
+    const mode = p && p.mode ? p.mode : null;
+
+    // chip color by mode, on-brand tokens
+    const chipFor = (m) => {
+      switch (m) {
+        case 'cli':         return { label: 'LLM · local CLI', c: '#9BD9B5', d: '#57C08A' };
+        case 'project_key': return { label: 'LLM · project key', c: '#7FC5D9', d: '#4FAAC0' };
+        case 'user_key':    return { label: 'LLM · your key', c: '#7FC5D9', d: '#4FAAC0' };
+        case 'mock':        return { label: 'LLM · mock', c: '#E8C84A', d: '#D9A441' };
+        case 'none':        return { label: 'LLM · none', c: '#E5B5B0', d: '#E5736B' };
+        default:            return { label: 'LLM · …', c: '#B8C2CE', d: '#5A6573' };
+      }
+    };
+    const chip = chipFor(mode);
+
+    return {
+      chipLabel: mode ? chip.label : 'LLM · …',
+      chipColor: chip.c,
+      chipDot: chip.d,
+
+      provMode: mode ? mode : 'loading…',
+      provSource: (p && p.source_label) ? p.source_label : '—',
+      provModel: (p && p.model_family) ? p.model_family : '—',
+      provKeyHint: (p && p.key_hint) ? p.key_hint : 'none',
+
+      adminUser: this.state.adminUser,
+      adminPass: this.state.adminPass,
+      userKey: this.state.userKey,
+
+      onAdminUser: (e) => this.onAdminUser(e),
+      onAdminPass: (e) => this.onAdminPass(e),
+      onUserKey: (e) => this.onUserKey(e),
+      doLogin: () => this.doLogin(),
+      doSaveKey: () => this.doSaveKey(),
+      doClearKey: () => this.doClearKey(),
+
+      loginMsg: this.state.loginMsg,
+      loginColor: this.state.loginOk ? '#9BD9B5' : '#E5B5B0',
+      keyMsg: this.state.keyMsg,
+      keyColor: this.state.keyOk ? '#9BD9B5' : '#E5B5B0',
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

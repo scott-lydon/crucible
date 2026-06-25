@@ -46,6 +46,10 @@
         <span style="color:#95A1AE;font-size:11px;letter-spacing:.06em">EST / RUN</span>
         <span style="color:#E8EDF3;font-size:14px;font-weight:500">{{ estRunLabel }}</span>
       </button>
+      <!-- central LLM provider indicator (GET /llm-provider) -> admin panel -->
+      <a href="slice-10-admin-llm.dc.html" title="LLM provider · manage" style="text-decoration:none;display:flex;align-items:center;gap:8px;padding:7px 12px;border:1px solid #2C3744;border-radius:7px;background:#161E27;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ llmChipColor }}">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ llmChipDot }};flex:none"></span>{{ llmChipLabel }}
+      </a>
       <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
         <span class="om-pulse" style="width:9px;height:9px;border-radius:50%;background:#57C08A;box-shadow:0 0 0 3px #57C08A22;flex:none"></span>Live · connected
       </div>
@@ -930,6 +934,7 @@ class Component extends DCLogic {
     defaultSpec: null,      // GET /targets/{type}/default-spec (full response)
     estimate: null,         // GET /estimate?target_type=&rounds=
     spend: null,            // GET /spend/current-month
+    llmProvider: null,      // GET /llm-provider (central LLM indicator)
     sandbox: null,          // GET /sandbox/image
     runId: null,
     // --- live run / results data (real backend) ---
@@ -955,6 +960,7 @@ class Component extends DCLogic {
     this.loadDefaultSpec(this.state.selectedTarget);
     this.loadEstimate(this.state.selectedTarget, this.state.rounds);
     this.loadSpend();
+    this.loadLlmProvider();
     this.loadSandbox();
     this.loadRecentRuns();
     // Deep-link: /app/Run Launcher.dc.html?run=<id> attaches to an existing run
@@ -1082,6 +1088,11 @@ class Component extends DCLogic {
       .then(spend => this.setState({ spend })).catch(() => {});
   }
 
+  loadLlmProvider() {
+    fetch('/llm-provider').then(r => r.json())
+      .then(llmProvider => this.setState({ llmProvider })).catch(() => {});
+  }
+
   loadSandbox() {
     fetch('/sandbox/image').then(r => r.json())
       .then(sandbox => this.setState({ sandbox })).catch(() => {});
@@ -1177,6 +1188,19 @@ class Component extends DCLogic {
     const ceilingValue = ceilingHas ? usd(sp.ceiling_dollars) : 'no ceiling';
     const sandboxImage = (this.state.sandbox && this.state.sandbox.image) || '';
     const sandboxNetwork = (this.state.sandbox && this.state.sandbox.network) || '';
+
+    // --- central LLM provider chip (GET /llm-provider) ---
+    const llmMode = (this.state.llmProvider && this.state.llmProvider.mode) || null;
+    const llmChip = (m => {
+      switch (m) {
+        case 'cli':         return { label: 'LLM · local CLI', c: '#9BD9B5', d: '#57C08A' };
+        case 'project_key': return { label: 'LLM · project key', c: '#7FC5D9', d: '#4FAAC0' };
+        case 'user_key':    return { label: 'LLM · your key', c: '#7FC5D9', d: '#4FAAC0' };
+        case 'mock':        return { label: 'LLM · mock', c: '#E8C84A', d: '#D9A441' };
+        case 'none':        return { label: 'LLM · none', c: '#E5B5B0', d: '#E5736B' };
+        default:            return { label: 'LLM · …', c: '#B8C2CE', d: '#5A6573' };
+      }
+    })(llmMode);
 
     const tabBase = 'background:none;border:none;padding:14px 18px;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:13px;cursor:pointer;border-bottom:2px solid transparent;color:#95A1AE';
     const tabActive = tabBase + ';color:#E8EDF3;border-bottom-color:#4FAAC0;background:#11181F';
@@ -1513,6 +1537,11 @@ class Component extends DCLogic {
       },
       estRunLabel: estRunLabel,
       estSpendLabel: estSpendLabel,
+
+      // central LLM provider chip
+      llmChipLabel: llmChip.label,
+      llmChipColor: llmChip.c,
+      llmChipDot: llmChip.d,
 
       // running
       currentRound: cur,
