@@ -305,12 +305,18 @@ those. Rules:
       admin toggles; fix lands with the launcher port. (cross-cutting cleanup box)
 
 ### US-1: submit a target for evaluation
-> BLOCKED (2026-06-24): operator resolved the reconciliation by adding a YAML
-> paste/seal field in an updated Claude Design (GitHub Crucible Repository-3.zip,
-> "Run Launcher.dc.html" with specDraft/sealSpec). That design is NOT yet
-> integrated into code in this tree (no specDraft on any branch/worktree/remote).
-> A separate goal loop owns the design->code port. US-1..US-5 stay unticked until
-> that port lands here or the operator hands me its branch.
+> IN PROGRESS (port, 2026-06-24): operator authorized "update the code based on
+> the claude design files". Building the new React-harness launcher port on the
+> isolated worktree branch feat/launcher-react-port (served :8911). DONE: the
+> Configure tab is wired to real APIs (targets, default-spec -> specDraft,
+> estimate, spend, sandbox) with ALL stub constants removed, and the Start
+> handler does a REAL POST /runs + /runs/{id}/start. Verified: clicking Run
+> created real run 11566fde (target fraud, real sealed spec), which is executing
+> on the backend (live red-team `claude -p` call observed). PENDING: Running tab
+> (US-2 SSE) + Results tab (US-3/4/5) still simulated; held — machine load 19+
+> and a concurrent separate loop is active. NOTE: US-1's literal "first attack
+> round within 10s" is unattainable with real LLM (a single claude call > 10s);
+> the launch->real-run path itself works.
 - [ ] [Loyalty] Section-0 spec reconciliation on the default-spec endpoint is
       resolved (spec updated OR auto-fill removed); code and spec agree.
       RESOLUTION = new design adds YAML paste/seal field; pending code integration.
