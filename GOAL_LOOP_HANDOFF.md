@@ -348,9 +348,12 @@ those. Rules:
 - [ ] [Loyalty] Matches US-5.
 
 ### US-6: strategy catalog
-- [ ] [Verifier] `/catalog` rows render from real data.
-- [ ] [Integrity] Rows equal the `/catalog` response.
-- [ ] [Loyalty] Matches US-6.
+- [x] [Verifier] `/catalog` rows render from real data. slice-06 renders row
+      "mock-evasion · fraud · reuse 8 · $0.0000 · direct-sum"; 0 console errors.
+      Evidence: verification/pass-A/US6_catalog.png
+- [x] [Integrity] Rows equal the `/catalog` response (tactic mock-evasion,
+      target fraud, reuse_count 8, avg_dollars 0.0). KPI tiles honest em-dash.
+- [x] [Loyalty] Matches US-6; export-JSON link present (backed by /corpus).
 
 ### US-7: blue loop and patch review
 - [ ] [Verifier] Blue loop triggers; patch viewable at `/blue/:patchId`.
@@ -359,10 +362,14 @@ those. Rules:
 - [ ] [Loyalty] Matches US-7; reviewer-approval workflow stays removed.
 
 ### US-8: platform health for every subcomponent
-- [ ] [Verifier] Health grid renders for every registered target and oracle.
-- [ ] [Integrity] Statuses equal `/health/targets/:type` and
-      `/health/oracles/:name`.
-- [ ] [Loyalty] Matches US-8.
+- [x] [Verifier] Health grid renders for every registered target and oracle
+      (Dummy/Code Agent/Fraud targets + held_out/metamorphic oracles); 0 console
+      errors. Evidence: verification/pass-A/US8_health.png
+- [x] [Integrity] Statuses equal `/health/targets/:type` and
+      `/health/oracles/:name` — Fraud GREEN auc 0.8606612770319158, model_sha256
+      05274c2a2c09f663, model_file fraud-v1.lgb; Code Agent claude-sonnet-4-6;
+      held_out claude-opus-4-8. Real, not constants.
+- [x] [Loyalty] Matches US-8.
 
 ### US-9: producer sandbox is sealed
 - [ ] [Verifier] Sandbox view shows egress denied.
@@ -371,10 +378,17 @@ those. Rules:
 - [ ] [Loyalty] Matches US-9.
 
 ### US-10: dashboard metrics
-- [ ] [Verifier] Dashboard renders catch rates, gap, undetected rate.
-- [ ] [Integrity] Every figure equals `/metrics`; nulls render as em-dash, never
-      as `92.7%` or any prototype number.
-- [ ] [Loyalty] Matches US-10.
+- [x] [Verifier] Dashboard (slice-04) renders catch rates, gap, undetected rate;
+      0 console errors. Evidence: verification/pass-A/US10_dashboard.png
+- [ ] [Integrity] FAIL (Integrity finding, Builder fix needed): the wired tiles
+      are correct (undetected 0.0%, val-heldout gap -50.0%, recall 100.0% all =
+      /metrics), BUT the MONTH spend "$1,847 / $5,000" (slice-04 l.58) and
+      "$1,847 / 87 hacks" (l.161) are HARDCODED prototype constants — real
+      /spend/current-month is $0.00 / no ceiling. Also recall red line shows
+      "0.90" while /halt threshold is 0.70. These untagged constants are never
+      overridden by live.js. NOTE: slice-04 is replaced by slice-04-honest-
+      dashboard in the new design bundle; fix belongs to that port.
+- [ ] [Loyalty] Pending.
 
 ### US-11: export the seeded-hack corpus
 - [ ] [Verifier] Corpus exports from `/corpus` / `/corpus.jsonl`.
@@ -388,10 +402,14 @@ those. Rules:
 - [ ] [Loyalty] Matches US-12.
 
 ### US-13: halt at the residual red line
-- [ ] [Verifier] When `/halt` is halted, the banner appears on every route; when
-      not halted, it honestly says no active halt.
-- [ ] [Integrity] Recall/threshold shown equal `/halt`.
-- [ ] [Loyalty] Halt is an automatic state; NO operator halt button is wired.
+- [x] [Verifier] When not halted, slice-08 honestly says "no active halt";
+      renders, 0 console errors. Evidence: verification/pass-A/US13_halt.png.
+      (Halted-banner-on-every-route path not exercised — /halt currently not
+      halted; minor "Â·" middot mojibake noted as a Builder nit.)
+- [x] [Integrity] Recall/threshold shown equal `/halt` (recall 1.00, red line
+      recall >= 0.70, halted=false).
+- [x] [Loyalty] Halt is an automatic state; NO operator halt button is wired
+      (page is read-only status).
 
 ### US-14: white-box self-test on every pass
 - [ ] [Verifier] `slice-10` self-test renders real pass results.
@@ -399,9 +417,16 @@ those. Rules:
 - [ ] [Loyalty] Matches US-14.
 
 ### US-15: internal debug route
-- [ ] [Verifier] `slice-12-admin-debug` reachable and renders real overrides.
-- [ ] [Integrity] Override rows equal `/admin/overrides`.
-- [ ] [Loyalty] Matches US-15.
+- [x] [Verifier] `slice-12-admin-debug` reachable and renders; 0 console errors.
+      Evidence: verification/pass-A/US15_admindebug.png
+- [ ] [Integrity] FAIL: the page does NOT render real overrides. It shows
+      fabricated "MOCK-LLM MODE · ACTIVE" (server runs MOCK_LLM=false) and a
+      hardcoded cassette panel "acme-fraud / 2026-06-15 · 12,418 turns · 4
+      producers · 1 judge". /admin/overrides returns []. Must reflect real state.
+- [ ] [Loyalty] FAIL: the mock-llm enable/disable + cassette swap/diff controls
+      are out-of-scope per the handoff and are dead (href="#"). The new design
+      bundle has NO admin-debug slice. Reconcile: US-15 ("internal debug route")
+      may map to Canvas in the new design, or be dropped — surface to operator.
 
 ### Cross-cutting cleanup (Loyalty-driven, no US-n owner)
 - [ ] [Loyalty + Builder] Every launcher control with no US-n is removed or
