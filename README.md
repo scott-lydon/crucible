@@ -187,7 +187,7 @@ Each oracle fails differently, so a hack that slips past one is caught by anothe
 
 ## 4. Pillar 2 — Red: the adversarial search engine
 
-The LLM reasons about why an *artifact* (whatever the target produced: a fraud score, a snippet of code, a research answer) was caught, proposes a minimal intent-preserving change, queries the target for a *score* (the target's own rating of the candidate input, for example its fraud probability), and iterates toward evasion. A strategy catalog stores winning tactics across runs; a white-box mode hands over the full scheme to measure recall; a hybrid fallback runs a constrained numerical search when constraint satisfaction is hard.
+The LLM reasons about why an *artifact* (whatever the target produced: a fraud score, a snippet of code, a research answer) was caught, proposes a minimal intent-preserving change, queries the target for a *score* (the target's own rating of the candidate input, for example its fraud probability), and iterates toward evasion. A strategy catalog stores winning tactics across runs; a white-box mode hands over the full scheme to measure recall. The LLM drives EVERY attack in a live run — its semantic reasoning *is* the search engine, with no silent fallback to scripted number-twiddling. A deterministic numeric-ladder mutator exists only as an offline test/CI driver (free, reproducible), never as a live stand-in for the model.
 
 ```mermaid
 flowchart LR
@@ -463,7 +463,7 @@ Component for component, Crucible is a working testbed for problems on Anthropic
 ## Team — four ownable pieces
 
 - **Targets and oracles:** adapters, spec sealing and sandbox, the four-oracle verification ensemble (tabular and time-series anomaly detection included).
-- **Red agent:** LLM-driven adversarial search, strategy catalog, white-box adversary, hybrid fallback.
+- **Red agent:** LLM-driven adversarial search — the LLM drives every live attack (no silent scripted fallback); strategy catalog; white-box adversary; deterministic numeric mutator is an offline-test driver only.
 - **Blue loop:** automated hardening closed loop (retrain for ML targets, prompt-and-config patch for agent targets).
 - **Measure:** traces, attack-success and detection curves, co-evolution curve, dashboard, exported benchmark, and model risk report.
 

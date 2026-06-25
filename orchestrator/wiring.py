@@ -23,7 +23,6 @@ from modules.blue.code_engineer import BlueCodeEngineer
 from modules.blue.code_config_blue import BlueConfigEngineer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
-from modules.red.hybrid.adversary import HybridAdversary
 from modules.red.white_box import WhiteBoxRedAdversary
 from modules.red.code_red.adversary import CodeRedAdversary
 from modules.red.catalog import StrategyCatalog
@@ -141,9 +140,9 @@ def build_components_sparkov(
     judge_provider: LLMProvider | None = None,
     judge_max_calls: int | None = 25,
     red_provider: LLMProvider | None = None,
-    red_max_calls: int | None = 20,
+    red_max_calls: int | None = None,
     white_box_provider: LLMProvider | None = None,
-    white_box_max_calls: int | None = 15,
+    white_box_max_calls: int | None = None,
     blue_provider: LLMProvider | None = None,
     blue_max_iters: int = 3,
     blue_max_repairs: int = 1,
@@ -166,14 +165,15 @@ def build_components_sparkov(
     ``judge_max_calls`` caps the billed judge calls per run (plan §6): the demo
     makes at most 25 real Opus calls, then the judge abstains honestly.
 
-    The adversary is a ``HybridAdversary``: a REAL Sonnet 4.6 LLM red agent
-    (constitution §1: Sonnet on the inner red loop) first, the FREE deterministic
-    metamorphic mutator as fallback. ``red_provider`` defaults to the real Sonnet
-    provider (the demo path); tests inject a ``MockProvider`` (or set
-    ``red_max_calls=0``) to keep the loop offline/free. ``red_max_calls`` caps
-    the billed Sonnet calls per run: the demo makes at most 20 real Sonnet calls,
-    after which the LLM agent returns None and the deterministic fallback drives
-    the loop (bounding spend while keeping co-evolution alive).
+    The adversary is the REAL Sonnet 4.6 LLM red agent (constitution §1: Sonnet on
+    the inner red loop) and it drives EVERY attack — the LLM's semantic reasoning
+    is the search engine, so there is no silent swap to scripted deterministic
+    mutations. ``red_provider`` defaults to the real Sonnet provider (the demo
+    path); ``red_max_calls`` defaults to ``None`` (unbounded — bounded in practice
+    by the run's rounds × caught samples). Tests set ``red_max_calls=0`` (no LLM
+    budget), which selects the FREE deterministic mutator so the suite stays
+    offline/reproducible; that mutator is a numeric-ladder baseline used ONLY in
+    that offline path, never as a live stand-in for the model.
 
     For the blue pillar this wires Option B — a genuine code-engineering maker:
     a ``BlueCodeEngineer`` that gets ONLY the RAW data surface (no derived menu)
@@ -244,7 +244,14 @@ def build_components_sparkov(
         spec=spec,
         movable_features=movable_features,
     )
-    adversary: Adversary = HybridAdversary(primary=llm_red, fallback=deterministic)
+    # The LLM drives EVERY attack in a live run. There is NO silent swap to scripted
+    # deterministic mutations — that would betray the "LLM semantic reasoning IS the
+    # search engine" thesis (the README's gradient-vs-semantic distinction) and pass
+    # scripted number-twiddling off as the model's work. The deterministic mutator
+    # drives ONLY offline (``red_max_calls == 0`` ⇒ no LLM budget, i.e. the test
+    # suite / CI) to keep the loop free + reproducible. Live, the red is the LLM
+    # alone; if it finds no evasion for a sample, that is an honest "no evasion".
+    adversary: Adversary = deterministic if red_max_calls == 0 else llm_red
     # WHITE-BOX red (US-14): an Opus 4.8 LLM red agent (constitution §1: the
     # white-box self-test pass runs on the higher tier) whose prompt carries the
     # oracles' verification scheme, with the SAME free deterministic fallback.
@@ -333,7 +340,7 @@ def build_components_sparkov(
         label_fn=sparkov_is_fraud,
         threshold=threshold,
         scheme=scheme,
-        fallback=white_box_deterministic,
+        fallback=white_box_deterministic if white_box_max_calls == 0 else None,
         movable_features=movable_features,
         max_calls=white_box_max_calls,
         catalog=catalog,

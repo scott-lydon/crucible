@@ -58,7 +58,7 @@ class WhiteBoxRedAdversary:
         label_fn: Callable[[object], bool],
         threshold: float,
         scheme: str,
-        fallback: Adversary,
+        fallback: Adversary | None = None,
         *,
         movable_features: Sequence[str] | None = None,
         max_attempts: int = 3,
@@ -87,4 +87,9 @@ class WhiteBoxRedAdversary:
         result = self._primary.mutate(sample, score)
         if result is not None:
             return result
+        # Live (fallback=None): the LLM drives every attack; a None result is an
+        # honest "no evasion", not a scripted rescue. The deterministic fallback is
+        # wired ONLY offline (white_box_max_calls == 0, the test path).
+        if self._fallback is None:
+            return None
         return self._fallback.mutate(sample, score)
