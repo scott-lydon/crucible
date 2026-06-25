@@ -56,6 +56,12 @@ extend-exclude = ["shared/persistence/migrations/versions"]
 # pycodestyle, pyflakes, isort, bugbear, comprehensions, pyupgrade, naming.
 select = ["E", "F", "I", "B", "C4", "UP", "N"]
 
+[tool.ruff.lint.per-file-ignores]
+# A diagram generator built from aligned layout-data tuples and SVG-emitting
+# f-strings. Wrapping the literal rows and the SVG markup would hurt readability
+# without changing output, so the line-length rule is relaxed for this file only.
+"scripts/build_crucible_svg.py" = ["E501"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true

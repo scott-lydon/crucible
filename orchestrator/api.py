@@ -32,6 +32,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sse_starlette.sse import EventSourceResponse
 
+from modules.blue import BlueProposer, BlueStore
 from modules.measure import (
     CorpusExporter,
     HaltRule,
@@ -41,13 +42,24 @@ from modules.measure import (
     get_halt_override,
     set_halt_override,
 )
+from modules.oracles.aggregator import VerdictAggregator, votes_from_json
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
 from orchestrator.persisting_llm import PersistingLlmClient
 from orchestrator.wiring import build_registry, get_registry
 from shared.config import get_settings
-from shared.types.default_specs import default_spec_payload, default_spec_yaml
+from shared.llm import (
+    KeySource,
+    LlmModel,
+    ProviderMode,
+    clear_active_key,
+    get_llm_client,
+    key_hint,
+    resolve_provider_mode,
+    set_active_key,
+)
+from shared.llm.active_key import get_active_key, get_prefer_api, set_prefer_api
 from shared.persistence import get_session, get_sessionmaker, ping
 from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import (
@@ -80,21 +92,9 @@ from shared.types import (
     SealedSpec,
     TargetSpec,
     TargetType,
+    VerdictId,
 )
-from modules.blue import BlueProposer, BlueStore
-from modules.oracles.aggregator import VerdictAggregator, votes_from_json
-from shared.llm import (
-    KeySource,
-    LlmModel,
-    ProviderMode,
-    clear_active_key,
-    get_llm_client,
-    key_hint,
-    resolve_provider_mode,
-    set_active_key,
-)
-from shared.llm.active_key import get_active_key, get_prefer_api, set_prefer_api
-from shared.types import VerdictId
+from shared.types.default_specs import default_spec_payload, default_spec_yaml
 
 log = get_logger("orchestrator.api")
 

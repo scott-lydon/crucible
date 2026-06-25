@@ -7,25 +7,36 @@ a real captured snapshot of real-LLM runs (disclosed as a snapshot, not a fresh
 live run).
 """
 from __future__ import annotations
-import asyncio, json, os, sys
-from datetime import datetime, date
+
+import asyncio
+import json
+import os
+import sys
+from datetime import date, datetime
 from decimal import Decimal
 
 for line in open(".env"):
     line = line.strip()
     if line and not line.startswith("#") and "=" in line:
-        k, v = line.split("=", 1); os.environ.setdefault(k, v)
+        k, v = line.split("=", 1)
+        os.environ.setdefault(k, v)
 sys.path.insert(0, os.getcwd())
 
-from sqlalchemy import select
-from shared.persistence.base import Base
-from shared.persistence.engine import use_database, get_engine
+# Imports below run after the .env load and sys.path insertion above, so they
+# are intentionally not at the top of the module.
+from sqlalchemy import select  # noqa: E402
+
+from shared.persistence.base import Base  # noqa: E402
+from shared.persistence.engine import get_engine, use_database  # noqa: E402
 
 
 def enc(v):
-    if isinstance(v, datetime): return {"__dt__": v.isoformat()}
-    if isinstance(v, date): return {"__date__": v.isoformat()}
-    if isinstance(v, Decimal): return {"__dec__": str(v)}
+    if isinstance(v, datetime):
+        return {"__dt__": v.isoformat()}
+    if isinstance(v, date):
+        return {"__date__": v.isoformat()}
+    if isinstance(v, Decimal):
+        return {"__dec__": str(v)}
     return v  # str/int/float/bool/None/dict/list (JSONB) are JSON-native
 
 

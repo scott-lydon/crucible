@@ -20,6 +20,7 @@ Safety:
   still starts (alembic upgrade head ran before this in the Dockerfile CMD).
 """
 from __future__ import annotations
+
 import asyncio
 import json
 import os
@@ -57,6 +58,7 @@ async def _seed() -> None:
     tables_data = fixture["tables"]
 
     from sqlalchemy import delete, func, select
+
     from shared.persistence.base import Base
     from shared.persistence.engine import get_engine
 

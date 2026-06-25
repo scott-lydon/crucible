@@ -8,6 +8,7 @@ are drawn as arcs OUTSIDE the row boxes (above the top row and below
 the bottom row). No edge ever crosses another.
 """
 from __future__ import annotations
+
 from base64 import b64encode
 from pathlib import Path
 

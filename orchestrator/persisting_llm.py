@@ -11,7 +11,7 @@ interferes with the run loop's own transaction.
 from __future__ import annotations
 
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from decimal import Decimal
 
 from shared.llm import LlmClient

@@ -1,5 +1,6 @@
 """Render a 1366x854 title/outro card PNG (ffmpeg here has no drawtext)."""
 import sys
+
 from PIL import Image, ImageDraw, ImageFont
 
 out, line1, line2, line3 = sys.argv[1:5]
