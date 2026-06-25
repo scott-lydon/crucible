@@ -118,9 +118,9 @@
         <span>Tactic</span><span>Payload</span><span>Target</span><span>Reuse ▼</span><span>$/succeed</span><span>First run</span>
       </div>
 
-      <!-- real rows · one per GET /catalog entry -->
+      <!-- real rows · one per GET /catalog entry · click reveals detail panel -->
       <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
-        <div role="row" style="display:grid;grid-template-columns:160px minmax(240px,1.4fr) 120px 90px 130px 220px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <div role="button" onClick="{{ r.open }}" title="click to reveal prompt fragment, discovery audit trace, and run-against-different-target action" style="display:grid;grid-template-columns:160px minmax(240px,1.4fr) 120px 90px 130px 220px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px;cursor:pointer;background:{{ r.rowBg }}" style-hover="background:#19222C">
           <span style="color:#4FAAC0" title="{{ r.tacticTitle }}">{{ r.tactic }}</span>
           <span style="color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.prompt_fragment }}">{{ r.prompt_fragment }}</span>
           <span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">{{ r.target_type }}</span>
@@ -137,6 +137,61 @@
 
     </div>
 
+    <!-- ============== ROW DETAIL · prompt fragment + discovery audit trace ============== -->
+    <!-- revealed when a catalog row is clicked · all fields from GET /catalog, em-dash when absent -->
+    <sc-if value="{{ hasSelection }}" hint-placeholder-val="{{ false }}">
+      <div style="margin-top:14px;border:1px solid #2E5560;border-radius:10px;background:#11181F;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border-bottom:1px solid #1D2630;background:#11242A;flex-wrap:wrap">
+          <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;text-transform:uppercase">tactic detail</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#4FAAC0">{{ selTactic }}</span>
+            <span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px">{{ selTarget }}</span>
+          </div>
+          <button onClick="{{ closeDetail }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px;font-family:inherit">✕</button>
+        </div>
+
+        <div style="padding:18px;display:flex;flex-direction:column;gap:18px">
+
+          <!-- prompt fragment -->
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">prompt fragment</div>
+            <pre style="margin:0;background:#0B1117;border:1px solid #1D2630;border-radius:7px;padding:14px 16px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7;color:#B8C2CE;white-space:pre-wrap;word-break:break-word;max-height:240px;overflow-y:auto">{{ selPromptFragment }}</pre>
+          </div>
+
+          <!-- discovery audit trace -->
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap">
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;text-transform:uppercase">discovery audit trace</span>
+              <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE">{{ selAuditSummary }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto">
+              <sc-for list="{{ selAuditSteps }}" as="s" hint-placeholder-count="3">
+                <div style="background:#0B1117;border:1px solid #1D2630;border-radius:7px;padding:10px 14px">
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.04em;margin-bottom:5px">{{ s.label }}</div>
+                  <pre style="margin:0;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.6;color:#B8C2CE;white-space:pre-wrap;word-break:break-word">{{ s.detail }}</pre>
+                </div>
+              </sc-for>
+              <sc-if value="{{ selAuditEmpty }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#0B1117;border:1px solid #1D2630;border-radius:7px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8A94A2">{{ selAuditEmptyLabel }}</div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- run this tactic against a different target · real launch -->
+          <div style="border-top:1px solid #1D2630;padding-top:16px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;line-height:1.6;max-width:60%">
+              Discovered on <span style="color:#B8C2CE">{{ selTarget }}</span>. Launch a real run that applies this tactic's domain against <span style="color:#9CD3DF">{{ selOtherTarget }}</span> — POST /runs + /start, then opens the live run.
+            </div>
+            <button onClick="{{ runOther }}" disabled="{{ launching }}" style="background:#4FAAC0;color:#0E141B;border:none;border-radius:7px;padding:11px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap" style-hover="background:#5FBBD0">{{ runOtherLabel }}</button>
+          </div>
+          <sc-if value="{{ hasLaunchError }}" hint-placeholder-val="{{ false }}">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#E5736B">{{ launchError }}</div>
+          </sc-if>
+
+        </div>
+      </div>
+    </sc-if>
+
     <!-- table footer -->
     <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;flex-wrap:wrap;gap:10px">
       <span>{{ footerLabel }}</span>
@@ -150,6 +205,10 @@ class Component extends DCLogic {
   state = {
     catalog: null,   // GET /catalog -> array of tactic entries; null until loaded
     loaded: false,
+    selectedRow: null,   // index of the row whose detail panel is open
+    targets: [],         // GET /targets/registered (artifact_ref for the launch body)
+    launching: false,    // a "Run This Tactic" launch is in flight
+    launchError: null,   // launch failure message (honest error, never a fake success)
   };
 
   componentDidMount() {
@@ -160,6 +219,53 @@ class Component extends DCLogic {
         loaded: true,
       }))
       .catch(() => this.setState({ catalog: [], loaded: true }));
+    // Registry supplies artifact_ref for the run-launch body (same source the
+    // Run Launcher uses); load it so the "Run This Tactic" button can POST a run.
+    fetch('/targets/registered')
+      .then(r => r.json())
+      .then(list => this.setState({ targets: Array.isArray(list) ? list : [] }))
+      .catch(() => this.setState({ targets: [] }));
+  }
+
+  // Real launch of this tactic's domain against a DIFFERENT target type, mirroring
+  // the Run Launcher's start(): fetch the other target's default spec, POST /runs,
+  // POST /runs/{id}/start, then deep-link into the live run (?run=<id>). No fake
+  // confirmation — on any gap we surface an honest error and launch nothing.
+  launchAgainst(otherType) {
+    const t = (this.state.targets || []).find(x => x.type === otherType);
+    if (!t || !t.artifact_ref) {
+      this.setState({ launching: false, launchError: 'target ' + otherType + ' not in /targets/registered — cannot launch' });
+      return;
+    }
+    this.setState({ launching: true, launchError: null });
+    fetch('/targets/' + encodeURIComponent(otherType) + '/default-spec')
+      .then(r => r.json())
+      .then(ds => {
+        const specObj = ds && ds.spec;
+        if (!specObj) throw new Error('no default-spec for ' + otherType);
+        const body = {
+          target_type: otherType,
+          artifact_ref: t.artifact_ref,
+          spec: specObj,
+          budget: { max_attempts: 48, max_dollars: 25 },
+        };
+        return fetch('/runs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }).then(r => r.json());
+      })
+      .then(created => {
+        if (!created || !created.run_id) throw new Error('run was not created');
+        return fetch('/runs/' + created.run_id + '/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: '{}',
+        }).then(() => {
+          location.href = 'Run Launcher.dc.html?run=' + created.run_id;
+        });
+      })
+      .catch((e) => this.setState({ launching: false, launchError: 'launch failed · ' + (e && e.message ? e.message : 'request error') }));
   }
 
   renderVals() {
@@ -168,7 +274,8 @@ class Component extends DCLogic {
     const usd = (v) => '$' + Number(v).toFixed(2);
     const dash = '—';
 
-    const rows = cat.map((e) => {
+    const sel = this.state.selectedRow;
+    const rows = cat.map((e, i) => {
       const frag = (e.prompt_fragment == null) ? '' : String(e.prompt_fragment);
       const runId = e.first_run_id || '';
       return {
@@ -180,8 +287,28 @@ class Component extends DCLogic {
         cost: (e.avg_dollars_to_succeed == null) ? dash : usd(e.avg_dollars_to_succeed),
         first_run_id: runId,
         firstRunShort: runId ? runId.slice(0, 8) : dash,
+        rowBg: (sel === i) ? '#19222C' : 'transparent',
+        open: () => this.setState({ selectedRow: (this.state.selectedRow === i ? null : i), launchError: null }),
       };
     });
+
+    // --- selected-row detail · prompt fragment + discovery audit trace ---
+    const selEntry = (sel != null && cat[sel]) ? cat[sel] : null;
+    const selTarget = selEntry ? (selEntry.target_type || dash) : dash;
+    // The "different target" to launch against: the other of the two core demo
+    // targets (fraud <-> code_agent); fall back to fraud if the source is neither.
+    const otherTarget = (selTarget === 'fraud') ? 'code_agent' : 'fraud';
+    const selAudit = selEntry && selEntry.discovery_audit ? selEntry.discovery_audit : null;
+    const selSteps = (selAudit && Array.isArray(selAudit.steps)) ? selAudit.steps : [];
+    const fmtDetail = (d) => {
+      if (d == null) return dash;
+      if (typeof d === 'string') return d;
+      try { return JSON.stringify(d, null, 2); } catch (_) { return String(d); }
+    };
+    const selAuditSteps = selSteps.map((s) => ({
+      label: (s && s.label) ? s.label : dash,
+      detail: fmtDetail(s ? s.detail : null),
+    }));
 
     // KPI tiles · derive only what /catalog supports; em-dash otherwise.
     const hacks = cat.filter((e) => {
@@ -220,6 +347,25 @@ class Component extends DCLogic {
       isEmpty: this.state.loaded && n === 0,
       emptyLabel: 'No tactics in /catalog yet.',
       footerLabel: this.state.loaded ? ('showing ' + n + ' of ' + n) : 'loading…',
+
+      // --- selected-row detail panel ---
+      hasSelection: selEntry != null,
+      selTactic: selEntry ? (selEntry.tactic || dash) : dash,
+      selTarget,
+      selOtherTarget: otherTarget,
+      selPromptFragment: selEntry ? (selEntry.prompt_fragment == null ? dash : String(selEntry.prompt_fragment)) : dash,
+      selAuditSummary: (selAudit && selAudit.summary) ? selAudit.summary : dash,
+      selAuditSteps,
+      selAuditEmpty: selEntry != null && selAuditSteps.length === 0,
+      selAuditEmptyLabel: 'No discovery_audit steps recorded for this tactic.',
+      closeDetail: () => this.setState({ selectedRow: null, launchError: null }),
+
+      // --- "Run This Tactic Against a Different Target" · real launch ---
+      runOther: () => { if (!this.state.launching) this.launchAgainst(otherTarget); },
+      runOtherLabel: this.state.launching ? 'Launching…' : ('Run This Tactic Against ' + otherTarget + ' →'),
+      launching: this.state.launching,
+      hasLaunchError: !!this.state.launchError,
+      launchError: this.state.launchError || '',
     };
   }
 }
