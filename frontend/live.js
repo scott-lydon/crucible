@@ -576,9 +576,18 @@
   async function renderSealedSpec(targetType) {
     // Replace the design's hardcoded fraud YAML with the real sealed spec the
     // backend will seal this run under (GET /targets/{type}/default-spec).
+    // Match the element that DIRECTLY owns the ".sealed.yaml" filename text
+    // (a sibling text node next to the yaml icon), not an ancestor whose
+    // textContent merely contains it via descendants. Matching on textContent
+    // picked the page-root wrapper, whose lastChild is the whole launcher, so
+    // overwriting lastChild.textContent blanked the entire page.
     var header = Array.prototype.find.call(
       document.querySelectorAll("div,span"),
-      function (el) { return /\.sealed\.yaml/.test(el.textContent || "") && el.children.length <= 1; }
+      function (el) {
+        return Array.prototype.some.call(el.childNodes, function (n) {
+          return n.nodeType === 3 && /\.sealed\.yaml/.test(n.nodeValue || "");
+        });
+      }
     );
     if (!header) return;
     var spec = await json("/targets/" + targetType + "/default-spec");
