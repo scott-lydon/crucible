@@ -105,6 +105,10 @@ _OVERRIDES: dict[str, object] = {
         text='{"moves":[{"feature":"amt","new_value":1.0}],"rationale":"x"}'
     ),
     "red_max_calls": 0,
+    # white_box_max_calls=0 ⇒ the white-box self-test pass uses the deterministic
+    # adversary (no real Opus calls), so this test is FULLY offline and never
+    # depends on API credits. (It previously made real capped white-box calls.)
+    "white_box_max_calls": 0,
     "blue_provider": _ScriptedMaker(),
     "blue_sandbox": _InProcessSandbox(),
 }
