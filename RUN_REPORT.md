@@ -133,3 +133,28 @@ The zip-3 design REMOVES the admin banner toggles and adds the YAML paste/seal f
 ### Blocking gaps for forward progress
 - US-1/US-2/US-3/US-4/US-5 require the new consolidated launcher design (zip-3) which is NOT yet integrated into code in this tree. The current code has no working UI for watching a run, drilling a verdict, oracle votes, or replay.
 - US-7 has no backend route to trigger the blue loop or list patches.
+
+---
+
+## Scenario 0 — fresh-context independent verification (separate agent)
+
+A fresh agent (did not write the fix) confirmed via headless Chromium:
+- VERIFIER PASS: launcher renders, innerText 1736, 82 divs, 0 console errors,
+  0 pageerrors, 0 failed requests. Screenshot verification/pass-A/scenario0__fresh-verify.png
+- INTEGRITY: enumerated launcher items all real & live-hydrated (target refs
+  fraud_adapter@05274c2a, code_agent@claude-sonnet-4-6; sandbox python:3.12-slim;
+  spend $0.00 / no ceiling; validated 2026-06-24). The v1.4.2 / 2026-06-19
+  literals in raw HTML are overwritten by live.js. TWO additional fabrications
+  still live on the launcher: `92.7%` (Results tab, lines 547/743, not hydrated)
+  and `$25` ceiling (budget panel; contradicts live "no ceiling"; live.js even
+  falls back to ceiling:25). Tracked under US-1 (budget) / US-2 (results).
+- LOYALTY FAIL: six out-of-scope controls present & wired to client state —
+  pause/halt, lift $ ceiling, lift rounds cap, mock-llm, allow egress,
+  request-access. Removed by the new design's deleted ADMIN OVERRIDES banner.
+
+### Section-6 tally after this turn
+24 → ~33 boxes ticked. Green scenarios: Scenario 0 (Verifier+Integrity; Loyalty
+FAIL pending launcher port), US-6, US-8, US-11, US-12, US-13, US-14. Integrity
+FAILs recorded: US-9 ("0 attempts"), US-10 ($1,847 spend / 0.90 red line),
+US-15 (fake MOCK-LLM/cassette). Blocked on new-design port: US-1..US-5. Blocked
+on trigger surface: US-7.

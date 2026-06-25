@@ -288,12 +288,21 @@ those. Rules:
       Fixed selector to match the element directly owning the .sealed.yaml text
       node; applied alembic migration a1b2c3d4e5f6. Commit d6a1edc. Headless
       reload: 82 panels, 0 console/page/network errors.
-- [ ] [Verifier] Fresh-context load of `/app` shows the rendered launcher, not a
-      blank screen; console has zero app errors.
-- [ ] [Integrity] First-paint screenshot captured; no fabricated values on the
-      launcher (target cards, est/spend, sandbox image all real or em-dash).
-- [ ] [Loyalty] Nothing on the launcher works that neither traces to a US-n nor
-      is plainly entailed by the PRD.
+- [x] [Verifier] Fresh-context load of `/app` shows the rendered launcher, not a
+      blank screen; console has zero app errors. (Independent fresh agent:
+      innerText 1736, 82 divs, 0 console errors, 0 pageerrors, 0 failed requests.
+      Evidence: verification/pass-A/scenario0__fresh-verify.png)
+- [x] [Integrity] First-paint screenshot captured; the enumerated launcher items
+      are all real: target cards (fraud_adapter@05274c2a,
+      code_agent@claude-sonnet-4-6), est/spend ($0.00 / no ceiling), sandbox
+      image (python:3.12-slim) — all = their APIs, NOT the v1.4.2/06-19 literals
+      (those are overwritten by live.js). NOTE (broader launcher, tracked under
+      US-1/US-2): `$25` ceiling (budget panel) contradicts live "no ceiling",
+      and `92.7%` on the Results tab are still-hardcoded constants.
+- [ ] [Loyalty] FAIL: six out-of-scope controls present & wired to client state
+      on the OLD launcher — pause/halt, lift $ ceiling, lift rounds cap,
+      mock-llm, allow egress, request-access. The new design bundle REMOVES the
+      admin toggles; fix lands with the launcher port. (cross-cutting cleanup box)
 
 ### US-1: submit a target for evaluation
 > BLOCKED (2026-06-24): operator resolved the reconciliation by adding a YAML
@@ -451,10 +460,13 @@ those. Rules:
       may map to Canvas in the new design, or be dropped — surface to operator.
 
 ### Cross-cutting cleanup (Loyalty-driven, no US-n owner)
-- [ ] [Loyalty + Builder] Every launcher control with no US-n is removed or
-      em-dashed (tab chrome that duplicates page nav, pause, lift-ceiling,
-      lift-rounds, mock-llm toggle, allow-egress, request-access `href="#"`),
-      with the REMOVED_UI.md / section-2 reason noted.
+- [ ] [Loyalty + Builder] PENDING (resolved by the new design, not yet in code):
+      out-of-scope launcher controls confirmed present & wired (client-state
+      only) on the OLD launcher — pause/halt, lift $ ceiling, lift rounds cap,
+      mock-llm, allow egress, request-access. The new Claude Design bundle
+      (zip-3 "Run Launcher.dc.html") DELETES the entire ADMIN OVERRIDES banner
+      (all four toggles) and the role chip. Closing this box = porting that
+      launcher into code. Also dead href="#" links on admin-debug/whitebox.
 
 ## 4b. Master exit checklist (tick only when section 6 is fully green twice)
 - [ ] [Verifier] Pass A used a FRESH probe token (recorded here: __________) and
