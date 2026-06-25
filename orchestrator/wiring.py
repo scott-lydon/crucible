@@ -40,7 +40,10 @@ from modules.spec.compiler import (
 )
 from modules.targets.agent import (
     AGENT_KIND,
+    CODE_AGENT_DEMO,
+    CODE_AGENT_KIND,
     AgentTarget,
+    CodeAgentTarget,
     HttpEndpointConfig,
     build_http_agent_target,
     demo_agent,
@@ -61,6 +64,7 @@ from shared.config import load_settings
 from shared.llm import RecordingLLM, ScriptedLLM, make_llm
 from shared.llm.client import LLMClient
 from shared.persistence.db import session_scope
+from shared.sandbox.local import LocalDockerSandbox
 from shared.telemetry.log import get_logger
 from shared.types.agent import AgentConfig
 from shared.types.results import HealthStatus
@@ -147,6 +151,18 @@ def _blue_llm() -> LLMClient:
             "rationale": "added explicit refusal guardrails for each obligation",
         }),
         model="scripted-blue",
+    )
+
+
+def _code_agent_llm() -> LLMClient:
+    """The code agent's model — writes Python that is then executed in the sandbox. Real
+    Sonnet on CRUCIBLE_REAL_AGENT=1; otherwise a free ScriptedLLM that emits a safe snippet."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_AGENT") == "1" and settings.openrouter_api_key:
+        return make_llm(settings.sonnet_model)
+    return ScriptedLLM(
+        lambda _system, _prompt: "print('hello from the sandboxed coder')",
+        model="scripted-coder",
     )
 
 
@@ -393,6 +409,29 @@ def build_container() -> Container:
     )
     container.register_blue(AGENT_KIND, agent_blue)
     sink.register_health_probe(f"blue/{AGENT_KIND}", agent_blue.health)
+
+    # Shape-2 CODE-AGENT target (cr-ui5): writes Python and RUNS it in the sealed
+    # docker --network none sandbox; the panel grades the code (destructive ops, secrets,
+    # crashes). Red-team mode (the AI defender / co-evolution lands later).
+    code_target = CodeAgentTarget(
+        RecordingLLM(_code_agent_llm(), "targets"), CODE_AGENT_DEMO, LocalDockerSandbox())
+    container.register_target(code_target)
+    sink.register_health_probe(f"targets/{CODE_AGENT_KIND}", code_target.health)
+    container.register_red(CODE_AGENT_KIND, LLMAgentRed(RecordingLLM(_agent_red_llm(), "red")))
+    code_held_out = AgentHeldOutOracle(
+        RecordingLLM(_judge_llm(), "oracles"),
+        use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1")
+    container.register_oracle(CODE_AGENT_KIND, code_held_out)
+    container.register_oracle(
+        CODE_AGENT_KIND, AgentDifferentialOracle(RecordingLLM(_differential_llm(), "oracles")))
+    container.register_oracle(CODE_AGENT_KIND, AgentMetamorphicOracle(code_target.submit))
+    container.register_oracle(CODE_AGENT_KIND, AgentConsistencyOracle())
+    container.register_oracle(CODE_AGENT_KIND, judge)
+    for probe_name, probe in (
+        (f"red/{CODE_AGENT_KIND}/llm", container.red_for(CODE_AGENT_KIND).health),
+        (f"oracles/{CODE_AGENT_KIND}/held_out", code_held_out.health),
+    ):
+        sink.register_health_probe(probe_name, probe)
 
     return container
 

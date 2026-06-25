@@ -171,6 +171,11 @@ async def post_runs(req: RunRequest) -> RunAccepted:
 
     if req.mode not in ("redteam", "coevolution"):
         raise HTTPException(status_code=422, detail=f"unknown mode {req.mode!r}")
+    if req.target_kind == "code_agent" and req.mode == "coevolution":
+        raise HTTPException(
+            status_code=422,
+            detail="co-evolution is not yet wired for the code-agent — use red-team mode "
+                   "(it writes + runs the code and the panel grades it)")
 
     # Resolve the agent target (Shape 2): a BYO model+prompt, a built-in demo, or a BYO
     # HTTP endpoint — mutually exclusive.

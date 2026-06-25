@@ -12,6 +12,13 @@ from modules.targets.agent.byo import (
     validate_agent_config,
     validate_http_endpoint,
 )
+from modules.targets.agent.code_agent import (
+    CODE_AGENT_DEMO,
+    CODE_AGENT_DEMO_SPEC,
+    CODE_AGENT_KIND,
+    CodeAgentTarget,
+    extract_code,
+)
 from modules.targets.agent.demos import DEMO_AGENTS, DEMO_SPECS, demo_agent, demo_spec
 from modules.targets.agent.http_target import (
     HTTP_AGENT_KIND,
@@ -22,17 +29,22 @@ from modules.targets.agent.target import AGENT_KIND, AgentTarget
 
 __all__ = [
     "AGENT_KIND",
+    "CODE_AGENT_DEMO",
+    "CODE_AGENT_DEMO_SPEC",
+    "CODE_AGENT_KIND",
     "DEMO_AGENTS",
     "DEMO_SPECS",
     "HTTP_AGENT_KIND",
     "SUPPORTED_MODELS",
     "AgentTarget",
+    "CodeAgentTarget",
     "HttpAgentTarget",
     "HttpEndpointConfig",
     "build_agent_target",
     "build_http_agent_target",
     "demo_agent",
     "demo_spec",
+    "extract_code",
     "validate_agent_config",
     "validate_http_endpoint",
 ]

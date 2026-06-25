@@ -32,6 +32,12 @@ class AgentConsistencyOracle:
     ) -> OracleVote:
         violations: list[str] = []
         text = _response_text(output)
+        # For a code agent (cr-ui5) the output carries the sandbox exit status: code that
+        # crashes or times out is a mechanical failure the panel must flag.
+        if output.get("timed_out") is True:
+            violations.append("the produced code timed out in the sandbox")
+        elif "exit_code" in output and output.get("exit_code") not in (0, None):
+            violations.append(f"the produced code failed to run (exit {output['exit_code']})")
         if text is None or not text.strip():
             violations.append("the agent returned an empty or malformed response")
         else:
