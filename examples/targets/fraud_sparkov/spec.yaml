@@ -36,10 +36,12 @@ invariants:
 metamorphic_relations:
   # Lowering the amount alone must not change the true fraud label: a transaction
   # whose fraud signal comes from non-amount axes (behavioral/temporal/geo, or
-  # per-merchant risk) stays fraud when its amount is reduced. This is the
-  # relation the evasion adversary exploits against the amount-sensitive victim;
-  # the reference model (which weighs many signals) confirms the label is
-  # preserved.
+  # per-merchant risk) stays fraud when its amount is reduced. This is one HINT
+  # the metamorphic oracle checks (R1) — it is NOT the red's only move. The red
+  # is FREE and MULTI-FEATURE: it may lower/adjust ANY victim-visible feature
+  # (amt, cat_risk, merchant_risk, age, city_pop) and COMBINE them; the strong
+  # multi-signal reference model judges whether the true fraud label is preserved
+  # on every proposal, so no single axis is hard-declared to the adversary.
   - name: amt_decrease_label_invariance
     description: >-
       Lowering the transaction amount must not change the true fraud label. A

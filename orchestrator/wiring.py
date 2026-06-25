@@ -217,6 +217,10 @@ def build_components_sparkov(
         feature_names=fraud_sparkov.DETECTOR_FEATURES,
     )
     sparkov_is_fraud: Callable[[object], bool] = fraud_sparkov.is_fraud
+    # The victim-visible feature SET is the red's free search space — NO single
+    # axis is declared. The red may lower/adjust ANY of these (alone or combined)
+    # to drop the victim's score while the reference model still calls it fraud.
+    movable_features: list[str] = list(fraud_sparkov.DETECTOR_FEATURES)
     catalog = StrategyCatalog()
     llm_red = LlmRedAdversary(
         provider=_wrap(
@@ -229,6 +233,7 @@ def build_components_sparkov(
         score_fn=detector.score,
         label_fn=sparkov_is_fraud,
         threshold=threshold,
+        movable_features=movable_features,
         max_calls=red_max_calls,
         catalog=catalog,
     )
@@ -237,6 +242,7 @@ def build_components_sparkov(
         label_fn=sparkov_is_fraud,
         threshold=threshold,
         spec=spec,
+        movable_features=movable_features,
     )
     adversary: Adversary = HybridAdversary(primary=llm_red, fallback=deterministic)
     # WHITE-BOX red (US-14): an Opus 4.8 LLM red agent (constitution §1: the
@@ -249,6 +255,7 @@ def build_components_sparkov(
         label_fn=sparkov_is_fraud,
         threshold=threshold,
         spec=spec,
+        movable_features=movable_features,
     )
     oracles: list[Oracle] = [
         HeldOutOracle(label_fn=sparkov_is_fraud),
@@ -327,6 +334,7 @@ def build_components_sparkov(
         threshold=threshold,
         scheme=scheme,
         fallback=white_box_deterministic,
+        movable_features=movable_features,
         max_calls=white_box_max_calls,
         catalog=catalog,
     )

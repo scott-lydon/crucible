@@ -19,7 +19,7 @@ rule calls negative is not an evasion, so the informed attacker can only erode
 the HEURISTIC oracles' contribution — never the ground-truth label authority.
 """
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from orchestrator.interfaces import Adversary
 from shared.llm.base import LLMProvider
@@ -60,6 +60,7 @@ class WhiteBoxRedAdversary:
         scheme: str,
         fallback: Adversary,
         *,
+        movable_features: Sequence[str] | None = None,
         max_attempts: int = 3,
         max_calls: int | None = None,
         catalog: StrategyCatalog | None = None,
@@ -70,6 +71,7 @@ class WhiteBoxRedAdversary:
             score_fn=score_fn,
             label_fn=label_fn,
             threshold=threshold,
+            movable_features=movable_features,
             max_attempts=max_attempts,
             max_calls=max_calls,
             catalog=catalog,

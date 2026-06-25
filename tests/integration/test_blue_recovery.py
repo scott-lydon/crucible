@@ -134,7 +134,7 @@ async def test_blue_recovers_on_real_evasions(
             text='{"per_obligation":[],"independent_finding":"fixture",'
                  '"vote":"pass","reason":"fixture"}'),
         judge_max_calls=0,
-        red_provider=MockProvider(text='{"feature":"amt","new_value":1.0,"rationale":"x"}'),
+        red_provider=MockProvider(text='{"moves":[{"feature":"amt","new_value":1.0}],"rationale":"x"}'),
         red_max_calls=0,
         blue_provider=_ScriptedProvider(),
         blue_sandbox=_InProcessSandbox(),

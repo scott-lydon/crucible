@@ -102,7 +102,7 @@ _OVERRIDES: dict[str, object] = {
     ),
     "judge_max_calls": 0,
     "red_provider": MockProvider(
-        text='{"feature":"amt","new_value":1.0,"rationale":"x"}'
+        text='{"moves":[{"feature":"amt","new_value":1.0}],"rationale":"x"}'
     ),
     "red_max_calls": 0,
     "blue_provider": _ScriptedMaker(),
