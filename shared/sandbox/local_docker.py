@@ -88,8 +88,22 @@ class LocalDockerSandbox:
             )
 
     def run_python(
-        self, code: str, *, timeout_s: float = 10.0, network: bool = False
+        self,
+        code: str,
+        *,
+        timeout_s: float = 10.0,
+        network: bool = False,
+        stdin: str | None = None,
     ) -> SandboxResult:
+        """Run ``code`` in a locked-down container.
+
+        When ``stdin`` is given the container is started interactive (``-i``) and
+        the string is piped to the process's stdin. This is how callers pass bulk
+        data (e.g. the rows a transform runs over) WITHOUT embedding it in the
+        ``python -c`` argument — keeping the command line small and constant-size
+        regardless of data volume (avoids E2BIG / "argument list too long"). It
+        does NOT weaken the seal: no network/env/caps are granted by ``-i``.
+        """
         docker = self._docker_path()
         self._ensure_daemon(docker)
 
@@ -100,6 +114,10 @@ class LocalDockerSandbox:
             docker,
             "run",
             "--rm",
+            # Interactive: keep stdin open so we can pipe bulk data to the
+            # process. Only added when the caller supplies stdin; never allocates
+            # a TTY (no `-t`), so the data stream stays clean.
+            *(["-i"] if stdin is not None else []),
             "--name",
             container_name,
             "--network",
@@ -126,6 +144,7 @@ class LocalDockerSandbox:
         try:
             completed = subprocess.run(
                 argv,
+                input=stdin,
                 capture_output=True,
                 text=True,
                 timeout=timeout_s,

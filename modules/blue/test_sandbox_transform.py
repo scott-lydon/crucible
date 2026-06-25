@@ -61,3 +61,26 @@ def test_wrong_length_output_is_an_error() -> None:
     src = "return 'not a number'"
     out = run_transform_in_sandbox(LocalDockerSandbox(), src, _ROWS)
     assert isinstance(out, TransformError)
+
+
+@pytest.mark.skipif(not _DOCKER, reason=_SKIP)
+def test_large_sample_does_not_blow_arg_limit() -> None:
+    # REGRESSION (E2BIG): the rows used to be embedded as a JSON literal inside
+    # the `python -c` code string, so at real data volume the command line blew
+    # the OS argument-length limit ("argument list too long") and the transform
+    # NEVER ran. Now the rows go in via stdin, so the command line stays small and
+    # constant regardless of row count. Build a sample whose JSON is far larger
+    # than ARG_MAX (~256 KiB on macOS/Linux) so the OLD argv path would E2BIG.
+    big_rows = [
+        {
+            "trans_date_trans_time": "2019-01-01 01:30:00",
+            "amt": 10.0,
+            "pad": "x" * 200,  # ~250 B/row * 2000 rows ≈ 500 KiB JSON > ARG_MAX
+        }
+        for _ in range(2000)
+    ]
+    src = "return float(str(row['trans_date_trans_time'])[11:13])"
+    out = run_transform_in_sandbox(LocalDockerSandbox(), src, big_rows)
+    assert isinstance(out, list), out  # ran, not an E2BIG TransformError
+    assert len(out) == len(big_rows)
+    assert out[0] == 1.0 and out[-1] == 1.0

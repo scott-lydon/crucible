@@ -86,12 +86,20 @@ class _InProcessSandbox:
     """Runs the wrapped transform locally (the Docker boundary is gated elsewhere)."""
 
     def run_python(
-        self, code: str, *, timeout_s: float = 10.0, network: bool = False
+        self,
+        code: str,
+        *,
+        timeout_s: float = 10.0,
+        network: bool = False,
+        stdin: str | None = None,
     ) -> SandboxResult:
         import contextlib
         import io
+        import sys
 
         out = io.StringIO()
+        saved_stdin = sys.stdin
+        sys.stdin = io.StringIO(stdin or "")
         try:
             with contextlib.redirect_stdout(out):
                 exec(code, {})  # noqa: S102 — wrapped harness code, test-only
@@ -100,6 +108,8 @@ class _InProcessSandbox:
                 stdout=out.getvalue(), stderr=f"{type(exc).__name__}: {exc}",
                 exit_code=1, job_id="t", timed_out=False,
             )
+        finally:
+            sys.stdin = saved_stdin
         return SandboxResult(
             stdout=out.getvalue(), stderr="", exit_code=0, job_id="t", timed_out=False,
         )

@@ -32,23 +32,25 @@ class TransformError:
     stderr: str = ""
 
 
-def _wrap(engineer_src: str, rows_json: str) -> str:
+def _wrap(engineer_src: str) -> str:
     """Wrap the maker's ``engineer`` body with harness-owned I/O boilerplate.
 
-    The maker controls only the function body. The rows are embedded as a JSON
-    literal (the sandbox interface passes a single ``code`` string; there is no
-    file mount), parsed inside the container, mapped through ``engineer``, and
-    the float list is printed as JSON to stdout. ``engineer_src`` is indented one
-    level so it becomes the body of the ``def``.
+    The maker controls only the function body. The rows are read as a JSON array
+    from STDIN inside the container (NOT embedded in the code string or passed as
+    argv — embedding them blows the OS argument-length limit at real data volume,
+    E2BIG / "argument list too long"). The command line therefore stays small and
+    constant-size regardless of row count. Each row is mapped through ``engineer``
+    and the float list is printed as JSON to stdout. ``engineer_src`` is indented
+    one level so it becomes the body of the ``def``.
     """
     indented = "\n".join(
         "    " + line if line.strip() else line for line in engineer_src.splitlines()
     )
     return (
-        "import json\n"
+        "import json, sys\n"
         "def engineer(row):\n"
         f"{indented}\n"
-        f"_ROWS = json.loads({rows_json!r})\n"
+        "_ROWS = json.loads(sys.stdin.read())\n"
         "_OUT = [float(engineer(r)) for r in _ROWS]\n"
         "print(json.dumps(_OUT))\n"
     )
@@ -71,8 +73,10 @@ def run_transform_in_sandbox(
     except (TypeError, ValueError) as exc:
         return TransformError(message=f"rows are not JSON-serializable: {exc}")
 
-    code = _wrap(engineer_src, rows_json)
-    result = sandbox.run_python(code, timeout_s=_TIMEOUT_S, network=False)
+    code = _wrap(engineer_src)
+    result = sandbox.run_python(
+        code, timeout_s=_TIMEOUT_S, network=False, stdin=rows_json
+    )
 
     if result.timed_out:
         return TransformError(

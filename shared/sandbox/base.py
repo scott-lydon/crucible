@@ -13,5 +13,10 @@ class SandboxResult:
 
 class Sandbox(Protocol):
     def run_python(
-        self, code: str, *, timeout_s: float = 10.0, network: bool = False
+        self,
+        code: str,
+        *,
+        timeout_s: float = 10.0,
+        network: bool = False,
+        stdin: str | None = None,
     ) -> SandboxResult: ...
