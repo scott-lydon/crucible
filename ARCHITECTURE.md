@@ -198,6 +198,7 @@ result, surfaced honestly, never papered over.
 | `risk_report.py` | Render SR 11-7 Markdown from a run's persisted state | `/reports/:runId` |
 | `halt_rule.py` | Polls `metrics.recall_white_box`; if below threshold, sets a Postgres `halted=true` flag the orchestrator checks on new runs | All routes (banner) |
 | `health.py` | Aggregates every module's `/health/<pillar>/<subcomponent>` probe | `/health` |
+| verdict replay (US-5) | `POST /runs/{run_id}/verdicts/{verdict_id}/replay` re-derives the tally and pass/caught decision from the stored votes via `VerdictAggregator` (the aggregator's documented replay path) and diffs the replay against the persisted verdict; a clean replay proves reproducibility, a divergence is a surfaced non-determinism incident. Deterministic by construction (no new LLM call). | blue/verdict view Replay control |
 
 **Dashboard** (`dashboard/`). React SPA. Routes per `acceptance-tests.md` section 1.
 Each route is a thin client over the FastAPI endpoints above.

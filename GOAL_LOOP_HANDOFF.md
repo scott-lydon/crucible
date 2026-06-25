@@ -384,13 +384,18 @@ those. Rules:
 - [x] [Loyalty] Matches US-4.
 
 ### US-5: replay any past action
-- [ ] [Verifier] BLOCKED (backend gap): Results tab has a Replay control, but
-      there is NO replay endpoint in the API (no /replay route in openapi). A
-      deterministic re-run cannot be exercised without a backend route. Builder
-      TODO: add POST /runs/:id/verdicts/:id/replay (re-run with same seed) or
-      remove the control honestly.
-- [ ] [Integrity] Pending the replay endpoint.
-- [ ] [Loyalty] Matches US-5 (no fabricated replay result shown).
+> RESOLVED (2026-06-24): added POST /runs/{run_id}/verdicts/{verdict_id}/replay
+> (re-derives the verdict from stored votes via VerdictAggregator, diffs vs the
+> persisted result). Wired the launcher Results "↻ Replay verdict" button ->
+> POST -> ORIGINAL vs REPLAY side-by-side + green "deterministic ✓" banner (or a
+> red NON-DETERMINISM INCIDENT banner with the diff). ARCHITECTURE.md updated.
+- [x] [Verifier] Replay re-runs deterministically: button click on run 704cdb
+      verdict -> ORIGINAL 2.5/PASS vs REPLAY 2.5/PASS, "deterministic ✓", 0 page
+      errors. Endpoint: deterministic=true, diff=[].
+- [x] [Integrity] Replayed values match the captured audit row (tally 2.5,
+      pass, re-derived from the stored votes; no fabricated replay rows — the
+      false "no replay endpoint" placeholder + empty stub table were removed).
+- [x] [Loyalty] Matches US-5; a divergence surfaces honestly as a red incident.
 
 ### US-6: strategy catalog
 - [x] [Verifier] `/catalog` rows render from real data. slice-06 renders row

@@ -510,6 +510,7 @@ STUB-MANIFEST · Run Launcher
         <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE;margin-top:6px">{{ runIdLabel }} · {{ targetLabel }} · selected attack: {{ selAttackTactic }}</div>
       </div>
       <div style="display:flex;gap:10px">
+        <button onClick="{{ replayVerdict }}" disabled="{{ replayDisabled }}" title="Deterministically re-derive this verdict from its stored votes" style="background:#1A1610;color:#D4A341;border:1px solid #3F361F;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">{{ replayBtnLabel }}</button>
         <button onClick="{{ goConfigure }}" style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">↻ New run</button>
         <a href="{{ reportPdfLink }}" style="background:#4FAAC0;color:#0E141B;border:none;border-radius:6px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;text-decoration:none">Export SR 11-7</a>
       </div>
@@ -727,30 +728,55 @@ STUB-MANIFEST · Run Launcher
       </div>
     </div>
 
-    <!-- ============== AUDIT ROW REPLAYS ============== -->
+    <!-- ============== DETERMINISTIC VERDICT REPLAY ============== -->
     <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;overflow:hidden;margin-top:20px">
       <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">AUDIT ROW REPLAYS · this run</div>
-        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">no replay endpoint · deterministic re-run not yet exposed by the API</span>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">DETERMINISTIC VERDICT REPLAY · selected verdict</div>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">re-derives the verdict from its stored votes and diffs against the persisted result</span>
       </div>
 
-      <!-- table head -->
-      <div role="row" style="display:grid;grid-template-columns:150px 170px 130px 130px 1fr 100px 70px;gap:14px;padding:9px 22px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;text-transform:uppercase">
-        <span>Replayed at</span><span>Row</span><span>By</span><span>Reason</span><span>Hash</span><span>Status</span><span></span>
-      </div>
+      <div style="padding:20px 22px">
+        <!-- error banner -->
+        <sc-if value="{{ hasReplayError }}" hint-placeholder-val="{{ false }}">
+          <div style="border:1px solid #5A2C2C;background:#241313;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0A0A0">replay request failed · {{ replayError }}</div>
+        </sc-if>
 
-      <sc-for list="{{ replays }}" as="p" hint-placeholder-count="0">
-        <div role="row" style="display:grid;grid-template-columns:150px 170px 130px 130px 1fr 100px 70px;gap:14px;padding:11px 22px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
-          <span style="color:#95A1AE">{{ p.at }}</span>
-          <span style="color:#E8EDF3">{{ p.row }}</span>
-          <span style="color:#E8EDF3">{{ p.by }}</span>
-          <span style="color:#95A1AE">{{ p.reason }}</span>
-          <span style="color:#E8EDF3">{{ p.hash }}</span>
-          <span style="color:#95A1AE">{{ p.status }}</span>
-          <span></span>
-        </div>
-      </sc-for>
-      <div style="padding:14px 22px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5A6573">— no replays · the deterministic replay endpoint is not exposed by the API</div>
+        <!-- empty prompt -->
+        <sc-if value="{{ replayNotShown }}" hint-placeholder-val="{{ true }}">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#5A6573">— click <span style="color:#D4A341">↻ Replay verdict</span> above to deterministically re-derive this verdict from its audit row.</div>
+        </sc-if>
+
+        <!-- side-by-side result -->
+        <sc-if value="{{ replayShown }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="border:1px solid #232E39;background:#11181F;border-radius:8px;padding:16px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:10px">ORIGINAL · persisted result</div>
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">tally</span><span style="font-size:22px;color:#E8EDF3;font-weight:600">{{ replayOrigTally }}</span></div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-top:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">passed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:{{ replayOrigPassColor }}">{{ replayOrigPassed }}</span></div>
+            </div>
+            <div style="border:1px solid #232E39;background:#11181F;border-radius:8px;padding:16px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:10px">REPLAY · re-derived from votes</div>
+              <div style="display:flex;align-items:baseline;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">tally</span><span style="font-size:22px;color:#E8EDF3;font-weight:600">{{ replayNewTally }}</span></div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-top:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">passed</span><span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;color:{{ replayNewPassColor }}">{{ replayNewPassed }}</span></div>
+            </div>
+          </div>
+
+          <!-- deterministic confirmation -->
+          <sc-if value="{{ replayDeterministic }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;border:1px solid #2C5A3A;background:#10231A;border-radius:8px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#57C08A">deterministic ✓ — verdict reproduced from its audit row</div>
+          </sc-if>
+
+          <!-- non-determinism incident (US-5) -->
+          <sc-if value="{{ replayNonDeterministic }}" hint-placeholder-val="{{ false }}">
+            <div style="margin-top:14px;border:1px solid #6B2222;background:#2A1212;border-radius:8px;padding:14px 16px">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#E06B6B;letter-spacing:.08em;font-weight:700;margin-bottom:8px">⚠ NON-DETERMINISM INCIDENT · replay did not reproduce the persisted verdict</div>
+              <sc-for list="{{ replayDiffs }}" as="d" hint-placeholder-count="0">
+                <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E0A0A0;padding:2px 0">· {{ d }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </sc-if>
+      </div>
     </div>
 
     <!-- ============== RECOMMENDED NEXT ACTIONS ============== -->
@@ -769,7 +795,7 @@ STUB-MANIFEST · Run Launcher
         <div style="border:1px solid #2C3744;border-radius:8px;padding:16px">
           <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#95A1AE;letter-spacing:.08em;margin-bottom:8px">B · RE-RUN</div>
           <div style="font-size:13px;color:#E8EDF3;font-weight:500;margin-bottom:6px">Configure a new evaluation</div>
-          <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:12px">A deterministic replay endpoint is not exposed by the API; start a fresh run from the Configure tab instead.</div>
+          <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:12px">Start a fresh evaluation from the Configure tab. To re-derive an existing verdict deterministically, use Replay verdict above.</div>
           <button onClick="{{ goConfigure }}" style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:5px;padding:7px 12px;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer">Configure run →</button>
         </div>
 
@@ -856,6 +882,9 @@ class Component extends DCLogic {
     runStatus: null,        // SSE 'run_status' / GET /runs status
     recentRunsList: null,   // GET /runs (history strip + table)
     openVerdictId: null,    // which verdict's per-oracle detail is expanded
+    verdictReplay: null,    // POST /runs/{id}/verdicts/{vid}/replay result
+    replayLoading: false,   // in-flight replay request
+    replayError: null,      // replay request failure message
   };
 
   componentDidMount() {
@@ -1323,6 +1352,14 @@ class Component extends DCLogic {
       created: (r.created_at || '').slice(0, 16).replace('T', ' '),
     }));
 
+    // --- deterministic verdict replay (POST /runs/{id}/verdicts/{vid}/replay) ---
+    const rep = this.state.verdictReplay;
+    const fmtTally = (t) => (t != null ? String(t) : EMD);
+    const fmtPass = (p) => (p == null ? EMD : (p ? 'PASS' : 'BLOCK'));
+    const replayShown = !!rep;
+    const replayDeterministic = rep ? !!rep.deterministic : false;
+    const replayDiffs = (rep && Array.isArray(rep.diff)) ? rep.diff : [];
+
     return {
       // tab routing
       isConfigure: tab === 'configure',
@@ -1384,6 +1421,34 @@ class Component extends DCLogic {
       // verdict headline (selected verdict)
       verdictHeadline, tallyLabel,
       verdictPassed: selPassed,
+
+      // deterministic verdict replay
+      replayLoading: this.state.replayLoading,
+      replayBtnLabel: this.state.replayLoading ? '↻ replaying…' : '↻ Replay verdict',
+      replayDisabled: this.state.replayLoading || !selVid,
+      replayError: this.state.replayError,
+      hasReplayError: !!this.state.replayError,
+      replayShown,
+      replayNotShown: !replayShown,
+      replayDeterministic,
+      replayNonDeterministic: replayShown && !replayDeterministic,
+      replayDiffs,
+      replayOrigTally: rep ? fmtTally(rep.original && rep.original.tally) : EMD,
+      replayOrigPassed: rep ? fmtPass(rep.original && rep.original.passed) : EMD,
+      replayOrigPassColor: rep && rep.original && rep.original.passed ? '#57C08A' : '#D98A8A',
+      replayNewTally: rep ? fmtTally(rep.replay && rep.replay.tally) : EMD,
+      replayNewPassed: rep ? fmtPass(rep.replay && rep.replay.passed) : EMD,
+      replayNewPassColor: rep && rep.replay && rep.replay.passed ? '#57C08A' : '#D98A8A',
+      replayVerdict: () => {
+        const rid = this.state.runId;
+        if (!rid || !selVid || this.state.replayLoading) return;
+        this.setState({ replayLoading: true, replayError: null });
+        fetch('/runs/' + rid + '/verdicts/' + selVid + '/replay', { method: 'POST' })
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(res => this.setState({ verdictReplay: res, replayLoading: false }))
+          .catch(err => this.setState({ replayLoading: false, replayError: String(err && err.message || err) }));
+      },
+
       selAttackTactic: selAttack ? selAttack.tactic : EMD,
       selObligation: (selVotes[0] && selVotes[0].obligation_id) ? selVotes[0].obligation_id : EMD,
 
@@ -1415,10 +1480,6 @@ class Component extends DCLogic {
       runHistory: runHistoryReal,
       recentRuns: recentRuns,
       recentCountLabel: recent.length ? (recent.length + ' runs') : 'no runs yet',
-
-      // audit-row replays: no replay endpoint exists on the API, so this is an
-      // honest empty list rather than fabricated replay rows.
-      replays: [],
 
       // sealed-spec author flow (US-1)
       specSealed: this.state.specSealed,

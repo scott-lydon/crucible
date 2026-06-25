@@ -78,7 +78,9 @@ from shared.types import (
     TargetType,
 )
 from modules.blue import BlueProposer, BlueStore
+from modules.oracles.aggregator import VerdictAggregator, votes_from_json
 from shared.llm import get_llm_client
+from shared.types import VerdictId
 
 log = get_logger("orchestrator.api")
 
@@ -600,6 +602,43 @@ async def get_verdict(run_id: str, verdict_id: str, session: SessionDep) -> dict
         "differential_runs": [
             {"decision": d.decision, "reason": d.reason} for d in differential
         ],
+    }
+
+
+@app.post("/runs/{run_id}/verdicts/{verdict_id}/replay")
+async def replay_verdict(run_id: str, verdict_id: str, session: SessionDep) -> dict[str, Any]:
+    """Deterministically replay a verdict from its captured votes (US-5).
+
+    Re-derives the tally and pass/caught decision from the stored vote rows via
+    the same VerdictAggregator the original run used, then diffs the replay
+    against the persisted result. A clean replay proves the verdict is
+    reproducible from its audit row; any divergence is surfaced as a
+    non-determinism incident (it never papers over a mismatch).
+    """
+    verdict = await session.get(VerdictRow, verdict_id)
+    if verdict is None or verdict.run_id != run_id:
+        raise HTTPException(status_code=404, detail="verdict not found")
+    votes = votes_from_json(verdict.votes or [])
+    aggregator = VerdictAggregator()
+    replayed = aggregator.aggregate(
+        votes,
+        run_id=RunId(run_id),
+        attack_id=AttackId(verdict.attack_id) if verdict.attack_id else None,
+        verdict_id=VerdictId(verdict_id),
+    )
+    diff: list[str] = []
+    if abs(float(replayed.tally) - float(verdict.tally)) > 1e-9:
+        diff.append(f"tally: original {verdict.tally} != replay {replayed.tally}")
+    if bool(replayed.passed) != bool(verdict.passed):
+        diff.append(f"passed: original {verdict.passed} != replay {replayed.passed}")
+    return {
+        "verdict_id": verdict_id,
+        "run_id": run_id,
+        "deterministic": not diff,
+        "original": {"tally": verdict.tally, "passed": verdict.passed},
+        "replay": {"tally": replayed.tally, "passed": replayed.passed},
+        "votes": aggregator.votes_as_json(replayed.votes),
+        "diff": diff,
     }
 
 
