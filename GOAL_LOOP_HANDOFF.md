@@ -279,10 +279,15 @@ those. Rules:
   delete it instead and note the REMOVED_UI.md / section-2 reason.
 
 ### Scenario 0: launcher renders (regression, blocks everything)
-- [ ] [Builder] Root cause of the blank blue screen identified (CDN mount vs
+- [x] [Builder] Root cause of the blank blue screen identified (CDN mount vs
       `live.js` throw vs both), written in RUN_REPORT with console + network
-      evidence.
-- [ ] [Builder] Fix applied; launcher renders all panels after Cmd+Shift+R.
+      evidence. ROOT CAUSE: live.js renderSealedSpec matched page-root wrapper
+      via el.textContent and overwrote lastChild.textContent, wiping the
+      launcher (no JS error). Also /policy 500 (pending migration). See RUN_REPORT.
+- [x] [Builder] Fix applied; launcher renders all panels after Cmd+Shift+R.
+      Fixed selector to match the element directly owning the .sealed.yaml text
+      node; applied alembic migration a1b2c3d4e5f6. Commit d6a1edc. Headless
+      reload: 82 panels, 0 console/page/network errors.
 - [ ] [Verifier] Fresh-context load of `/app` shows the rendered launcher, not a
       blank screen; console has zero app errors.
 - [ ] [Integrity] First-paint screenshot captured; no fabricated values on the
@@ -291,8 +296,15 @@ those. Rules:
       is plainly entailed by the PRD.
 
 ### US-1: submit a target for evaluation
+> BLOCKED (2026-06-24): operator resolved the reconciliation by adding a YAML
+> paste/seal field in an updated Claude Design (GitHub Crucible Repository-3.zip,
+> "Run Launcher.dc.html" with specDraft/sealSpec). That design is NOT yet
+> integrated into code in this tree (no specDraft on any branch/worktree/remote).
+> A separate goal loop owns the design->code port. US-1..US-5 stay unticked until
+> that port lands here or the operator hands me its branch.
 - [ ] [Loyalty] Section-0 spec reconciliation on the default-spec endpoint is
       resolved (spec updated OR auto-fill removed); code and spec agree.
+      RESOLUTION = new design adds YAML paste/seal field; pending code integration.
 - [ ] [Verifier] Target selectable (Fraud and Code Agent); sealed spec present
       per the resolved decision; rounds/budget set; Start clicked.
 - [ ] [Verifier] App navigates to `/runs/:runId`; spec accepted, sandbox
@@ -301,6 +313,12 @@ those. Rules:
       backing API response; no prototype constants.
 - [ ] [Loyalty] Asserted behavior matches `acceptance-tests.md` US-1 Then-clauses
       verbatim; no extra capability graded.
+
+> BLOCKED (US-2..US-5): the live tree has NO working UI for watching a run,
+> drilling a verdict, oracle votes, or replay. slice-02/03/05 are redirect stubs
+> that drop ?run=; live.js wires none of verdict/votes/replay; the launcher
+> Running tab stays "no run started" even with ?run=. These are delivered by the
+> new consolidated launcher design (Running/Results tabs), pending the port above.
 
 ### US-2: watch one round live
 - [ ] [Verifier] ASR chart updates once per attack; detection chart once per
