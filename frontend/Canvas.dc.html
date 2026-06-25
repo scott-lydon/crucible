@@ -28,9 +28,10 @@
   .desc{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;margin-top:6px;line-height:1.55}
   .route{font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;margin-top:8px}
   .pill{position:absolute;top:10px;left:10px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#B8C2CE;background:#161E27;border:1px solid #2C3744;padding:3px 7px;border-radius:3px;letter-spacing:.04em}
-  /* thumbnail mini-glyphs */
   .gx{width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:18px}
   .gx svg{width:100%;height:100%}
+  .todo{display:flex;flex-direction:column;border:1px dashed #2C3744;border-radius:10px;background:#0B1117;padding:14px 16px;color:inherit}
+  .todo .title{margin-top:2px}
 </style>
 </helmet>
 
@@ -47,115 +48,132 @@
       <div style="flex:1"></div>
       <a href="Crucible Design System.dc.html" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;text-decoration:none">design system ↗</a>
       <a href="_palette_notes.md" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;text-decoration:none">palette notes ↗</a>
+      <a href="STUB_PROTOCOL.md" title="how stubbed/fake data is tagged for the coding agent" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;text-decoration:none">stub protocol ↗</a>
     </div>
   </div>
 
   <div style="max-width:1320px;margin:0 auto;padding:36px 24px 80px">
 
-    <h1 style="margin:0 0 4px;font-size:24px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Crucible · 16 slices</h1>
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-bottom:28px">tier 1 spine (6) · tier 2 blue+measure (4) · tier 3 ops + exports (6) · click any tile to open</div>
+    <h1 style="margin:0 0 4px;font-size:24px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Crucible · capstone screens</h1>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;margin-bottom:28px">grounded in the Capstone Proposal (§3 pillars + §6 demo scope) · click any tile to open</div>
 
-    <!-- Tier 1 -->
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Tier 1 · spine of the demo</div>
+    <!-- ============== PILLAR 1 · Targets & oracles ============== -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Pillar 1 · targets &amp; oracles</div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px">
 
-      <a href="slice-01-run-launcher.dc.html" class="card">
-        <div class="thumb"><span class="pill">01</span><div class="gx">
+      <a href="Run Launcher.dc.html" class="card">
+        <div class="thumb"><span class="pill">launcher</span><div class="gx">
           <svg viewBox="0 0 200 120"><rect x="14" y="18" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="40" width="80" height="50" rx="2" fill="#1D2630"/><rect x="100" y="40" width="86" height="50" rx="2" fill="#1D2630"/><rect x="14" y="98" width="60" height="10" rx="2" fill="#316E7E"/><rect x="80" y="98" width="40" height="10" rx="2" fill="#2C3744"/></svg>
         </div></div>
-        <div class="meta"><div class="tier">launcher</div><div class="title">Run Launcher</div><div class="desc">spec pickers · oracle mix · cost ceiling · launch a new red↔blue round</div><div class="route">/runs/new</div></div>
+        <div class="meta"><div class="tier">launcher · 3 tabs (configure / running / results)</div><div class="title">Run Launcher</div><div class="desc">pick target adapter · review sealed spec · set rounds &amp; budget · launch a red↔blue round</div><div class="route">/runs/new</div></div>
       </a>
 
-<a href="slice-04-dashboard.dc.html" class="card">
+    </div>
+
+    <!-- ============== PILLAR 2 · Red ============== -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Pillar 2 · red · adversarial search</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px">
+
+      <a href="slice-01-strategy-catalog.dc.html" class="card">
+        <div class="thumb"><span class="pill">01</span><div class="gx">
+          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="10" rx="2" fill="#1D2630"/><rect x="14" y="30" width="172" height="14" rx="2" fill="#11181F"/><rect x="14" y="48" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="66" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="84" width="172" height="14" rx="2" fill="#1D2630"/></svg>
+        </div></div>
+        <div class="meta"><div class="tier">persistent memory</div><div class="title">Strategy Catalog</div><div class="desc">winning red tactics distilled and reused across runs — MCP-style memory (§3 Pillar 2)</div><div class="route">/strategies</div></div>
+      </a>
+
+      <a href="slice-02-whitebox-selftest.dc.html" class="card">
+        <div class="thumb"><span class="pill">02</span><div class="gx">
+          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="80" height="92" rx="2" fill="#1D2630"/><text x="54" y="62" fill="#E8EDF3" font-family="IBM Plex Mono" font-size="22" text-anchor="middle">0.92</text><text x="54" y="80" fill="#9BD9B5" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">recall</text><rect x="102" y="14" width="84" height="92" rx="2" fill="#1D2630"/><rect x="110" y="26" width="68" height="6" fill="#57C08A"/><rect x="110" y="38" width="60" height="6" fill="#57C08A"/><rect x="110" y="50" width="40" height="6" fill="#D9A441"/><rect x="110" y="62" width="64" height="6" fill="#57C08A"/><rect x="110" y="74" width="58" height="6" fill="#57C08A"/></svg>
+        </div></div>
+        <div class="meta"><div class="tier">white-box adversary</div><div class="title">White-box Self-test</div><div class="desc">reveal the scheme (not the instances), reward a cheap cheat — turns "we catch cheats" into a measured recall number (§3 Pillar 2)</div><div class="route">/whitebox/:wbId</div></div>
+      </a>
+
+    </div>
+
+    <!-- ============== PILLAR 3 · Blue ============== -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Pillar 3 · blue · automated hardening</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px">
+
+      <a href="slice-03-blue-patch-review.dc.html" class="card">
+        <div class="thumb"><span class="pill">03</span><div class="gx">
+          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="120" height="92" rx="2" fill="#1D2630"/><rect x="22" y="22" width="50" height="6" fill="#9BD9B5"/><rect x="22" y="34" width="80" height="6" fill="#2C3744"/><rect x="22" y="46" width="60" height="6" fill="#E5B5B0"/><rect x="22" y="58" width="70" height="6" fill="#9BD9B5"/><rect x="22" y="70" width="40" height="6" fill="#2C3744"/><rect x="142" y="14" width="44" height="92" rx="2" fill="#1D2630"/><rect x="148" y="86" width="32" height="14" rx="2" fill="#316E7E"/></svg>
+        </div></div>
+        <div class="meta"><div class="tier">blue loop</div><div class="title">Blue Patch Review</div><div class="desc">apply patch · retrain · re-eval on held-out attacks the patch didn't see (§3 Pillar 3)</div><div class="route">/patches/:pid</div></div>
+      </a>
+
+    </div>
+
+    <!-- ============== PILLAR 4 · Measure ============== -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Pillar 4 · measure · self-test, dashboard, exports</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px">
+
+      <a href="slice-04-honest-dashboard.dc.html" class="card">
         <div class="thumb"><span class="pill">04</span><div class="gx">
           <svg viewBox="0 0 200 120"><rect x="14" y="14" width="40" height="40" rx="2" fill="#1D2630"/><rect x="58" y="14" width="40" height="40" rx="2" fill="#1D2630"/><rect x="102" y="14" width="40" height="40" rx="2" fill="#1D2630"/><rect x="146" y="14" width="40" height="40" rx="2" fill="#1D2630"/><rect x="14" y="60" width="172" height="46" rx="2" fill="#1D2630"/><polyline points="22,96 44,90 66,82 88,76 110,70 132,72 154,66 176,62" fill="none" stroke="#4FAAC0" stroke-width="2"/></svg>
         </div></div>
-        <div class="meta"><div class="tier">headline · outcomes</div><div class="title">Outcomes</div><div class="desc">undetected-hack · v↔h gap · recall · cost/hack · human-min/1k · ASR + detection curves</div><div class="route">/dashboard</div></div>
+        <div class="meta"><div class="tier">honest dashboard</div><div class="title">Outcomes</div><div class="desc">undetected-hack rate · validation↔held-out gap · verifier recall · cost/caught-hack · human-min per 1k</div><div class="route">/dashboard</div></div>
       </a>
 
-<a href="slice-06-strategy-catalog.dc.html" class="card">
+      <a href="slice-05-coevolution-curves.dc.html" class="card">
+        <div class="thumb"><span class="pill">05</span><div class="gx">
+          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="92" rx="2" fill="#1D2630"/><polyline points="22,82 40,76 60,68 78,62 96,72 116,82 134,72 152,60 172,40" fill="none" stroke="#D9A441" stroke-width="2"/><polyline points="22,60 40,58 60,52 78,46 96,40 116,34 134,30 152,28 172,28" fill="none" stroke="#4FAAC0" stroke-width="2"/></svg>
+        </div></div>
+        <div class="meta"><div class="tier">curves (stretch)</div><div class="title">Co-evolution Curves</div><div class="desc">red↔blue over N rounds · convergence or oscillation · ΔASR per patch (§3 Pillar 4, §6 stretch)</div><div class="route">/dashboard/co-evolution</div></div>
+      </a>
+
+      <a href="slice-06-halt-certification.dc.html" class="card">
         <div class="thumb"><span class="pill">06</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="10" rx="2" fill="#1D2630"/><rect x="14" y="30" width="172" height="14" rx="2" fill="#11181F"/><rect x="14" y="48" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="66" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="84" width="172" height="14" rx="2" fill="#1D2630"/></svg>
-        </div></div>
-        <div class="meta"><div class="tier">memory</div><div class="title">Strategy Catalog</div><div class="desc">persistent memory of winning tactics across runs · sortable, taggable</div><div class="route">/strategies</div></div>
-      </a>
-    </div>
-
-    <!-- Tier 2 -->
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Tier 2 · blue + measure</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px">
-
-      <a href="slice-07-blue-patch-review.dc.html" class="card">
-        <div class="thumb"><span class="pill">07</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="120" height="92" rx="2" fill="#1D2630"/><rect x="22" y="22" width="50" height="6" fill="#9BD9B5"/><rect x="22" y="34" width="80" height="6" fill="#2C3744"/><rect x="22" y="46" width="60" height="6" fill="#E5B5B0"/><rect x="22" y="58" width="70" height="6" fill="#9BD9B5"/><rect x="22" y="70" width="40" height="6" fill="#2C3744"/><rect x="142" y="14" width="44" height="92" rx="2" fill="#1D2630"/><rect x="148" y="86" width="32" height="14" rx="2" fill="#316E7E"/></svg>
-        </div></div>
-        <div class="meta"><div class="tier">blue loop</div><div class="title">Blue Patch Review</div><div class="desc">apply-patch flow · retrain · re-eval on held-out · 4-eyes acks</div><div class="route">/patches/:pid</div></div>
-      </a>
-
-      <a href="slice-08-halt-certification.dc.html" class="card">
-        <div class="thumb"><span class="pill">08</span><div class="gx">
           <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="18" rx="2" fill="#5E1A1A"/><rect x="22" y="20" width="60" height="6" fill="#E5B5B0"/><rect x="14" y="40" width="172" height="66" rx="2" fill="#1D2630"/><rect x="22" y="50" width="40" height="6" fill="#E5B5B0"/><rect x="22" y="62" width="80" height="6" fill="#2C3744"/><rect x="22" y="74" width="70" height="6" fill="#2C3744"/><rect x="22" y="86" width="60" height="6" fill="#2C3744"/></svg>
         </div></div>
-        <div class="meta"><div class="tier">halt</div><div class="title">Halt Certification</div><div class="desc">runs blocked · lift conditions · 4-eyes override · halt history</div><div class="route">/halts/:hid</div></div>
+        <div class="meta"><div class="tier">halt certification</div><div class="title">Halt Certification</div><div class="desc">stop certifying when residual crosses the red line · lift on held-out verification of the blue patch (§5, §8)</div><div class="route">/halts/:hid</div></div>
       </a>
 
-      <a href="slice-10-whitebox-selftest.dc.html" class="card">
-        <div class="thumb"><span class="pill">10</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="80" height="92" rx="2" fill="#1D2630"/><text x="54" y="62" fill="#E8EDF3" font-family="IBM Plex Mono" font-size="22" text-anchor="middle">0.92</text><text x="54" y="80" fill="#9BD9B5" font-family="IBM Plex Mono" font-size="9" text-anchor="middle">recall</text><rect x="102" y="14" width="84" height="92" rx="2" fill="#1D2630"/><rect x="110" y="26" width="68" height="6" fill="#57C08A"/><rect x="110" y="38" width="60" height="6" fill="#57C08A"/><rect x="110" y="50" width="40" height="6" fill="#D9A441"/><rect x="110" y="62" width="64" height="6" fill="#57C08A"/><rect x="110" y="74" width="58" height="6" fill="#57C08A"/></svg>
+      <a href="slice-07-leaderboard-export.dc.html" class="card">
+        <div class="thumb"><span class="pill">07</span><div class="gx">
+          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="12" rx="2" fill="#1D2630"/><rect x="14" y="30" width="172" height="14" rx="2" fill="#11181F"/><rect x="14" y="48" width="172" height="14" rx="2" fill="#1D2630"/><rect x="22" y="52" width="14" height="6" fill="#E8EDF3"/><rect x="44" y="52" width="80" height="6" fill="#2C3744"/><rect x="14" y="66" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="84" width="172" height="14" rx="2" fill="#1D2630"/></svg>
         </div></div>
-        <div class="meta"><div class="tier">measure</div><div class="title">White-box Self-test</div><div class="desc">scheme revealed not instances · recall as a measured number, not a claim</div><div class="route">/whitebox/:wbId</div></div>
-      </a>
-    </div>
-
-    <!-- Tier 3 -->
-    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Tier 3 · operations &amp; exports</div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
-
-      <a href="slice-11-health.dc.html" class="card">
-        <div class="thumb"><span class="pill">11</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="16" rx="2" fill="#2B240E"/><g><rect x="14" y="36" width="54" height="22" rx="2" fill="#1D2630"/><circle cx="22" cy="47" r="3" fill="#57C08A"/><rect x="72" y="36" width="54" height="22" rx="2" fill="#1D2630"/><circle cx="80" cy="47" r="3" fill="#57C08A"/><rect x="130" y="36" width="56" height="22" rx="2" fill="#1F1A0B"/><circle cx="138" cy="47" r="3" fill="#D9A441"/><rect x="14" y="62" width="54" height="22" rx="2" fill="#1D2630"/><circle cx="22" cy="73" r="3" fill="#57C08A"/><rect x="72" y="62" width="54" height="22" rx="2" fill="#1B1518"/><circle cx="80" cy="73" r="3" fill="#E5736B"/><rect x="130" y="62" width="56" height="22" rx="2" fill="#1D2630"/><circle cx="138" cy="73" r="3" fill="#57C08A"/></g></svg>
-        </div></div>
-        <div class="meta"><div class="tier">ops</div><div class="title">Health</div><div class="desc">9 leaves · overall degraded strip · open incidents</div><div class="route">/health</div></div>
+        <div class="meta"><div class="tier">export · benchmark</div><div class="title">Benchmark · Leaderboard</div><div class="desc">seeded hack corpus + leaderboard exported as a reusable benchmark that outlives the demo (§3 Pillar 4)</div><div class="route">/benchmarks/seeded-v3</div></div>
       </a>
 
-      <a href="slice-12-admin-debug.dc.html" class="card">
-        <div class="thumb"><span class="pill">12</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="14" rx="2" fill="#3A3413"/><rect x="14" y="34" width="172" height="22" rx="2" fill="#1D2630"/><rect x="22" y="40" width="40" height="10" rx="5" fill="#6E5A1F"/><circle cx="56" cy="45" r="4" fill="#E8EDF3"/><rect x="14" y="62" width="172" height="22" rx="2" fill="#1D2630"/><rect x="22" y="68" width="40" height="10" rx="5" fill="#2C3744"/><circle cx="28" cy="73" r="4" fill="#E8EDF3"/><rect x="14" y="90" width="172" height="16" rx="2" fill="#1D2630"/></svg>
-        </div></div>
-        <div class="meta"><div class="tier">ops</div><div class="title">Admin · Debug</div><div class="desc">mock-llm toggle · producer routing · halt bypass · feature flags</div><div class="route">/admin/debug</div></div>
-      </a>
-
-      <a href="slice-14-sr-117-report.dc.html" class="card">
-        <div class="thumb"><span class="pill">14</span><div class="gx">
+      <a href="slice-08-sr-117-report.dc.html" class="card">
+        <div class="thumb"><span class="pill">08</span><div class="gx">
           <svg viewBox="0 0 200 120"><rect x="36" y="10" width="128" height="100" rx="2" fill="#FAF7F1" stroke="#E0DBD2"/><rect x="44" y="20" width="56" height="6" fill="#1A2330"/><rect x="44" y="32" width="40" height="4" fill="#5C6A7A"/><rect x="44" y="44" width="112" height="3" fill="#5C6A7A"/><rect x="44" y="50" width="100" height="3" fill="#5C6A7A"/><rect x="44" y="56" width="106" height="3" fill="#5C6A7A"/><rect x="44" y="68" width="24" height="18" fill="#E0DBD2"/><rect x="72" y="68" width="24" height="18" fill="#E0DBD2"/><rect x="100" y="68" width="24" height="18" fill="#E0DBD2"/><rect x="128" y="68" width="24" height="18" fill="#E0DBD2"/></svg>
         </div></div>
-        <div class="meta"><div class="tier">export · print</div><div class="title">SR 11-7 Model Risk Report</div><div class="desc">bank-audience export · printable · dual sign-off</div><div class="route">/reports/sr-11-7</div></div>
+        <div class="meta"><div class="tier">export · print</div><div class="title">SR 11-7 Model Risk Report</div><div class="desc">auto-drafted, printable · maps to controls already named in the sealed spec (§3 Pillar 4, §6 stretch)</div><div class="route">/reports/sr-11-7</div></div>
       </a>
 
-      <a href="slice-15-workspace-policy.dc.html" class="card">
-        <div class="thumb"><span class="pill">15</span><div class="gx">
-          <svg viewBox="0 0 200 120"><rect x="14" y="14" width="172" height="14" rx="2" fill="#1D2630"/><rect x="14" y="34" width="84" height="72" rx="2" fill="#1D2630"/><rect x="22" y="42" width="60" height="6" fill="#E8EDF3"/><rect x="22" y="54" width="68" height="4" fill="#2C3744"/><rect x="22" y="64" width="68" height="4" fill="#2C3744"/><rect x="22" y="74" width="68" height="4" fill="#2C3744"/><rect x="106" y="34" width="80" height="72" rx="2" fill="#1D2630"/><rect x="114" y="42" width="50" height="6" fill="#E8EDF3"/><rect x="114" y="54" width="60" height="4" fill="#2C3744"/><rect x="114" y="64" width="60" height="4" fill="#2C3744"/></svg>
-        </div></div>
-        <div class="meta"><div class="tier">governance</div><div class="title">Workspace · Roles &amp; Policy</div><div class="desc">5 roles · 12 members · 14 active policies · cost-ledger drawer</div><div class="route">/workspaces/acme-fraud</div></div>
-      </a>
-
-      <a href="slice-16-spec-history.dc.html" class="card">
-        <div class="thumb"><span class="pill">16</span><div class="gx">
-          <svg viewBox="0 0 200 120"><line x1="32" y1="20" x2="32" y2="106" stroke="#2C3744"/><circle cx="32" cy="28" r="4" fill="#D9A441"/><circle cx="32" cy="50" r="4" fill="#4FAAC0"/><circle cx="32" cy="72" r="4" fill="#3A4654"/><circle cx="32" cy="94" r="4" fill="#3A4654"/><rect x="44" y="24" width="100" height="6" fill="#2C3744"/><rect x="44" y="46" width="120" height="6" fill="#2C3744"/><rect x="44" y="68" width="86" height="6" fill="#2C3744"/><rect x="44" y="90" width="96" height="6" fill="#2C3744"/></svg>
-        </div></div>
-        <div class="meta"><div class="tier">governance</div><div class="title">Sealed-spec History</div><div class="desc">timeline · diff view · signatures · provenance chain</div><div class="route">/specs</div></div>
-      </a>
     </div>
 
-    <!-- footer notes -->
+    <!-- ============== UNBUILT ============== -->
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#B8C2CE;margin-bottom:14px">Proposal-scoped, not yet built</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+      <div class="todo">
+        <div class="tier">central (§9 demo)</div>
+        <div class="title">Live Run View</div>
+        <div class="desc">streams oracle verdicts · ASR climbing live · reasoning trace alongside — the screen the §9 demo is built around</div>
+      </div>
+      <div class="todo">
+        <div class="tier">drill-down (§3 Pillar 4)</div>
+        <div class="title">Verdict Detail</div>
+        <div class="desc">per-oracle view: held-out, metamorphic, differential, fuzz, judge — with the obligation that fired</div>
+      </div>
+      <div class="todo">
+        <div class="tier">audit (§3 Pillar 4)</div>
+        <div class="title">Audit-row Replayer</div>
+        <div class="desc">audit trace · check fired · sealed-spec obligation · one-click replay (the proposal's exact words)</div>
+      </div>
+    </div>
+
+    <!-- footer -->
     <div style="margin-top:32px;padding-top:18px;border-top:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#7C8896;line-height:1.7;display:grid;grid-template-columns:1fr 1fr;gap:24px">
       <div>
-        <div style="color:#B8C2CE">handoff status</div>
-        16 of 16 tier-items covered · wordmark on every slice links back here · breadcrumbs in 09–16 wired to dashboard / canvas · slice-14 is print-styled (Cmd-P → PDF).
+        <div style="color:#B8C2CE">scope</div>
+        Every screen here traces to a clause in the Capstone Proposal (§3 architecture, §6 demo scope, §9 live sketch). Earlier ops/admin/policy/spec-history screens were design-fiction beyond the proposal and have been removed.
       </div>
       <div>
-        <div style="color:#B8C2CE">known stubs</div>
-        deep-link hrefs inside slices (e.g. r_8f3a, p_2a17, h_19c4) are still <code style="color:#4FAAC0">#</code> — wire when the route shape settles. Empty / loading states not drawn. Mobile out of scope.
+        <div style="color:#B8C2CE">stubbed data</div>
+        Every fixture in every screen is tagged with the literal token <code style="color:#4FAAC0">STUB:</code> so the coding agent can <code style="color:#E8EDF3">grep -rn "STUB:" .</code> to inventory and wire it.
+        Each <code style="color:#4FAAC0">.dc.html</code> opens with a <code style="color:#E8EDF3">STUB-MANIFEST</code> comment listing every fixture and its intended real source — see <a href="STUB_PROTOCOL.md" style="color:#4FAAC0">STUB_PROTOCOL.md</a>.
       </div>
     </div>
 

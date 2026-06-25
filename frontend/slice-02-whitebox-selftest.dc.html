@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<!--
+====================================================================
+STUB-MANIFEST · slice-02-whitebox-selftest
+====================================================================
+  Self-test entity
+    STUB:id     source=route.whitebox.detail.id                  ("wb_…")
+    STUB:text   source=db.whitebox.byId.scheme_description        note="the cheat scheme — never the instances"
+    STUB:metric source=api.whitebox.recall                       unit=ratio    ("0.92")
+    STUB:metric source=api.whitebox.precision                    unit=ratio
+    STUB:metric source=api.whitebox.cost_per_catch               unit=usd
+
+  Per-class breakdown (the colored bar list)
+    STUB:series source=api.whitebox.classes                      shape={class,recall,n_caught,n_total} note="bars in side panel"
+    STUB:series source=api.whitebox.recent_catches               shape={ts,attack_id,class,confidence}
+    STUB:series source=api.whitebox.confusion_matrix             shape=number[][]
+
+  Dead navs
+    STUB:link   source=route.whitebox.list / route.whitebox.export / route.runs.detail(:id)
+====================================================================
+-->
+
+<div data-screen-label="White-box Self-test" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="slice-04-honest-dashboard.dc.html" style="color:#4FAAC0;text-decoration:none">/dashboard</a> · <span style="color:#E8EDF3">white-box self-test</span></span>
+      <div style="flex:1"></div>
+      <span style="display:inline-flex;align-items:center;gap:8px;background:#1B1F18;border:1px solid #4F6E2C;color:#C8D9A4;padding:6px 12px;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px" title="This run revealed the cheat scheme to the producer to measure recall. Results are diagnostic and cannot be used to certify a model or lift a halt."><span style="width:8px;height:8px;border-radius:50%;background:#9BD9B5"></span>diagnostic only · cannot lift halts</span>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:6px">
+      <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">White-box self-test</h1>
+      <a href="#" data-stub="link:TBD" title="exports recall report as CSV" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">export recall report ↗</a>
+    </div>
+    <!-- explainer -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:18px 22px;margin-bottom:20px;font-family:'IBM Plex Sans',sans-serif;font-size:13.5px;color:#B8C2CE;line-height:1.65">
+      <div style="color:#E8EDF3;font-weight:600;margin-bottom:6px">What this test does</div>
+      We tell the producer the <span style="color:#E8EDF3">categories</span> of cheat it should try (META-INV-04 case-folding, JUDGE-04 role-play, etc.) but never the actual cheats. It then attacks the held-out corpus. Recall here is a <span style="color:#E8EDF3">floor</span> — because the producer was tipped off, anything it still can't get past the verifier is something a less-informed attacker won't get past either.
+    </div>
+
+    <!-- recall headline -->
+    <div style="display:grid;grid-template-columns:1.1fr 1fr;gap:18px;margin-bottom:22px">
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Recall across all families</span></div>
+        <div style="padding:22px 24px;display:flex;align-items:flex-end;gap:32px">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:56px;line-height:1;letter-spacing:-.02em">{{ whiteBoxRecall }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#9BD9B5;margin-top:8px">{{ judgedLabel }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Comparison</span></div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">held-out recall <span style="color:#7C8896">· producer in the dark</span></span><span style="color:#E8EDF3">{{ blackBoxRecall }}</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="color:#B8C2CE">white-box recall <span style="color:#7C8896">· producer tipped off</span></span><span style="color:#E8EDF3">{{ whiteBoxRecall }}</span></div>
+          <div style="border-top:1px solid #1D2630;padding-top:12px;display:flex;justify-content:space-between"><span style="color:#B8C2CE">gap</span><span style="color:#9BD9B5">{{ gapLabel }}</span></div>
+          <div style="color:#7C8896;font-size:12px;line-height:1.6;padding-top:6px">A small gap is healthy. It means the verifier isn't relying on surprise — telling the producer what to try doesn't help it much. A big gap (white-box ≪ held-out) would mean the verifier only catches cheats it has already seen.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- methodology / disclosure -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Methodology · what was revealed</span></div>
+      <div style="padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.65">
+        <div>
+          <div style="color:#7C8896;letter-spacing:.06em;font-size:11px;text-transform:uppercase;margin-bottom:6px">Disclosed to producer</div>
+          <div style="color:#B8C2CE">• scheme name + textual description of attack family<br>• example shape (1 redacted example per family)<br>• which oracle the cheat targets</div>
+        </div>
+        <div>
+          <div style="color:#7C8896;letter-spacing:.06em;font-size:11px;text-transform:uppercase;margin-bottom:6px">Withheld</div>
+          <div style="color:#B8C2CE">• held-out instance corpus (never shown)<br>• oracle internal thresholds<br>• blue patch source<br>• ground-truth labels</div>
+        </div>
+        <div style="grid-column:1/-1;border-top:1px solid #1D2630;padding-top:14px;color:#B8C2CE">disclosure manifest · <span style="color:#7C8896">—</span> · signed-off by <span style="color:#7C8896">—</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { metrics: null };
+  }
+
+  componentDidMount() {
+    fetch('/metrics')
+      .then(r => r.ok ? r.json() : null)
+      .then(metrics => this.setState({ metrics }))
+      .catch(() => {});
+  }
+
+  // ratio (0..1) -> "100.0%"; null/undefined -> "Not yet measured —"
+  pct(ratio) {
+    if (ratio === null || ratio === undefined || Number.isNaN(ratio)) return 'Not yet measured —';
+    return (ratio * 100).toFixed(1) + '%';
+  }
+
+  renderVals() {
+    const m = this.state.metrics || {};
+    const wb = m.white_box_catch_rate;
+    const bb = m.black_box_catch_rate;
+    const wbRate = wb ? wb.rate : null;
+    const bbRate = bb ? bb.rate : null;
+    const gap = (m.catch_rate_gap === null || m.catch_rate_gap === undefined) ? null : m.catch_rate_gap;
+    const judged = wb ? wb.judged : null;
+    return {
+      whiteBoxRecall: this.pct(wbRate),
+      blackBoxRecall: this.pct(bbRate),
+      gapLabel: this.pct(gap),
+      judgedLabel: (judged === null || judged === undefined)
+        ? 'Not yet measured —'
+        : (judged + ' judged'),
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

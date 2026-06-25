@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+</style>
+</helmet>
+
+<div data-screen-label="Blue Patch · {{ patchLabel }}" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <a href="slice-03-blue-patch-review.dc.html" style="color:#4FAAC0;text-decoration:none">/patches</a> ·
+        <span style="color:#E8EDF3">{{ patchLabel }}</span>
+      </span>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ statusDot }};flex:none"></span>
+        {{ statusLabel }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== EMPTY · NO PATCH SELECTED ============== -->
+  <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:760px;margin:0 auto;padding:96px 24px">
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:40px 36px;text-align:center">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.14em;margin-bottom:12px">BLUE LOOP · PATCH REVIEW</div>
+      <div style="font-size:20px;font-weight:600;color:#E8EDF3;margin-bottom:10px">{{ emptyTitle }}</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#B8C2CE;line-height:1.7;max-width:520px;margin:0 auto">{{ emptyBody }}</div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============== LOADING ============== -->
+  <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+  <div style="max-width:760px;margin:0 auto;padding:96px 24px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">
+    Loading patch {{ patchLabel }}…
+  </div>
+  </sc-if>
+
+  <!-- ============== PAGE BODY · REAL PATCH ============== -->
+  <sc-if value="{{ hasPatch }}" hint-placeholder-val="{{ true }}">
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <!-- ============== PATCH HEADER ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+
+      <!-- top row · candidate + target -->
+      <div style="padding:20px 24px;border-bottom:1px solid #1D2630">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.14em;margin-bottom:6px">PATCH CANDIDATE</div>
+        <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+          <span style="font-size:30px;line-height:1;font-weight:700;color:#E8EDF3;letter-spacing:-0.02em">{{ patchId }}</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8C84A">{{ kind }}</span>
+        </div>
+        <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;line-height:1.55">
+          target <span style="color:#E8EDF3">{{ targetType }}</span> · kind <span style="color:#E8EDF3">{{ kind }}</span>
+        </div>
+      </div>
+
+      <!-- bottom row · before → after detection, full width -->
+      <div style="padding:18px 24px 20px">
+        <div style="display:flex;align-items:center;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.08em;margin-bottom:14px">
+          DETECTION BEFORE → AFTER · ON SEALED HELD-OUT
+          <button class="om-info" aria-label="About held-out re-eval" title="The patch is re-validated on an up-front held-out attack set that never overlaps the patch's training attacks. The validator refuses on contamination.">i</button>
+        </div>
+        <sc-if value="{{ hasHoldout }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:18px">
+          <sc-for list="{{ holdoutRuns }}" as="h" hint-placeholder-count="1">
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">detection · {{ h.sizeLabel }}</div>
+            <div style="display:flex;align-items:baseline;gap:6px;font-family:'IBM Plex Mono',monospace;margin-top:4px">
+              <span style="color:#8A94A2;font-size:13px">{{ h.before }}</span>
+              <span style="color:#8A94A2">→</span>
+              <span style="color:#E8EDF3;font-size:20px;font-weight:600">{{ h.after }}</span>
+            </div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:{{ h.deltaColor }};margin-top:2px">{{ h.deltaLabel }}</div>
+          </div>
+          </sc-for>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">verdict</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;color:{{ recoveredColor }};margin-top:6px">{{ recoveredLabel }}</div>
+          </div>
+        </div>
+        </sc-if>
+        <sc-if value="{{ noHoldout }}" hint-placeholder-val="{{ false }}">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2">No held-out validation recorded for this patch yet.</div>
+        </sc-if>
+      </div>
+    </div>
+
+    <!-- ============== PRODUCED MODEL VERSION ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Produced model version</span>
+        <button class="om-info" aria-label="About model versions" title="Hardening never edits the vendor model. Each accepted patch produces a new versioned artifact at the next version integer.">i</button>
+      </div>
+      <sc-if value="{{ hasVersions }}" hint-placeholder-val="{{ true }}">
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 1.2fr;gap:14px;padding:9px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Version</span><span>Artifact</span><span>Metrics</span>
+      </div>
+      <sc-for list="{{ modelVersions }}" as="m" hint-placeholder-count="1">
+      <div role="row" style="display:grid;grid-template-columns:120px 1fr 1.2fr;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <span style="color:#E8EDF3">v{{ m.version }}</span>
+        <span style="color:#B8C2CE;overflow-wrap:anywhere">{{ m.artifactRef }}</span>
+        <span style="color:#B8C2CE;overflow-wrap:anywhere">{{ m.metricsLabel }}</span>
+      </div>
+      </sc-for>
+      </sc-if>
+      <sc-if value="{{ noVersions }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2">No hardened model version produced for this patch yet.</div>
+      </sc-if>
+    </div>
+
+    <!-- ============== PATCH DETAIL ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Patch detail</span>
+      </div>
+      <pre style="margin:0;padding:14px 16px;color:#B8C2CE;white-space:pre-wrap;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.6">{{ detailJson }}</pre>
+    </div>
+
+    <!-- ============== PROVENANCE ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Provenance</span>
+      </div>
+      <sc-if value="{{ hasProvenance }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:6px 0">
+        <sc-for list="{{ provenance }}" as="p" hint-placeholder-count="1">
+        <div style="padding:9px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;overflow-wrap:anywhere">{{ p }}</div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ noProvenance }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:16px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2">No provenance recorded.</div>
+      </sc-if>
+    </div>
+
+    <!-- ============== AUDIT TRACE ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Audit trace</span>
+      </div>
+      <pre style="margin:0;padding:14px 16px;color:#B8C2CE;white-space:pre-wrap;overflow-x:auto;font-family:'IBM Plex Mono',monospace;font-size:13px;line-height:1.6">{{ auditJson }}</pre>
+    </div>
+
+  </div>
+  </sc-if>
+
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    // phase: 'empty' (no ?patch), 'loading', 'patch' (loaded), 'notfound' (404/error)
+    phase: 'empty',
+    patchId: null,   // from ?patch= query param
+    patch: null,     // GET /blue/{patch_id} response
+  };
+
+  componentDidMount() {
+    const params = new URLSearchParams(location.search);
+    const pid = (params.get('patch') || '').trim();
+    if (!pid) {
+      this.setState({ phase: 'empty', patchId: null });
+      return;
+    }
+    this.setState({ phase: 'loading', patchId: pid });
+    this.loadPatch(pid);
+  }
+
+  loadPatch(pid) {
+    fetch('/blue/' + encodeURIComponent(pid))
+      .then(r => {
+        if (!r.ok) return null;
+        return r.json();
+      })
+      .then(patch => {
+        if (patch && patch.patch_id) {
+          this.setState({ phase: 'patch', patch });
+        } else {
+          this.setState({ phase: 'notfound', patch: null });
+        }
+      })
+      .catch(() => this.setState({ phase: 'notfound', patch: null }));
+  }
+
+  fmtRatio(x) {
+    if (x === null || x === undefined || isNaN(x)) return '—';
+    return Number(x).toFixed(3);
+  }
+
+  pretty(obj) {
+    if (obj === null || obj === undefined) return '—';
+    try { return JSON.stringify(obj, null, 2); } catch (e) { return String(obj); }
+  }
+
+  renderVals() {
+    const phase = this.state.phase;
+    const pid = this.state.patchId;
+    const patch = this.state.patch;
+
+    // chrome status pill
+    let statusDot = '#7C8896', statusLabel = 'No patch selected';
+    if (phase === 'loading') { statusDot = '#D9A441'; statusLabel = 'Loading…'; }
+    else if (phase === 'notfound') { statusDot = '#E5736B'; statusLabel = 'Patch not found'; }
+    else if (phase === 'patch') { statusDot = '#57C08A'; statusLabel = 'Loaded'; }
+
+    // honest empty / not-found copy — never fabricated patch data
+    let emptyTitle, emptyBody;
+    if (phase === 'notfound') {
+      emptyTitle = 'Patch not found';
+      emptyBody = 'No blue patch matches "' + (pid || '') + '". There are currently no blue patches in the database, and there is no blue-trigger route to create one. Patches appear here once the blue loop has produced and persisted one.';
+    } else {
+      emptyTitle = 'No patch selected';
+      emptyBody = 'Open this page with a ?patch=<id> query to review a blue patch. There are currently no blue patches in the database, so no list is shown.';
+    }
+
+    const vals = {
+      patchLabel: pid || 'none',
+      statusDot, statusLabel,
+      isEmpty: phase === 'empty' || phase === 'notfound',
+      isLoading: phase === 'loading',
+      hasPatch: phase === 'patch',
+      emptyTitle, emptyBody,
+    };
+
+    if (phase !== 'patch' || !patch) return vals;
+
+    const holdout = Array.isArray(patch.holdout_runs) ? patch.holdout_runs : [];
+    const versions = Array.isArray(patch.model_versions) ? patch.model_versions : [];
+    const prov = Array.isArray(patch.provenance) ? patch.provenance : [];
+
+    // recovered verdict is an OR across held-out runs — honest "did not generalize"
+    // when no run recovered.
+    const anyRecovered = holdout.some(h => h && h.recovered);
+
+    return Object.assign(vals, {
+      patchId: patch.patch_id,
+      targetType: patch.target_type || '—',
+      kind: patch.kind || '—',
+
+      hasHoldout: holdout.length > 0,
+      noHoldout: holdout.length === 0,
+      holdoutRuns: holdout.map(h => {
+        const before = Number(h.detection_before);
+        const after = Number(h.detection_after);
+        const delta = (isNaN(before) || isNaN(after)) ? null : after - before;
+        let deltaLabel = '—', deltaColor = '#8A94A2';
+        if (delta !== null) {
+          const arrow = delta > 0 ? '↑' : (delta < 0 ? '↓' : '±');
+          deltaLabel = arrow + ' ' + Math.abs(delta).toFixed(3);
+          deltaColor = delta > 0 ? '#57C08A' : (delta < 0 ? '#E5736B' : '#8A94A2');
+        }
+        return {
+          sizeLabel: (h.holdout_size != null ? h.holdout_size : '?') + ' held-out',
+          before: this.fmtRatio(before),
+          after: this.fmtRatio(after),
+          deltaLabel, deltaColor,
+        };
+      }),
+      recoveredColor: anyRecovered ? '#57C08A' : '#E5736B',
+      recoveredLabel: anyRecovered ? 'recovered' : 'did not generalize',
+
+      hasVersions: versions.length > 0,
+      noVersions: versions.length === 0,
+      modelVersions: versions.map(m => ({
+        version: (m.version != null ? m.version : '—'),
+        artifactRef: m.artifact_ref || '—',
+        metricsLabel: this.pretty(m.metrics),
+      })),
+
+      hasProvenance: prov.length > 0,
+      noProvenance: prov.length === 0,
+      provenance: prov,
+
+      detailJson: this.pretty(patch.detail),
+      auditJson: this.pretty(patch.audit_trace),
+    });
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

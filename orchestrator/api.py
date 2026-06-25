@@ -892,7 +892,7 @@ async def root() -> RedirectResponse:
 @app.get("/app")
 async def app_root() -> RedirectResponse:
     """Route '/' of the dashboard maps to the Run Launcher (frontend/index.html)."""
-    return RedirectResponse(url="/app/slice-01-run-launcher.dc.html")
+    return RedirectResponse(url="/app/Run%20Launcher.dc.html")
 
 
 @app.get("/app/{path:path}")
@@ -908,7 +908,9 @@ async def app_static(path: str) -> Any:
         raise HTTPException(status_code=404, detail="not found")
     if target.suffix.lower() == ".html":
         html = target.read_text(encoding="utf-8")
-        if _LIVE_TAG not in html:
+        # New React-harness design self-wires data in each slice's inline script;
+        # the old data-live sidecar (live.js) no longer applies.
+        if False and _LIVE_TAG not in html:
             html = (
                 html.replace("</body>", f"{_LIVE_TAG}\n</body>", 1)
                 if "</body>" in html

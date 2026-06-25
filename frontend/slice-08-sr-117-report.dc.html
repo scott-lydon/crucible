@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#F5F2EC;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;color:#1A2330}
+  .md-body h1{margin:0 0 6px;font-size:22px;font-weight:700;letter-spacing:-0.01em;color:#1A2330}
+  .md-body h2{margin:26px 0 8px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-transform:uppercase;letter-spacing:.1em;color:#5C6A7A;font-weight:600}
+  .md-body p{margin:0 0 14px}
+  .md-body em{color:#5C6A7A;font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:12px;display:block;margin:0 0 18px}
+  .md-body ul{margin:0 0 16px;padding-left:20px}
+  .md-body li{margin:0 0 5px}
+  .md-body a{color:#2E6E84;text-decoration:none;border-bottom:1px solid #C5D6DC}
+  .md-body a:hover{border-bottom-color:#2E6E84}
+  .md-body code{font-family:'IBM Plex Mono',monospace;font-size:12px;background:#FAF7F1;border:1px solid #E0DBD2;border-radius:3px;padding:1px 5px;color:#1A2330}
+  @media print {
+    body{background:#fff}
+    .no-print{display:none !important}
+    .page{box-shadow:none !important;margin:0 !important;page-break-after:always}
+  }
+</style>
+</helmet>
+
+<div data-screen-label="SR 11-7 Report · auto-drafted" style="min-height:100vh;background:#F5F2EC;color:#1A2330;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:13px;line-height:1.6">
+
+  <!-- floating chrome (hidden on print) -->
+  <div class="no-print" style="position:sticky;top:0;z-index:40;background:#1A2330;border-bottom:1px solid #2C3744;color:#E8EDF3">
+    <div style="display:flex;align-items:center;gap:16px;padding:12px 22px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:12px">
+      <span style="font-weight:600">Crucible · SR 11-7 export preview</span>
+      <span style="color:#B8C2CE">{{ runChip }}</span>
+      <div style="flex:1"></div>
+      <button onClick="{{ doPrint }}" style="background:#4FAAC0;color:#0E141B;border:0;font:inherit;font-weight:600;padding:7px 14px;border-radius:5px;cursor:pointer">print / save PDF</button>
+      <a href="{{ pdfHref }}" download style="color:#4FAAC0;text-decoration:none">download .pdf</a>
+    </div>
+  </div>
+
+  <!-- loading state -->
+  <sc-if value="{{ isLoading }}">
+    <div class="page" style="max-width:880px;margin:24px auto;background:#FFFFFF;padding:60px 64px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid #E0DBD2;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#5C6A7A">
+      Loading report…
+    </div>
+  </sc-if>
+
+  <!-- empty / error state (no run or fetch failed) -->
+  <sc-if value="{{ isEmpty }}">
+    <div class="page" style="max-width:880px;margin:24px auto;background:#FFFFFF;padding:60px 64px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid #E0DBD2">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#5C6A7A;text-transform:uppercase">Model Risk Report</div>
+      <h1 style="margin:6px 0 12px;font-size:22px;font-weight:700;letter-spacing:-0.01em">No report to show</h1>
+      <p style="margin:0;color:#5C6A7A;max-width:52ch">{{ emptyMessage }}</p>
+    </div>
+  </sc-if>
+
+  <!-- printable page, rendered from the real report markdown -->
+  <sc-if value="{{ hasReport }}">
+    <div class="page" style="max-width:880px;margin:24px auto;background:#FFFFFF;padding:60px 64px 80px;box-shadow:0 2px 14px rgba(0,0,0,.06);border:1px solid #E0DBD2">
+      <div class="md-body" style="border-top:2px solid #1A2330;padding-top:24px">{{ body }}</div>
+      <div style="margin-top:34px;padding-top:14px;border-top:1px solid #E0DBD2;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#5C6A7A;display:flex;justify-content:space-between">
+        <span>{{ footerLabel }}</span><span>auto-drafted by Crucible</span>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    status: 'loading',   // loading | ready | empty
+    runId: null,
+    markdown: '',
+    error: null,
+  };
+
+  // Default to the real completed run of record when ?run= is absent.
+  DEFAULT_RUN = '704cdb1392904c5b8032bf987ca9457f';
+
+  componentDidMount() {
+    let runId = this.DEFAULT_RUN;
+    try {
+      const q = new URLSearchParams(window.location.search).get('run');
+      if (q) runId = q;
+    } catch (e) {}
+    this.setState({ runId });
+    fetch('/reports/' + encodeURIComponent(runId))
+      .then(r => {
+        if (!r.ok) throw new Error('report ' + r.status);
+        return r.json();
+      })
+      .then(resp => this.setState({
+        status: 'ready',
+        markdown: (resp && resp.markdown) || '',
+        runId: (resp && resp.run_id) || runId,
+      }))
+      .catch(err => this.setState({ status: 'empty', error: String(err && err.message || err) }));
+  }
+
+  // --- minimal markdown -> React renderer for the SR 11-7 report shape ---
+  // The report markdown is generated server-side and uses: # / ## headings,
+  // a single _italic_ subtitle line, "- " bullet lists, [text](url) links,
+  // and inline `code`. Nothing here is fabricated; every node is the verbatim
+  // text returned by GET /reports/{run_id}.
+  renderInline(text, keyPrefix) {
+    const out = [];
+    // Split on links [label](href) and inline `code`, preserving order.
+    const re = /(\[[^\]]+\]\([^)]+\))|(`[^`]+`)/g;
+    let last = 0, m, i = 0;
+    while ((m = re.exec(text)) !== null) {
+      if (m.index > last) out.push(text.slice(last, m.index));
+      if (m[1]) {
+        const lm = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(m[1]);
+        out.push(React.createElement(
+          'a',
+          { key: keyPrefix + '-a' + (i++), href: lm[2] },
+          lm[1]
+        ));
+      } else if (m[2]) {
+        out.push(React.createElement('code', { key: keyPrefix + '-c' + (i++) }, m[2].slice(1, -1)));
+      }
+      last = re.lastIndex;
+    }
+    if (last < text.length) out.push(text.slice(last));
+    return out;
+  }
+
+  renderMarkdown(md) {
+    const lines = String(md).replace(/\r\n/g, '\n').split('\n');
+    const blocks = [];
+    let list = null, key = 0;
+    const flushList = () => {
+      if (list) {
+        blocks.push(React.createElement('ul', { key: 'ul' + (key++) }, list));
+        list = null;
+      }
+    };
+    lines.forEach((raw) => {
+      const line = raw.replace(/\s+$/, '');
+      if (!line.trim()) { flushList(); return; }
+      if (line.startsWith('# ')) {
+        flushList();
+        blocks.push(React.createElement('h1', { key: 'h' + (key++) }, this.renderInline(line.slice(2), 'h' + key)));
+      } else if (line.startsWith('## ')) {
+        flushList();
+        blocks.push(React.createElement('h2', { key: 'h' + (key++) }, this.renderInline(line.slice(3), 'h' + key)));
+      } else if (line.startsWith('- ')) {
+        if (!list) list = [];
+        const k = 'li' + (key++);
+        list.push(React.createElement('li', { key: k }, this.renderInline(line.slice(2), k)));
+      } else if (/^_.*_$/.test(line.trim())) {
+        flushList();
+        const inner = line.trim().replace(/^_/, '').replace(/_$/, '');
+        blocks.push(React.createElement('em', { key: 'em' + (key++) }, this.renderInline(inner, 'em' + key)));
+      } else {
+        flushList();
+        blocks.push(React.createElement('p', { key: 'p' + (key++) }, this.renderInline(line, 'p' + key)));
+      }
+    });
+    flushList();
+    return blocks;
+  }
+
+  doPrint() {
+    if (typeof window !== 'undefined' && window.print) window.print();
+  }
+
+  renderVals() {
+    const s = this.state;
+    const runId = s.runId || '';
+    const shortId = runId ? runId.slice(0, 12) : '';
+    return {
+      isLoading: s.status === 'loading',
+      isEmpty: s.status === 'empty',
+      hasReport: s.status === 'ready' && !!s.markdown,
+      runChip: runId ? ('run ' + shortId) : 'no run',
+      pdfHref: runId ? ('/reports/' + runId + '.pdf') : '#',
+      doPrint: () => this.doPrint(),
+      emptyMessage: s.error
+        ? ('Could not load a report for this run (' + s.error + '). Start a run and complete it, then open its report from the run page.')
+        : 'No completed run was selected. Append ?run=<run_id> to view a specific report.',
+      body: s.markdown ? this.renderMarkdown(s.markdown) : null,
+      footerLabel: runId ? ('run ' + shortId + ' · crucible') : 'crucible',
+    };
+  }
+}
+</script>
+</body>
+</html>

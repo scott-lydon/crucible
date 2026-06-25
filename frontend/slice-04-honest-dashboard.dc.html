@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+</style>
+</helmet>
+
+<!--
+====================================================================
+STUB-MANIFEST · slice-04-honest-dashboard
+====================================================================
+Every value/region listed below is a fixture. The coding agent should
+wire each to its named source and delete the matching STUB marker.
+See STUB_PROTOCOL.md for the grep recipe.
+
+  KPIs (headline strip)
+    STUB:metric source=api.dashboard.kpi.undetected_hack_rate   unit=ratio  ("0.018")
+    STUB:metric source=api.dashboard.kpi.val_heldout_gap        unit=ratio  ("0.04")
+    STUB:metric source=api.dashboard.kpi.verifier_recall        unit=ratio  ("0.94")
+    STUB:metric source=api.dashboard.kpi.cost_per_undetected    unit=usd    ("$21.30")
+    STUB:metric source=api.dashboard.kpi.human_min_per_1k       unit=min    ("3.4")
+    STUB:count  source=api.dashboard.window.runs                            ("142")
+    STUB:cost   source=api.budget.month                         unit=usd    ("$1,847 / $5,000")
+    STUB:time   source=api.dashboard.window                     format=iso  ("2026-05-24 → 2026-06-22")
+    STUB:time   source=compute.now()                                        ("09:32:14Z")
+    STUB:id     source=spec.held_out_corpus.sha                             ("7d12…f4a")
+
+  Charts (SVG polyline points)
+    STUB:series source=api.dashboard.series.asr_30d              count=30 shape=number[] note="amber line"
+    STUB:series source=api.dashboard.series.detection_30d        count=30 shape=number[] note="cyan line"
+    STUB:series source=api.dashboard.halts_30d                   shape={run_id,ts} note="halt markers r.117 r.131"
+    STUB:series source=api.dashboard.coevolution.last12_rounds   count=13 shape={round,red,blue}
+    STUB:series source=api.dashboard.cost_per_hack.histogram     shape=number[] note="bar heights"
+    STUB:series source=api.dashboard.health.subsystems           shape={name,status,latency_ms}
+    STUB:series source=api.dashboard.runs.list?window=30d        count=8  shape={id,started_at,rounds,verdict,asr,det,cost_usd,mins,spec,audit}
+    STUB:series source=api.dashboard.audit_replays.last24h       count=24 shape=number[]  note="hour buckets"
+    STUB:series source=api.dashboard.audit_replays.list?limit=8  shape={ts,row_id,by,reason,hash,status}
+
+  Inline ids/handles/codes
+    STUB:id     source=db.runs.list[].id                         (r_8f3a, r_8f39, …)
+    STUB:id     source=db.specs.current.short_hash               ("9f2a4c7b")
+    STUB:id     source=db.audit_rows.list[].id                   (a_8f3a_032_meta_1, …)
+    STUB:id     source=db.audit_rows.list[].content_hash         ("9c4b…2e10", "b71d…8a44", …)
+    STUB:user   source=auth.users.list                           ("s.lydon", "k.osei")
+
+  Dead navs
+    STUB:link   source=route.runs.list / route.audit / route.health / route.runs.detail(:id) / route.audit.replayer(:id) / route.audit.replay_archive(:tgz)
+                — every <a href="#" data-stub="link:TBD"> in this file
+
+LEGEND   kind one of: id metric series text link time user cost count status code
+         see STUB_PROTOCOL.md §3
+====================================================================
+-->
+
+<div data-screen-label="Outcomes" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        
+      </div>
+      <nav aria-label="Primary" style="display:flex;gap:2px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span style="padding:6px 11px;color:#E8EDF3;background:#19222C;border-radius:5px 5px 0 0;border-bottom:2px solid #4FAAC0">Dashboard</span>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Runs</a>
+        <a href="slice-01-strategy-catalog.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Strategies</a>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Audit</a>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Health</a>
+      </nav>
+      <div style="flex:1"></div>
+
+      <!-- window selector -->
+      <div role="group" aria-label="Time window" style="display:flex;border:1px solid #2C3744;background:#0E141B;border-radius:6px;padding:3px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span style="padding:4px 10px;color:#B8C2CE;border-radius:4px">24h</span>
+        <span style="padding:4px 10px;color:#B8C2CE;border-radius:4px">7d</span>
+        <span style="padding:4px 10px;background:#19222C;color:#E8EDF3;border-radius:4px 4px 0 0;border-bottom:2px solid #4FAAC0;display:inline-flex;align-items:baseline;gap:6px">30d <span style="color:#B8C2CE;font-size:11px">· selected</span></span>
+        <span style="padding:4px 10px;color:#B8C2CE;border-radius:4px">90d</span>
+        <span style="padding:4px 10px;color:#B8C2CE;border-radius:4px">all</span>
+      </div>
+
+      <div style="display:flex;align-items:stretch;font-family:'IBM Plex Mono',monospace;background:#161E27;border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="padding:7px 12px;display:flex;flex-direction:column;gap:2px;line-height:1.3">
+          <span style="color:#B8C2CE;font-size:12px;letter-spacing:.06em">MONTH</span>
+          <span style="color:#E8EDF3;font-size:13px;font-weight:500">{{ spentLabel }} <span style="color:#B8C2CE;font-weight:400">/ {{ ceilingLabel }}</span></span>
+        </div>
+      </div>
+
+      <button style="background:#4FAAC0;color:#0E141B;border:none;border-radius:5px;padding:8px 14px;font-weight:600;font-family:inherit;font-size:13px;cursor:pointer">Export SR&nbsp;11-7</button>
+    </div>
+
+    <!-- secondary strip: window context + scope -->
+    <div style="display:flex;gap:18px;align-items:center;padding:9px 22px;background:#0B1116;border-top:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;flex-wrap:wrap">
+      <span><span style="color:#8A94A2">scope ·</span> all sealed specs</span>
+      <span style="color:#2C3744">|</span>
+      <span><span style="color:#8A94A2">judged runs ·</span> <span style="color:#E8EDF3">{{ judgedLabel }}</span></span>
+      <span style="color:#2C3744">|</span>
+      <span><span style="color:#8A94A2">last measured ·</span> {{ lastMeasuredLabel }}</span>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1400px;margin:0 auto;padding:32px 24px 96px">
+
+    <!-- ============== HEADLINE NUMBER ============== -->
+    <div style="margin-bottom:24px">
+      <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Outcomes</h1>
+      <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">computed on the sealed held-out corpus · {{ lastMeasuredLabel }}</div>
+    </div>
+
+    <!-- HEADLINE: undetected-hack rate -->
+    <div style="display:grid;grid-template-columns:minmax(420px,1.05fr) 1fr;gap:20px;margin-bottom:20px">
+      <!-- big number -->
+      <div style="border:1px solid #2C3744;border-radius:12px;background:linear-gradient(180deg,#161E27 0%,#11181F 100%);padding:24px 26px;position:relative;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.14em;color:#B8C2CE;text-transform:uppercase">Undetected-hack rate</span>
+          <button class="om-info" aria-label="About undetected-hack rate" title="Attacks the producer slipped past every oracle on the sealed held-out corpus.">i</button>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2">ratio · ↓ better</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:14px;margin-top:6px">
+          <span style="font-size:78px;line-height:1;font-weight:700;color:{{ undetectedColor }};letter-spacing:-0.03em;font-feature-settings:'tnum'">{{ undetectedRate }}</span>
+        </div>
+        <div style="margin-top:18px;display:flex;gap:8px;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+          <sc-if value="{{ hasJudged }}" hint-placeholder-val="{{ true }}">
+            <span style="color:#8A94A2">{{ undetectedBasisLabel }}</span>
+          </sc-if>
+          <sc-if value="{{ noJudged }}" hint-placeholder-val="{{ false }}">
+            <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this →</a>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- four supporting numbers -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+
+        <!-- val vs heldout gap -->
+        <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Val–heldout gap</span>
+            <button class="om-info" aria-label="About val–heldout gap" title="Validation score minus held-out score. A large gap means the producer memorized the test set.">i</button>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:34px;font-weight:700;color:#E8EDF3;line-height:1;font-feature-settings:'tnum'">{{ gapValue }}</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ gapBasisLabel }} <span style="color:#8A94A2">· black − white box · ↓ better</span></div>
+        </div>
+
+        <!-- recall -->
+        <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Recall</span>
+            <button class="om-info" aria-label="About recall" title="Catch rate on the held-out attack set. Red line: the halt threshold.">i</button>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:34px;font-weight:700;color:#E8EDF3;line-height:1;font-feature-settings:'tnum'">{{ recallValue }}</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">red line {{ recallRedLine }} <span style="color:#8A94A2">· ↑ better · {{ recallMarginLabel }}</span></div>
+        </div>
+
+        <!-- cost / hack -->
+        <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Cost / undetected hack</span>
+            <button class="om-info" aria-label="About cost per hack" title="Dollars spent per attack that slipped through.">i</button>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:20px;font-weight:600;color:#8A94A2;line-height:1.2;font-family:'IBM Plex Mono',monospace">Not yet measured</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this →</a></div>
+        </div>
+
+        <!-- human-min / 1k -->
+        <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:16px 18px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Human-min / 1k</span>
+            <button class="om-info" aria-label="About human minutes per thousand" title="Human minutes triggered per 1,000 inferences.">i</button>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:20px;font-weight:600;color:#8A94A2;line-height:1.2;font-family:'IBM Plex Mono',monospace">Not yet measured</span>
+          </div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this →</a></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============== RECALL vs HALT THRESHOLD ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:20px 22px;margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Recall vs halt threshold</h2>
+        </div>
+        <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;flex-wrap:wrap;align-items:center">
+          <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:2px;background:#4FAAC0"></span>Recall <span style="color:#E8EDF3">{{ recallValue }}</span> <span style="color:#4FAAC0">&uarr; better</span></span>
+          <span style="display:flex;align-items:center;gap:6px;color:#B8C2CE"><span style="width:14px;height:0;border-top:1px dashed #E5736B"></span>red line {{ recallRedLine }}</span>
+        </div>
+      </div>
+      <div style="margin:0 0 12px;padding:8px 12px;background:#0E141B;border:1px solid #232E39;border-radius:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;line-height:1.55">Current held-out recall is <span style="color:#E8EDF3">{{ recallValue }}</span>; the run halts when recall drops below the <span style="color:#E8EDF3">{{ recallRedLine }}</span> red line. {{ haltStatusLabel }}</div>
+      <sc-if value="{{ noJudged }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:28px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No run history to chart yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
+      </sc-if>
+      <sc-if value="{{ hasJudged }}" hint-placeholder-val="{{ true }}">
+        <div style="position:relative;height:30px;background:#0E141B;border:1px solid #1D2630;border-radius:6px;overflow:hidden;margin-top:6px">
+          <div style="position:absolute;top:0;left:0;height:100%;width:{{ recallPct }};background:#316E7E"></div>
+          <div style="position:absolute;top:0;bottom:0;left:{{ redLinePct }};width:2px;background:#E5736B"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2">
+          <span>0.0</span>
+          <span style="color:#E5736B">red line {{ recallRedLine }}</span>
+          <span style="color:#4FAAC0">recall {{ recallValue }}</span>
+          <span>1.0</span>
+        </div>
+      </sc-if>
+    </div>
+
+
+    <!-- ============== TWO-COL ROW: CO-EVOLUTION + COST/HACK ============== -->
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:20px">
+
+      <!-- co-evolution -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:20px 22px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Red &harr; Blue co-evolution</h2>
+          <button class="om-info" aria-label="About co-evolution" title="Red invents new attacks; blue patches the verifier. The curves narrowing means the system is stabilizing.">i</button>
+        </div>
+        <div style="padding:36px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No co-evolution rounds recorded yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
+      </div>
+
+      <!-- cost / hack histogram -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:20px 22px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Cost per hack &middot; distribution</h2>
+          <button class="om-info" aria-label="About cost distribution" title="Dollars per slipped attack, by run. A long right tail means some specs are expensive to break.">i</button>
+        </div>
+        <div style="padding:36px 12px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No surfaced hacks to chart yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
+      </div>
+    </div>
+
+    <!-- ============== HEALTH STRIP (US-8) ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:18px 22px;margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+        <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">System health</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">live &middot; {{ dbStatusLabel }}</span>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Targets</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">
+        <sc-for list="{{ targetCards }}" as="t" hint-placeholder-count="3">
+          <div style="background:#11181F;border:1px solid #232E39;border-radius:7px;padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;margin-bottom:8px"><span style="width:8px;height:8px;border-radius:50%;background:{{ t.dot }}"></span>{{ t.label }}</div>
+            <div style="color:#E8EDF3;font-size:14px;font-weight:600">{{ t.name }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ t.detail }}</div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">Oracles &middot; {{ oracleSummaryLabel }}</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">
+        <sc-for list="{{ oracleCards }}" as="o" hint-placeholder-count="5">
+          <div style="background:#11181F;border:1px solid #232E39;border-radius:7px;padding:12px 14px">
+            <div style="display:flex;align-items:center;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;margin-bottom:8px"><span style="width:8px;height:8px;border-radius:50%;background:{{ o.dot }}"></span>{{ o.label }}</div>
+            <div style="color:#E8EDF3;font-size:14px;font-weight:600">{{ o.name }}</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ o.detail }}</div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <!-- ============== RECENT RUNS ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Recent runs</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ judgedLabel }}</span>
+      </div>
+      <div style="padding:40px 22px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No runs recorded yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
+    </div>
+
+    <!-- ============== AUDIT ROW REPLAYS ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:20px">
+      <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
+        <h2 style="margin:0;font-size:15px;font-weight:600;color:#E8EDF3">Audit row replays</h2>
+      </div>
+      <div style="padding:40px 22px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#8A94A2">No audit-row replays recorded yet. <a href="Run Launcher.dc.html" style="color:#4FAAC0;text-decoration:none">start a run to measure this &rarr;</a></div>
+    </div>
+
+    <!-- ============== METHODOLOGY FOOTER ============== -->
+    <div style="border:1px dashed #2C3744;border-radius:10px;padding:18px 22px;color:#B8C2CE;background:#11181F">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.12em;text-transform:uppercase">
+        <span>Methodology</span>
+        <span>·</span>
+        <a href="slice-08-sr-117-report.dc.html" style="color:#4FAAC0;text-transform:none;letter-spacing:0">open SR 11-7 report →</a>
+      </div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;line-height:1.6">
+        Numbers come from a <span style="color:#E8EDF3">sealed held-out corpus</span> the producer never sees, graded by a verifier the producer never sees. Runs halt when recall drops below the <span style="color:#E8EDF3">{{ recallRedLine }}</span> red line. If validation looks good and production looks bad, our numbers are wrong, not production.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      metrics: null,        // GET /metrics
+      spend: null,          // GET /spend/current-month
+      halt: null,           // GET /halt
+      health: null,         // GET /health
+      targets: [],          // GET /targets/registered
+      targetHealth: {},     // {type: {status, detail}} from GET /health/targets/{type}
+      oracles: [],          // GET /oracles/registered .oracles
+      oracleRegistry: null, // full GET /oracles/registered response
+      oracleHealth: {},     // {name: {status, detail}} from GET /health/oracles/{name}
+    };
+  }
+
+  componentDidMount() {
+    fetch('/metrics').then(r => r.ok ? r.json() : null)
+      .then(metrics => this.setState({ metrics })).catch(() => {});
+    fetch('/spend/current-month').then(r => r.ok ? r.json() : null)
+      .then(spend => this.setState({ spend })).catch(() => {});
+    fetch('/halt').then(r => r.ok ? r.json() : null)
+      .then(halt => this.setState({ halt })).catch(() => {});
+    fetch('/health').then(r => r.ok ? r.json() : null)
+      .then(health => this.setState({ health })).catch(() => {});
+    this.loadTargets();
+    this.loadOracles();
+  }
+
+  loadTargets() {
+    fetch('/targets/registered').then(r => r.ok ? r.json() : [])
+      .then(targets => {
+        const list = Array.isArray(targets) ? targets : [];
+        this.setState({ targets: list });
+        list.forEach(t => {
+          fetch('/health/targets/' + t.type).then(r => r.ok ? r.json() : null)
+            .then(h => this.setState({ targetHealth: { ...this.state.targetHealth, [t.type]: h || {} } }))
+            .catch(() => {});
+        });
+      }).catch(() => {});
+  }
+
+  loadOracles() {
+    fetch('/oracles/registered').then(r => r.ok ? r.json() : null)
+      .then(reg => {
+        const list = (reg && Array.isArray(reg.oracles)) ? reg.oracles : [];
+        this.setState({ oracles: list, oracleRegistry: reg });
+        list.forEach(o => {
+          fetch('/health/oracles/' + o.name).then(r => r.ok ? r.json() : null)
+            .then(h => this.setState({ oracleHealth: { ...this.state.oracleHealth, [o.name]: h || {} } }))
+            .catch(() => {});
+        });
+      }).catch(() => {});
+  }
+
+  // ratio (0..1) -> "100.0%"; null/undefined -> "Not yet measured"
+  pct(ratio) {
+    if (ratio === null || ratio === undefined || Number.isNaN(ratio)) return 'Not yet measured';
+    return (ratio * 100).toFixed(1) + '%';
+  }
+  usd(n) { return '$' + Number(n).toFixed(2); }
+
+  statusDot(status) {
+    if (status === 'green') return '#57C08A';
+    if (status === 'yellow' || status === 'slow' || status === 'degraded') return '#D9A441';
+    if (status === 'red' || status === 'down') return '#E5736B';
+    return '#3A4654';
+  }
+
+  renderVals() {
+    const m = this.state.metrics || {};
+    const wb = m.white_box_catch_rate;       // undetected-hack rate basis (white box)
+    const judged = wb && wb.judged != null ? wb.judged : null;
+    const undetected = wb && wb.undetected != null ? wb.undetected : null;
+    const hasJudged = judged != null && judged > 0;
+    const undetectedRatio = hasJudged ? (undetected / judged) : null;
+
+    // --- undetected-hack rate (headline) ---
+    const undetectedRate = hasJudged ? this.pct(undetectedRatio) : 'Not yet measured';
+    const undetectedColor = !hasJudged ? '#8A94A2'
+      : (undetectedRatio <= 0.05 ? '#57C08A' : (undetectedRatio <= 0.20 ? '#D9A441' : '#E5736B'));
+    const undetectedBasisLabel = hasJudged
+      ? (undetected + ' undetected of ' + judged + ' judged (white box)')
+      : '';
+
+    // --- val (black box) vs heldout (white box) gap ---
+    const gap = (m.catch_rate_gap === null || m.catch_rate_gap === undefined) ? null : m.catch_rate_gap;
+    const bb = m.black_box_catch_rate;
+    const gapValue = this.pct(gap);
+    const gapBasisLabel = (bb && wb)
+      ? ('black ' + this.pct(bb.rate) + ' · white ' + this.pct(wb.rate))
+      : 'Not yet measured';
+
+    // --- recall (white box rate) + red line from /halt threshold ---
+    const recallRatio = wb && wb.rate != null ? wb.rate : null;
+    const recallValue = this.pct(recallRatio);
+    const halt = this.state.halt || {};
+    const threshold = halt.threshold != null ? halt.threshold : null;
+    const recallRedLine = threshold != null ? threshold.toFixed(2) : 'Not yet measured';
+    const recallMarginLabel = (recallRatio != null && threshold != null)
+      ? ('margin ' + (recallRatio - threshold).toFixed(2))
+      : '';
+    const haltStatusLabel = halt.halted === true
+      ? 'Currently HALTED.'
+      : (halt.halted === false ? 'Not halted.' : '');
+
+    // --- recall-vs-threshold bar (0..1 mapped to 0..100% width) ---
+    const recallPct = recallRatio != null ? (Math.max(0, Math.min(1, recallRatio)) * 100).toFixed(1) + '%' : '0%';
+    const redLinePct = threshold != null ? (Math.max(0, Math.min(1, threshold)) * 100).toFixed(1) + '%' : '0%';
+
+    // --- spend (NEVER $1,847 / $5,000) ---
+    const sp = this.state.spend;
+    const spentLabel = (sp && sp.spent_dollars != null) ? this.usd(sp.spent_dollars) : 'Not yet measured';
+    const ceilingLabel = (sp && sp.ceiling_dollars != null) ? this.usd(sp.ceiling_dollars) : 'no ceiling';
+
+    // --- judged-run / last-measured chrome ---
+    const judgedLabel = hasJudged ? (judged + ' judged') : 'Not yet measured';
+    const latestAt = (wb && wb.latest_at) || (bb && bb.latest_at) || null;
+    const lastMeasuredLabel = latestAt ? ('last measured ' + String(latestAt).slice(0, 19).replace('T', ' ') + 'Z') : 'not yet measured';
+
+    // --- system health: db ---
+    const health = this.state.health || {};
+    const dbStatusLabel = health.database ? ('db ' + health.database) : '/health';
+
+    // --- target cards (US-8) ---
+    const targetCards = (this.state.targets || []).map(t => {
+      const h = (this.state.targetHealth || {})[t.type] || {};
+      const status = h.status || 'unknown';
+      return {
+        label: (t.display_name || t.type || '').toUpperCase() + ' · ' + status,
+        dot: this.statusDot(status),
+        name: t.artifact_ref || t.type || '',
+        detail: t.description || '',
+      };
+    });
+
+    // --- oracle cards (US-8) ---
+    const reg = this.state.oracleRegistry;
+    const totalWeight = reg && reg.total_weight != null ? reg.total_weight : null;
+    const passThreshold = reg && reg.pass_threshold != null ? reg.pass_threshold : null;
+    const oracleCards = (this.state.oracles || []).map(o => {
+      const h = (this.state.oracleHealth || {})[o.name] || {};
+      const status = h.status || 'unknown';
+      const d = h.detail || {};
+      const model = d.model || d.second_model || '';
+      const wLabel = totalWeight != null ? (o.weight + ' / ' + totalWeight + ' weight') : (o.weight + ' weight');
+      return {
+        label: o.name.toUpperCase() + ' · ' + status,
+        dot: this.statusDot(status),
+        name: model || o.name,
+        detail: wLabel,
+      };
+    });
+    const oracleSummaryLabel = (totalWeight != null && passThreshold != null)
+      ? ('total weight ' + totalWeight + ' · pass threshold ' + passThreshold)
+      : (this.state.oracles.length ? (this.state.oracles.length + ' registered') : 'Not yet measured');
+
+    return {
+      undetectedRate, undetectedColor, undetectedBasisLabel,
+      hasJudged, noJudged: !hasJudged,
+      gapValue, gapBasisLabel,
+      recallValue, recallRedLine, recallMarginLabel, haltStatusLabel,
+      recallPct, redLinePct,
+      spentLabel, ceilingLabel,
+      judgedLabel, lastMeasuredLabel,
+      dbStatusLabel,
+      targetCards, oracleCards, oracleSummaryLabel,
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

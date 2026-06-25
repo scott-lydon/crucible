@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+</style>
+</helmet>
+
+<div data-screen-label="Strategy Catalog" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        
+      </div>
+      <nav aria-label="Primary" style="display:flex;gap:2px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <a href="slice-04-honest-dashboard.dc.html" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Dashboard</a>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Runs</a>
+        <span style="padding:6px 11px;color:#E8EDF3;background:#19222C;border-radius:5px 5px 0 0;border-bottom:2px solid #4FAAC0">Strategies</span>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Audit</a>
+        <a href="#" data-stub="link:TBD" style="padding:6px 11px;color:#B8C2CE;text-decoration:none;border-radius:5px">Health</a>
+      </nav>
+      <div style="flex:1"></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">scope · <span style="color:#E8EDF3">crucible</span> · catalog <span style="color:#E8EDF3">{{ tacticsCount }}</span></span>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1400px;margin:0 auto;padding:32px 24px 96px">
+
+    <!-- header -->
+    <div style="margin-bottom:20px;display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Strategy catalog</h1>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ subtitle }}</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <a href="/corpus.jsonl" title="exports the sealed attack corpus as JSONL" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;align-self:center">export JSON ↗</a>
+        <button style="background:#4FAAC0;color:#0E141B;border:none;border-radius:5px;padding:8px 14px;font-weight:600;font-family:inherit;font-size:13px;cursor:pointer">Pin to next run</button>
+      </div>
+    </div>
+
+    <!-- summary tiles · all values computed from GET /catalog; em-dash when not derivable -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px">
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">tactics</span><button class="om-info" aria-label="About tactics count" title="distinct red-team tactics in the catalog">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">{{ tacticsCount }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ tacticsSub }}</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">hacks surfaced</span><button class="om-info" aria-label="About hacks surfaced" title="evasions that succeeded against the target (evaded=true in the discovery audit)">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">{{ hacksCount }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ hacksSub }}</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">total reuse</span><button class="om-info" aria-label="About reuse" title="sum of reuse_count across catalog tactics">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">{{ reuseTotal }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ reuseSub }}</div>
+      </div>
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 18px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;letter-spacing:.12em;text-transform:uppercase">cost per tactic</span><button class="om-info" aria-label="About cost per tactic" title="mean avg_dollars_to_succeed across catalog tactics">i</button></div>
+        <div style="font-size:30px;font-weight:700;color:#E8EDF3;line-height:1.1;margin-top:6px;font-feature-settings:'tnum'">{{ costPerTactic }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:3px">{{ costSub }}</div>
+      </div>
+    </div>
+
+    <!-- search + filters -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:7px 12px;flex:1;min-width:280px;max-width:520px">
+        <span style="color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px">search</span>
+        <input type="text" placeholder="tactic id, name, obligation, class…" style="flex:1;background:none;border:none;outline:none;color:#E8EDF3;font-family:'IBM Plex Mono',monospace;font-size:13px;min-width:0" />
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;background:#161E27;border:1px solid #2C3744;border-radius:3px;padding:1px 6px">/</span>
+      </div>
+
+      <div role="tablist" aria-label="Status filter" style="display:flex;gap:2px;border:1px solid #2C3744;background:#0E141B;border-radius:6px;padding:3px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span role="tab" aria-selected="true" style="background:#19222C;color:#E8EDF3;border-radius:4px 4px 0 0;padding:4px 10px;border-bottom:2px solid #4FAAC0;display:inline-flex;align-items:baseline;gap:6px">All <span style="color:#B8C2CE;font-size:11px">· {{ tacticsCount }}</span></span>
+        <span role="tab" aria-selected="false" style="color:#8A94A2;border-radius:4px;padding:4px 10px" title="status not tracked in /catalog">Active <span style="color:#8A94A2">—</span></span>
+        <span role="tab" aria-selected="false" style="color:#8A94A2;border-radius:4px;padding:4px 10px" title="status not tracked in /catalog">Patched <span style="color:#8A94A2">—</span></span>
+        <span role="tab" aria-selected="false" style="color:#8A94A2;border-radius:4px;padding:4px 10px" title="status not tracked in /catalog">Superseded <span style="color:#8A94A2">—</span></span>
+      </div>
+
+      <div role="group" aria-label="Class filter" style="display:flex;flex-wrap:wrap;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:12px">
+        <span style="background:#19222C;color:#E8EDF3;border:1px solid #2C3744;border-radius:3px;padding:3px 9px">all classes</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">prompt-injection</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">unicode</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">casing</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">semantic</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">encoding</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">multi-turn</span>
+        <span style="background:#0E141B;color:#B8C2CE;border:1px solid #232E39;border-radius:3px;padding:3px 9px">numeric</span>
+      </div>
+    </div>
+
+    <!-- table -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow-x:auto">
+      <div role="row" style="display:grid;grid-template-columns:160px minmax(240px,1.4fr) 120px 90px 130px 220px;gap:14px;padding:10px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Tactic</span><span>Payload</span><span>Target</span><span>Reuse ▼</span><span>$/succeed</span><span>First run</span>
+      </div>
+
+      <!-- real rows · one per GET /catalog entry -->
+      <sc-for list="{{ rows }}" as="r" hint-placeholder-count="6">
+        <div role="row" style="display:grid;grid-template-columns:160px minmax(240px,1.4fr) 120px 90px 130px 220px;gap:14px;padding:13px 18px;border-bottom:1px solid #1D2630;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+          <span style="color:#4FAAC0" title="{{ r.tacticTitle }}">{{ r.tactic }}</span>
+          <span style="color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.prompt_fragment }}">{{ r.prompt_fragment }}</span>
+          <span style="display:inline-flex;align-items:center;background:#16313A;border:1px solid #2E5560;color:#9CD3DF;border-radius:3px;padding:2px 8px;font-size:11.5px;letter-spacing:.02em;align-self:center;width:max-content">{{ r.target_type }}</span>
+          <span style="color:#E8EDF3;text-align:right">{{ r.reuse_count }}</span>
+          <span style="color:#E8EDF3">{{ r.cost }}</span>
+          <span style="color:#B8C2CE" title="{{ r.first_run_id }}">{{ r.firstRunShort }}</span>
+        </div>
+      </sc-for>
+
+      <!-- empty state · no fabricated rows when /catalog is empty -->
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:28px 18px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2">{{ emptyLabel }}</div>
+      </sc-if>
+
+    </div>
+
+    <!-- table footer -->
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;flex-wrap:wrap;gap:10px">
+      <span>{{ footerLabel }}</span>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    catalog: null,   // GET /catalog -> array of tactic entries; null until loaded
+    loaded: false,
+  };
+
+  componentDidMount() {
+    fetch('/catalog')
+      .then(r => r.json())
+      .then(catalog => this.setState({
+        catalog: Array.isArray(catalog) ? catalog : [],
+        loaded: true,
+      }))
+      .catch(() => this.setState({ catalog: [], loaded: true }));
+  }
+
+  renderVals() {
+    const cat = Array.isArray(this.state.catalog) ? this.state.catalog : [];
+    const n = cat.length;
+    const usd = (v) => '$' + Number(v).toFixed(2);
+    const dash = '—';
+
+    const rows = cat.map((e) => {
+      const frag = (e.prompt_fragment == null) ? '' : String(e.prompt_fragment);
+      const runId = e.first_run_id || '';
+      return {
+        tactic: e.tactic || dash,
+        tacticTitle: 'tactic ' + (e.tactic || ''),
+        prompt_fragment: frag || dash,
+        target_type: e.target_type || dash,
+        reuse_count: (e.reuse_count == null) ? dash : e.reuse_count,
+        cost: (e.avg_dollars_to_succeed == null) ? dash : usd(e.avg_dollars_to_succeed),
+        first_run_id: runId,
+        firstRunShort: runId ? runId.slice(0, 8) : dash,
+      };
+    });
+
+    // KPI tiles · derive only what /catalog supports; em-dash otherwise.
+    const hacks = cat.filter((e) => {
+      const steps = (e.discovery_audit && e.discovery_audit.steps) || [];
+      return steps.some((s) => s && s.label === 'target_score' && s.detail && s.detail.evaded === true);
+    }).length;
+
+    const reuseTotal = cat.reduce((a, e) => a + (Number(e.reuse_count) || 0), 0);
+
+    const costs = cat
+      .map((e) => e.avg_dollars_to_succeed)
+      .filter((v) => v != null && !Number.isNaN(Number(v)))
+      .map(Number);
+    const costMean = costs.length ? costs.reduce((a, b) => a + b, 0) / costs.length : null;
+
+    const targets = Array.from(new Set(cat.map((e) => e.target_type).filter(Boolean)));
+
+    return {
+      subtitle: this.state.loaded
+        ? n + ' tactics in the sealed attack corpus · GET /catalog'
+        : 'loading catalog…',
+
+      tacticsCount: this.state.loaded ? n : dash,
+      tacticsSub: targets.length ? targets.join(' · ') : dash,
+
+      hacksCount: this.state.loaded ? hacks : dash,
+      hacksSub: this.state.loaded ? 'evaded target · evasion_threshold 0.5' : dash,
+
+      reuseTotal: this.state.loaded ? reuseTotal : dash,
+      reuseSub: this.state.loaded ? 'sum of reuse_count' : dash,
+
+      costPerTactic: (costMean == null) ? dash : usd(costMean),
+      costSub: (costMean == null) ? 'no avg_dollars_to_succeed data' : 'mean avg_dollars_to_succeed',
+
+      rows,
+      isEmpty: this.state.loaded && n === 0,
+      emptyLabel: 'No tactics in /catalog yet.',
+      footerLabel: this.state.loaded ? ('showing ' + n + ' of ' + n) : 'loading…',
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>

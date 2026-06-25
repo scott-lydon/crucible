@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<!--
+====================================================================
+WIRED · slice-07-leaderboard-export (US-11 · seeded-hack corpus export)
+====================================================================
+  Corpus rows + count   GET /corpus  -> {count, rows:[{attack_id,
+                          target_type, tactic, prompt, audit_trace}]}
+  Export (JSONL)        GET /corpus.jsonl  (attachment)
+  Export (JSON)         GET /corpus
+====================================================================
+-->
+
+<div data-screen-label="Benchmark · Leaderboard" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Canvas.dc.html" style="color:#4FAAC0;text-decoration:none">/corpus</a> · <span style="color:#E8EDF3">seeded-hack export</span></span>
+      <div style="flex:1"></div>
+      <a href="/corpus.jsonl" download title="downloads the seeded-hack corpus as newline-delimited JSON" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">export jsonl ↗</a>
+      <a href="/corpus" title="opens the seeded-hack corpus as JSON" style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0">export json ↗</a>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:6px">
+      <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Seeded-hack corpus</h1>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ corpusCountLabel }} · captured attacks · publicly reproducible from audit trace</span>
+    </div>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-bottom:22px">every row carries its full producer + target audit trace · export as JSONL or JSON · do not retrain on this corpus</div>
+
+    <!-- corpus rows · real GET /corpus -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Captured attacks</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ corpusCountLabel }} · sorted newest first</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:1.3fr 130px 150px 90px 1fr;gap:12px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>Attack ID</span><span>Target</span><span>Tactic</span><span>Evaded</span><span>Audit trace</span></div>
+
+      <sc-for list="{{ corpusRows }}" as="r" hint-placeholder-count="3">
+        <div role="row" style="display:grid;grid-template-columns:1.3fr 130px 150px 90px 1fr;gap:12px;padding:12px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:13px;align-items:center">
+          <span style="color:#E8EDF3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.attack_id }}">{{ r.attack_id }}</span>
+          <span style="color:#B8C2CE">{{ r.target_type }}</span>
+          <span style="color:#4FAAC0">{{ r.tactic }}</span>
+          <span style="color:{{ r.evadedColor }}">{{ r.evadedLabel }}</span>
+          <span style="color:#7C8896;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ r.summary }}">{{ r.summary }}</span>
+        </div>
+      </sc-for>
+
+      <!-- honest empty state -->
+      <sc-if value="{{ corpusEmpty }}" hint-placeholder-val="{{ false }}">
+        <div style="padding:40px 22px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#7C8896;line-height:1.7">
+          No captured attacks yet.<br/>
+          <span style="color:#B8C2CE">Run an evaluation to seed the corpus, then export here.</span>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- export / reproduce -->
+    <div style="margin-top:18px;border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Export</span></div>
+      <div style="padding:18px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <a href="/corpus.jsonl" download style="display:inline-flex;align-items:center;gap:8px;background:#4FAAC0;color:#0E141B;border:none;border-radius:7px;padding:10px 18px;font-size:13px;font-weight:600;text-decoration:none;font-family:'IBM Plex Sans',sans-serif">Download JSONL</a>
+        <a href="/corpus" style="display:inline-flex;align-items:center;gap:8px;background:#1D2630;color:#4FAAC0;border:1px solid #3A4654;border-radius:7px;padding:10px 18px;font-size:13px;font-weight:600;text-decoration:none;font-family:'IBM Plex Sans',sans-serif">View JSON</a>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#7C8896">GET /corpus.jsonl (newline-delimited) · GET /corpus (full object) · each row carries its complete producer + target audit trace</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    corpus: null,   // GET /corpus -> {count, rows:[...]}
+    loaded: false,
+  };
+
+  componentDidMount() {
+    this.loadCorpus();
+  }
+
+  loadCorpus() {
+    fetch('/corpus')
+      .then(r => r.json())
+      .then(corpus => this.setState({ corpus, loaded: true }))
+      .catch(() => this.setState({ corpus: { count: 0, rows: [] }, loaded: true }));
+  }
+
+  renderVals() {
+    const corpus = this.state.corpus;
+    const rows = (corpus && Array.isArray(corpus.rows)) ? corpus.rows : [];
+    const count = corpus && typeof corpus.count === 'number' ? corpus.count : rows.length;
+
+    const corpusRows = rows.map(row => {
+      const trace = row.audit_trace || {};
+      const target = (trace.steps || []).find(s => s.label === 'target_score');
+      const evaded = target && target.detail ? target.detail.evaded : null;
+      return {
+        attack_id: row.attack_id || '',
+        target_type: row.target_type || '',
+        tactic: row.tactic || '',
+        evadedLabel: evaded === true ? 'evaded' : (evaded === false ? 'held' : '—'),
+        evadedColor: evaded === true ? '#E5736B' : (evaded === false ? '#9BD9B5' : '#7C8896'),
+        summary: trace.summary || '',
+      };
+    });
+
+    return {
+      corpusCountLabel: this.state.loaded
+        ? (count + (count === 1 ? ' attack' : ' attacks'))
+        : 'loading…',
+      corpusRows: corpusRows,
+      corpusEmpty: this.state.loaded && corpusRows.length === 0,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+"""Crucible system overview — 8 nodes, two rows, zero crossings.
+
+Layout: forward path runs LEFT to RIGHT on the top row. Cross-round
+infrastructure sits on the bottom row directly below it. Vertical
+connections between rows are straight lines. The two long feedback
+edges (verdict from AGG back to RED, MEAS to HALT across the bottom)
+are drawn as arcs OUTSIDE the row boxes (above the top row and below
+the bottom row). No edge ever crosses another.
+"""
+from __future__ import annotations
+from base64 import b64encode
+from pathlib import Path
+
+W, H = 1280, 720
+BG = "#0a0e1a"
+TEXT = "#e2e8f0"
+MUTED = "#94a3b8"
+NODE_FILL = "#1a2236"
+NODE_STROKE = "#475569"
+EDGE_FWD = "#cbd5e1"
+EDGE_BACK = "#94a3b8"
+EDGE_BLUE = "#6366f1"
+EDGE_RED = "#e06a6a"
+
+ICONS = "/tmp/icons"
+def icon(name: str) -> str:
+    return "data:image/svg+xml;base64," + b64encode((Path(ICONS) / f"{name}.svg").read_bytes()).decode()
+
+NODE_W, NODE_H = 240, 86
+
+# Two rows. Top row is the per-round verification loop, left-to-right.
+# Bottom row is the cross-round infrastructure, columns aligned with top row.
+y_top = 220
+y_bot = 470
+xs = [200, 500, 800, 1100]   # 4 columns
+
+NODES = [
+    # (key, col, row, title, sub, icon)
+    ("RED",  0, "T", "Red Agent",          "LLM semantic search\n+ persistent catalog",            "anthropic"),
+    ("TGT",  1, "T", "Target Protocol",    "fraud, code-agent,\nresearch behind 1 port",           "target"),
+    ("ORS",  2, "T", "Oracle ensemble",    "5 non-colluding checks\nheld-out, metamorphic,\ndifferential, fuzz, judge", "oracle"),
+    ("AGG",  3, "T", "Aggregator",         "PASS-weight ≥ 2.0\n⇒ pass; else caught",         "redis"),
+    ("HALT", 0, "B", "Halt-certification", "white-box recall\nbelow red line",                     "stop"),
+    ("BLUE", 1, "B", "Blue Loop",          "proposer + retrainer\n+ held-out validator",           "python"),
+    ("CAT",  2, "B", "Strategy Catalog",   "persistent memory\nacross runs",                       "postgres"),
+    ("MEAS", 3, "B", "Measure Dashboard",  "recall, ASR, gap,\nco-evolution curves",               "grafana"),
+]
+
+positions = {}
+for key, col, row, *_ in NODES:
+    positions[key] = (xs[col], y_top if row == "T" else y_bot)
+
+# helpers ---------------------------------------------------------------
+def node_svg(key):
+    x, y = positions[key]
+    title, sub, ic = next((t, s, i) for (k, c, r, t, s, i) in NODES if k == key)
+    nx, ny = x - NODE_W / 2, y - NODE_H / 2
+    img = icon(ic)
+    body = [
+        f'<rect x="{nx:.1f}" y="{ny:.1f}" width="{NODE_W}" height="{NODE_H}" rx="10" ry="10" '
+        f'fill="{NODE_FILL}" stroke="{NODE_STROKE}" stroke-width="1.4"/>',
+        f'<image href="{img}" x="{nx + 14:.1f}" y="{y - 13:.1f}" width="26" height="26"/>',
+        f'<text x="{nx + 14 + 26 + 12:.1f}" y="{y - 8:.1f}" font-family="Helvetica,Arial,sans-serif" '
+        f'font-size="14" font-weight="600" fill="{TEXT}">{title}</text>',
+    ]
+    for i, line in enumerate(sub.split("\n")):
+        body.append(
+            f'<text x="{nx + 14 + 26 + 12:.1f}" y="{y + 8 + i * 12:.1f}" font-family="Helvetica,Arial,sans-serif" '
+            f'font-size="10" fill="{MUTED}">{line}</text>'
+        )
+    return "".join(body)
+
+
+def labeled_line(x1, y1, x2, y2, *, label=None, dashed=False, color=EDGE_FWD, width=2.0, label_offset=(0, -8)):
+    dash = ' stroke-dasharray="6 4"' if dashed else ""
+    path = (
+        f'<path d="M {x1:.1f} {y1:.1f} L {x2:.1f} {y2:.1f}" '
+        f'fill="none" stroke="{color}" stroke-width="{width}"{dash} marker-end="url(#arrowhead)"/>'
+    )
+    lbl = ""
+    if label:
+        mx, my = (x1 + x2) / 2 + label_offset[0], (y1 + y2) / 2 + label_offset[1]
+        tw = len(label) * 6 + 14
+        lbl = (
+            f'<rect x="{mx - tw/2:.1f}" y="{my - 9:.1f}" width="{tw}" height="14" rx="4" '
+            f'fill="{BG}" opacity="0.92"/>'
+            f'<text x="{mx:.1f}" y="{my + 2:.1f}" text-anchor="middle" '
+            f'font-family="Helvetica,Arial,sans-serif" font-size="10" fill="{TEXT}">{label}</text>'
+        )
+    return path + lbl
+
+
+def labeled_arc(x1, y1, x2, y2, peak_y, *, label=None, dashed=False, color=EDGE_FWD, width=2.0):
+    """Quadratic Bezier with control point at midpoint x and explicit peak_y."""
+    cx = (x1 + x2) / 2
+    cy = peak_y
+    dash = ' stroke-dasharray="6 4"' if dashed else ""
+    path = (
+        f'<path d="M {x1:.1f} {y1:.1f} Q {cx:.1f} {cy:.1f} {x2:.1f} {y2:.1f}" '
+        f'fill="none" stroke="{color}" stroke-width="{width}"{dash} marker-end="url(#arrowhead)"/>'
+    )
+    lbl = ""
+    if label:
+        mx, my = cx, cy + (12 if peak_y > 400 else -6)
+        tw = len(label) * 6 + 14
+        lbl = (
+            f'<rect x="{mx - tw/2:.1f}" y="{my - 9:.1f}" width="{tw}" height="14" rx="4" '
+            f'fill="{BG}" opacity="0.92"/>'
+            f'<text x="{mx:.1f}" y="{my + 2:.1f}" text-anchor="middle" '
+            f'font-family="Helvetica,Arial,sans-serif" font-size="10" fill="{TEXT}">{label}</text>'
+        )
+    return path + lbl
+
+
+def right_edge(key):    return positions[key][0] + NODE_W / 2, positions[key][1]
+def left_edge(key):     return positions[key][0] - NODE_W / 2, positions[key][1]
+def top_edge(key):      return positions[key][0], positions[key][1] - NODE_H / 2
+def bottom_edge(key):   return positions[key][0], positions[key][1] + NODE_H / 2
+
+
+edges = []
+# Top row forward path: straight horizontal lines, all within row 1
+edges.append(labeled_line(*right_edge("RED"),  *left_edge("TGT"),  label="submit / query",  width=2.2))
+edges.append(labeled_line(*right_edge("TGT"),  *left_edge("ORS"),  label="output, sealed",  width=2.2))
+edges.append(labeled_line(*right_edge("ORS"),  *left_edge("AGG"),  label="5 votes",         width=2.2))
+
+# Verdict feedback: arc ABOVE the top row
+sx, sy = top_edge("AGG")
+ex, ey = top_edge("RED")
+edges.append(labeled_arc(sx, sy, ex, ey, peak_y=60, label="verdict + audit", width=2.2, color=EDGE_FWD))
+
+# Vertical down arrows from AGG to CAT and MEAS
+edges.append(labeled_line(*bottom_edge("AGG"), *top_edge("MEAS"), label="every verdict", color=EDGE_BACK, width=1.6, label_offset=(40, 0)))
+edges.append(labeled_line(*bottom_edge("AGG"), *top_edge("CAT"),  label="log undetected", color=EDGE_BACK, width=1.6, label_offset=(60, -10)))
+
+# Bottom row: CAT -> BLUE going LEFT
+edges.append(labeled_line(*left_edge("CAT"), *right_edge("BLUE"), label="reuse tactics", color=EDGE_BACK, width=1.6))
+
+# MEAS -> HALT: arc BELOW the bottom row (the only long backwards edge)
+sx, sy = bottom_edge("MEAS")
+ex, ey = bottom_edge("HALT")
+edges.append(labeled_arc(sx, sy, ex, ey, peak_y=660, label="when recall fails", color=EDGE_BACK, width=1.6))
+
+# BLUE -> TGT: vertical up, dashed (cross-round retrain feedback)
+edges.append(labeled_line(*top_edge("BLUE"), *bottom_edge("TGT"), label="retrain / patch", dashed=True, color=EDGE_BLUE, width=1.6, label_offset=(60, 0)))
+
+# HALT -> RED: vertical up, dashed (control feedback)
+edges.append(labeled_line(*top_edge("HALT"), *bottom_edge("RED"), label="blocks launch", dashed=True, color=EDGE_RED, width=1.6, label_offset=(50, 0)))
+
+# Compose
+parts = []
+parts.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {W} {H}" role="img" aria-label="Crucible system overview">')
+parts.append('  <title>Crucible system overview</title>')
+parts.append('  <defs>')
+parts.append('    <marker id="arrowhead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">')
+parts.append(f'      <path d="M 0 0 L 10 5 L 0 10 z" fill="{MUTED}"/>')
+parts.append('    </marker>')
+parts.append('  </defs>')
+parts.append(f'  <rect width="{W}" height="{H}" fill="{BG}"/>')
+parts.append(f'  <text x="{W/2}" y="44" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="20" font-weight="600" fill="{TEXT}">Crucible system overview</text>')
+parts.append(f'  <text x="{W/2}" y="68" text-anchor="middle" font-family="Helvetica,Arial,sans-serif" font-size="11" fill="{MUTED}">top row: one round of verification  ·  bottom row: cross-round infrastructure</text>')
+for e in edges:
+    parts.append("  " + e)
+for k, *_ in NODES:
+    parts.append("  " + node_svg(k))
+parts.append('</svg>')
+
+Path("/Users/scottlydon/Desktop/Clutter/iOS/crucible/docs/diagrams/crucible-overview-handauthored.svg").write_text("\n".join(parts))
+print(f"wrote {sum(len(p)+1 for p in parts)} bytes")

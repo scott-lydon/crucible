@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .om-info{background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;line-height:1;padding:0}
+  .om-info:hover{background:#25303C;color:#E8EDF3}
+</style>
+</helmet>
+
+<!--
+====================================================================
+STUB-MANIFEST · slice-06-halt-certification
+====================================================================
+  Halt entity
+    STUB:id     source=route.halts.detail.id                     ("h_19c4")
+    STUB:id     source=db.halts.byId.spec_hash                   ("9f2a4c7b")
+    STUB:id     source=db.halts.byId.triggered_by_run            ("r_8f3a")
+    STUB:time   source=db.halts.byId.triggered_at
+    STUB:status source=db.halts.byId.state                       ("active" | "lifted")
+    STUB:text   source=db.halts.byId.red_line_breach_reason
+
+  Evidence table — runs whose verdicts caused the halt
+    STUB:series source=api.halts.evidence(:hid).runs
+                shape={run_id,started_at,spec_hash,reason,verdict}
+                count=4
+                note="rows under 'evidence' section"
+
+  Lift conditions
+    STUB:series source=api.halts.lift_conditions(:hid)           shape={condition,satisfied,evidence_ref}
+    STUB:metric source=api.halts.heldout_recall_after_patch      unit=ratio
+    STUB:id     source=db.patches.related(:hid).id
+
+  Dead navs
+    STUB:link   source=route.halts.export_report(:hid) / route.runs.detail(:id) / route.halts.lift(:hid)
+====================================================================
+-->
+
+<div data-screen-label="Halt Certification" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">
+        <a href="slice-06-halt-certification.dc.html" style="color:#4FAAC0;text-decoration:none">/halts</a> ·
+        <span style="color:#E8EDF3">{{ pageTitle }}</span>
+      </span>
+      <div style="flex:1"></div>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ statusColor }}">
+        <span style="width:9px;height:9px;border-radius:50%;background:{{ statusDot }};flex:none"></span>
+        {{ statusLabel }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== HALT BANNER ============== -->
+  <sc-if value="{{ haltActive }}">
+  <div style="background:#5E1A1A;border-bottom:1px solid #8A2828;color:#E5B5B0">
+    <div style="max-width:1320px;margin:0 auto;padding:14px 24px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:13px">
+        <span style="font-weight:600;letter-spacing:.04em">HALT ACTIVE</span>
+        <span style="color:#C99B95">·</span>
+        <span>recall {{ recallLabel }} &lt; red line {{ thresholdLabel }} · residual halt threshold breached</span>
+      </div>
+      <div style="font-family:'IBM Plex Sans',sans-serif;font-size:13px;color:#F0D4D0;line-height:1.55;max-width:980px">
+        <span style="color:#FFE9A8;font-weight:600">Why:</span>
+        {{ haltMessage }}
+      </div>
+    </div>
+  </div>
+  </sc-if>
+  <sc-if value="{{ noActiveHalt }}">
+  <div style="background:#152821;border-bottom:1px solid #2B4E3B;color:#9BD9B5">
+    <div style="max-width:1320px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:13px">
+      <span style="font-weight:600;letter-spacing:.04em">NO ACTIVE HALT</span>
+      <span style="color:#6FAE89">·</span>
+      <span>observed recall {{ recallLabel }} &gt;= red line {{ thresholdLabel }} · residual halt threshold clear</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:20px">
+      <div>
+        <h1 style="margin:0;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">{{ pageTitle }}</h1>
+        <div style="margin-top:6px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">{{ pageSubtitle }}</div>
+      </div>
+    </div>
+
+    <sc-if value="{{ noActiveHalt }}">
+    <div style="border:1px solid #2B4E3B;border-radius:10px;background:#152821;padding:22px 24px;margin-bottom:24px;display:flex;flex-direction:column;gap:6px">
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#9BD9B5;font-weight:600;letter-spacing:.04em">No active halt</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;line-height:1.6">
+        Observed recall <span style="color:#E8EDF3">{{ recallLabel }}</span> is at or above the residual red line <span style="color:#E8EDF3">{{ thresholdLabel }}</span>. The automatic residual halt threshold is clear; no runs are blocked.
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============== WHY + LIFT CONDITIONS ============== -->
+    <sc-if value="{{ haltActive }}">
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:18px;margin-bottom:24px">
+
+      <!-- WHY -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Why this halted</span>
+        </div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:16px">
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">red line</div>
+              <div style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:18px;margin-top:4px">recall &gt;= {{ thresholdLabel }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:2px">residual red line</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">observed</div>
+              <div style="font-family:'IBM Plex Mono',monospace;color:{{ recallColor }};font-size:18px;margin-top:4px">recall {{ recallLabel }}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ recallColor }};margin-top:2px">{{ marginLabel }}</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">debounce</div>
+              <div style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:18px;margin-top:4px">3 rounds</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:2px">r.32 · r.33 · r.34</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.04em;text-transform:uppercase">halted at</div>
+              <div style="font-family:'IBM Plex Mono',monospace;color:#E8EDF3;font-size:18px;margin-top:4px">r.35</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-top:2px">14:14:02Z</div>
+            </div>
+          </div>
+
+          <!-- debounce trace -->
+          <div style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:12px 14px;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+            <div style="font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">recall across the debounce window</div>
+            <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px">
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span style="color:#B8C2CE;font-size:11px">r.30</span><span style="color:#E8EDF3">0.93</span><span style="font-size:11px;color:#9BD9B5">ok</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span style="color:#B8C2CE;font-size:11px">r.31</span><span style="color:#E8EDF3">0.91</span><span style="font-size:11px;color:#9BD9B5">ok</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#1B1518;margin:-6px -6px;padding:6px;border-radius:4px"><span style="color:#E5B5B0;font-size:11px">r.32</span><span style="color:#E5B5B0">0.89</span><span style="font-size:11px;color:#E5B5B0">crossed</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#1B1518;margin:-6px -6px;padding:6px;border-radius:4px"><span style="color:#E5B5B0;font-size:11px">r.33</span><span style="color:#E5B5B0">0.88</span><span style="font-size:11px;color:#E5B5B0">below</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px;background:#1B1518;margin:-6px -6px;padding:6px;border-radius:4px"><span style="color:#E5B5B0;font-size:11px">r.34</span><span style="color:#E5B5B0">0.86</span><span style="font-size:11px;color:#E5B5B0">confirmed</span></div>
+              <div style="display:flex;flex-direction:column;align-items:flex-start;gap:3px"><span style="color:#E5B5B0;font-size:11px">r.35</span><span style="color:#E5B5B0">—</span><span style="font-size:11px;color:#E5736B">halted</span></div>
+            </div>
+          </div>
+
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#B8C2CE;line-height:1.6">
+            The red line is the residual halt threshold from the sealed spec (§3 Pillar 4). It requires <span style="color:#E8EDF3">3 consecutive rounds</span> below before halting — a single bad round cannot halt a run. The window above is the exact trace evaluated.
+          </div>
+        </div>
+      </div>
+
+      <!-- LIFT CONDITIONS -->
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:8px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Lift conditions · 1 of 3 met</span>
+          <button class="om-info" aria-label="About lift conditions" title="All three must be satisfied to lift the halt. Verification runs on held-out attacks, not the attacks used to build the patch.">i</button>
+        </div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px">
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="width:18px;height:18px;border-radius:50%;background:#152821;border:1px solid #2B4E3B;color:#9BD9B5;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none;margin-top:2px">✓</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EDF3">Blue patch proposed</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">p_2a17 · case-folding on META-INV-04 · awaiting verification</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="width:18px;height:18px;border-radius:50%;background:#161E27;border:1px solid #3A4654;color:#B8C2CE;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none;margin-top:2px">2</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EDF3">Held-out recall &gt;= 0.90 over a 5-round verification window</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">currently <span style="color:#E5B5B0">0.86</span> · needs <span style="color:#E8EDF3">+0.04</span></div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="width:18px;height:18px;border-radius:50%;background:#161E27;border:1px solid #3A4654;color:#B8C2CE;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:none;margin-top:2px">3</span>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EDF3">Patch verified on held-out attack set</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">held-out set must be disjoint from the attacks used to build the patch (§3 Pillar 3)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== BLOCKED RUNS ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:24px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Blocked runs · 4</span>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE">queued behind h_19c4 · no producer calls dispatched</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:140px 170px 140px 1fr 110px;gap:14px;padding:9px 18px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase">
+        <span>Run</span><span>Queued</span><span>Spec</span><span>Reason</span><span>State</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:140px 170px 140px 1fr 110px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <a href="#" data-stub="link:TBD" style="color:#4FAAC0;text-decoration:underline">r_8f3a</a>
+        <span style="color:#B8C2CE">06-22 14:01Z</span>
+        <span style="color:#B8C2CE">9f2a4c7b</span>
+        <span style="color:#E5B5B0">halt source · recall 0.86 over r.32–r.34</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E5B5B0"><span style="width:7px;height:7px;border-radius:50%;background:#E5736B"></span>halted</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:140px 170px 140px 1fr 110px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <a href="#" data-stub="link:TBD" style="color:#4FAAC0;text-decoration:underline">r_8f3b</a>
+        <span style="color:#B8C2CE">06-22 14:22Z</span>
+        <span style="color:#B8C2CE">9f2a4c7b</span>
+        <span style="color:#B8C2CE">blocked by halt h_19c4 · spec scope</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E8C84A"><span style="width:7px;height:7px;border-radius:50%;background:#D9A441"></span>queued</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:140px 170px 140px 1fr 110px;gap:14px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <a href="#" data-stub="link:TBD" style="color:#4FAAC0;text-decoration:underline">r_8f3c</a>
+        <span style="color:#B8C2CE">06-22 14:30Z</span>
+        <span style="color:#B8C2CE">9f2a4c7b</span>
+        <span style="color:#B8C2CE">nightly regression run · blocked</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E8C84A"><span style="width:7px;height:7px;border-radius:50%;background:#D9A441"></span>queued</span>
+      </div>
+      <div role="row" style="display:grid;grid-template-columns:140px 170px 140px 1fr 110px;gap:14px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center">
+        <a href="#" data-stub="link:TBD" style="color:#4FAAC0;text-decoration:underline">r_8f3d</a>
+        <span style="color:#B8C2CE">06-22 15:12Z</span>
+        <span style="color:#B8C2CE">9f2a4c7b</span>
+        <span style="color:#B8C2CE">retry of r_8f3a · same spec scope · blocked</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;color:#E8C84A"><span style="width:7px;height:7px;border-radius:50%;background:#D9A441"></span>queued</span>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============== HALT HISTORY ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Recent halts</span>
+      </div>
+      <div style="padding:22px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#8A94A2;line-height:1.6">
+        Halt history not available. The backend exposes only the current halt state (GET /halt); there is no halt-history endpoint to read from.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    halt: null,   // GET /halt -> {halted, recall, threshold, message}
+  };
+
+  componentDidMount() {
+    fetch('/halt')
+      .then(r => r.json())
+      .then(halt => this.setState({ halt }))
+      .catch(() => {});
+  }
+
+  renderVals() {
+    const h = this.state.halt;
+    const fmt = (n) => Number(n).toFixed(2);
+
+    // Until /halt resolves, render nothing assertive.
+    if (!h) {
+      return {
+        haltActive: false,
+        noActiveHalt: false,
+        statusLabel: 'loading halt state…',
+        statusColor: '#B8C2CE',
+        statusDot: '#5A6573',
+        recallLabel: '—',
+        thresholdLabel: '—',
+        recallColor: '#B8C2CE',
+        marginLabel: '',
+        haltMessage: '',
+        pageTitle: 'Halt certification',
+        pageSubtitle: 'loading halt state…',
+      };
+    }
+
+    const halted    = !!h.halted;
+    const recall    = h.recall;
+    const threshold = h.threshold;
+    const margin    = (recall != null && threshold != null) ? recall - threshold : null;
+    const marginLabel = margin == null
+      ? ''
+      : (margin >= 0 ? '+' + fmt(margin) + ' above line' : fmt(margin) + ' below line');
+
+    return {
+      haltActive:   halted,
+      noActiveHalt: !halted,
+
+      statusLabel: halted ? 'Halt active' : 'No active halt',
+      statusColor: halted ? '#E5B5B0' : '#9BD9B5',
+      statusDot:   halted ? '#E5736B' : '#57C08A',
+
+      recallLabel:    recall != null ? fmt(recall) : '—',
+      thresholdLabel: threshold != null ? fmt(threshold) : '—',
+      recallColor:    halted ? '#E5B5B0' : '#9BD9B5',
+      marginLabel:    marginLabel,
+
+      haltMessage: h.message || '',
+
+      pageTitle: halted ? 'Halt active' : 'Halt certification',
+      pageSubtitle: halted
+        ? 'residual red line ' + (threshold != null ? fmt(threshold) : '—') + ' breached at recall ' + (recall != null ? fmt(recall) : '—')
+        : 'residual red line ' + (threshold != null ? fmt(threshold) : '—') + ' · observed recall ' + (recall != null ? fmt(recall) : '—'),
+    };
+  }
+}
+</script>
+</x-dc>
+</body>
+</html>
