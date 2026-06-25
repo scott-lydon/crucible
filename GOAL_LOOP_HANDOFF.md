@@ -111,6 +111,56 @@ is never the agent that confirms it. Four roles, distinct contexts:
   back: either delete the control or run the reconciliation step in section 0.
 - This is the agent that catches "added a story the spec never had."
 
+### Adversarial novelty mandate (binding on the Verifier and Integrity Reviewer)
+
+Assume the Builder (and any coding agent before it) is lazy by default and will
+fake wiring if it can get away with it: hardcode a plausible number, point a
+button at a static template, echo a design-prototype constant, or short-circuit
+a path and render a pre-baked result. The standard happy-path walk will not
+catch this, because a hardcoded value looks correct as long as you feed it the
+same inputs the constant was tuned to. So do not feed expected inputs. Feed
+novel ones the code could not have been built around, then prove they propagate.
+
+Core idea: a real wire carries whatever you put in; a fake wire shows the value
+it was hardcoded with. A hardcoded field cannot change to match a sentinel it
+has never seen.
+
+Rules:
+
+- **Generate a fresh, unique probe token every pass** (for example
+  `probe-<short-random-hex>` plus an odd timestamp). NEVER reuse a sentinel
+  across passes: once a token is on screen, a lazy agent could hardcode that
+  token next, so rotating it keeps the test honest. The Verifier mints the
+  token; the Integrity Reviewer is told the token out of band and hunts for it.
+- **Inject the token where the flow must carry it end to end.** Examples for
+  Crucible US-1/US-2/US-3/US-12:
+  - Launch with a spec title that embeds the token (for example
+    `sum two integers [probe-7f3a91]`), an unusual rounds value that is not the
+    prototype default of 48 (for example 37), and an odd dollar ceiling that is
+    not 25 (for example 13.71).
+  - Then assert the run header, run summary, sealed-spec panel, verdict
+    obligation citation, and the SR 11-7 report all show `probe-7f3a91`, `37`,
+    and `13.71`. If any of them shows `48`, `$25`, `evade the credit-card fraud
+    detector`, or a title without the token, that field is hardcoded or wired to
+    a template, not to this run. Open a finding.
+- **Cross-check against THIS run's API payload, never a remembered value.** Pull
+  `/runs/:id`, `/runs/:id/verdicts/:id`, `/metrics`, `/reports/:id` for the run
+  you just launched and assert the on-screen value equals that exact response.
+- **Run the "two structurally different runs" test.** Launch run A and run B
+  with different targets, rounds, and budgets. Any value that is identical on
+  both despite the inputs differing (drift always `0.027`, votes always `4/5`,
+  sandbox always `v1.4.2`, spend always `$25`) is a hardcoding tell. Open a
+  finding even if each value looks individually plausible.
+- **Probe the stream, not just the final frame.** For US-2, confirm the attack
+  count and ASR change tick by tick with real SSE events; a value that jumps
+  straight to a round number and never moves is pre-baked.
+- **A field that cannot reflect the probe is failing, even if it looks right.**
+  "It displays a reasonable number" is not a pass. "It displays the number I
+  just injected, read back from this run's API" is a pass.
+
+The Integrity Reviewer attaches the probe token and the two-run comparison to
+its findings packet so the Builder cannot argue the value "looked fine."
+
 ### Orchestrator (the goal loop itself)
 - Holds no opinions about the code. Routes packets: Verifier/Integrity/Loyalty
   findings to Builder, Builder's commits back to the three reviewers for a fresh
@@ -342,6 +392,13 @@ those. Rules:
       with the REMOVED_UI.md / section-2 reason noted.
 
 ## 4b. Master exit checklist (tick only when section 6 is fully green twice)
+- [ ] [Verifier] Pass A used a FRESH probe token (recorded here: __________) and
+      non-default rounds/budget; it was found verbatim in every view that must
+      carry it. Hardcoding tells: none.
+- [ ] [Integrity] Pass A two-run comparison (A vs B, different target/rounds/
+      budget) found zero values identical-despite-different-inputs.
+- [ ] [Verifier] Pass B used a DIFFERENT fresh probe token (recorded here:
+      __________) than Pass A; propagation verified again.
 - [ ] Pass A complete: every Scenario 0 and US-1..US-15 box ticked. Timestamp: ____
 - [ ] Pass B complete (immediately after A, fresh Verifier + Integrity, no
       reordering): same boxes tick again. Timestamp: ____
