@@ -1,0 +1,4 @@
+{ "id": "explore-results", "title": "explore launcher results", "base": "http://localhost:8910",
+  "page": "/app/Run%20Launcher.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5", "waitText": "Results", "dwellMs": 2000,
+  "apiRoutes": ["/runs/eef0b63837f84bef9fd6760c69ded0d5"],
+  "steps": [ {"action":"wait","ms":2500},{"action":"clickText","text":"Results","ms":2500},{"action":"wait","ms":2000},{"action":"scroll","dy":300,"ms":1500} ] }
