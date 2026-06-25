@@ -15,11 +15,15 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import shutil
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any, Protocol, runtime_checkable
 
 from shared.config import Settings, get_settings
-from shared.llm.errors import LlmCallError
+from shared.llm.active_key import KeySource, get_active_key
+from shared.llm.api_client import AnthropicApiClient
+from shared.llm.errors import LlmCallError, NoLlmProviderError
 from shared.llm.models import LlmModel, LlmResult
 from shared.types import Money
 
@@ -198,9 +202,79 @@ class ScriptedLlmClient:
         )
 
 
-def get_llm_client(settings: Settings | None = None) -> LlmClient:
-    """Return the scripted client when MOCK_LLM is set, else the real CLI client."""
+class ProviderMode(StrEnum):
+    """Which LLM path is live, for the selector and the provider indicator."""
+
+    MOCK = "mock"
+    CLI = "cli"
+    PROJECT_KEY = "project_key"
+    USER_KEY = "user_key"
+    NONE = "none"
+
+
+def _cli_available() -> bool:
+    """True when the `claude` CLI is on PATH (the local operator path)."""
+    return shutil.which("claude") is not None
+
+
+def resolve_provider_mode(settings: Settings | None = None) -> ProviderMode:
+    """The active provider, by the same order `get_llm_client` selects.
+
+    Single-sourced so the `/llm-provider` indicator and the actual selection
+    can never disagree. Resolution order:
+      1. MOCK_LLM set         -> MOCK   (keeps the existing mock test path)
+      2. `claude` on PATH     -> CLI    (the local operator path, unchanged)
+      3. an active key store  -> PROJECT_KEY or USER_KEY (deployed fallback)
+      4. otherwise            -> NONE   (no real provider; never silent mock)
+    """
     resolved = settings if settings is not None else get_settings()
     if resolved.mock_llm:
+        return ProviderMode.MOCK
+    if _cli_available():
+        return ProviderMode.CLI
+    active = get_active_key()
+    if active is not None:
+        return (
+            ProviderMode.PROJECT_KEY
+            if active.source is KeySource.PROJECT
+            else ProviderMode.USER_KEY
+        )
+    return ProviderMode.NONE
+
+
+def get_llm_client(settings: Settings | None = None) -> LlmClient:
+    """Resolve the live LLM client for a real (or mock) run.
+
+    Order: mock when configured; else the local `claude` CLI when present; else
+    the Anthropic API with the active fallback key (project key after admin
+    login, or the visitor's own key). When no provider is available the call
+    raises `NoLlmProviderError` instead of silently degrading to mock, so a run
+    that asked for a real provider never returns fabricated output.
+
+    The active key reaches detached background-run execution through the
+    process-level store in `shared.llm.active_key`, written by the admin-login
+    and user-key endpoints and read here at client construction time.
+    """
+    resolved = settings if settings is not None else get_settings()
+    mode = resolve_provider_mode(resolved)
+    if mode is ProviderMode.MOCK:
         return ScriptedLlmClient()
-    return ClaudeCliClient()
+    if mode is ProviderMode.CLI:
+        return ClaudeCliClient()
+    if mode in (ProviderMode.PROJECT_KEY, ProviderMode.USER_KEY):
+        active = get_active_key()
+        # resolve_provider_mode just confirmed an active key exists; the guard
+        # keeps mypy honest and turns a race (key cleared between calls) into a
+        # typed error instead of an AttributeError.
+        if active is None:
+            raise NoLlmProviderError(
+                "Active LLM key disappeared between resolution and use. "
+                "Re-enter the Anthropic API key via the admin panel."
+            )
+        return AnthropicApiClient(api_key=active.value)
+    raise NoLlmProviderError(
+        "No LLM provider available: the `claude` CLI is not on PATH and no "
+        "Anthropic API key is set. Enable the project key via admin login "
+        "(if ANTHROPIC_API_KEY is configured on the server) or provide your "
+        "own Anthropic API key in the admin panel."
+    )
