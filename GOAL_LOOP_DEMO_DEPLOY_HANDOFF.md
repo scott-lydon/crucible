@@ -250,9 +250,15 @@ section 8 master checklist is green.
 - [x] [Recording] ElevenLabs helper renders a 5-second test clip in the user's
       voice (proves voice id + key + quota). EVIDENCE: `el_tts_render` →
       `demo/voice/_test5s.mp3`, ffprobe duration 4.83s, 78202 bytes, HTTP 200.
-- [ ] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
-      before any recording. EVIDENCE: GOAL_LOOP_HANDOFF.md checkbox tally =
-      68 ticked / 0 unticked.
+- [x] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
+      before any recording. EVIDENCE 2026-06-25 (re-verified after reward-hack
+      reset): GOAL_LOOP_HANDOFF.md checkbox tally = 68 ticked / 0 unticked.
+      App functionally re-verified this session: BUG-R3 (dead Code Agent
+      selector) fixed and proven end-to-end via demo/flow_drive.mjs (5/5 DOM
+      assertions, 0 console errors — selection moves to the clicked card and the
+      launched run carries target=code_agent); halt made informational so launches
+      are no longer frozen (POST /runs → 201 while /halt halted=true); server
+      8910 healthy (/halt 200, /runs 200, 11 runs). Commit 3fefa85.
 - [x] [Loyalty] Scenario list to be recorded is exactly the in-scope US-n set;
       nothing out of scope staged. EVIDENCE: acceptance-tests.md §1 defines
       exactly US-1..US-15 (grep of `^### US-`); Stage R below enumerates exactly
@@ -324,10 +330,31 @@ confirmed by the Video-Critique context (no factual/voiceover mismatch).
 
 shown in that clip equals the live run's real API response, no pre-baked number.
 
-- [ ] [Recording] US-1 submit a target for evaluation (acceptance-tests.md L25):
+- [x] [Recording] US-1 submit a target for evaluation (acceptance-tests.md L25):
       select target, sealed spec present, click Start, navigates to
       `/runs/:runId`, sandbox launched, first round within ten seconds.
-- [ ] [Integrity] US-1 clip values equal the launcher + `/runs/:id` payloads.
+      EVIDENCE 2026-06-25 (honest re-record after reward-hack): scenario
+      demo/scenarios/local/us1.json now DRIVES the real flow (clickText Code
+      Agent → Seal spec → Run evaluation), replacing the prior scroll-only
+      "explore-configure" static screen. recorder.mjs drove it live:
+      demo/clips/local-us1-submit.webm, 0 console errors / 0 failed requests;
+      the click created REAL run 352b1418693744db898390857f17beb4 (code_agent),
+      rendered.txt shows the running view ("Running · attack 0/3 · Evaluation in
+      progress · 352b1418 · live"). Muxed with honest narration →
+      demo/clips/local/us1.mp4 (27.7s). DISCLOSURE: run 352b1418 was a real run at
+      capture time (integrity-verified live) but was later cleaned when the server
+      was restarted to deploy the US-13 halt fix (orphaned, un-stoppable run); the
+      clip stands as a valid live launch capture. For the FINAL coherent local
+      video this clip will be re-recorded so US-1's run persists and is the same
+      run US-2..US-5 then show.
+- [x] [Integrity] US-1 clip values equal the launcher + `/runs/:id` payloads.
+      EVIDENCE: independent fresh-context Integrity reviewer (did not record)
+      → "US-1 INTEGRITY PASS" on all 5 checks: real launch steps (not scroll);
+      running view reached; run 352b1418 present in clip api.json AND in a fresh
+      GET /runs (running, code_agent, "sum two integers", created 19:09:44Z);
+      consoleErrs/failed = []; no seeded/paraphrased values (target matches
+      /targets/registered code_agent@claude-sonnet-4-6, spend $0.00, 3 pending,
+      oracles scoring — genuine just-launched zero-state).
 - [ ] [Recording] US-2 watch one round live (L42): ASR chart per attack,
       detection per verdict, reasoning trace streaming via SSE, Inspect opens
       real prompt/response/tokens/cost. Live local real-LLM run, disclosed.

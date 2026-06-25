@@ -1,4 +1,14 @@
-{ "id": "explore-configure", "title": "explore launcher configure", "base": "http://localhost:8910",
-  "page": "/app/Run%20Launcher.dc.html", "waitText": "Configure", "dwellMs": 2000,
-  "apiRoutes": ["/targets/registered", "/health/targets/code_agent", "/sandbox/image", "/health/targets/fraud_adapter"],
-  "steps": [ {"action":"wait","ms":2600},{"action":"scroll","dy":300,"ms":1800},{"action":"wait","ms":1800},{"action":"scroll","dy":320,"ms":1800},{"action":"scrollTop","ms":1600} ] }
+{ "id": "local-us1-submit", "title": "US-1 submit a target for evaluation", "base": "http://localhost:8910",
+  "page": "/app/Run%20Launcher.dc.html", "waitText": "Target system to attack", "dwellMs": 1500,
+  "apiRoutes": ["/runs", "/targets/registered", "/health/targets/code_agent"],
+  "steps": [
+    {"action":"wait","ms":2200},
+    {"action":"clickText","text":"Code Agent","ms":2200},
+    {"action":"wait","ms":1600},
+    {"action":"clickText","text":"Seal spec","ms":2000},
+    {"action":"wait","ms":1600},
+    {"action":"clickText","text":"Run evaluation","ms":2600},
+    {"action":"wait","ms":4000},
+    {"action":"scroll","dy":260,"ms":1800},
+    {"action":"wait","ms":2200}
+  ] }

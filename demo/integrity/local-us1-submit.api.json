@@ -1,0 +1,117 @@
+{
+  "/runs": [
+    {
+      "run_id": "352b1418693744db898390857f17beb4",
+      "status": "running",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T19:09:44.879987+00:00"
+    },
+    {
+      "run_id": "26bac723962c402e8cb05027783d052b",
+      "status": "complete",
+      "target_type": "fraud",
+      "spec_title": "evade the credit-card fraud detector",
+      "created_at": "2026-06-25T16:47:43.302478+00:00"
+    },
+    {
+      "run_id": "eef0b63837f84bef9fd6760c69ded0d5",
+      "status": "complete",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T13:26:40.933693+00:00"
+    },
+    {
+      "run_id": "f48fa26a4656441696e688c14d6ab76c",
+      "status": "complete",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers [probe-c4d5e6]",
+      "created_at": "2026-06-25T05:12:11.897551+00:00"
+    },
+    {
+      "run_id": "f1380bb003ed46c888e4c8170165abe2",
+      "status": "complete",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers [probe-7f3a91]",
+      "created_at": "2026-06-25T05:02:44.747062+00:00"
+    },
+    {
+      "run_id": "734153a1ad384a22aaf28ac78ad997e1",
+      "status": "complete",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T04:31:52.547009+00:00"
+    },
+    {
+      "run_id": "56bbf1c8d8c34376a729c580d55ba32e",
+      "status": "running",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T04:25:56.096879+00:00"
+    },
+    {
+      "run_id": "298b6384529c40b19dc4afe12ec72767",
+      "status": "failed",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T04:20:42.048092+00:00"
+    },
+    {
+      "run_id": "0955290bcf9a4922b897cad52a2e3172",
+      "status": "failed",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-25T04:10:57.261942+00:00"
+    },
+    {
+      "run_id": "11566fde4e8346fcb5fbe5f41187f212",
+      "status": "failed",
+      "target_type": "fraud",
+      "spec_title": "evade the credit-card fraud detector",
+      "created_at": "2026-06-25T03:36:26.079972+00:00"
+    },
+    {
+      "run_id": "7056b0c16b4d40928f6b71f5d807b677",
+      "status": "pending",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-24T23:39:57.588235+00:00"
+    },
+    {
+      "run_id": "704cdb1392904c5b8032bf987ca9457f",
+      "status": "complete",
+      "target_type": "code_agent",
+      "spec_title": "sum two integers",
+      "created_at": "2026-06-24T22:49:47.974525+00:00"
+    }
+  ],
+  "/targets/registered": [
+    {
+      "type": "dummy",
+      "display_name": "Dummy",
+      "description": "Deterministic echo target used by the spine test.",
+      "artifact_ref": "dummy@v0"
+    },
+    {
+      "type": "code_agent",
+      "display_name": "Code Agent",
+      "description": "Autonomous code-generation agent.",
+      "artifact_ref": "code_agent@claude-sonnet-4-6"
+    },
+    {
+      "type": "fraud",
+      "display_name": "Fraud",
+      "description": "Transaction-fraud classifier adapter (LightGBM).",
+      "artifact_ref": "fraud_adapter@05274c2a"
+    }
+  ],
+  "/health/targets/code_agent": {
+    "target_type": "code_agent",
+    "status": "green",
+    "detail": {
+      "model": "claude-sonnet-4-6",
+      "client": "ClaudeCliClient",
+      "claude_on_path": true
+    }
+  }
+}

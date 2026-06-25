@@ -147,3 +147,43 @@ the manual in-run control.
 ### Launcher rounds default — DONE
 Run Launcher.dc.html rounds default is now 3 (line 907), down from 48 — every demo run
 is ~6 attacks instead of ~96, so runs complete quickly on camera.
+
+## US-13 halt: reconciliation + remaining frontend gap (2026-06-25)
+
+### Backend — RESOLVED (commit 1eb2ba3)
+Operator confirmed the halt is in-scope (US-13) and must keep the 409 launch-
+refusal, plus wants a devmode/override so testing can proceed. Implemented:
+- create_run again returns 409 with the typed halt body when halted (US-13),
+  unless an admin-armed devmode override is on.
+- The certification halt now reflects the LATEST white-box pass (the run whose
+  newest white-box verdict is most recent), not the all-time global aggregate —
+  US-13's exact wording "the latest white-box pass". A clean code_agent run
+  (recall 1.0) clears it; the fraud run (0.0) fires it. Fixes /halt and the
+  launch guard disagreeing (both now latest-pass).
+- New admin-gated POST /halt/override (debug route) bypasses the launch guard for
+  manual testing/recording; the audit banner still reports the real recall.
+  Default off; resets on restart. /halt returns the override flag.
+Verified live: 409 when halted/override off; admin login + override on → 201;
+401 without admin cookie; /halt recall 0.00 (latest fraud pass). Halt tests 5/5.
+
+### BUG-R9 — US-13 FRONTEND banner gap (OPEN, Builder)
+US-13 Then-clause requires a red banner at the TOP of ANY dashboard route reading
+exactly "Certification halted: recall is X.XX, threshold is Y.YY" with a link to
+/metrics. Current frontend does NOT meet this:
+- slice-06-halt-certification.dc.html is a STUB (STUB-MANIFEST with hardcoded
+  "h_19c4"/"9f2a4c7b"/state "active"|"lifted"); NOT wired to /halt. Recording
+  US-13 against it would show fake data (reward-hack). Do not record it as-is.
+- slice-04-honest-dashboard.dc.html DOES fetch /halt and shows an inline status
+  ("Current held-out recall is N%; ... Currently HALTED."), but (a) it is not the
+  spec'd top red banner with the exact "Certification halted: recall is X.XX,
+  threshold is Y.YY" text + /metrics link, and (b) it shows the GLOBAL white-box
+  rate (wb.rate from /metrics, 0.13) as the recall, which now differs from the
+  /halt latest-pass recall (0.00) after the backend fix — so the displayed number
+  and the halt message disagree.
+- The Run Launcher and other routes render no halt banner at all.
+Builder task: render the real /halt banner (use the /halt `message` + a /metrics
+link) at the top of every route, sourced from /halt (latest-pass recall), so the
+displayed recall equals the halt message. NOTE design-fidelity: confirm whether
+the Claude Design has a cross-route halt banner; if not, reconcile with the
+operator/design before adding UI (do not invent banner UI not in the design).
+Until BUG-R9 is fixed, US-13 cannot be honestly recorded.

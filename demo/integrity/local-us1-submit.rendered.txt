@@ -1,0 +1,110 @@
+C
+Crucible
+/ · runs / 352b1418 · live
+EST / RUN
+$0.24
+LLM · local CLI
+Live · connected
+01
+Configure
+· target & budget
+02
+Running
+· attack 0 / 3
+03
+Results
+· awaits completion
+run · 352b1418
+RUNNING
+Evaluation in progress
+run · 352b1418 · code_agent · sum two integers
+❚❚ Pause updates
+OVERALL PROGRESS
+attack 0 / 3 · 0% complete
+asr
+—
+detection
+—
+spend
+$0.00
+spend $0.00 / no ceiling ceiling
+cyan <70% · amber 70–90% · danger >90%
+PER-ORACLE PROGRESS
+verdicts · pass / fail / inconclusive
+held_out
+awaiting attacks · 1 / 4.5
+0✓
+0✕
+0~
+metamorphic
+awaiting attacks · 1 / 4.5
+0✓
+0✕
+0~
+differential
+awaiting attacks · 1 / 4.5
+0✓
+0✕
+0~
+property_fuzz
+awaiting attacks · 1 / 4.5
+0✓
+0✕
+0~
+llm_judge
+awaiting attacks · 0.5 / 4.5
+0✓
+0✕
+0~
+SPEND · this run
+$0.00 / no ceiling
+last attack
+—
+avg / attack
+—
+attacks scored
+0 / 0
+ACTIVITY · last 6
+● live
+CURRENT ATTACK · #0
+tactic
+—
+·
+—
+attack
+tactic: —
+visibility: —
+cost: —
+producer outcome
+—
+held_out
+scoring…
+metamorphic
+scoring…
+differential
+scoring…
+property_fuzz
+scoring…
+llm_judge
+scoring…
+ROUND TIMELINE
+pass
+fail
+caveat
+pending
+0 pass
+0 fail
+0 caveat
+3 pending
+rolling pass rate · —
+SANDBOX HEALTH
+cpu
+—
+memory
+—
+tokens used
+—
+network
+sealed (egress deny)
+image
+python:3.12-slim
