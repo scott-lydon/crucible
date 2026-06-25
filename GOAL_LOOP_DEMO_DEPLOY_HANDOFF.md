@@ -206,13 +206,64 @@ section 8 master checklist is green.
       `/targets/code_agent/default-spec` returns 200 (the branch-only marker).
 - [ ] [Loyalty] Deploy exposes no out-of-scope route or screen.
 
-### Stage R: record the acceptance-test video (per scenario)
-- [ ] [Recording] US-1 recorded with narration matching the live screen.
-- [ ] [Recording] US-2 recorded (live local real-LLM run; disclosed as such).
-- [ ] [Recording] US-3..US-15 recorded, each matching its US-n.
-- [ ] [Recording] Master mp4 stitched from per-scenario clips with title + outro.
-- [ ] [Integrity] Every spoken value matches the on-screen value for that real
-      run; no pre-baked number narrated as live.
+### Stage R: record the acceptance-test video (one box per acceptance test)
+
+Each box is ticked only when that US-n's own Given/When/Then is shown on screen
+and narrated. Read the cited acceptance-tests.md lines before recording so the
+clip demonstrates the actual Then-clauses, not a paraphrase. Each recording box
+has a paired Integrity box: the Integrity Reviewer confirms every value spoken or
+shown in that clip equals the live run's real API response, no pre-baked number.
+
+- [ ] [Recording] US-1 submit a target for evaluation (acceptance-tests.md L25):
+      select target, sealed spec present, click Start, navigates to
+      `/runs/:runId`, sandbox launched, first round within ten seconds.
+- [ ] [Integrity] US-1 clip values equal the launcher + `/runs/:id` payloads.
+- [ ] [Recording] US-2 watch one round live (L42): ASR chart per attack,
+      detection per verdict, reasoning trace streaming via SSE, Inspect opens
+      real prompt/response/tokens/cost. Live local real-LLM run, disclosed.
+- [ ] [Integrity] US-2 streamed values equal the SSE / `/runs/:id` source.
+- [ ] [Recording] US-3 drill into a verdict (L58): producer output, verbatim
+      obligation, per-oracle pass/fail + reasoning, vote tally, working Replay.
+- [ ] [Integrity] US-3 clip values equal `/runs/:id/verdicts/:id`.
+- [ ] [Recording] US-4 every oracle vote and reasoning (L74): full vote
+      breakdown; judge weight is the REAL `/oracles/registered` weight.
+- [ ] [Integrity] US-4 votes + judge weight equal `/oracles/registered`.
+- [ ] [Recording] US-5 replay any past action (L89): deterministic re-run, same
+      seed same result.
+- [ ] [Integrity] US-5 replay output equals the original captured audit row.
+- [ ] [Recording] US-6 browse the strategy catalog (L105): real `/catalog` rows.
+- [ ] [Integrity] US-6 rows equal the `/catalog` response.
+- [ ] [Recording] US-7 trigger the blue loop and review the patch (L120): patch
+      at `/blue/:patchId`, real before/after detection, produced model version.
+- [ ] [Integrity] US-7 clip values equal `/blue/:patchId`.
+- [ ] [Recording] US-8 platform health for every subcomponent (L138): health for
+      each registered target and oracle.
+- [ ] [Integrity] US-8 statuses equal `/health/targets/:type` +
+      `/health/oracles/:name`.
+- [ ] [Recording] US-9 confirm the producer sandbox is sealed (L155): egress
+      denied shown from real sandbox state.
+- [ ] [Integrity] US-9 seal/egress state equals the real sandbox status.
+- [ ] [Recording] US-10 dashboard metrics (L171): catch rates, gap, undetected
+      rate, all from `/metrics`.
+- [ ] [Integrity] US-10 figures equal `/metrics`; nulls render as em-dash.
+- [ ] [Recording] US-11 export the seeded-hack corpus (L190): export from
+      `/corpus` / `/corpus.jsonl`.
+- [ ] [Integrity] US-11 exported rows equal the route payload.
+- [ ] [Recording] US-12 generate an SR 11-7 report (L204): report from
+      `/reports/:runId`, real markdown.
+- [ ] [Integrity] US-12 report numbers equal the report route.
+- [ ] [Recording] US-13 halt at a residual red line (L220): halt banner on every
+      route when `/halt` is halted, honest "no active halt" otherwise; automatic
+      state, no operator halt button.
+- [ ] [Integrity] US-13 recall/threshold shown equal `/halt`.
+- [ ] [Recording] US-14 white-box self-test on every pass (L236): `slice-10`
+      shows real self-test results.
+- [ ] [Integrity] US-14 self-test values equal their backing route.
+- [ ] [Recording] US-15 internal debug route (L254): `slice-12-admin-debug`
+      reachable, real overrides.
+- [ ] [Integrity] US-15 override rows equal `/admin/overrides`.
+- [ ] [Recording] Master mp4 stitched from all 15 per-scenario clips with title +
+      outro; no scenario omitted.
 
 ### Stage B: bug loop (drain to zero)
 - [ ] [Bug-Watcher] Full recording watched (frames + transcript); every app bug
