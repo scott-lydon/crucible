@@ -125,28 +125,25 @@ STUB-MANIFEST · Run Launcher
               <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#57C08A">✓ selected</span>
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap">
-              <div style="flex:1;min-width:200px;background:#16242A;border:1px solid #2E5560;border-radius:8px;padding:17px 18px;cursor:pointer">
+              <div onClick="{{ pickFraud }}" style="{{ fraudCardStyle }}" style-hover="border-color:#3A4654">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
                   <img src="https://cdn.simpleicons.org/stripe/4FAAC0" width="16" height="16" alt="" style="display:block"/>
-                  <span style="font-size:14px;font-weight:600;color:#E8EDF3">Fraud</span>
-                  <span style="margin-left:auto;width:16px;height:16px;border-radius:50%;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-size:11px;font-weight:700">✓</span>
+                  <span style="{{ fraudTitleStyle }}">Fraud</span>
+                  <span style="{{ fraudCheckStyle }}">✓</span>
                 </div>
                 <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:8px">Transaction-fraud classifier adapter</div>
                 <button onClick="{{ openInspect }}" style="background:none;border:none;padding:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline">{{ fraudRefLabel }}</button>
                 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">{{ fraudValidatedLabel }}</span>
               </div>
-              <div style="flex:1;min-width:200px;background:#161E27;border:1px solid #2C3744;border-radius:8px;padding:17px 18px;cursor:pointer" style-hover="border-color:#3A4654">
+              <div onClick="{{ pickCodeAgent }}" style="{{ codeCardStyle }}" style-hover="border-color:#3A4654">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
                   <img src="https://cdn.simpleicons.org/githubcopilot/95A1AE" width="16" height="16" alt="" style="display:block"/>
-                  <span style="font-size:14px;font-weight:600;color:#B8C2CE">Code Agent</span>
+                  <span style="{{ codeTitleStyle }}">Code Agent</span>
+                  <span style="{{ codeCheckStyle }}">✓</span>
                 </div>
                 <div style="font-size:12px;color:#B8C2CE;line-height:1.5;margin-bottom:8px">Autonomous code-generation agent</div>
                 <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">{{ codeRefLabel }}{{ codeValidatedLabel }}</span>
               </div>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:9px 14px;background:#12181E;border:1px dashed #2C3744;border-radius:7px">
-              <span style="width:7px;height:7px;border-radius:50%;background:#3A4654;flex:none"></span>
-              <span style="font-size:12px;color:#95A1AE">Research Agent · <span style="color:#B8C2CE">stretch path</span> · multi-step research target, not in core demo</span>
             </div>
           </div>
 
@@ -166,9 +163,9 @@ STUB-MANIFEST · Run Launcher
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #1D2630;background:#1A1610;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#D4A451">
                   <div style="display:flex;align-items:center;gap:8px">
                     <img src="https://cdn.simpleicons.org/yaml/D4A451" width="14" height="14" alt="" style="display:block"/>
-                    <span>draft.fraud.spec.yaml · author mode</span>
+                    <span>{{ draftHeaderLabel }}</span>
                   </div>
-                  <span style="color:#95A1AE">seeded · GET /targets/fraud/default-spec</span>
+                  <span style="color:#95A1AE">seeded · GET /targets/{{ selectedTarget }}/default-spec</span>
                 </div>
                 <textarea value="{{ specDraft }}" onChange="{{ setSpecDraft }}" onInput="{{ setSpecDraft }}" spellcheck="false" style="display:block;width:100%;height:208px;background:#0E141B;border:none;outline:none;resize:vertical;color:#B8C2CE;font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.7;padding:12px 16px;tab-size:2"></textarea>
               </div>
@@ -184,11 +181,11 @@ STUB-MANIFEST · Run Launcher
             <sc-if value="{{ specSealed }}" hint-placeholder-val="{{ false }}">
               <div style="border:1px solid #2C3744;border-radius:8px;overflow:hidden;background:#0E141B">
                 <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
-                  <img src="https://cdn.simpleicons.org/yaml/95A1AE" width="14" height="14" alt="" style="display:block"/>spec.fraud.sealed.yaml · 12 lines
+                  <img src="https://cdn.simpleicons.org/yaml/95A1AE" width="14" height="14" alt="" style="display:block"/>spec.{{ selectedTarget }}.sealed.yaml · 12 lines
                 </div>
                 <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.7;color:#B8C2CE;padding:6px 0">
                   <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">1</span><span style="padding:0 14px;color:#95A1AE">spec:</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">2</span><span style="padding:0 14px">  target: fraud_adapter</span></div>
+                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">2</span><span style="padding:0 14px">  target: {{ selectedTarget }}_adapter</span></div>
                   <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">3</span><span style="padding:0 14px">  sealed: <span style="color:#57C08A;font-weight:600">true ✓</span></span></div>
                   <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">4</span><span style="padding:0 14px;color:#95A1AE">  obligations:</span></div>
                   <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">5</span><span style="padding:0 14px">    - held_out_tests.pass_rate &gt;= 0.95</span></div>
@@ -231,7 +228,7 @@ STUB-MANIFEST · Run Launcher
           <div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;margin-bottom:12px">RUN SUMMARY</div>
             <div style="display:flex;flex-direction:column;gap:13px">
-              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Target</span><span style="font-size:13px;color:#E8EDF3;font-weight:500">Fraud</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Target</span><span style="font-size:13px;color:#E8EDF3;font-weight:500">{{ selTargetName }}</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Oracles</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">4 + judge</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Rounds</span><span style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#E8EDF3;font-weight:600">{{ rounds }}</span></div>
               <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13px;color:#95A1AE">Est. spend</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">{{ estSpendLabel }}</span></div>
@@ -269,7 +266,7 @@ STUB-MANIFEST · Run Launcher
     <!-- ============== RECENT RUNS · history strip ============== -->
     <div style="border:1px solid #2C3744;border-radius:10px;background:#0E141B;overflow:hidden">
       <div style="display:flex;align-items:baseline;gap:14px;padding:16px 22px;border-bottom:1px solid #1D2630;flex-wrap:wrap">
-        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">RECENT RUNS · fraud_adapter</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em">RECENT RUNS · {{ selectedTarget }}_adapter</div>
         <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">last 50</span>
       </div>
 
@@ -1076,6 +1073,18 @@ class Component extends DCLogic {
       .catch(() => {});
   }
 
+  // US-1 (BUG-R3): operator selects a target. Switch selectedTarget, re-derive
+  // the sealed-spec draft from that target's /targets/{type}/default-spec (the
+  // same source componentDidMount seeds from), reset the seal to unsealed, and
+  // refresh the cost estimate for the new target.
+  pickTarget(type) {
+    if (this.state.runStarted) return;          // locked once a run is launched
+    if (type === this.state.selectedTarget) return;
+    this.setState({ selectedTarget: type, specSealed: false, defaultSpec: null, specDraft: '' });
+    this.loadDefaultSpec(type);
+    this.loadEstimate(type, this.state.rounds);
+  }
+
   loadEstimate(type, rounds) {
     fetch('/estimate?target_type=' + encodeURIComponent(type) + '&rounds=' + (rounds || 0))
       .then(r => r.json())
@@ -1181,6 +1190,22 @@ class Component extends DCLogic {
     const codeRef = codeT.artifact_ref || '';
     const fraudValidated = validatedDate('fraud');
     const codeValidated = validatedDate('code_agent');
+
+    // --- target-card selection styling (BUG-R3) -------------------------
+    // The selected box gets the highlighted treatment (#16242A bg / #2E5560
+    // border + ✓ chip); the unselected box gets the muted treatment. These
+    // follow `sel` so the ✓ moves with the actual selection.
+    const fraudSelected = sel === 'fraud';
+    const codeSelected = sel === 'code_agent';
+    const cardSel = 'flex:1;min-width:200px;background:#16242A;border:1px solid #2E5560;border-radius:8px;padding:17px 18px;cursor:pointer';
+    const cardOff = 'flex:1;min-width:200px;background:#161E27;border:1px solid #2C3744;border-radius:8px;padding:17px 18px;cursor:pointer';
+    const titleSel = 'font-size:14px;font-weight:600;color:#E8EDF3';
+    const titleOff = 'font-size:14px;font-weight:600;color:#B8C2CE';
+    const checkOn = 'margin-left:auto;width:16px;height:16px;border-radius:50%;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-size:11px;font-weight:700';
+    const checkOff = 'display:none';
+    // Run-summary "Target" label + draft-YAML header follow the selection too.
+    const selTargetName = codeSelected ? 'Code Agent' : 'Fraud';
+    const draftHeaderLabel = 'draft.' + sel + '.spec.yaml · author mode';
 
     // --- spend (GET /spend/current-month) + sandbox (GET /sandbox/image) ---
     const sp = this.state.spend;
@@ -1726,6 +1751,18 @@ class Component extends DCLogic {
       fraudValidatedLabel: fraudValidated ? ' · validated ' + fraudValidated : '',
       codeRefLabel: codeRef,
       codeValidatedLabel: codeValidated ? ' · validated ' + codeValidated : '',
+      // --- target selection (BUG-R3): pick + selection-following styling ---
+      pickFraud: () => this.pickTarget('fraud'),
+      pickCodeAgent: () => this.pickTarget('code_agent'),
+      fraudCardStyle: fraudSelected ? cardSel : cardOff,
+      codeCardStyle: codeSelected ? cardSel : cardOff,
+      fraudTitleStyle: fraudSelected ? titleSel : titleOff,
+      codeTitleStyle: codeSelected ? titleSel : titleOff,
+      fraudCheckStyle: fraudSelected ? checkOn : checkOff,
+      codeCheckStyle: codeSelected ? checkOn : checkOff,
+      selTargetName: selTargetName,
+      draftHeaderLabel: draftHeaderLabel,
+      selectedTarget: sel,
       // --- real budget ceiling + sandbox image (GET /spend, /sandbox/image) ---
       ceilingValue: ceilingValue,
       ceilingPerRoundNote: '',
