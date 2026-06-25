@@ -203,3 +203,42 @@ All five documented in ARCHITECTURE.md.
 ### Pass B — in progress
 - Token `probe-c4d5e6`, rounds 1, run f48fa26a. Propagation re-verify + llm_calls
   endpoint deploy/verify pending its completion (cannot restart mid-run).
+
+---
+
+## Demo / deploy / share loop (GOAL_LOOP_DEMO_DEPLOY_HANDOFF.md) — 2026-06-25
+
+State of record = that handoff's §7 checklists. Progress this pass:
+
+### Stage P — DONE
+- Secrets present (names only, no values): .env DATABASE_URL/RENDER_API_KEY/
+  MODAL_TOKEN_ID/MODAL_TOKEN_SECRET; elevenlabs.env ELEVENLABS_API_KEY/_VOICE_ID.
+- ElevenLabs voice test clip: demo/voice/_test5s.mp3 (4.83s, HTTP 200).
+- Functional loop GOAL_LOOP_HANDOFF.md = 68/68 ticked.
+- Scenario list = acceptance-tests.md US-1..15 exactly (no out-of-scope staged).
+
+### Stage D — DONE (deploy-verified)
+- Render `crucible` (srv-d8trfn9o3t8c73bvp470) tracks feat/crucible-build,
+  autoDeploy on. PR #3 OPEN, mergedAt None (NOT merged). Primary path, no mirror.
+- Pushed 7ca8b2d→81fa776 (10 commits incl US-2 inspect, llm_calls, llm-persist,
+  US-15 admin) to GitHub + GitLab mirror; deployed; then BUG-L1 fix 90aabcd.
+- Live https://crucible-zaag.onrender.com: /health 200 db connected, branch
+  marker /targets/code_agent/default-spec 200, new-feature routes
+  /admin/overrides 200 + /metrics 200 (proves latest head live, not stale main).
+- BUG-L1 (Loyalty): two out-of-scope STRETCH screens (slice-05-coevolution-curves,
+  slice-07-leaderboard-export) were live + Canvas-linked with no backend.
+  Operator approved removal; commit 90aabcd deleted both + unlinked Canvas;
+  deploy-verified both → 404, Canvas 0 links, in-scope intact.
+
+### Stage R — recording harness built + proven; scenarios in progress
+- demo/recorder.mjs (Playwright video capture + API payload + rendered-text +
+  screenshot + console/req health), demo/narrate.sh (el_tts_render), demo/mux.sh
+  (narration over the silent walk, padded to max duration → h264/aac mp4).
+- Pipeline proven end-to-end on US-6 catalog (record → integrity → narrate →
+  mux mp4): page rendered 0 console errors; every on-screen value traces to
+  /catalog (mock-evasion reuse 8, direct-sum reuse 1 / $0.10, tiles 2/1/9/$0.05).
+- OPEN findings (demo/BUGLOG.md): BUG-R1 (US-6 catalog lacks the row-click
+  audit-trace reveal + "Run This Tactic" button required by acceptance L116-117);
+  BUG-L2 (slice-04 dashboard co-evolution empty-state panel, remove per REMOVED_UI).
+- Per-scenario recording boxes remain unticked pending bespoke walks + the
+  Bug-Watcher/Integrity sign-off in a fresh context.

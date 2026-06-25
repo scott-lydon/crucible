@@ -1,0 +1,8 @@
+# Heavy capture media stays local until the final master is produced + uploaded.
+# The harness, scenario configs, narration scripts, and integrity JSON are tracked.
+clips/*.webm
+clips/*.mp4
+*.mp4
+voice/*.mp3
+integrity/*.png
+scenarios/*_localtest.json

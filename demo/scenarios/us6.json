@@ -1,0 +1,15 @@
+{
+  "id": "us6-catalog",
+  "title": "US-6 Browse the strategy catalog",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-01-strategy-catalog.dc.html",
+  "waitText": "tactics in the sealed attack corpus",
+  "dwellMs": 1500,
+  "apiRoutes": ["/catalog"],
+  "steps": [
+    { "action": "wait", "ms": 1500 },
+    { "action": "scroll", "dy": 320, "ms": 1100 },
+    { "action": "scroll", "dy": 320, "ms": 1100 },
+    { "action": "scrollTop", "ms": 1000 }
+  ]
+}

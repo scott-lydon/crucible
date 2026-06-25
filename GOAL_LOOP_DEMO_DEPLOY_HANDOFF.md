@@ -242,22 +242,48 @@ reviewer's box. A regression unticks the box. The loop is done only when the
 section 8 master checklist is green.
 
 ### Stage P: prerequisites
-- [ ] [Deploy] All secrets in section 2 confirmed present; missing ones surfaced
-      to the operator, not faked.
-- [ ] [Recording] ElevenLabs helper renders a 5-second test clip in the user's
-      voice (proves voice id + key + quota).
-- [ ] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
-      before any recording.
-- [ ] [Loyalty] Scenario list to be recorded is exactly the in-scope US-n set;
-      nothing out of scope staged.
+- [x] [Deploy] All secrets in section 2 confirmed present; missing ones surfaced
+      to the operator, not faked. EVIDENCE 2026-06-25: presence-checked (names
+      only, no values printed): .env has DATABASE_URL, RENDER_API_KEY,
+      MODAL_TOKEN_ID, MODAL_TOKEN_SECRET; elevenlabs.env has ELEVENLABS_API_KEY,
+      ELEVENLABS_VOICE_ID (both `export `-prefixed). None missing.
+- [x] [Recording] ElevenLabs helper renders a 5-second test clip in the user's
+      voice (proves voice id + key + quota). EVIDENCE: `el_tts_render` →
+      `demo/voice/_test5s.mp3`, ffprobe duration 4.83s, 78202 bytes, HTTP 200.
+- [x] [Builder] Functional loop (`GOAL_LOOP_HANDOFF.md`) is green; app works
+      before any recording. EVIDENCE: GOAL_LOOP_HANDOFF.md checkbox tally =
+      68 ticked / 0 unticked.
+- [x] [Loyalty] Scenario list to be recorded is exactly the in-scope US-n set;
+      nothing out of scope staged. EVIDENCE: acceptance-tests.md §1 defines
+      exactly US-1..US-15 (grep of `^### US-`); Stage R below enumerates exactly
+      US-1..US-15, no extra scenario.
 
 ### Stage D: deploy to Render without merging PR #3
-- [ ] [Deploy] Render `crucible` service set to track `feat/crucible-build` (or
-      fallback mirror documented); PR #3 untouched, not merged.
-- [ ] [Deploy] Branch head deployed; build succeeded in the Render log.
-- [ ] [Deploy] Live URL serves BRANCH code: `/health` 200 AND
+- [x] [Deploy] Render `crucible` service set to track `feat/crucible-build` (or
+      fallback mirror documented); PR #3 untouched, not merged. EVIDENCE: Render
+      API `srv-d8trfn9o3t8c73bvp470` → branch=`feat/crucible-build`,
+      autoDeploy=yes, repo=github.com/scott-lydon/crucible. `gh pr view 3` →
+      state OPEN, mergedAt None, base main, head feat/crucible-build. Primary
+      path (no parallel repo) used.
+- [x] [Deploy] Branch head deployed; build succeeded in the Render log. EVIDENCE:
+      pushed 10 commits (7ca8b2d→81fa776) to GitHub + GitLab mirror; triggered
+      deploy `dep-d8ucla6q1p3s73bg2vb0`, commit 81fa776929, status `live`.
+- [x] [Deploy] Live URL serves BRANCH code: `/health` 200 AND
       `/targets/code_agent/default-spec` returns 200 (the branch-only marker).
-- [ ] [Loyalty] Deploy exposes no out-of-scope route or screen.
+      EVIDENCE: https://crucible-zaag.onrender.com `/health`→
+      `{"status":"ok","database":"connected"}`; marker→200; new-feature routes
+      `/admin/overrides`→200 (commit bb84081), `/metrics`→200 (proves latest
+      branch head, not stale main, is live).
+- [x] [Loyalty] Deploy exposes no out-of-scope route or screen. EVIDENCE
+      2026-06-25 (after BUG-L1 fix, operator-approved removal): launcher
+      admin-control grep clean (0 matches); the two out-of-scope STRETCH screens
+      are now GONE from the deploy — `slice-05-coevolution-curves.dc.html` → 404,
+      `slice-07-leaderboard-export.dc.html` → 404; deployed `Canvas.dc.html`
+      contains 0 links to them; in-scope screens intact (Canvas 200, catalog
+      200, /health 200). Fix commit 90aabcd, deploy dep-d8uijd5aeets73948ta0
+      (commit 90aabcd) status live. NOTE: a related dashboard co-evolution panel
+      on slice-04 renders an honest empty state ("No co-evolution data") and is
+      tracked as BUG-L2 for the US-10 integrity pass (see Stage R US-10).
 
 ### Stage R: record the acceptance-test video (one box per acceptance test)
 
