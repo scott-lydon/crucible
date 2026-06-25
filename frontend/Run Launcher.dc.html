@@ -181,18 +181,12 @@ STUB-MANIFEST · Run Launcher
             <sc-if value="{{ specSealed }}" hint-placeholder-val="{{ false }}">
               <div style="border:1px solid #2C3744;border-radius:8px;overflow:hidden;background:#0E141B">
                 <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid #1D2630;background:#11181F;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
-                  <img src="https://cdn.simpleicons.org/yaml/95A1AE" width="14" height="14" alt="" style="display:block"/>spec.{{ selectedTarget }}.sealed.yaml · 12 lines
+                  <img src="https://cdn.simpleicons.org/yaml/95A1AE" width="14" height="14" alt="" style="display:block"/>spec.{{ selectedTarget }}.sealed.yaml · {{ sealedSpecLineCount }} lines
                 </div>
                 <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;line-height:1.7;color:#B8C2CE;padding:6px 0">
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">1</span><span style="padding:0 14px;color:#95A1AE">spec:</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">2</span><span style="padding:0 14px">  target: {{ selectedTarget }}_adapter</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">3</span><span style="padding:0 14px">  sealed: <span style="color:#57C08A;font-weight:600">true ✓</span></span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">4</span><span style="padding:0 14px;color:#95A1AE">  obligations:</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">5</span><span style="padding:0 14px">    - held_out_tests.pass_rate &gt;= 0.95</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">6</span><span style="padding:0 14px">    - metamorphic.invariance == <span style="color:#57C08A;font-weight:600">true ✓</span></span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">7</span><span style="padding:0 14px">    - differential.cross_family_drift &lt;= 0.03</span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">8</span><span style="padding:0 14px;color:#95A1AE">  oracles: <span style="color:#B8C2CE">[held_out, metamorphic, differential, fuzz]</span></span></div>
-                  <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">9</span><span style="padding:0 14px;color:#95A1AE"># sealed at submit · sha {{ sealedSha }}</span></div>
+                  <sc-for list="{{ sealedSpecLines }}" as="ln" hint-placeholder-count="9">
+                    <div style="display:flex"><span style="width:34px;flex:none;text-align:right;padding:0 10px;color:#95A1AE;border-right:1px solid #1D2630">{{ ln.n }}</span><span style="padding:0 14px;color:{{ ln.color }}">{{ ln.text }}</span></div>
+                  </sc-for>
                 </div>
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:12px">
@@ -1540,6 +1534,36 @@ class Component extends DCLogic {
       created: (r.created_at || '').slice(0, 16).replace('T', ' '),
     }));
 
+    // SEALED-SPEC PREVIEW (BUG-R6): render the REAL spec from
+    // GET /targets/{type}/default-spec — title, obligations, invariants — as
+    // numbered YAML lines. No hardcoded obligation strings. If the spec hasn't
+    // loaded yet, show a single loading line rather than fabricated content.
+    const dsSpec = (this.state.defaultSpec && this.state.defaultSpec.spec) || null;
+    let sealedSpecLines;
+    if (dsSpec) {
+      const grey = '#95A1AE';
+      const ln = [];
+      let n = 0;
+      const push = (text, color) => ln.push({ n: ++n, text, color: color || '#B8C2CE' });
+      push('spec:', grey);
+      push('  target: ' + this.state.selectedTarget, '#B8C2CE');
+      if (dsSpec.title) push('  title: ' + dsSpec.title, '#B8C2CE');
+      push('  sealed: true', '#B8C2CE');
+      const obls = Array.isArray(dsSpec.obligations) ? dsSpec.obligations : [];
+      push('  obligations:', grey);
+      obls.forEach(o => push('    - ' + (o.id ? o.id + ': ' : '') + (o.description || ''), '#B8C2CE'));
+      const invs = Array.isArray(dsSpec.invariants) ? dsSpec.invariants : [];
+      if (invs.length) {
+        push('  invariants:', grey);
+        invs.forEach(iv => push('    - ' + (iv.id ? iv.id + ': ' : '') + (iv.description || ''), '#B8C2CE'));
+      }
+      if (dsSpec.holdout_generator_kind) push('  holdout_generator_kind: ' + dsSpec.holdout_generator_kind, '#B8C2CE');
+      push('# sealed at submit · sha ' + this.state.sealedSha, grey);
+      sealedSpecLines = ln;
+    } else {
+      sealedSpecLines = [{ n: 1, text: '# loading sealed spec…', color: '#95A1AE' }];
+    }
+
     // --- deterministic verdict replay (POST /runs/{id}/verdicts/{vid}/replay) ---
     const rep = this.state.verdictReplay;
     const fmtTally = (t) => (t != null ? String(t) : EMD);
@@ -1682,6 +1706,12 @@ class Component extends DCLogic {
       recentCountLabel: recent.length ? (recent.length + ' runs') : 'no runs yet',
 
       // sealed-spec author flow (US-1)
+      // BUG-R6: the read-only preview renders the REAL obligations/invariants
+      // from GET /targets/{type}/default-spec (this.state.defaultSpec.spec) —
+      // no hardcoded placeholder YAML. Mirrors the canonical spec the editable
+      // draft was seeded from.
+      sealedSpecLines: sealedSpecLines,
+      sealedSpecLineCount: sealedSpecLines.length,
       specSealed: this.state.specSealed,
       specUnsealed: !this.state.specSealed,
       specDraft: this.state.specDraft,
