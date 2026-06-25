@@ -612,6 +612,41 @@ async def get_verdict(run_id: str, verdict_id: str, session: SessionDep) -> dict
     }
 
 
+@app.get("/runs/{run_id}/llm_calls")
+async def run_llm_calls(run_id: str, session: SessionDep) -> list[dict[str, Any]]:
+    """Every recorded LLM call for a run, for the trace-card Inspect view (US-2).
+
+    Real prompt, raw response, parsed output, token counts, model and dollar cost
+    per call, oldest first. Empty list when the run made no recorded calls.
+    """
+    rows = (
+        (
+            await session.execute(
+                select(LlmCall)
+                .where(LlmCall.run_id == run_id)
+                .order_by(LlmCall.created_at.asc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+    return [
+        {
+            "id": c.id,
+            "pillar": c.pillar,
+            "model": c.model,
+            "prompt": c.prompt,
+            "raw_response": c.raw_response,
+            "parsed_output": c.parsed_output,
+            "tokens_in": c.tokens_in,
+            "tokens_out": c.tokens_out,
+            "dollars_spent": float(c.dollars_spent),
+            "created_at": c.created_at.isoformat(),
+        }
+        for c in rows
+    ]
+
+
 @app.post("/runs/{run_id}/verdicts/{verdict_id}/replay")
 async def replay_verdict(run_id: str, verdict_id: str, session: SessionDep) -> dict[str, Any]:
     """Deterministically replay a verdict from its captured votes (US-5).

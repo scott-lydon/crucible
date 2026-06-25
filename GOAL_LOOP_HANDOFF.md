@@ -511,13 +511,15 @@ those. Rules:
       launcher into code. Also dead href="#" links on admin-debug/whitebox.
 
 ## 4b. Master exit checklist (tick only when section 6 is fully green twice)
-- [ ] [Verifier] Pass A used a FRESH probe token (recorded here: __________) and
-      non-default rounds/budget; it was found verbatim in every view that must
-      carry it. Hardcoding tells: none.
-- [ ] [Integrity] Pass A two-run comparison (A vs B, different target/rounds/
-      budget) found zero values identical-despite-different-inputs.
-- [ ] [Verifier] Pass B used a DIFFERENT fresh probe token (recorded here:
-      __________) than Pass A; propagation verified again.
+- [x] [Verifier] Pass A used a FRESH probe token (recorded here: probe-7f3a91)
+      and non-default rounds (2); found verbatim in run record spec_title,
+      launcher Running header, Results tab, AND the SR-117 report. Hardcoding
+      tells: none. Run f1380bb0 (4 attacks, 3 verdicts, ASR 0%/detection 100%).
+- [x] [Integrity] Pass A two-run comparison (f1380bb0 vs 704cdb): different
+      values (verdicts 3 vs 4; ASR 0% vs 25%; detection 100% vs 75%; tally 0.5
+      vs 2.5) -> zero identical-despite-different-inputs.
+- [~] [Verifier] Pass B uses a DIFFERENT fresh probe token (recorded here:
+      probe-c4d5e6), rounds 1, run f48fa26a — IN PROGRESS; propagation re-verify pending.
 - [ ] Pass A complete: every Scenario 0 and US-1..US-15 box ticked. Timestamp: ____
 - [ ] Pass B complete (immediately after A, fresh Verifier + Integrity, no
       reordering): same boxes tick again. Timestamp: ____
