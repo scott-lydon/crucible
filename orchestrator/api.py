@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import secrets
 import uuid
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -80,7 +81,17 @@ from shared.types import (
 )
 from modules.blue import BlueProposer, BlueStore
 from modules.oracles.aggregator import VerdictAggregator, votes_from_json
-from shared.llm import get_llm_client
+from shared.llm import (
+    KeySource,
+    LlmModel,
+    ProviderMode,
+    clear_active_key,
+    get_llm_client,
+    key_hint,
+    resolve_provider_mode,
+    set_active_key,
+)
+from shared.llm.active_key import get_active_key
 from shared.types import VerdictId
 
 log = get_logger("orchestrator.api")
@@ -834,6 +845,134 @@ async def policy(session: SessionDep) -> dict[str, Any]:
         ),
         "custom_policy_yaml": stored.policy_yaml if stored is not None else None,
         "updated_at": stored.updated_at.isoformat() if stored is not None else None,
+    }
+
+
+# ====================================================================
+# LLM provider admin (deploy-time Anthropic API fallback to the CLI)
+# ====================================================================
+# SECURITY NOTE: the admin credentials below are trivial hardcoded values
+# ("admin" / "pass"), per explicit operator request for this single-operator
+# demo. On a public deploy anyone who guesses them can enable the server's
+# project key and spend the operator's Anthropic credit. The mitigation in
+# scope is that the project-key path only works if the operator has set
+# ANTHROPIC_API_KEY on the server (it is never in the repo), and the user-key
+# path spends the visitor's own key, not the project's. Do not treat admin/pass
+# as real authentication.
+_ADMIN_USERNAME = "admin"
+_ADMIN_PASSWORD = "pass"
+_ADMIN_COOKIE = "crucible_admin"
+
+# In-memory set of valid admin session tokens. Cleared on process restart, which
+# is acceptable for the single-operator demo (the operator logs in again). An
+# opaque random token in an HttpOnly cookie is the smallest secure-enough check:
+# the token is never guessable and never readable by page JavaScript.
+_ADMIN_SESSIONS: set[str] = set()
+
+
+class AdminLoginRequest(BaseModel):
+    """The POST /admin/login body."""
+
+    username: str
+    password: str
+
+
+class LlmKeyRequest(BaseModel):
+    """The POST /llm-key body: a visitor-supplied Anthropic API key."""
+
+    api_key: str
+
+
+@app.post("/admin/login")
+async def admin_login(req: AdminLoginRequest, response: Response) -> dict[str, Any]:
+    """Authenticate the single operator and enable the server's project key.
+
+    On correct credentials this issues an opaque HttpOnly session cookie and, if
+    ANTHROPIC_API_KEY is configured on the server, installs it as the active
+    fallback key so a deployed run (no `claude` CLI) can call the real API. If
+    the env var is unset the login still succeeds but the response says the
+    project key is not configured, rather than fabricating a key.
+    """
+    if not (
+        secrets.compare_digest(req.username, _ADMIN_USERNAME)
+        and secrets.compare_digest(req.password, _ADMIN_PASSWORD)
+    ):
+        raise HTTPException(status_code=401, detail="invalid admin credentials")
+
+    token = secrets.token_urlsafe(32)
+    _ADMIN_SESSIONS.add(token)
+    response.set_cookie(
+        key=_ADMIN_COOKIE,
+        value=token,
+        httponly=True,
+        samesite="lax",
+        path="/",
+    )
+
+    project_key = get_settings().anthropic_api_key
+    if project_key:
+        set_active_key(project_key, KeySource.PROJECT)
+        return {
+            "ok": True,
+            "project_key_configured": True,
+            "message": "Admin session started. Project key enabled as the LLM fallback.",
+        }
+    return {
+        "ok": True,
+        "project_key_configured": False,
+        "message": (
+            "Admin session started, but ANTHROPIC_API_KEY is not configured on "
+            "the server, so the project key cannot be enabled. Set it on the "
+            "server, or paste your own key below."
+        ),
+    }
+
+
+@app.post("/llm-key")
+async def set_llm_key(req: LlmKeyRequest) -> dict[str, Any]:
+    """Store a visitor-supplied Anthropic key as the active fallback (no admin).
+
+    Used on the deployed instance when the operator has not configured a project
+    key: the visitor spends their own key. The key is held in the process-level
+    store only, never persisted and never echoed back; the response returns only
+    a last-four hint.
+    """
+    candidate = req.api_key.strip()
+    if not candidate:
+        raise HTTPException(status_code=422, detail="api_key must not be empty")
+    set_active_key(candidate, KeySource.USER)
+    return {"ok": True, "source": KeySource.USER.value, "key_hint": key_hint(candidate)}
+
+
+@app.post("/llm-key/clear")
+async def clear_llm_key() -> dict[str, Any]:
+    """Forget any stored fallback key, reverting the deployed instance to none."""
+    clear_active_key()
+    return {"ok": True}
+
+
+@app.get("/llm-provider")
+async def llm_provider() -> dict[str, Any]:
+    """The active LLM provider state for the central indicator and admin panel.
+
+    Computed by the same resolution `get_llm_client` uses, so the chip can never
+    claim a provider the run loop would not pick. Never returns the full key,
+    only a last-four hint when a key is active.
+    """
+    mode = resolve_provider_mode()
+    active = get_active_key()
+    labels = {
+        ProviderMode.CLI: "local CLI",
+        ProviderMode.PROJECT_KEY: "project key",
+        ProviderMode.USER_KEY: "your key",
+        ProviderMode.MOCK: "mock",
+        ProviderMode.NONE: "none",
+    }
+    return {
+        "mode": mode.value,
+        "model_family": LlmModel.OPUS.value,
+        "key_hint": key_hint(active.value) if active is not None else None,
+        "source_label": labels[mode],
     }
 
 
