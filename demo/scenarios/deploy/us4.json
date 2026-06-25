@@ -1,0 +1,37 @@
+{
+  "id": "deploy-us4-oracles",
+  "title": "US-4 Every oracle vote and reasoning",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/Run%20Launcher.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5",
+  "waitText": "VOTE BREAKDOWN",
+  "dwellMs": 2200,
+  "apiRoutes": [
+    "/oracles/registered",
+    "/runs/eef0b63837f84bef9fd6760c69ded0d5"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2500
+    },
+    {
+      "action": "clickText",
+      "text": "Results",
+      "ms": 2200
+    },
+    {
+      "action": "clickText",
+      "text": "VOTE BREAKDOWN",
+      "ms": 1500
+    },
+    {
+      "action": "scroll",
+      "dy": 340,
+      "ms": 2000
+    },
+    {
+      "action": "wait",
+      "ms": 2400
+    }
+  ]
+}

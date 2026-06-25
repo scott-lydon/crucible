@@ -1,0 +1,42 @@
+{
+  "id": "deploy-us15-admin",
+  "title": "US-15 Internal debug route",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-09-admin-debug.dc.html",
+  "waitText": "Admin",
+  "dwellMs": 2000,
+  "apiRoutes": [
+    "/admin/overrides",
+    "/me",
+    "/workspace",
+    "/policy"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2600
+    },
+    {
+      "action": "scroll",
+      "dy": 220,
+      "ms": 1900
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "scroll",
+      "dy": 240,
+      "ms": 1900
+    },
+    {
+      "action": "wait",
+      "ms": 1800
+    },
+    {
+      "action": "scrollTop",
+      "ms": 1800
+    }
+  ]
+}

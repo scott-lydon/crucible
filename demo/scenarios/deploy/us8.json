@@ -1,0 +1,39 @@
+{
+  "id": "deploy-us8-health",
+  "title": "US-8 Platform health",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-04-honest-dashboard.dc.html",
+  "waitText": "System health",
+  "dwellMs": 2200,
+  "apiRoutes": [
+    "/health/targets/code_agent",
+    "/health/targets/fraud_adapter",
+    "/health/targets/dummy",
+    "/oracles/registered"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2600
+    },
+    {
+      "action": "clickText",
+      "text": "System health",
+      "ms": 1600
+    },
+    {
+      "action": "scroll",
+      "dy": 360,
+      "ms": 2000
+    },
+    {
+      "action": "wait",
+      "ms": 2400
+    },
+    {
+      "action": "scroll",
+      "dy": 160,
+      "ms": 1600
+    }
+  ]
+}

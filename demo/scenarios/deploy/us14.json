@@ -1,0 +1,35 @@
+{
+  "id": "deploy-us14-whitebox",
+  "title": "US-14 White-box self-test",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-02-whitebox-selftest.dc.html",
+  "waitText": "White-box self-test",
+  "dwellMs": 1600,
+  "apiRoutes": [
+    "/metrics"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2400
+    },
+    {
+      "action": "scroll",
+      "dy": 260,
+      "ms": 1800
+    },
+    {
+      "action": "wait",
+      "ms": 1800
+    },
+    {
+      "action": "scroll",
+      "dy": 260,
+      "ms": 1800
+    },
+    {
+      "action": "scrollTop",
+      "ms": 1500
+    }
+  ]
+}

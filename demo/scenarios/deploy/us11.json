@@ -1,0 +1,34 @@
+{
+  "id": "deploy-us11-corpus",
+  "title": "US-11 Export the seeded-hack corpus",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-01-strategy-catalog.dc.html",
+  "waitText": "export JSON",
+  "dwellMs": 2200,
+  "apiRoutes": [
+    "/corpus"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2400
+    },
+    {
+      "action": "clickText",
+      "text": "mock-evasion",
+      "ms": 2400
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "scrollTop",
+      "ms": 1800
+    },
+    {
+      "action": "wait",
+      "ms": 1800
+    }
+  ]
+}

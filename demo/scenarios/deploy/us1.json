@@ -1,0 +1,38 @@
+{
+  "id": "explore-configure",
+  "title": "explore launcher configure",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/Run%20Launcher.dc.html",
+  "waitText": "Configure",
+  "dwellMs": 2000,
+  "apiRoutes": [
+    "/targets/registered",
+    "/health/targets/code_agent",
+    "/sandbox/image",
+    "/health/targets/fraud_adapter"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2600
+    },
+    {
+      "action": "scroll",
+      "dy": 300,
+      "ms": 1800
+    },
+    {
+      "action": "wait",
+      "ms": 1800
+    },
+    {
+      "action": "scroll",
+      "dy": 320,
+      "ms": 1800
+    },
+    {
+      "action": "scrollTop",
+      "ms": 1600
+    }
+  ]
+}

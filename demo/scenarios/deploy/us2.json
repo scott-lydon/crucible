@@ -1,0 +1,4 @@
+{ "id": "deploy-us2-round", "title": "US-2 Watch one round", "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/Run%20Launcher.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5", "waitText": "Running", "dwellMs": 2800,
+  "apiRoutes": ["/runs/eef0b63837f84bef9fd6760c69ded0d5", "/runs/eef0b63837f84bef9fd6760c69ded0d5/llm_calls"],
+  "steps": [ {"action":"wait","ms":2500},{"action":"clickText","text":"Running","ms":2400},{"action":"scroll","dy":260,"ms":1800},{"action":"clickText","text":"Inspect","ms":2600},{"action":"scroll","dy":-180,"ms":1700},{"action":"wait","ms":2400} ] }

@@ -1,0 +1,40 @@
+{
+  "id": "deploy-us9-sandbox",
+  "title": "US-9 Producer sandbox sealed",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/Run%20Launcher.dc.html",
+  "waitText": "SANDBOX",
+  "dwellMs": 2200,
+  "apiRoutes": [
+    "/sandbox/image"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2400
+    },
+    {
+      "action": "clickText",
+      "text": "SANDBOX ENVIRONMENT",
+      "ms": 1500
+    },
+    {
+      "action": "scroll",
+      "dy": 360,
+      "ms": 1900
+    },
+    {
+      "action": "wait",
+      "ms": 2200
+    },
+    {
+      "action": "scroll",
+      "dy": 180,
+      "ms": 1600
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    }
+  ]
+}

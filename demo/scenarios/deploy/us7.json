@@ -1,0 +1,35 @@
+{
+  "id": "deploy-us7-blue",
+  "title": "US-7 Blue patch review",
+  "base": "https://crucible-zaag.onrender.com",
+  "page": "/app/slice-03-blue-patch-review.dc.html?patch=4f56b60ea2c342989f362c008f1b6f21",
+  "waitText": "patch",
+  "dwellMs": 2000,
+  "apiRoutes": [
+    "/blue/4f56b60ea2c342989f362c008f1b6f21"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2600
+    },
+    {
+      "action": "scroll",
+      "dy": 280,
+      "ms": 1900
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "scroll",
+      "dy": 300,
+      "ms": 1900
+    },
+    {
+      "action": "scrollTop",
+      "ms": 1700
+    }
+  ]
+}
