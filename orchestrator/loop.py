@@ -1,7 +1,7 @@
 import uuid
 from collections.abc import Callable, Sequence
-from dataclasses import asdict
-from typing import Any, cast
+from dataclasses import asdict, dataclass
+from typing import Any, Protocol, cast
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -21,6 +21,55 @@ LabelFn = Callable[[object], bool]
 GenerateFn = Callable[[str, int], list[object]]
 
 
+@dataclass(frozen=True, slots=True)
+class Evaluation:
+    """The result of running the victim on one task: what it PRODUCED, a scalar
+    the loop compares to ``threshold`` to decide "caught", and the produced
+    artifact for the oracles.
+
+    For the fraud classifier (degenerate producer) ``score`` IS the produced
+    output and ``output`` is ``None`` — keeping the persisted row + every fraud
+    oracle's view byte-identical. A produce-victim returns its produced artifact
+    in ``output`` and a scalar gate in ``score`` (e.g. 0.0 vs a 0.5 threshold to
+    always route through the oracle verdict path).
+    """
+
+    score: float
+    output: object | None
+
+
+class TargetEngine(Protocol):
+    """The target-shaped seam the generic loop delegates to.
+
+    The loop owns persistence, slicing, the adversary call and the oracle
+    aggregation — all victim-agnostic. Everything that depends on whether the
+    victim CLASSIFIES or PRODUCES is isolated behind this protocol, so a
+    produce-victim (code agent) drives the SAME loop by supplying a different
+    engine. ``ClassifyEngine`` is the fraud adapter and reproduces today's exact
+    behavior.
+    """
+
+    def evaluate(self, task: object) -> Evaluation:
+        """Run the victim on ``task``; return its produced output + gate score."""
+        ...
+
+
+@dataclass(frozen=True, slots=True)
+class ClassifyEngine:
+    """Degenerate-producer adapter for a classifier ``Detector`` (the fraud path).
+
+    ``evaluate`` returns ``score = detector.score(task)`` and ``output=None`` —
+    exactly the value the loop persisted before this seam existed, so fraud
+    behavior is unchanged. A produce-victim ships its own ``TargetEngine`` whose
+    ``evaluate`` runs the producer and carries the artifact in ``output``.
+    """
+
+    detector: Detector
+
+    def evaluate(self, task: object) -> Evaluation:
+        return Evaluation(score=self.detector.score(task), output=None)
+
+
 async def run_loop(
     session_factory: async_sessionmaker[AsyncSession],
     *,
@@ -35,7 +84,15 @@ async def run_loop(
     label_fn: LabelFn,
     generate_fn: GenerateFn,
     spec: SealedSpec,
+    engine: "TargetEngine | None" = None,
 ) -> None:
+    # The loop is generic over the produce shape: it delegates "run the victim on
+    # a task" to a ``TargetEngine``. ``engine=None`` wraps the classifier
+    # ``detector`` in the degenerate-producer ``ClassifyEngine`` — byte-identical
+    # to the pre-seam fraud path. A produce-victim (code agent) passes its own
+    # engine to drive this SAME loop. ``detector`` stays in the signature both for
+    # backward compatibility and because the default engine needs it.
+    target: TargetEngine = engine if engine is not None else ClassifyEngine(detector)
     try:
         batch: list[object] = generate_fn(seed, batch_size)
         # deterministic split: even indices = validation, odd = holdout
@@ -58,7 +115,8 @@ async def run_loop(
 
             for idx in sorted(current):
                 txn = current[idx]
-                score = detector.score(txn)
+                evaluation = target.evaluate(txn)
+                score = evaluation.score
                 caught = score >= threshold
                 txn_row_id = str(uuid.uuid4())
                 origin = Origin.MUTATED if idx in prev_score else Origin.SYNTHETIC
@@ -86,7 +144,7 @@ async def run_loop(
                 if caught and label_fn(txn) and slices[idx] is TxnSlice.HOLDOUT:
                     mutated = adversary.mutate(txn, score)
                     if mutated is not None:
-                        post_score = detector.score(mutated)
+                        post_score = target.evaluate(mutated).score
                         async with session_factory() as s:
                             s.add(
                                 AttackRow(
@@ -121,6 +179,9 @@ async def run_loop(
                         original_sample=original_sample,
                         original_score=prev_score.get(idx),
                         spec=spec,
+                        # ``None`` for the fraud classifier (its output IS the
+                        # score); a produce-victim's artifact for its oracles.
+                        output=evaluation.output,
                     )
                     votes = [o.vote(ctx) for o in oracles]
                     verdict = aggregate(votes)
