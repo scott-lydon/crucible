@@ -41,7 +41,8 @@ from modules.measure import (
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.loop import Loop
-from orchestrator.wiring import get_registry
+from orchestrator.persisting_llm import PersistingLlmClient
+from orchestrator.wiring import build_registry, get_registry
 from shared.config import get_settings
 from shared.types.default_specs import default_spec_payload, default_spec_yaml
 from shared.persistence import get_session, get_sessionmaker, ping
@@ -468,7 +469,13 @@ async def _run_loop_background(run_id: str) -> None:
     """
     try:
         async with get_sessionmaker()() as session:
-            await Loop(session=session, registry=get_registry()).run(run_id)
+            # Wire a per-run registry whose LLM client records every call to
+            # llm_calls (run_id, prompt, response, tokens, cost) so the trace-card
+            # Inspect view (US-2) and the spend column (US-10) read real data.
+            registry = build_registry(
+                llm=PersistingLlmClient(base=get_llm_client(), run_id=run_id)
+            )
+            await Loop(session=session, registry=registry).run(run_id)
     except Exception as exc:  # the run is long and out-of-band; record, never swallow
         log.error("run_loop_failed", run_id=run_id, error=f"{type(exc).__name__}: {exc}")
         async with get_sessionmaker()() as session:
