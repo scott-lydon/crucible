@@ -242,3 +242,37 @@ State of record = that handoff's §7 checklists. Progress this pass:
   BUG-L2 (slice-04 dashboard co-evolution empty-state panel, remove per REMOVED_UI).
 - Per-scenario recording boxes remain unticked pending bespoke walks + the
   Bug-Watcher/Integrity sign-off in a fresh context.
+
+---
+
+## Deploy made "proper": admin API-key fallback + seed-on-boot (2026-06-25, commit 85bfff2)
+
+Root cause of the deploy/local gap was never code (same branch deploys) — it was
+(1) Render has no `claude` CLI so it ran MOCK_LLM (mock judge catches nothing →
+0% metrics) and (2) the deploy DB only held mock runs, and external clients can't
+write the Render Postgres (internal-only).
+
+Two features close it (both built by a separate Builder context, reviewed here):
+- **Anthropic API fallback + admin panel** (commits 36d0f58, 2430e37, f87b3e5):
+  shared/llm/api_client.py (httpx Messages API, model map haiku/sonnet/opus ->
+  claude-haiku-4-5/sonnet-4-6/opus-4-8, real cost from usage, refusal->typed
+  error), shared/llm/active_key.py (process-global key store), resolver order
+  MOCK -> CLI -> active key (project after admin login / user key) -> NONE (never
+  silent mock). Endpoints /admin/login (admin/pass, timing-safe, HttpOnly cookie,
+  reads ANTHROPIC_API_KEY), /llm-key, /llm-key/clear, /llm-provider. New admin
+  slice + central LLM provider indicator. SECURITY: admin/pass are trivial creds;
+  on a public deploy they unlock spending the project key — per explicit operator
+  request. Verified: 7/7 llm unit tests pass; Protocol matches; get_llm_client
+  only called per-run (not at startup) so MOCK_LLM=false is boot-safe.
+- **Seed-on-boot** (commit d707e95 + httpx runtime-dep fix 85bfff2): scripts/
+  seed_demo.py loads seed/crucible_demo.json (real-LLM snapshot, 145 rows) inside
+  the container at boot (gated CRUCIBLE_SEED_DEMO, idempotent). Disclosed snapshot.
+
+Render env now: MOCK_LLM=false, CRUCIBLE_SEED_DEMO=true, ANTHROPIC_API_KEY set,
+DATABASE_URL, HALT_RECALL_THRESHOLD=0.7. PR #3 still NOT merged.
+
+Deploy-verified live (https://crucible-zaag.onrender.com): /runs=10, /metrics
+black-box 6/7=0.86 + white-box 6/6=1.00, /halt recall=1.0 (all real, were 0%/halted);
+admin/pass -> project_key_configured, /llm-provider mode project_key (key_hint
+sk-…bgAA); wrong creds 401; active key then cleared to safe "none". Loyalty
+removed pages still 404. Build dep-d8ujj4navr4c73a4uj0g live.
