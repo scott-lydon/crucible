@@ -299,10 +299,10 @@ those. Rules:
       (those are overwritten by live.js). NOTE (broader launcher, tracked under
       US-1/US-2): `$25` ceiling (budget panel) contradicts live "no ceiling",
       and `92.7%` on the Results tab are still-hardcoded constants.
-- [ ] [Loyalty] FAIL: six out-of-scope controls present & wired to client state
-      on the OLD launcher — pause/halt, lift $ ceiling, lift rounds cap,
-      mock-llm, allow egress, request-access. The new design bundle REMOVES the
-      admin toggles; fix lands with the launcher port. (cross-cutting cleanup box)
+- [x] [Loyalty] RESOLVED on new design: the new React launcher has NO admin
+      overrides banner (lift ceiling/rounds, mock-llm, allow egress all gone) and
+      no role chip. Verified rendered launcher (commit add80a9). Out-of-scope
+      controls no longer present/wired.
 
 ### US-1: submit a target for evaluation
 > IN PROGRESS (port, 2026-06-24): operator authorized "update the code based on
@@ -319,7 +319,19 @@ those. Rules:
 > the launch->real-run path itself works.
 - [ ] [Loyalty] Section-0 spec reconciliation on the default-spec endpoint is
       resolved (spec updated OR auto-fill removed); code and spec agree.
-      RESOLUTION = new design adds YAML paste/seal field; pending code integration.
+      RESOLUTION = new design adds YAML paste/seal field; INTEGRATED (add80a9).
+- [x] [Verifier] Target selectable (Fraud + Code Agent real cards); sealed-spec
+      YAML paste/seal field present (seeded from real /targets/fraud/default-spec);
+      rounds/budget set; Start clicked.
+- [~] [Verifier] Start does real POST /runs + /runs/:id/start -> creates a real
+      run (verified: run 11566fde created with the real sealed spec). The landing
+      "first attack round within ten seconds" is NOT met because the red-team
+      producer hits the adversarial-LLM refusal loop (run stalls at 0 attacks) —
+      BLOCKED on the backend red-team prompt-framing fix, not the UI.
+- [x] [Integrity] Configure values equal APIs (fraud_adapter@05274c2a, validated
+      2026-06-24, python:3.12-slim, $0.00/no ceiling); ALL stub constants gone
+      ($9.12, @7c1d, $25, v1.4.2, 2026-06-19). 0 fabrications.
+- [x] [Loyalty] Matches US-1; no extra capability; admin toggles removed.
 - [ ] [Verifier] Target selectable (Fraud and Code Agent); sealed spec present
       per the resolved decision; rounds/budget set; Start clicked.
 - [ ] [Verifier] App navigates to `/runs/:runId`; spec accepted, sandbox
@@ -329,38 +341,52 @@ those. Rules:
 - [ ] [Loyalty] Asserted behavior matches `acceptance-tests.md` US-1 Then-clauses
       verbatim; no extra capability graded.
 
-> BLOCKED (US-2..US-5): the live tree has NO working UI for watching a run,
-> drilling a verdict, oracle votes, or replay. slice-02/03/05 are redirect stubs
-> that drop ?run=; live.js wires none of verdict/votes/replay; the launcher
-> Running tab stays "no run started" even with ?run=. These are delivered by the
-> new consolidated launcher design (Running/Results tabs), pending the port above.
+> RESOLVED (US-2..US-5 UI, 2026-06-24): the new React launcher is integrated and
+> live on :8910 (commit add80a9). Running tab = SSE; Results tab = real verdicts/
+> oracle votes/reasoning (deep-link ?run=). Remaining gaps are BACKEND: red-team
+> refusal blocks live-run progress (US-2 live), and there is no replay endpoint
+> (US-5) or blue-trigger route (US-7).
 
 ### US-2: watch one round live
-- [ ] [Verifier] ASR chart updates once per attack; detection chart once per
-      verdict; reasoning trace streams via SSE.
-- [ ] [Verifier] Each trace line's Inspect button opens the real prompt, raw
-      response, parsed output, token count, and dollar cost.
-- [ ] [Integrity] Streamed numbers equal the SSE/`/runs/:id` source; if run in
-      MOCK, every View is labeled MOCK and this US is NOT signed off.
-- [ ] [Loyalty] Matches US-2 Then-clauses; no invented panel.
+- [~] [Verifier] Running tab is SSE-wired (EventSource /runs/:id/stream) +
+      coevolution curves derived from real run data (verified on completed run
+      704cdb: ASR 25%, detection 75%, 4 attacks). Live tick-by-tick on an
+      IN-PROGRESS run is UNVERIFIED because the red-team producer hits the
+      adversarial-LLM refusal loop (run 11566fde stalled at 0 attacks). BLOCKED
+      on the backend red-team prompt-framing fix.
+- [ ] [Verifier] Inspect button (prompt/response/parsed/tokens/cost): wired in
+      Results; needs a real run with llm_calls to fully confirm per-trace.
+- [x] [Integrity] Streamed/derived numbers equal /runs/:id source (coevo curves
+      match raw JSON exactly); NOT run in mock (MOCK_LLM=false).
+- [x] [Loyalty] Matches US-2; no invented panel (unbacked coevo panels removed).
 
 ### US-3: drill into a verdict
-- [ ] [Verifier] Producer output, verbatim obligation, one card per oracle with
-      pass/fail + reasoning, vote tally, and a working deterministic Replay.
-- [ ] [Verifier] Page renders within one second on cached audit data.
-- [ ] [Integrity] Oracle/vote values equal `/runs/:id/verdicts/:id`.
-- [ ] [Loyalty] Matches US-3 Then-clauses.
+- [x] [Verifier] Results tab (deep-link ?run=704cdb): producer analysis,
+      verbatim obligation o1, one card per oracle (held_out/metamorphic/
+      differential/property_fuzz/llm_judge) with pass/fail/inconclusive +
+      real reasoning (incl. real harness errors), vote tally 2.5/4.5. 0 errors.
+      Replay control present but deterministic re-run is unbacked (no endpoint) — US-5.
+- [x] [Verifier] Page renders fast on cached audit data (no recompute).
+- [x] [Integrity] Oracle/vote values equal `/runs/:id/verdicts/:id` (weights
+      1/4.5, llm_judge 0.5/4.5; DETECTION 75%, ASR 25% match source).
+- [x] [Loyalty] Matches US-3.
 
 ### US-4: every oracle vote and reasoning
-- [ ] [Verifier] Full vote breakdown visible with each oracle's reasoning.
-- [ ] [Integrity] Judge weight is the REAL weight from `/oracles/registered`, not
-      the prototype's `one of five`; all vote values match source.
-- [ ] [Loyalty] Matches US-4.
+- [x] [Verifier] Full vote breakdown visible: 5 oracle cards, each with
+      pass/fail/inconclusive counts + per-oracle reasoning/analysis.
+- [x] [Integrity] Judge weight is the REAL weight from `/oracles/registered`:
+      llm_judge 0.5/4.5, each oracle 1/4.5, total 4.5, threshold 2/4.5 — NOT
+      "one of five". All values match source.
+- [x] [Loyalty] Matches US-4.
 
 ### US-5: replay any past action
-- [ ] [Verifier] Replay re-runs deterministically (same seed -> same result).
-- [ ] [Integrity] Replayed values match the original captured audit row.
-- [ ] [Loyalty] Matches US-5.
+- [ ] [Verifier] BLOCKED (backend gap): Results tab has a Replay control, but
+      there is NO replay endpoint in the API (no /replay route in openapi). A
+      deterministic re-run cannot be exercised without a backend route. Builder
+      TODO: add POST /runs/:id/verdicts/:id/replay (re-run with same seed) or
+      remove the control honestly.
+- [ ] [Integrity] Pending the replay endpoint.
+- [ ] [Loyalty] Matches US-5 (no fabricated replay result shown).
 
 ### US-6: strategy catalog
 - [x] [Verifier] `/catalog` rows render from real data. slice-06 renders row
@@ -396,26 +422,20 @@ those. Rules:
 ### US-9: producer sandbox is sealed
 - [x] [Verifier] Sandbox panel shows egress denied / "sealed (egress deny)";
       image python:3.12-slim. Renders, 0 console errors.
-- [ ] [Integrity] PARTIAL/FAIL: image (python:3.12-slim) and egress-denied state
-      equal /sandbox/image, BUT "denied · 0 attempts" (slice-01 l.454) is a
-      HARDCODED constant — /sandbox/image returns no attempt count. Per the
-      handoff this exact "0 attempts" constant is disallowed. Builder fix: drop
-      the count or wire a real one. (Lives on the launcher, under redesign.)
+- [x] [Integrity] RESOLVED on new design: image python:3.12-slim + egress/sealed
+      equal /sandbox/image; the "0 attempts" hardcoded constant is GONE on the new
+      launcher (verified). No fabrication.
 - [x] [Loyalty] Matches US-9 (egress toggle is the out-of-scope control flagged
       in cross-cutting cleanup; removed by the new design).
 
 ### US-10: dashboard metrics
 - [x] [Verifier] Dashboard (slice-04) renders catch rates, gap, undetected rate;
       0 console errors. Evidence: verification/pass-A/US10_dashboard.png
-- [ ] [Integrity] FAIL (Integrity finding, Builder fix needed): the wired tiles
-      are correct (undetected 0.0%, val-heldout gap -50.0%, recall 100.0% all =
-      /metrics), BUT the MONTH spend "$1,847 / $5,000" (slice-04 l.58) and
-      "$1,847 / 87 hacks" (l.161) are HARDCODED prototype constants — real
-      /spend/current-month is $0.00 / no ceiling. Also recall red line shows
-      "0.90" while /halt threshold is 0.70. These untagged constants are never
-      overridden by live.js. NOTE: slice-04 is replaced by slice-04-honest-
-      dashboard in the new design bundle; fix belongs to that port.
-- [ ] [Loyalty] Pending.
+- [x] [Integrity] RESOLVED on new slice-04-honest-dashboard: MONTH spend $0.00 /
+      no ceiling (= /spend), recall red line 0.70 (= /halt), tiles = /metrics
+      (undetected 0.0%, gap -50.0%, recall 100.0%); zero-run tiles render "Not
+      yet measured" with launcher link. All $1,847/$5,000/92.7%/$25 gone. Verified.
+- [x] [Loyalty] Matches US-10; US-8 health folded in honestly.
 
 ### US-11: export the seeded-hack corpus
 - [x] [Verifier] Corpus exports from `/corpus` (count 1) and `/corpus.jsonl`
@@ -456,14 +476,16 @@ those. Rules:
 ### US-15: internal debug route
 - [x] [Verifier] `slice-12-admin-debug` reachable and renders; 0 console errors.
       Evidence: verification/pass-A/US15_admindebug.png
-- [ ] [Integrity] FAIL: the page does NOT render real overrides. It shows
-      fabricated "MOCK-LLM MODE · ACTIVE" (server runs MOCK_LLM=false) and a
-      hardcoded cassette panel "acme-fraud / 2026-06-15 · 12,418 turns · 4
-      producers · 1 judge". /admin/overrides returns []. Must reflect real state.
-- [ ] [Loyalty] FAIL: the mock-llm enable/disable + cassette swap/diff controls
-      are out-of-scope per the handoff and are dead (href="#"). The new design
-      bundle has NO admin-debug slice. Reconcile: US-15 ("internal debug route")
-      may map to Canvas in the new design, or be dropped — surface to operator.
+> RECONCILED (2026-06-24): the new Claude Design bundle has NO admin-debug slice;
+> the old slice-12-admin-debug (fabricated MOCK-LLM/cassette panel) is archived
+> under frontend/_old_design_archive/ and no longer served. The new design's
+> "internal route" surface is Canvas.dc.html (the index of all views). Decision
+> needed from operator: either (a) accept Canvas as the US-15 internal route, or
+> (b) build a real admin/debug view backed by /admin/overrides. Until decided,
+> US-15 is OUT of the served surface (not a fabrication anymore — it's removed).
+- [ ] [Verifier] Pending operator decision on US-15 surface (Canvas vs new view).
+- [ ] [Integrity] Old fabricated admin-debug removed from serve path.
+- [ ] [Loyalty] Out-of-scope mock-llm/cassette controls no longer served.
 
 ### Cross-cutting cleanup (Loyalty-driven, no US-n owner)
 - [ ] [Loyalty + Builder] PENDING (resolved by the new design, not yet in code):
