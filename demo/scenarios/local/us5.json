@@ -1,0 +1,4 @@
+{ "id": "local-us5-replay", "title": "US-5 Replay any past action", "base": "http://localhost:8910",
+  "page": "/app/Run%20Launcher.dc.html?run=eef0b63837f84bef9fd6760c69ded0d5", "waitText": "Replay verdict", "dwellMs": 3000,
+  "apiRoutes": ["/runs/eef0b63837f84bef9fd6760c69ded0d5"],
+  "steps": [ {"action":"wait","ms":2500},{"action":"clickText","text":"Results","ms":2200},{"action":"clickText","text":"Replay verdict","ms":3500},{"action":"wait","ms":2500},{"action":"scroll","dy":200,"ms":1800} ] }

@@ -1,0 +1,1 @@
+Replaying a past action. Clicking replay verdict re-derives the verdict from its stored votes and diffs the result against what was persisted. The original tally was one point five, and the replay reproduces exactly one point five. The platform confirms it: deterministic, the verdict reproduced from its own audit row. Same inputs, same result, every time.
