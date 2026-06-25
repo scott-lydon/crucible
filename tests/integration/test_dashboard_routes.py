@@ -190,7 +190,7 @@ async def test_root_redirects_to_app(client: AsyncClient) -> None:
     assert first.headers["location"] == "/app"
     second = await client.get("/app")
     assert second.status_code in (307, 308)
-    assert second.headers["location"] == "/app/slice-01-run-launcher.dc.html"
+    assert second.headers["location"] == "/app/Run%20Launcher.dc.html"
 
 
 async def test_specs_history_returns_real_sealed_specs(client: AsyncClient) -> None:

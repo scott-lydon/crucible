@@ -32,6 +32,14 @@ from shared.persistence import reset_engine_for_tests
 # no .env, so this is a no-op there.
 load_dotenv()
 
+# The suite runs the LLM layer through the scripted mock path (the "existing
+# mock test path" of resolve_provider_mode). Without this, a runner that has
+# neither the `claude` CLI on PATH nor an Anthropic key resolves the provider to
+# NONE, and any route that builds an LLM client raises NoLlmProviderError. Set as
+# a default so a machine that explicitly wants a real provider (MOCK_LLM=0 in its
+# .env) is still respected.
+os.environ.setdefault("MOCK_LLM", "1")
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TEST_DATABASE_URL = os.environ.get(
     "CRUCIBLE_TEST_DATABASE_URL",

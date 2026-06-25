@@ -76,6 +76,12 @@ def test_factory_returns_scripted_client_when_mock_enabled() -> None:
     assert isinstance(client, ScriptedLlmClient)
 
 
-def test_factory_returns_cli_client_when_mock_disabled() -> None:
+def test_factory_returns_cli_client_when_mock_disabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Force the CLI-available branch so the test exercises the selection logic
+    # deterministically instead of depending on whether the `claude` binary
+    # happens to be installed on the runner (it is not, in CI).
+    monkeypatch.setattr("shared.llm.client._cli_available", lambda: True)
     client = get_llm_client(Settings(mock_llm=False))
     assert isinstance(client, ClaudeCliClient)
