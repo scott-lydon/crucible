@@ -26,7 +26,12 @@ from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
 from modules.red.catalog import build_catalog
-from modules.targets.agent import demo_agent, validate_agent_config
+from modules.targets.agent import (
+    HttpEndpointConfig,
+    demo_agent,
+    validate_agent_config,
+    validate_http_endpoint,
+)
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
 from shared.config import load_settings
@@ -81,6 +86,20 @@ class AgentSpecModel(BaseModel):
     params: dict[str, object] = Field(default_factory=dict)
 
 
+class HttpEndpointModel(BaseModel):
+    """A bring-your-own agent that already runs behind an HTTP endpoint (cr-ui4). Crucible
+    red-teams it as a black box: it POSTs the crafted input and reads the reply from a
+    configurable JSON field."""
+
+    name: str = "byo-http"
+    endpoint: str
+    input_field: str = "input"
+    output_field: str = "output"
+    method: str = "POST"
+    headers: dict[str, str] = Field(default_factory=dict)
+    timeout: float = 60.0
+
+
 class RunRequest(BaseModel):
     target_kind: str = Field(examples=["fraud", "agent"])
     shape: str = Field(examples=["shape1_ml", "shape2_agent"])
@@ -88,9 +107,11 @@ class RunRequest(BaseModel):
     # (Shape 2 agent, compiled by the wired spec compiler).
     spec_yaml: str | None = None
     human_spec: HumanSpecModel | None = None
-    # Agent target selection (Shape 2): a BYO agent, or a built-in demo by name.
+    # Agent target selection (Shape 2): a BYO agent, a built-in demo by name, or a BYO
+    # HTTP endpoint that Crucible red-teams as a black box.
     agent: AgentSpecModel | None = None
     demo_agent: str | None = None
+    http_endpoint: HttpEndpointModel | None = None
     budget_rounds: int = Field(default=5, ge=1, le=200)
     budget_dollars: float = Field(default=2.0, ge=0.0)
     # "redteam" = red + white-box self-test; "coevolution" = red->verify->blue->red rounds.
@@ -151,11 +172,26 @@ async def post_runs(req: RunRequest) -> RunAccepted:
     if req.mode not in ("redteam", "coevolution"):
         raise HTTPException(status_code=422, detail=f"unknown mode {req.mode!r}")
 
-    # Resolve the agent target config (Shape 2): BYO model+prompt, or a built-in demo.
+    # Resolve the agent target (Shape 2): a BYO model+prompt, a built-in demo, or a BYO
+    # HTTP endpoint — mutually exclusive.
     agent_config: AgentConfig | None = None
     agent_source = "byo"
+    http_cfg: HttpEndpointConfig | None = None
     try:
-        if req.agent is not None:
+        if req.http_endpoint is not None:
+            if req.agent is not None or req.demo_agent is not None:
+                raise ValueError("provide only one of agent / demo_agent / http_endpoint")
+            if req.mode == "coevolution":
+                raise ValueError(
+                    "co-evolution can't rewrite a remote agent's prompt — use red-team mode "
+                    "for an HTTP endpoint")
+            http_cfg = HttpEndpointConfig(
+                name=req.http_endpoint.name or "byo-http", endpoint=req.http_endpoint.endpoint,
+                input_field=req.http_endpoint.input_field,
+                output_field=req.http_endpoint.output_field, method=req.http_endpoint.method,
+                headers=dict(req.http_endpoint.headers), timeout=req.http_endpoint.timeout)
+            validate_http_endpoint(http_cfg)
+        elif req.agent is not None:
             agent_config = AgentConfig(
                 name=req.agent.name or "byo-agent", model=req.agent.model,
                 system_prompt=req.agent.system_prompt, params=dict(req.agent.params))
@@ -172,12 +208,14 @@ async def post_runs(req: RunRequest) -> RunAccepted:
         target_spec, sealed, budget, source_text=source_text, compiler=compiler_name
     )
 
-    if agent_config is not None:
+    if agent_config is not None or http_cfg is not None:
         async with session_scope() as session:
-            cfg_id = await save_agent_config(
-                session, agent_config, run_id=str(run_id), source=agent_source)
             run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
-            run.agent_config_id = cfg_id
+            if agent_config is not None:
+                run.agent_config_id = await save_agent_config(
+                    session, agent_config, run_id=str(run_id), source=agent_source)
+            if http_cfg is not None:
+                run.target_http = http_cfg.to_dict()
 
     if req.mode == "coevolution":
         coro = run_coevolution(

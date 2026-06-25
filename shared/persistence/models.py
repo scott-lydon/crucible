@@ -43,6 +43,9 @@ class Run(Base):
     # For a Shape-2 agent run: the agent_configs row this run targets (BYO or demo). When
     # set, the loop builds the target from that config instead of the registered demo.
     agent_config_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    # For a BYO HTTP-endpoint run (cr-ui4): the endpoint config (name/url/fields). When set,
+    # the loop builds an HttpAgentTarget that red-teams the user's hosted agent as a black box.
+    target_http: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
 
 
 class SpecRow(Base):

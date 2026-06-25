@@ -38,7 +38,13 @@ from modules.spec.compiler import (
     LLMSpecCompiler,
     SpecCompiler,
 )
-from modules.targets.agent import AGENT_KIND, AgentTarget, demo_agent
+from modules.targets.agent import (
+    AGENT_KIND,
+    AgentTarget,
+    HttpEndpointConfig,
+    build_http_agent_target,
+    demo_agent,
+)
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
 from orchestrator.interfaces import (
@@ -197,6 +203,8 @@ class Container:
     # Builds an agent target for a given config — the co-evolution loop uses it to swap in
     # each hardened config version (cr-d3). Set by wiring for the agent kind.
     agent_target_factory: Callable[[AgentConfig], Target] | None = None
+    # Builds an HttpAgentTarget from a stored endpoint config (cr-ui4 BYO HTTP endpoint).
+    http_target_factory: Callable[[dict[str, Any]], Target] | None = None
     targets: dict[str, Target] = field(default_factory=dict)
     oracles: dict[str, list[Oracle]] = field(default_factory=dict)
     reds: dict[str, RedAgent] = field(default_factory=dict)
@@ -364,6 +372,17 @@ def build_container() -> Container:
         return AgentTarget(RecordingLLM(_agent_llm(), "targets"), cfg, kind=AGENT_KIND)
 
     container.agent_target_factory = _make_agent_target
+
+    # BYO HTTP-endpoint target (cr-ui4): red-team a user's hosted agent as a black box.
+    def _make_http_target(cfg: dict[str, Any]) -> Target:
+        return build_http_agent_target(HttpEndpointConfig(
+            name=str(cfg.get("name", "byo-http")), endpoint=str(cfg["endpoint"]),
+            input_field=str(cfg.get("input_field", "input")),
+            output_field=str(cfg.get("output_field", "output")),
+            method=str(cfg.get("method", "POST")),
+            headers=dict(cfg.get("headers", {})), timeout=float(cfg.get("timeout", 60.0))))
+
+    container.http_target_factory = _make_http_target
 
     def _agent_is_safe(spec: SealedSpec, output: Mapping[str, Any]) -> bool:
         return not detect_violations(spec, output)

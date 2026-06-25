@@ -8,6 +8,9 @@ slices land; the loop runs whatever pillars wiring has registered."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any
+
 from sqlalchemy import select
 
 from modules.measure.budget import global_spend, run_spend, should_halt
@@ -91,12 +94,23 @@ async def _set_status(run_id: RunId, status: RunStatus, *, error: str | None = N
             run.error = error
 
 
-async def _load_context(run_id: RunId) -> tuple[SealedSpec, str, int, float, str | None]:
+@dataclass(frozen=True, slots=True)
+class _RunCtx:
+    spec: SealedSpec
+    target_kind: str
+    budget_rounds: int
+    budget_dollars: float
+    agent_config_id: str | None
+    target_http: dict[str, Any] | None
+
+
+async def _load_context(run_id: RunId) -> _RunCtx:
     async with session_scope() as session:
         run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
         spec = await resolve_spec(session, run_id)
-        return (spec, run.target_kind, run.budget_rounds, run.budget_dollars,
-                run.agent_config_id)
+        return _RunCtx(
+            spec, run.target_kind, run.budget_rounds, run.budget_dollars,
+            run.agent_config_id, run.target_http)
 
 
 class _BudgetHaltError(Exception):
@@ -131,16 +145,16 @@ def _retarget_oracles(oracles: list[Oracle], target: Target) -> None:
             oracle.set_resubmit(target.submit)
 
 
-async def _resolve_target(
-    container: Container, target_kind: str, agent_config_id: str | None
-) -> Target:
-    """The target for a run: a per-run agent config (BYO or demo, cr-e2) built through the
-    agent factory when present, else the registered target."""
-    if agent_config_id is not None and container.agent_target_factory is not None:
+async def _resolve_target(container: Container, ctx: _RunCtx) -> Target:
+    """The target for a run: a BYO HTTP endpoint (cr-ui4) or a per-run agent config (BYO or
+    demo, cr-e2) built through the matching factory, else the registered target."""
+    if ctx.target_http is not None and container.http_target_factory is not None:
+        return container.http_target_factory(ctx.target_http)
+    if ctx.agent_config_id is not None and container.agent_target_factory is not None:
         async with session_scope() as session:
-            config = await load_agent_config(session, agent_config_id)
+            config = await load_agent_config(session, ctx.agent_config_id)
         return container.agent_target_factory(config)
-    return container.get_target(target_kind)
+    return container.get_target(ctx.target_kind)
 
 
 async def _persist_round(
@@ -251,9 +265,10 @@ async def run_loop(run_id: RunId, container: Container) -> None:
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id)})
     try:
-        spec, target_kind, budget_rounds, budget_dollars, agent_config_id = (
-            await _load_context(run_id))
-        target = await _resolve_target(container, target_kind, agent_config_id)
+        ctx = await _load_context(run_id)
+        spec, target_kind, budget_rounds, budget_dollars = (
+            ctx.spec, ctx.target_kind, ctx.budget_rounds, ctx.budget_dollars)
+        target = await _resolve_target(container, ctx)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         _retarget_oracles(oracles, target)
@@ -352,7 +367,9 @@ async def run_coevolution(
     await _set_status(run_id, RunStatus.running)
     await sink.emit(run_id, "run_started", {"run_id": str(run_id), "mode": "coevolution"})
     try:
-        spec, target_kind, _, budget_dollars, agent_config_id = await _load_context(run_id)
+        ctx = await _load_context(run_id)
+        spec, target_kind, budget_dollars, agent_config_id = (
+            ctx.spec, ctx.target_kind, ctx.budget_dollars, ctx.agent_config_id)
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         blue = container.blue_for(target_kind)
