@@ -1,0 +1,13 @@
+C
+Crucible
+/halts · Halt certification
+No active halt
+NO ACTIVE HALT
+·
+observed recall 1.00 >= red line 0.70 · residual halt threshold clear
+Halt certification
+residual red line 0.70 · observed recall 1.00
+No active halt
+Observed recall 1.00 is at or above the residual red line 0.70. The automatic residual halt threshold is clear; no runs are blocked.
+RECENT HALTS
+Halt history not available. The backend exposes only the current halt state (GET /halt); there is no halt-history endpoint to read from.

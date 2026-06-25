@@ -1,0 +1,7 @@
+{
+  "/sandbox/image": {
+    "image": "python:3.12-slim",
+    "egress_blocked": true,
+    "network": "sealed (egress deny)"
+  }
+}

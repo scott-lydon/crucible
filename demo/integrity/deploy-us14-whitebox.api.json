@@ -1,0 +1,21 @@
+{
+  "/metrics": {
+    "black_box_catch_rate": {
+      "box": "black_box",
+      "judged": 7,
+      "caught": 6,
+      "undetected": 1,
+      "rate": 0.8571428571428571,
+      "latest_at": "2026-06-25T13:26:47.831280+00:00"
+    },
+    "white_box_catch_rate": {
+      "box": "white_box",
+      "judged": 6,
+      "caught": 6,
+      "undetected": 0,
+      "rate": 1,
+      "latest_at": "2026-06-25T13:26:47.831280+00:00"
+    },
+    "catch_rate_gap": -0.1428571428571429
+  }
+}

@@ -1,0 +1,84 @@
+C
+Crucible
+/admin · debug
+backend ok · db connected
+READ-ONLY
+·
+Internal debug route. Shows real backend state. No behavior-changing toggles (the old mock-llm / cassette controls were removed as out-of-scope).
+Admin · debug
+internal debug route · live backend state, read-only
+IDENTITY · GET /ME
+display_name
+anonymous
+role
+anonymous · no role
+audit_log_target
+none
+WORKSPACE · GET /WORKSPACE
+name
+default
+monthly_ceiling
+no ceiling
+POLICY · GET /POLICY
+halt_recall_threshold
+0.70
+operative_policy
+certification halts when white-box recall < 0.70
+RUN OVERRIDES · GET /ADMIN/OVERRIDES
+0 recorded
+No run overrides recorded.
+RECENT RUNS · GET /RUNS
+10 total
+RUN
+STATUS
+TARGET
+SPEC
+eef0b638…
+complete
+code_agent
+sum two integers
+f48fa26a…
+complete
+code_agent
+sum two integers [probe-c4d5e6]
+f1380bb0…
+complete
+code_agent
+sum two integers [probe-7f3a91]
+734153a1…
+complete
+code_agent
+sum two integers
+56bbf1c8…
+running
+code_agent
+sum two integers
+298b6384…
+failed
+code_agent
+sum two integers
+0955290b…
+failed
+code_agent
+sum two integers
+11566fde…
+failed
+fraud
+evade the credit-card fraud detector
+7056b0c1…
+pending
+code_agent
+sum two integers
+704cdb13…
+complete
+code_agent
+sum two integers
+OTHER DEBUG SURFACES
+/health
+liveness + database connectivity (raw JSON)
+/halt
+current halt state (raw JSON)
+halt certification
+rendered halt view (slice-06)
+/metrics
+process metrics (raw)

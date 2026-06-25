@@ -1,0 +1,39 @@
+{
+  "/targets/registered": [
+    {
+      "type": "dummy",
+      "display_name": "Dummy",
+      "description": "Deterministic echo target used by the spine test.",
+      "artifact_ref": "dummy@v0"
+    },
+    {
+      "type": "code_agent",
+      "display_name": "Code Agent",
+      "description": "Autonomous code-generation agent.",
+      "artifact_ref": "code_agent@claude-sonnet-4-6"
+    },
+    {
+      "type": "fraud",
+      "display_name": "Fraud",
+      "description": "Transaction-fraud classifier adapter (LightGBM).",
+      "artifact_ref": "fraud_adapter@05274c2a"
+    }
+  ],
+  "/health/targets/code_agent": {
+    "target_type": "code_agent",
+    "status": "amber",
+    "detail": {
+      "model": "claude-sonnet-4-6",
+      "client": "AnthropicApiClient",
+      "claude_on_path": false
+    }
+  },
+  "/sandbox/image": {
+    "image": "python:3.12-slim",
+    "egress_blocked": true,
+    "network": "sealed (egress deny)"
+  },
+  "/health/targets/fraud_adapter": {
+    "detail": "unknown target type"
+  }
+}

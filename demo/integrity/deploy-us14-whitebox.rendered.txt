@@ -1,0 +1,30 @@
+C
+Crucible
+/dashboard · white-box self-test
+diagnostic only · cannot lift halts
+White-box self-test
+export recall report ↗
+What this test does
+We tell the producer the categories of cheat it should try (META-INV-04 case-folding, JUDGE-04 role-play, etc.) but never the actual cheats. It then attacks the held-out corpus. Recall here is a floor — because the producer was tipped off, anything it still can't get past the verifier is something a less-informed attacker won't get past either.
+RECALL ACROSS ALL FAMILIES
+100.0%
+6 judged
+COMPARISON
+held-out recall · producer in the dark
+85.7%
+white-box recall · producer tipped off
+100.0%
+gap
+-14.3%
+A small gap is healthy. It means the verifier isn't relying on surprise — telling the producer what to try doesn't help it much. A big gap (white-box ≪ held-out) would mean the verifier only catches cheats it has already seen.
+METHODOLOGY · WHAT WAS REVEALED
+DISCLOSED TO PRODUCER
+• scheme name + textual description of attack family
+• example shape (1 redacted example per family)
+• which oracle the cheat targets
+WITHHELD
+• held-out instance corpus (never shown)
+• oracle internal thresholds
+• blue patch source
+• ground-truth labels
+disclosure manifest · — · signed-off by —

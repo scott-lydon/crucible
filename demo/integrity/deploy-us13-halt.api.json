@@ -1,0 +1,8 @@
+{
+  "/halt": {
+    "halted": false,
+    "recall": 1,
+    "threshold": 0.7,
+    "message": ""
+  }
+}

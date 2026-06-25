@@ -1,0 +1,40 @@
+{
+  "/runs/eef0b63837f84bef9fd6760c69ded0d5": {
+    "run_id": "eef0b63837f84bef9fd6760c69ded0d5",
+    "status": "complete",
+    "target_type": "code_agent",
+    "spec_title": "sum two integers",
+    "attacks": [
+      {
+        "attack_id": "6ac7b5beef234d339e8625d1beb7a5b7",
+        "tactic": "builtin-sum-wrapper",
+        "succeeded": false,
+        "white_box": false,
+        "hybrid": false,
+        "dollars_spent": "0.042905"
+      },
+      {
+        "attack_id": "1d5cd59de5a44d4790ab129501c8e526",
+        "tactic": "basic_positive_addition",
+        "succeeded": false,
+        "white_box": true,
+        "hybrid": false,
+        "dollars_spent": "0.048755"
+      }
+    ],
+    "verdicts": [
+      {
+        "verdict_id": "af1a570207604f9a84978013c11d8aef",
+        "attack_id": "6ac7b5beef234d339e8625d1beb7a5b7",
+        "passed": false,
+        "tally": 1.5
+      },
+      {
+        "verdict_id": "453f3d9cf2eb4c79bb13e74fe3598da5",
+        "attack_id": "1d5cd59de5a44d4790ab129501c8e526",
+        "passed": false,
+        "tally": 1.5
+      }
+    ]
+  }
+}

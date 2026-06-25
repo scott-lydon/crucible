@@ -1,0 +1,97 @@
+C
+Crucible
+/ · run launcher
+EST / RUN
+no prior data
+LLM · project key
+Live · connected
+01
+Configure
+· target & budget
+02
+Running
+· awaits start
+03
+Results
+· awaits completion
+no run started
+TARGET SYSTEM TO ATTACK
+✓ selected
+Fraud
+✓
+Transaction-fraud classifier adapter
+fraud_adapter@05274c2a · validated 2026-06-24
+Code Agent
+Autonomous code-generation agent
+code_agent@claude-sonnet-4-6
+Research Agent · stretch path · multi-step research target, not in core demo
+SEALED SPECIFICATION · YAML
+◐ draft · unsealed
+Inspect validator call
+draft.fraud.spec.yaml · author mode
+seeded · GET /targets/fraud/default-spec
+Paste or hand-edit the YAML, then seal. Sealing hashes the spec and locks it; the producer / target never sees this file.
+Seal spec →
+ROUNDS & BUDGET
+Rounds to run
+integer · 1–500
+Dollar ceiling
+USD · hard stop
+≈ no prior data est / run · hard stop at no ceiling
+RUN SUMMARY
+Target
+Fraud
+Oracles
+4 + judge
+Rounds
+48
+Est. spend
+no prior data
+JUDGE
+The LLM judge is one measured approach among several, never the sole authority. Four independent oracles (held-out, metamorphic, differential, fuzz) vote alongside it.
+Seal spec to enable run
+spec is unsealed · paste & seal above
+SANDBOX ENVIRONMENT
+runtime
+python 3.12 · linux · docker
+network
+sealed (egress deny)
+image
+python:3.12-slim
+RECENT RUNS · fraud_adapter
+last 50
+HISTORY · OLDEST → NEWEST
+certified 
+caveat 
+halted
+oldest
+10 runs
+newest
+RUN
+CREATED
+STATUS
+SPEC
+eef0b638
+2026-06-25 13:26
+complete
+sum two integers
+f48fa26a
+2026-06-25 05:12
+complete
+sum two integers [probe-c4d5e6]
+f1380bb0
+2026-06-25 05:02
+complete
+sum two integers [probe-7f3a91]
+734153a1
+2026-06-25 04:31
+complete
+sum two integers
+56bbf1c8
+2026-06-25 04:25
+running
+sum two integers
+298b6384
+2026-06-25 04:20
+failed
+sum two integers

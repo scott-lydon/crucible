@@ -1,0 +1,37 @@
+{
+  "results": [
+    {
+      "name": "initial: Fraud is the default selection",
+      "pass": true,
+      "detail": "✓ selected card = Fraud"
+    },
+    {
+      "name": "click \"Code Agent\" → selection moves to Code Agent",
+      "pass": true,
+      "detail": "✓ selected card = Code Agent"
+    },
+    {
+      "name": "click \"Seal spec\" → Start (Run evaluation) becomes enabled",
+      "pass": true,
+      "detail": "sealed; Run-evaluation button present"
+    },
+    {
+      "name": "click \"Run evaluation\" → a NEW run was created for this target",
+      "pass": true,
+      "detail": "run 8c7bb51ded7047c7a93e01d2ad626b15 target=code_agent status=running"
+    },
+    {
+      "name": "UI navigated to the Running view",
+      "pass": true,
+      "detail": "running tab text present"
+    }
+  ],
+  "consoleErrs": [],
+  "newRun": {
+    "run_id": "8c7bb51ded7047c7a93e01d2ad626b15",
+    "status": "running",
+    "target_type": "code_agent",
+    "spec_title": "sum two integers",
+    "created_at": "2026-06-25T18:54:15.358553+00:00"
+  }
+}

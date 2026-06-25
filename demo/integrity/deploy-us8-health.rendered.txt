@@ -1,0 +1,90 @@
+C
+Crucible
+Dashboard
+Runs
+Strategies
+Audit
+Health
+24h
+7d
+30d
+· selected
+90d
+all
+MONTH
+$2.40 / no ceiling
+Export SR 11-7
+scope · all sealed specs
+|
+judged runs · 6 judged
+|
+last measured · last measured 2026-06-25 13:26:47Z
+Outcomes
+computed on the sealed held-out corpus · last measured 2026-06-25 13:26:47Z
+UNDETECTED-HACK RATE
+i
+ratio · ↓ better
+0.0%
+0 undetected of 6 judged (white box)
+VAL–HELDOUT GAP
+i
+-14.3%
+black 85.7% · white 100.0% · black − white box · ↓ better
+RECALL
+i
+100.0%
+red line 0.70 · ↑ better · margin 0.30
+COST / UNDETECTED HACK
+i
+Not yet measured
+start a run to measure this →
+HUMAN-MIN / 1K
+i
+Not yet measured
+start a run to measure this →
+Recall vs halt threshold
+Recall
+100.0%
+↑ better
+red line
+0.70
+Current held-out recall is 100.0%; the run halts when recall drops below the 0.70 red line. Not halted.
+0.0
+red line 0.70
+recall 100.0%
+1.0
+Cost per hack · distribution
+i
+No surfaced hacks to chart yet. start a run to measure this →
+System health
+live · db connected
+TARGETS
+DUMMY · green
+dummy@v0
+Deterministic echo target used by the spine test.
+CODE AGENT · amber
+code_agent@claude-sonnet-4-6
+Autonomous code-generation agent.
+FRAUD · green
+fraud_adapter@05274c2a
+Transaction-fraud classifier adapter (LightGBM).
+ORACLES · TOTAL WEIGHT 4.5 · PASS THRESHOLD 2
+HELD_OUT · amber
+claude-opus-4-8
+1 / 4.5 weight
+METAMORPHIC · amber
+claude-sonnet-4-6
+1 / 4.5 weight
+DIFFERENTIAL · amber
+claude-haiku-4-5-20251001
+1 / 4.5 weight
+PROPERTY_FUZZ · amber
+claude-sonnet-4-6
+1 / 4.5 weight
+LLM_JUDGE · amber
+claude-opus-4-8
+0.5 / 4.5 weight
+METHODOLOGY
+·
+open SR 11-7 report →
+Numbers come from a sealed held-out corpus the producer never sees, graded by a verifier the producer never sees. Runs halt when recall drops below the 0.70 red line. If validation looks good and production looks bad, our numbers are wrong, not production.
