@@ -356,7 +356,14 @@ those. Rules:
 - [x] [Loyalty] Matches US-6; export-JSON link present (backed by /corpus).
 
 ### US-7: blue loop and patch review
-- [ ] [Verifier] Blue loop triggers; patch viewable at `/blue/:patchId`.
+> BLOCKED: backend blue loop EXISTS (modules/blue/proposer.py, retrainer.py,
+> store.py) but there is NO trigger route or list route — only GET /blue/{id} —
+> and zero patches exist in the DB. Patches are only created by the real-LLM e2e
+> scripts (scripts/run_e2e_real_llms.py). slice-07 renders empty. To green US-7
+> needs either a blue trigger (real-LLM run, minutes/tokens) or the operator to
+> confirm the trigger surface. origin/feat/critical-path has a recent blue fix.
+- [ ] [Verifier] Blue loop triggers; patch viewable at `/blue/:patchId`. (no
+      trigger surface; no patch data)
 - [ ] [Integrity] Before/after detection and produced model version equal the
       `/blue/:patchId` response.
 - [ ] [Loyalty] Matches US-7; reviewer-approval workflow stays removed.
@@ -372,10 +379,15 @@ those. Rules:
 - [x] [Loyalty] Matches US-8.
 
 ### US-9: producer sandbox is sealed
-- [ ] [Verifier] Sandbox view shows egress denied.
-- [ ] [Integrity] Egress/seal state equals the real sandbox status, not a static
-      "0 attempts" constant.
-- [ ] [Loyalty] Matches US-9.
+- [x] [Verifier] Sandbox panel shows egress denied / "sealed (egress deny)";
+      image python:3.12-slim. Renders, 0 console errors.
+- [ ] [Integrity] PARTIAL/FAIL: image (python:3.12-slim) and egress-denied state
+      equal /sandbox/image, BUT "denied · 0 attempts" (slice-01 l.454) is a
+      HARDCODED constant — /sandbox/image returns no attempt count. Per the
+      handoff this exact "0 attempts" constant is disallowed. Builder fix: drop
+      the count or wire a real one. (Lives on the launcher, under redesign.)
+- [x] [Loyalty] Matches US-9 (egress toggle is the out-of-scope control flagged
+      in cross-cutting cleanup; removed by the new design).
 
 ### US-10: dashboard metrics
 - [x] [Verifier] Dashboard (slice-04) renders catch rates, gap, undetected rate;
@@ -391,15 +403,21 @@ those. Rules:
 - [ ] [Loyalty] Pending.
 
 ### US-11: export the seeded-hack corpus
-- [ ] [Verifier] Corpus exports from `/corpus` / `/corpus.jsonl`.
-- [ ] [Integrity] Exported rows equal the route payload.
-- [ ] [Loyalty] Matches US-11.
+- [x] [Verifier] Corpus exports from `/corpus` (count 1) and `/corpus.jsonl`
+      (1 line). Export-JSON link surfaced on the catalog page.
+- [x] [Integrity] Exported rows equal the route payload: attack_id
+      95ec42ee…, real audit_trace (dollars $0.1019942, model claude-sonnet-4-6,
+      tokens_out 67). Not constants.
+- [x] [Loyalty] Matches US-11.
 
 ### US-12: SR 11-7 report
-- [ ] [Verifier] Report generates at `/reports/:runId`.
-- [ ] [Integrity] Rendered markdown numbers equal the report route; no static KPI
-      grid.
-- [ ] [Loyalty] Matches US-12.
+- [x] [Verifier] Report generates at `/reports/704cdb13…`; slice-14 renders the
+      real markdown (txtLen 2777), 0 console errors. Evidence:
+      verification/pass-A/US12_sr_report.png
+- [x] [Integrity] Rendered markdown numbers equal the report route + /metrics:
+      black-box recall 50.0% (1/2), white-box recall 100.0% (2/2), ASR 25.0%,
+      gap -50.0%, halt red line 0.70. Real verdict ids/tallies. No static KPI grid.
+- [x] [Loyalty] Matches US-12.
 
 ### US-13: halt at the residual red line
 - [x] [Verifier] When not halted, slice-08 honestly says "no active halt";
@@ -412,9 +430,13 @@ those. Rules:
       (page is read-only status).
 
 ### US-14: white-box self-test on every pass
-- [ ] [Verifier] `slice-10` self-test renders real pass results.
-- [ ] [Integrity] Self-test values equal their backing route.
-- [ ] [Loyalty] Matches US-14.
+- [x] [Verifier] `slice-10` self-test renders real pass results; 0 console
+      errors. Evidence: verification/pass-A/US14_whitebox.png
+- [x] [Integrity] Self-test values equal `/metrics`: white_box_rate 100.0%
+      (=1.0), black_box_rate 50.0% (=0.5), catch_gap -50.0% (=-0.5),
+      white_box_judged 2 (=2). (minor "Â·" mojibake; "export recall report"
+      href="#" dead link — Builder nits.)
+- [x] [Loyalty] Matches US-14.
 
 ### US-15: internal debug route
 - [x] [Verifier] `slice-12-admin-debug` reachable and renders; 0 console errors.
