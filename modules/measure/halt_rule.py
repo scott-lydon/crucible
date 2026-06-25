@@ -16,13 +16,29 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from modules.measure.metrics import MetricsAggregator
 from shared.persistence.models import Attack as AttackRow
 from shared.persistence.models import HaltState
 from shared.persistence.models import Verdict as VerdictRow
 
 _HALT_ROW_ID = "global"
 _DEFAULT_THRESHOLD = 0.7
+
+# Devmode launch override (US-13 debug route). The certification halt refuses new
+# launches by default; the operator can bypass it for manual testing/recording
+# without weakening the audit banner, which keeps reporting the real recall. In
+# memory only, defaults OFF so the spec'd 409 holds unless explicitly overridden.
+_launch_override: bool = False
+
+
+def set_halt_override(value: bool) -> None:
+    """Enable/disable the devmode bypass of the halt launch guard."""
+    global _launch_override
+    _launch_override = value
+
+
+def get_halt_override() -> bool:
+    """Whether the devmode halt bypass is currently armed."""
+    return _launch_override
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,17 +78,18 @@ class HaltRule:
     async def evaluate(self, run_id: str | None = None) -> HaltStateData:
         """Recompute the halt flag from white-box recall and persist it.
 
-        `run_id` scopes the recall to one run's white-box pass (US-13, "the latest
-        white-box pass"), which the loop passes for the run it just completed;
-        without it, recall is the global white-box rate (the dashboard's live
-        read). With no white-box verdicts, recall is None and the platform is not
-        halted (nothing to certify against, not a failure). Below the threshold,
-        it halts.
+        `run_id` scopes the recall to one run's white-box pass, which the loop
+        passes for the run it just completed; without it, recall is the LATEST
+        white-box pass (US-13 keys the halt to "the latest white-box pass", not
+        the all-time aggregate, so one past failure cannot freeze the platform
+        forever and a clean recent pass clears the banner). With no white-box
+        verdicts, recall is None and the platform is not halted (nothing to
+        certify against, not a failure). Below the threshold, it halts.
         """
         recall = (
             await self._run_recall(run_id)
             if run_id is not None
-            else (await MetricsAggregator(session=self.session).catch_rates()).white_box.rate
+            else await self._latest_recall()
         )
         halted = recall is not None and recall < self.threshold
         await self._persist(halted, recall)
@@ -88,6 +105,25 @@ class HaltRule:
         if row is None:
             return HaltStateData(halted=False, recall=None, threshold=self.threshold)
         return HaltStateData(halted=row.halted, recall=row.recall, threshold=row.threshold)
+
+    async def _latest_recall(self) -> float | None:
+        """White-box recall of the most recent run that ran a white-box pass.
+
+        Picks the run whose newest white-box verdict is the most recent, then
+        reuses the per-run recall. This is the "latest white-box pass" US-13
+        keys the certification halt to.
+        """
+        latest = (
+            select(VerdictRow.run_id)
+            .join(AttackRow, VerdictRow.attack_id == AttackRow.id)
+            .where(AttackRow.white_box.is_(True))
+            .order_by(VerdictRow.created_at.desc())
+            .limit(1)
+        )
+        run_id = (await self.session.execute(latest)).scalars().first()
+        if run_id is None:
+            return None
+        return await self._run_recall(run_id)
 
     async def _run_recall(self, run_id: str) -> float | None:
         """White-box verifier recall (caught / judged) for one run's pass.

@@ -38,6 +38,8 @@ from modules.measure import (
     MetricsAggregator,
     ReportRunNotFoundError,
     RiskReport,
+    get_halt_override,
+    set_halt_override,
 )
 from modules.red import StrategyCatalog
 from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
@@ -181,10 +183,13 @@ async def create_run(req: RunRequest, session: SessionDep) -> RunCreated:
     The loop that drives rounds against a registered target lands in slice 1;
     slice 0 deliberately does not fake any rounds.
     """
-    # Certification halt is informational, not a launch gate: a failing verifier
-    # is exactly when you need to run MORE evaluations to diagnose and harden it,
-    # so a low white-box recall must not freeze the platform. The halt state is
-    # still computed and surfaced as a banner via /halt (US-13).
+    # US-13: when the latest white-box pass is below the red line the orchestrator
+    # refuses new launches with a typed 409 — unless the operator has armed the
+    # devmode override (a debug route so testing/recording can proceed without
+    # weakening the audit banner, which still reports the real recall).
+    halt = await HaltRule(session=session).current()
+    if halt.halted and not get_halt_override():
+        raise HTTPException(status_code=409, detail=halt.as_json())
     spec = SealedSpec.from_payload(req.spec)
     target = TargetSpec(
         target_type=_parse_target_type(req.target_type),
@@ -799,7 +804,31 @@ async def halt(session: SessionDep) -> dict[str, Any]:
     """
     state = await HaltRule(session=session).evaluate()
     await session.commit()
-    return state.as_json()
+    body = state.as_json()
+    body["override"] = get_halt_override()
+    return body
+
+
+class HaltOverrideRequest(BaseModel):
+    """The POST /halt/override body: the devmode launch-guard bypass toggle."""
+
+    enabled: bool
+
+
+@app.post("/halt/override")
+async def halt_override(req: HaltOverrideRequest, request: Request) -> dict[str, Any]:
+    """Devmode bypass of the certification halt launch guard (US-13 debug route).
+
+    Admin-gated. When enabled, create_run launches even while halted, so the
+    operator can drive manual tests/recordings into states the halted happy path
+    cannot reach. The audit banner still reports the real recall; only the launch
+    refusal is bypassed. Defaults off, so the spec'd 409 holds by default.
+    """
+    token = request.cookies.get(_ADMIN_COOKIE)
+    if token not in _ADMIN_SESSIONS:
+        raise HTTPException(status_code=401, detail="admin session required")
+    set_halt_override(req.enabled)
+    return {"ok": True, "halt_override": get_halt_override()}
 
 
 @app.get("/reports/{run_id}.pdf")
