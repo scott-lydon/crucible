@@ -199,27 +199,18 @@ async def test_sandbox_image_returns_real_default(client: AsyncClient) -> None:
     assert body["egress_blocked"] is True
 
 
-async def test_run_launcher_html_carries_data_live_hooks(client: AsyncClient) -> None:
-    """The page served at /app/slice-01-run-launcher.dc.html must include the
-    data-live attributes the slice-20 wiring depends on; a regression that
-    removes them would silently turn the wiring into a no-op."""
-    page = await client.get("/app/slice-01-run-launcher.dc.html")
+async def test_run_launcher_carries_live_route_wiring(client: AsyncClient) -> None:
+    """The Run Launcher page must serve and its inline script must call the live
+    backend routes it self-wires its data from. The React design replaced the old
+    data-live attribute hooks with direct fetches, so a regression that drops the
+    wiring would silently leave the page showing only its static design stubs."""
+    page = await client.get("/app/Run%20Launcher.dc.html")
     assert page.status_code == 200
     html = page.text
-    for key in [
-        "workspace.name",
-        "me.display_name",
-        "me.audit_log_target",
-        "spend.current",
-        "spend.ceiling",
-        "targets.fraud.artifact_ref",
-        "targets.code_agent.artifact_ref",
-        "targets.fraud.validated_at",
-        "targets.code_agent.validated_at",
-        "oracles.summary",
-        "estimate.per_round_text",
-        "estimate.projected_text",
-        "sandbox.image",
-        "health.live_label",
+    for route in [
+        "/default-spec",
+        "/targets/registered",
+        "/oracles/registered",
+        "/health/targets/",
     ]:
-        assert f'data-live="{key}"' in html, f"missing data-live hook: {key}"
+        assert route in html, f"missing live-route wiring: {route}"

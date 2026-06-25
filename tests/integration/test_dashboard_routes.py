@@ -221,14 +221,13 @@ async def test_specs_history_returns_real_sealed_specs(client: AsyncClient) -> N
     assert row["created_at"]
 
 
-async def test_design_bundle_served_with_live_sidecar(client: AsyncClient) -> None:
-    page = await client.get("/app/slice-06-strategy-catalog.dc.html")
+async def test_design_bundle_page_served_verbatim(client: AsyncClient) -> None:
+    """A design-bundle page is served byte-for-byte under /app (the design
+    fidelity rule). The React design self-wires its own data via inline scripts,
+    so there is no injected live.js sidecar to assert anymore."""
+    page = await client.get("/app/slice-01-strategy-catalog.dc.html")
     assert page.status_code == 200
     assert "Strategy Catalog" in page.text  # verbatim UI served
-    assert 'src="./live.js"' in page.text  # live wiring injected
-    sidecar = await client.get("/app/live.js")
-    assert sidecar.status_code == 200
-    assert "CrucibleLive" in sidecar.text
     # Path traversal is refused.
     assert (await client.get("/app/../pyproject.toml")).status_code in (404, 400)
 
