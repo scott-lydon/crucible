@@ -20,6 +20,7 @@ sequence without reshaping it.
 
 from __future__ import annotations
 
+import asyncio
 import uuid
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -295,10 +296,16 @@ class Loop:
         and why.
         """
         obligation_id = spec.obligations[0].id if spec.obligations else None
-        votes: list[OracleVote] = []
-        for oracle in self.registry.oracles:
+
+        async def _one(oracle) -> OracleVote:
+            # Oracles are independent (each verifies the same attack), so they
+            # run concurrently; the first attack no longer waits for all five
+            # claude-CLI subprocess calls to finish one-after-another. Each
+            # oracle keeps its exact failure semantics: a crash or timeout is
+            # recorded as an UNAVAILABLE vote, never swallowed, never aborting
+            # the round.
             try:
-                votes.append(await oracle.verify(spec, attack_input, output))
+                return await oracle.verify(spec, attack_input, output)
             except Exception as exc:  # recorded as UNAVAILABLE, never swallowed
                 log.warning(
                     "oracle_unavailable",
@@ -306,13 +313,15 @@ class Loop:
                     oracle=oracle.name,
                     error=f"{type(exc).__name__}: {exc}",
                 )
-                votes.append(
-                    OracleVote(
-                        oracle_name=oracle.name,
-                        decision=VerdictDecision.UNAVAILABLE,
-                        weight=oracle.weight,
-                        reason=f"oracle could not run: {type(exc).__name__}: {exc}",
-                        obligation_id=obligation_id,
-                    )
+                return OracleVote(
+                    oracle_name=oracle.name,
+                    decision=VerdictDecision.UNAVAILABLE,
+                    weight=oracle.weight,
+                    reason=f"oracle could not run: {type(exc).__name__}: {exc}",
+                    obligation_id=obligation_id,
                 )
+
+        # gather preserves argument order, so votes stay in self.registry.oracles
+        # order -- the verdict's deterministic replay (US-5) re-derives from it.
+        votes = await asyncio.gather(*[_one(o) for o in self.registry.oracles])
         return tuple(votes)
