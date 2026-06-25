@@ -13,6 +13,59 @@ This loop depends on the functional loop. The app must already pass
 is recorded. A demo of broken functionality is worthless. If functional
 verification is not green, run that loop first.
 
+## Canonical references (a cold session needs nothing it cannot find here)
+
+Every path, URL, and id this loop needs, so a fresh session never has to discover
+or guess them. Absolute paths; verify each still resolves at start.
+
+Repo and source control:
+- Repo root: `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
+- Working branch (deploy this, do NOT merge): `feat/crucible-build`
+- Pull request: `https://github.com/scott-lydon/crucible/pull/3` (PR #3, base `main`)
+- GitHub remote: `https://github.com/scott-lydon/crucible.git`
+- GitLab mirror remote: `git@labs.gauntletai.com:scottlydon/crucible.git`
+  (SSH port 22022; graders read the GitLab mirror)
+
+Spec / PRD (the source of truth for what to demo, in scope order):
+- Acceptance tests + user stories US-1..US-15: `acceptance-tests.md`
+- Design brief (the PRD-equivalent handoff brief): `design/claude-design-brief.md`
+- Architecture: `ARCHITECTURE.md` · Coding practices: `coding-practices.md`
+- Task slices: `tasks.md` · Out-of-scope removed UI: `REMOVED_UI.md`
+- QA adversary playbook: `QA_ADVERSARY.md`
+- Functional + data-integrity loop this one depends on: `GOAL_LOOP_HANDOFF.md`
+
+Running app:
+- Render live deploy: `https://crucible-zaag.onrender.com`
+  (Render service name `crucible`, service id `srv-d8trfn9o3t8c73bvp470`)
+- Local HEAD server for the live real-LLM recording: `http://localhost:8910/app`
+  (start command in section 2; Postgres on host port 5434)
+- Branch-only deploy marker (proves Render serves the branch, not main):
+  `GET /targets/code_agent/default-spec` returns 200 on the branch, 404 on main
+
+Secrets (source these; never print or fake them):
+- Crucible env (DATABASE_URL, RENDER_API_KEY, MODAL_TOKEN_ID/SECRET, etc.):
+  `/Users/scottlydon/Desktop/Clutter/iOS/crucible/.env`
+- ElevenLabs voice secrets (ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID):
+  `/Users/scottlydon/.config/conveyor/elevenlabs.env`
+
+ElevenLabs voice pipeline (reuse, do not rebuild):
+- `/Users/scottlydon/.claude/skills/assignment-conveyor/lib/elevenlabs_tts.sh`
+  (`el_tts_render`)
+- `/Users/scottlydon/.claude/skills/assignment-conveyor/lib/phase_14a_elevenlabs.sh`
+  (pace-checked render + ffmpeg mux pattern)
+
+Publish target:
+- YouTube, visibility Unlisted (set Unlisted in the wizard before Save)
+
+Slack group to notify (resolve the mpim by these three member ids, then send):
+- Gustavo Hornedo: `U0B0SP8R8Q0` (gustavo.cruz@gfachallenger.gauntletai.com)
+- Ruijing Wang: `U0AV8HZCYDT` (ruijing.wang@challenger.gauntletai.com)
+- Julian: most likely Julian Stancioff `U0AUX1QM0ET` (display name "Julian",
+  julian.stancioff@gfachallenger.gauntletai.com). A second Julian exists, Julian
+  McOmie `U0AF60ZPQ4A`. Before sending, confirm the group DM's members are
+  exactly these three; if the group contains McOmie instead, use that id.
+- Sender (you) Slack user id: `U0B00RQKDQD`
+
 ## 0. Prime directive: demo only what the spec says, fix what the demo reveals
 
 - The acceptance tests demoed are `acceptance-tests.md` section 1 (US-1..US-15).
