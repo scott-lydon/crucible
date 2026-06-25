@@ -1,0 +1,17 @@
+{
+  "id": "local-us10-dashboard",
+  "title": "US-10 Dashboard metrics",
+  "base": "http://localhost:8910",
+  "page": "/app/slice-04-honest-dashboard.dc.html",
+  "waitText": "Outcomes",
+  "dwellMs": 1600,
+  "apiRoutes": ["/metrics", "/spend/current-month", "/halt", "/health"],
+  "steps": [
+    { "action": "wait", "ms": 2400 },
+    { "action": "scroll", "dy": 240, "ms": 1700 },
+    { "action": "wait", "ms": 1800 },
+    { "action": "scroll", "dy": 260, "ms": 1700 },
+    { "action": "wait", "ms": 1800 },
+    { "action": "scrollTop", "ms": 1600 }
+  ]
+}

@@ -39,3 +39,18 @@ then the affected scenario is re-recorded and re-checked.
 - Note: /catalog already carries `discovery_audit.steps`, so the trace reveal is
   data-feasible; the "Run This Tactic" button needs a launch path.
 - US-6 recording box stays UNTICKED until the reveal exists, then re-record.
+
+## BUG-R2 — slice-04 dashboard: unwired "Recent runs" + "Audit replays" placeholder panels — OPEN
+- Lane: Bug-Watcher / Loyalty (Stage R US-10).
+- Shown: dashboard renders a "Recent runs" panel ("No runs recorded yet") and an
+  "Audit row replays" panel ("No audit-row replays recorded yet") even though
+  /runs has 10 real runs. The dashboard's x-dc script fetches /metrics, /spend,
+  /halt, /health, /targets/registered, /oracles/registered — NOT /runs — so these
+  two panels are unwired empty placeholders.
+- Expected: REMOVED_UI.md (slice-04 row) says the 60-cell run-history strip +
+  audit-row-replay preview are out (real runs come from the /runs list, audit
+  replay is slice-05). Remove both placeholder panels from slice-04 (same
+  decision as BUG-L2's co-evolution panel), OR wire Recent runs to /runs.
+- US-10's five metric tiles are correct + honest (undetected 0.0%, gap -14.3%,
+  recall 100.0% vs 0.70 red line, cost/human-min "Not yet measured"); only the
+  two trailing placeholder panels are the issue. Re-record US-10 after the fix.

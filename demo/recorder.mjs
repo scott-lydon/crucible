@@ -53,6 +53,11 @@ for (const step of (cfg.steps || [])) {
     await el.scrollIntoViewIfNeeded().catch(() => {});
     await el.click({ timeout: 8000 }).catch(e => log('click miss', step.selector, e.message));
     await page.waitForTimeout(step.ms || 1500);
+  } else if (step.action === 'clickText') {
+    const el = page.getByText(step.text, { exact: !!step.exact }).first();
+    await el.scrollIntoViewIfNeeded().catch(() => {});
+    await el.click({ timeout: 8000 }).catch(e => log('clickText miss', step.text, e.message));
+    await page.waitForTimeout(step.ms || 1500);
   } else if (step.action === 'wait') {
     await page.waitForTimeout(step.ms || 1000);
   } else if (step.action === 'scrollTop') {
