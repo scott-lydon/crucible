@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 from dataclasses import dataclass, field
 from typing import Any, Protocol, runtime_checkable
 
@@ -109,6 +110,23 @@ class ClaudeCliClient:
         model: LlmModel,
         system: str | None = None,
     ) -> LlmResult:
+        # Operator overrides (default: none -> production behavior unchanged):
+        #   CRUCIBLE_LLM_MODEL_OVERRIDE forces every call to one model (e.g. a
+        #     cheap/fast haiku validation pass before spending on sonnet/opus).
+        #   CRUCIBLE_LLM_TIMEOUT_SECONDS raises the per-call CLI timeout.
+        _override = os.environ.get("CRUCIBLE_LLM_MODEL_OVERRIDE", "").strip()
+        if _override:
+            try:
+                model = LlmModel(_override)
+            except ValueError:
+                pass
+        _timeout = self.timeout_seconds
+        _env_timeout = os.environ.get("CRUCIBLE_LLM_TIMEOUT_SECONDS", "").strip()
+        if _env_timeout:
+            try:
+                _timeout = float(_env_timeout)
+            except ValueError:
+                pass
         args = ["claude", "-p", "--output-format", "json", "--model", model.value]
         if system is not None:
             args += ["--append-system-prompt", system]
@@ -129,13 +147,13 @@ class ClaudeCliClient:
         try:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(input=prompt.encode("utf-8")),
-                timeout=self.timeout_seconds,
+                timeout=_timeout,
             )
         except TimeoutError as exc:
             proc.kill()
             await proc.wait()
             raise LlmCallError(
-                f"claude CLI timed out after {self.timeout_seconds:.0f}s for model "
+                f"claude CLI timed out after {_timeout:.0f}s for model "
                 f"{model.value!r}. Raise the timeout or shorten the prompt."
             ) from exc
 
