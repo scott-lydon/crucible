@@ -386,8 +386,8 @@
               h("span", { class: "muted", style: "font-size:18px" }, "/100")),
             t.band ? h("div", { style: "font-size:24px;color:" + color }, t.band) : null,
             h("div", { class: "muted mono", style: "font-size:12px" },
-              (t.silent_failures != null ? t.silent_failures + " silent / " + t.n_attacks + " " +
-                String(t.basis || "").replace("_", "-") + " attacks" : ""))),
+              (t.failures != null ? t.failures + " failed (" + t.silent_failures + " silent) / " +
+                t.n_attacks + " " + String(t.basis || "").replace("_", "-") + " attacks" : ""))),
           h("ul", { class: "muted", style: "font-size:12px;margin:14px 0 0;padding-left:18px;line-height:1.7" },
             (t.caveats || []).map(function (c) { return h("li", {}, c); })));
         var tileEls = [
