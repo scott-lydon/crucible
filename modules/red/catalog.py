@@ -25,6 +25,24 @@ class _TacticKey:
     source: str
 
 
+@dataclass(frozen=True, slots=True)
+class VectorProvenance:
+    """One LLM-chosen attack VECTOR and how its values were landed.
+
+    Records that the LLM owned the STRATEGY (which features, which directions, and
+    why) while a deterministic solver refined the concrete numbers — so a reader
+    can see the model drove the attack and the solver only landed it (no script
+    masquerading as the model). ``directions`` maps each chosen feature to the
+    direction the LLM picked ("increase"/"decrease"); ``rationale`` is the LLM's
+    own one-line reasoning; ``solved`` is True when a numeric search found the
+    landing values.
+    """
+
+    directions: tuple[tuple[str, str], ...]
+    rationale: str
+    solved: bool
+
+
 class StrategyCatalog:
     """Counts successful evasion strategies.
 
@@ -43,6 +61,7 @@ class StrategyCatalog:
     def __init__(self) -> None:
         self._counts: Counter[_Key] = Counter()
         self._tactics: Counter[_TacticKey] = Counter()
+        self._vectors: list[VectorProvenance] = []
 
     def record(self, feature: str, direction: str, source: str) -> None:
         """Record one landed evasion. ``source`` is "llm" or "deterministic"."""
@@ -58,6 +77,42 @@ class StrategyCatalog:
         moved feature to key on.
         """
         self._tactics[_TacticKey(tactic=tactic, source=source)] += 1
+
+    def record_vector(
+        self,
+        directions: dict[str, str],
+        rationale: str,
+        *,
+        solved: bool,
+    ) -> None:
+        """Record one LLM-chosen attack VECTOR + how it was landed (provenance).
+
+        Keeps the LLM's strategy (chosen features + directions + rationale)
+        DISTINCT from the blind per-feature counts of :meth:`record`, so the
+        provenance shows the model drove the attack and the deterministic solver
+        only refined the value. ``solved`` is True when the numeric search landed
+        the vector. Also records each moved feature in the per-feature view (with
+        source ``"discover_solve"``) so the blue pillar's existing reader still
+        sees what was exploited.
+        """
+        self._vectors.append(
+            VectorProvenance(
+                directions=tuple(sorted(directions.items())),
+                rationale=rationale,
+                solved=solved,
+            )
+        )
+        if solved:
+            for feature_name, direction in directions.items():
+                self.record(
+                    feature=feature_name,
+                    direction=direction,
+                    source="discover_solve",
+                )
+
+    def vector_provenance(self) -> list[VectorProvenance]:
+        """The LLM-chosen vectors recorded, in the order they landed."""
+        return list(self._vectors)
 
     def summary(self) -> list[dict[str, object]]:
         """Per-strategy counts, sorted most-used first then by key for stability."""

@@ -23,6 +23,7 @@ from modules.blue.code_engineer import BlueCodeEngineer
 from modules.blue.code_config_blue import BlueConfigEngineer
 from modules.red.mutator.mutator import MetamorphicEvasionAdversary
 from modules.red.llm_red.agent import LlmRedAdversary
+from modules.red.discover_solve.adversary import DiscoverStrategizeSolveAdversary
 from modules.red.white_box import WhiteBoxRedAdversary
 from modules.red.code_red.adversary import CodeRedAdversary
 from modules.red.catalog import StrategyCatalog
@@ -141,6 +142,7 @@ def build_components_sparkov(
     judge_max_calls: int | None = 25,
     red_provider: LLMProvider | None = None,
     red_max_calls: int | None = None,
+    red_engine: str = "llm",
     white_box_provider: LLMProvider | None = None,
     white_box_max_calls: int | None = None,
     blue_provider: LLMProvider | None = None,
@@ -244,6 +246,24 @@ def build_components_sparkov(
         spec=spec,
         movable_features=movable_features,
     )
+    # ADDITIVE: the discover->strategize->solve red (LLM owns the strategy, a
+    # generic solver lands the numbers, the surface is DISCOVERED by probing — no
+    # hand-fed movable_features). Selected by ``red_engine="discover_solve"``; the
+    # demo default stays the ``LlmRedAdversary`` so existing behavior is unchanged.
+    discover_solve = DiscoverStrategizeSolveAdversary(
+        provider=_wrap(
+            red_provider
+            if red_provider is not None
+            else AnthropicApiProvider(model="claude-sonnet-4-6"),
+            "red",
+        ),
+        spec=spec,
+        score_fn=detector.score,
+        label_fn=sparkov_is_fraud,
+        threshold=threshold,
+        max_llm_calls=red_max_calls,
+        catalog=catalog,
+    )
     # The LLM drives EVERY attack in a live run. There is NO silent swap to scripted
     # deterministic mutations — that would betray the "LLM semantic reasoning IS the
     # search engine" thesis (the README's gradient-vs-semantic distinction) and pass
@@ -251,7 +271,12 @@ def build_components_sparkov(
     # drives ONLY offline (``red_max_calls == 0`` ⇒ no LLM budget, i.e. the test
     # suite / CI) to keep the loop free + reproducible. Live, the red is the LLM
     # alone; if it finds no evasion for a sample, that is an honest "no evasion".
-    adversary: Adversary = deterministic if red_max_calls == 0 else llm_red
+    if red_max_calls == 0:
+        adversary: Adversary = deterministic
+    elif red_engine == "discover_solve":
+        adversary = discover_solve
+    else:
+        adversary = llm_red
     # WHITE-BOX red (US-14): an Opus 4.8 LLM red agent (constitution §1: the
     # white-box self-test pass runs on the higher tier) whose prompt carries the
     # oracles' verification scheme, with the SAME free deterministic fallback.
