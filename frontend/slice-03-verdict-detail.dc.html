@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::selection{background:#316E7E;color:#E8EDF3}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</helmet>
+
+<div data-screen-label="Verdict Detail · r_8f3a" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <!-- ============== STICKY CHROME ============== -->
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:16px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#161E27;border:1px solid #232E39;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">acme-fraud · operator</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">
+        <span style="color:#4FAAC0">/runs</span> ·
+        <span style="color:#4FAAC0">r_8f3a</span> · verdict
+      </span>
+      <div style="flex:1"></div>
+      <!-- cost meter (frozen at run completion) -->
+      <div style="display:flex;align-items:stretch;font-family:'IBM Plex Mono',monospace;background:#161E27;border:1px solid #2C3744;border-radius:7px;overflow:hidden">
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3">
+          <span style="color:#95A1AE;font-size:10.5px;letter-spacing:.06em">FINAL · r_8f3a</span>
+          <span style="color:#E8EDF3;font-size:13px;font-weight:500">$8.40 <span style="color:#95A1AE;font-size:11px">/ $25.00</span></span>
+        </div>
+        <div style="width:1px;background:#2C3744"></div>
+        <div style="padding:10px 14px;display:flex;flex-direction:column;gap:3px;line-height:1.3;min-width:170px">
+          <span style="color:#95A1AE;font-size:10.5px;letter-spacing:.06em">SESSION · 7 runs</span>
+          <span style="color:#B8C2CE;font-size:12px">$61.40 <span style="color:#95A1AE">/ $250.00 mo</span></span>
+          <div style="height:3px;background:#0E141B;border-radius:2px;overflow:hidden;margin-top:1px"><div style="width:24.6%;height:100%;background:#316E7E"></div></div>
+        </div>
+      </div>
+      <!-- live updates pill (frozen / archived) -->
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 4px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">
+        <span style="width:9px;height:9px;border-radius:50%;background:#3A4654;flex:none"></span>
+        Archived · 14:08:31Z
+      </div>
+    </div>
+  </div>
+
+  <!-- ============== PAGE BODY ============== -->
+  <div style="max-width:1240px;margin:0 auto;padding:40px 24px 96px">
+
+    <!-- Breadcrumb back -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#95A1AE">
+      <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline">← live run view</button>
+      <span>·</span>
+      <span style="color:#7C8896">r_8f3a · sealed spec sha</span>
+      <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:12px;text-decoration:underline">9f2a4c7b</button>
+      <span style="color:#7C8896">· finished 14:08:31Z</span>
+    </div>
+
+    <!-- ============== VERDICT HEADER ============== -->
+    <div style="border:1px solid #4A2528;border-radius:10px;background:#161217;overflow:hidden;margin-bottom:28px">
+      <div style="display:grid;grid-template-columns:280px 1fr 260px;gap:0">
+        <!-- 1: big verdict block -->
+        <div style="padding:24px 28px;border-right:1px solid #221A1D;background:#1B1518">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C99B95;letter-spacing:.14em;margin-bottom:8px">FINAL VERDICT</div>
+          <div style="display:flex;align-items:baseline;gap:10px">
+            <span style="font-size:42px;line-height:1;font-weight:700;color:#E5B5B0;letter-spacing:-0.02em">FAIL</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5736B">2 of 5 votes</span>
+          </div>
+          <div style="margin-top:14px;font-size:13px;color:#E5B5B0;line-height:1.5">
+            <span style="color:#E5736B;font-weight:600">Metamorphic</span> invariance broke — the adapter cannot be certified.
+          </div>
+          <div style="margin-top:12px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#C99B95">
+            certificate · <span style="color:#E5B5B0">denied</span> · no expiry stamp issued
+          </div>
+        </div>
+
+        <!-- 2: vote breakdown -->
+        <div style="padding:24px 28px;background:#161217">
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;letter-spacing:.08em;margin-bottom:14px">VOTE BREAKDOWN · 5 oracles</div>
+          <!-- 5 votes as a stacked bar + dots -->
+          <div style="display:flex;align-items:center;gap:4px;margin-bottom:14px">
+            <div style="flex:1;height:11px;background:#57C08A;border-radius:2px 0 0 2px" title="Held-Out · PASS"></div>
+            <div style="flex:1;height:11px;background:#E5736B" title="Metamorphic · FAIL"></div>
+            <div style="flex:1;height:11px;background:#57C08A" title="Differential · PASS"></div>
+            <div style="flex:1;height:11px;background:#57C08A" title="Fuzz · PASS"></div>
+            <div style="flex:1;height:11px;background:#E5736B;border-radius:0 2px 2px 0" title="Judge (½) · FAIL"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">
+            <span>Held-out</span>
+            <span style="color:#E5736B">Metamorph.</span>
+            <span>Differential</span>
+            <span>Fuzz</span>
+            <span style="color:#E5736B">Judge<span style="color:#95A1AE">·½</span></span>
+          </div>
+          <div style="margin-top:18px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE;line-height:1.65;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:10px 13px">
+            <span style="color:#95A1AE">decision rule · </span><span style="color:#E8EDF3">any failed independent oracle → FAIL</span><br/>
+            <span style="color:#95A1AE">judge weighting · </span><span style="color:#E8EDF3">1 of 5</span> · <span style="color:#D9A441">advisory, never overrides</span>
+          </div>
+        </div>
+
+        <!-- 3: actions -->
+        <div style="padding:24px 28px;border-left:1px solid #221A1D;background:#161217;display:flex;flex-direction:column;gap:10px">
+          <button onClick="{{ openPatch }}" style="background:#4FAAC0;color:#0E141B;border:none;border-radius:6px;padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between;gap:8px" style-hover="background:#5FBBD0">
+            <span>Open Patch Trainer</span><span>→</span>
+          </button>
+          <button onClick="{{ openReplay }}" style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:10px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between" style-hover="background:#25303C">
+            <span>↺ Replay full run</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">seed 0x91af</span>
+          </button>
+          <button style="background:#1D2630;color:#E8EDF3;border:1px solid #3A4654;border-radius:6px;padding:10px 14px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:space-between" style-hover="background:#25303C">
+            <span>⤓ Audit bundle</span>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">.tar.zst · 4.2 MB</span>
+          </button>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE;line-height:1.6;margin-top:4px">
+            on patch → <span style="color:#4FAAC0">/runs/r_8f3a/patches/new</span><br/>
+            on replay → <span style="color:#4FAAC0">/runs/r_8f3a/replay</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- run metadata strip -->
+      <div style="display:flex;align-items:center;flex-wrap:wrap;gap:0;border-top:1px solid #221A1D;background:#0E141B">
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">RUN</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">r_8f3a</span>
+        </div>
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">TARGET</span>
+          <span style="font-size:12px;color:#E8EDF3">Fraud <span style="font-family:'IBM Plex Mono',monospace;color:#95A1AE">· fraud_adapter@7c1d</span></span>
+        </div>
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">SEALED SPEC</span>
+          <button onClick="{{ openSpec }}" style="background:none;border:none;padding:0;text-align:left;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline">sha 9f2a4c7b · v3.2.1</button>
+        </div>
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">ROUNDS</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">48 of 48</span>
+        </div>
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">SPEND</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#57C08A">$8.40 <span style="color:#95A1AE">/ $25.00</span></span>
+        </div>
+        <div style="padding:11px 22px;border-right:1px solid #1D2630;display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">OPERATOR</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">j.okafor</span>
+        </div>
+        <div style="flex:1"></div>
+        <div style="padding:11px 22px;display:flex;flex-direction:column;gap:2px;text-align:right">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em">RUN AUDIT</span>
+          <button style="background:none;border:none;padding:0;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#4FAAC0;cursor:pointer;text-decoration:underline">/audit/runs/r_8f3a ↗</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============== ORACLE RIBBON ============== -->
+    <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 14px">
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.1em">PER-ORACLE DRILL-DOWN</span>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896">click an oracle below to inspect its evidence</span>
+      <div style="flex:1;height:1px;background:#1D2630"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr) 0.8fr;gap:12px;margin-bottom:32px">
+      <!-- 1 · Held-Out -->
+      <button onClick="{{ pickHeldOut }}" style="text-align:left;background:{{ heldOutBg }};border:1px solid {{ heldOutBorder }};border-radius:8px;padding:14px 14px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:8px" style-hover="background:#1D2630">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#E8EDF3">Held-Out Tests</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:4px;padding:2px 7px">✓ PASS</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#57C08A;font-weight:500;letter-spacing:-0.01em">0.98</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">pass_rate · 220 cases · 0 regressed</div>
+      </button>
+      <!-- 2 · Metamorphic (selected by default — failing one) -->
+      <button onClick="{{ pickMeta }}" style="text-align:left;background:{{ metaBg }};border:1px solid {{ metaBorder }};border-radius:8px;padding:14px 14px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:8px;position:relative" style-hover="background:#1B1518">
+        <span style="position:absolute;top:-1px;left:-1px;right:-1px;height:2px;background:{{ metaTopBar }};border-radius:8px 8px 0 0"></span>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#E8EDF3">Metamorphic</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#E5736B;background:#1B1518;border:1px solid #4A2528;border-radius:4px;padding:2px 7px">✕ FAIL</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#E5736B;font-weight:500;letter-spacing:-0.01em">56<span style="color:#7C8896;font-size:15px">/64</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">invariants held · 8 broken</div>
+      </button>
+      <!-- 3 · Differential -->
+      <button onClick="{{ pickDiff }}" style="text-align:left;background:{{ diffBg }};border:1px solid {{ diffBorder }};border-radius:8px;padding:14px 14px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:8px" style-hover="background:#1D2630">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#E8EDF3">Differential</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:4px;padding:2px 7px">✓ PASS</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#57C08A;font-weight:500;letter-spacing:-0.01em">0.018</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">cross-family drift · ≤ 0.03</div>
+      </button>
+      <!-- 4 · Fuzz -->
+      <button onClick="{{ pickFuzz }}" style="text-align:left;background:{{ fuzzBg }};border:1px solid {{ fuzzBorder }};border-radius:8px;padding:14px 14px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:8px" style-hover="background:#1D2630">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:12px;font-weight:600;color:#E8EDF3">Fuzz</span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#57C08A;background:#16241C;border:1px solid #2A4636;border-radius:4px;padding:2px 7px">✓ PASS</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;color:#57C08A;font-weight:500;letter-spacing:-0.01em">0<span style="color:#7C8896;font-size:15px">/5,000</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">crashes · 0 timeouts</div>
+      </button>
+      <!-- 5 · Judge (½, smaller, dashed) -->
+      <button onClick="{{ pickJudge }}" style="text-align:left;background:{{ judgeBg }};border:1px dashed {{ judgeBorder }};border-radius:8px;padding:14px 14px 12px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:8px;opacity:.96" style-hover="background:#1D2630">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#E8EDF3">
+            <span style="width:15px;height:15px;border-radius:3px;background:#25303C;display:inline-flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896">½</span>
+            Judge
+          </span>
+          <span style="display:inline-flex;align-items:center;gap:5px;font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;color:#E5736B;background:#1B1518;border:1px solid #4A2528;border-radius:4px;padding:2px 7px">✕ FAIL</span>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;color:#D9A441;font-weight:500;letter-spacing:-0.01em">1<span style="color:#7C8896;font-size:13px"> vote</span></div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#D9A441" title="One of five votes. Easy to fool — never decides the verdict on its own.">advisory · gameable ⓘ</div>
+      </button>
+    </div>
+
+    <!-- ============== SELECTED ORACLE DRILL-DOWN ============== -->
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#0F151C;overflow:hidden">
+
+      <!-- drill-down header strip -->
+      <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid #1D2630;background:#11181F">
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#4FAAC0;letter-spacing:.08em">ORACLE</span>
+        <h2 style="margin:0;font-size:17px;color:#E8EDF3;font-weight:600">{{ data.name }}</h2>
+        <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896">· {{ data.subtitle }}</span>
+        <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:{{ data.statusFg }};background:{{ data.statusBg }};border:1px solid {{ data.statusBorder }};border-radius:5px;padding:3px 10px">{{ data.statusGlyph }} {{ data.statusLabel }}</span>
+        <div style="flex:1"></div>
+        <button onClick="{{ openInspect }}" title="Inspect the underlying LLM call" style="display:inline-flex;align-items:center;gap:6px;background:#1D2630;border:1px solid #3A4654;border-radius:6px;color:#4FAAC0;cursor:pointer;padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px" style-hover="background:#25303C">
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.25" stroke="currentColor" stroke-width="1.5"></circle><line x1="9.4" y1="9.4" x2="12.6" y2="12.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></line></svg>
+          Inspect LLM call
+        </button>
+        <button onClick="{{ openReplay }}" style="display:inline-flex;align-items:center;gap:6px;background:#1D2630;border:1px solid #3A4654;border-radius:6px;color:#4FAAC0;cursor:pointer;padding:6px 11px;font-family:'IBM Plex Mono',monospace;font-size:11px" style-hover="background:#25303C">↺ Replay this oracle</button>
+      </div>
+
+      <!-- AuditTraceCard (full width, from design system) -->
+      <div style="padding:22px 22px 0">
+        <div style="border:1px solid {{ data.cardBorder }};border-radius:8px;background:{{ data.cardBg }};overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid {{ data.cardLineBg }};background:{{ data.cardHeadBg }}">
+            <span style="font-size:13.5px;font-weight:600;color:#E8EDF3">{{ data.name }} · audit trace</span>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;color:{{ data.statusFg }};background:{{ data.statusBg }};border:1px solid {{ data.statusBorder }};border-radius:5px;padding:3px 9px">{{ data.statusGlyph }} {{ data.statusLabel }}</span>
+          </div>
+          <div style="padding:16px 18px;display:grid;grid-template-columns:1fr 1fr;gap:18px 28px">
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:4px">OBLIGATION</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:#B8C2CE">{{ data.obligation }}</div>
+            </div>
+            <div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:4px">OBSERVED</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;color:{{ data.statusFg }}">{{ data.observed }}</div>
+            </div>
+            <div style="grid-column:span 2">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:4px">REASONING</div>
+              <div style="font-size:13px;color:#B8C2CE;line-height:1.6">{{ data.reasoning }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- two-col: per-case grid + LLM call -->
+      <div style="padding:18px 22px;display:grid;grid-template-columns:1.15fr 1fr;gap:16px">
+
+        <!-- Per-case grid -->
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#0E141B;padding:18px 18px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em">{{ data.gridLabel }}</div>
+            <div style="display:flex;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#95A1AE">
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;background:#57C08A;border-radius:2px"></span>pass · {{ data.gridPass }}</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;background:#E5736B;border-radius:2px"></span>fail · {{ data.gridFail }}</span>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat({{ data.gridCols }},1fr);gap:4px">
+            <sc-for list="{{ data.cells }}" as="c" hint-placeholder-count="64">
+              <div title="{{ c.tip }}" style="aspect-ratio:1;background:{{ c.bg }};border-radius:2px;cursor:help"></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">
+            <span>{{ data.gridFooter }}</span>
+            <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline">export CSV ↗</button>
+          </div>
+        </div>
+
+        <!-- LLM call panel -->
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#0E141B;padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em">LLM CALL · oracle verdict</div>
+            <div style="display:flex;gap:7px;font-family:'IBM Plex Mono',monospace;font-size:10.5px">
+              <span style="background:#161E27;border:1px solid #232E39;border-radius:5px;padding:3px 8px;color:#95A1AE">tokens <span style="color:#E8EDF3">{{ data.llmTokens }}</span></span>
+              <span style="background:#161E27;border:1px solid #232E39;border-radius:5px;padding:3px 8px;color:#95A1AE">$<span style="color:#57C08A">{{ data.llmCost }}</span></span>
+              <span style="background:#161E27;border:1px solid #232E39;border-radius:5px;padding:3px 8px;color:#95A1AE">{{ data.llmLatency }}</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:5px">PROMPT · sealed</div>
+            <pre style="margin:0;background:#11181F;border:1px solid #232E39;border-radius:6px;padding:11px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6;max-height:118px;overflow:auto">{{ data.llmPrompt }}</pre>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:5px">RAW RESPONSE</div>
+            <pre style="margin:0;background:#11181F;border:1px solid #232E39;border-radius:6px;padding:11px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6;max-height:118px;overflow:auto">{{ data.llmResponse }}</pre>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:5px">PARSED → VERDICT</div>
+            <div style="background:#11181F;border:1px solid #232E39;border-radius:6px;padding:9px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ data.statusFg }}">{{ data.llmParsed }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- two-col: sandbox job + replay diff -->
+      <div style="padding:0 22px 18px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <!-- Sandbox job -->
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#0E141B;padding:18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em">SANDBOX JOB · {{ data.sbxId }}</div>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:#57C08A">
+              <span style="width:7px;height:7px;border-radius:50%;background:#57C08A"></span>exit 0
+            </span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;margin-bottom:12px">
+            <div style="display:flex;gap:10px"><span style="color:#7C8896;width:78px;flex:none">image</span><span style="color:#B8C2CE">crucible/sandbox:v1.4.2<span style="color:#7C8896">@sha256:c4f9a2…</span></span></div>
+            <div style="display:flex;gap:10px"><span style="color:#7C8896;width:78px;flex:none">runtime</span><span style="color:#B8C2CE">python 3.12 · linux · docker</span></div>
+            <div style="display:flex;gap:10px"><span style="color:#7C8896;width:78px;flex:none">network</span><span style="color:#B8C2CE">sealed <span style="color:#7C8896">(egress=deny)</span></span></div>
+            <div style="display:flex;gap:10px"><span style="color:#7C8896;width:78px;flex:none">seed</span><span style="color:#B8C2CE">0x91af<span style="color:#7C8896"> · captured</span></span></div>
+            <div style="display:flex;gap:10px"><span style="color:#7C8896;width:78px;flex:none">walltime</span><span style="color:#B8C2CE">{{ data.sbxWalltime }}</span></div>
+          </div>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:5px">STDOUT · tail</div>
+            <pre style="margin:0;background:#11181F;border:1px solid #232E39;border-radius:6px;padding:10px 12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6;max-height:104px;overflow:auto">{{ data.sbxStdout }}</pre>
+          </div>
+        </div>
+
+        <!-- Replay diff -->
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#0E141B;padding:18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em">REPLAY · captured seed 0x91af</div>
+            <span style="display:inline-flex;align-items:center;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:{{ data.replayFg }}">{{ data.replaySummary }}</span>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.06em;margin-bottom:6px">
+            <div>ORIGINAL</div>
+            <div>REPLAY</div>
+          </div>
+          <div style="background:#11181F;border:1px solid #232E39;border-radius:6px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7">
+            <sc-for list="{{ data.replayRows }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #1D2630">
+                <div style="padding:8px 12px;color:{{ r.lhsFg }};background:{{ r.lhsBg }};border-right:1px solid #1D2630">{{ r.lhs }}</div>
+                <div style="padding:8px 12px;color:{{ r.rhsFg }};background:{{ r.rhsBg }}">{{ r.rhs }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="margin-top:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;line-height:1.5">
+            {{ data.replayFooter }}
+          </div>
+        </div>
+      </div>
+
+      <!-- Failing cases / examples table -->
+      <div style="padding:0 22px 24px">
+        <div style="border:1px solid #2C3744;border-radius:8px;background:#0E141B;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid #1D2630;background:#11181F">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;letter-spacing:.08em">{{ data.tableLabel }}</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE">· showing {{ data.tableShown }}</span>
+            <div style="flex:1"></div>
+            <div style="display:flex;gap:6px">
+              <span style="background:#16242A;color:#4FAAC0;border:1px solid #2E5560;border-radius:14px;padding:3px 10px;font-size:11px;font-family:'IBM Plex Mono',monospace">{{ data.tableChip }} ✕</span>
+            </div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+            <thead>
+              <tr style="border-bottom:1px solid #1D2630;background:#0B1117">
+                <th style="text-align:left;padding:10px 18px;color:#7C8896;font-weight:500;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">{{ data.col1 }}</th>
+                <th style="text-align:left;padding:10px 12px;color:#7C8896;font-weight:500;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">{{ data.col2 }}</th>
+                <th style="text-align:left;padding:10px 12px;color:#7C8896;font-weight:500;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">{{ data.col3 }}</th>
+                <th style="text-align:right;padding:10px 12px;color:#7C8896;font-weight:500;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase">{{ data.col4 }}</th>
+                <th style="width:60px;padding:10px 18px"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ data.tableRows }}" as="row" hint-placeholder-count="4">
+                <tr style="border-bottom:1px solid #1D2630" style-hover="background:#11181F">
+                  <td style="padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8EDF3">{{ row.id }}</td>
+                  <td style="padding:11px 12px;color:#B8C2CE">{{ row.c2 }}</td>
+                  <td style="padding:11px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ row.c3Fg }}">{{ row.c3 }}</td>
+                  <td style="padding:11px 12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ row.c4Fg }};text-align:right">{{ row.c4 }}</td>
+                  <td style="padding:11px 14px;text-align:right">
+                    <button onClick="{{ openInspect }}" title="Inspect this case" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;background:#1D2630;border:1px solid #3A4654;border-radius:5px;color:#4FAAC0;cursor:pointer" style-hover="background:#25303C">
+                      <svg width="11" height="11" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.25" stroke="currentColor" stroke-width="1.5"></circle><line x1="9.4" y1="9.4" x2="12.6" y2="12.6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></line></svg>
+                    </button>
+                  </td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <div style="padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#95A1AE;display:flex;justify-content:space-between;align-items:center">
+            <span>{{ data.tableFooter }}</span>
+            <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11px;text-decoration:underline">show all {{ data.tableTotal }} ↗</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer note: audit pointer -->
+    <div style="margin-top:20px;display:flex;align-items:center;gap:10px;padding:12px 18px;background:#11181F;border:1px solid #232E39;border-radius:8px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#95A1AE;line-height:1.6">
+      <span style="width:6px;height:6px;border-radius:50%;background:#7C8896;flex:none"></span>
+      Every panel above is reconstructed from the immutable audit log <button style="background:none;border:none;padding:0;color:#4FAAC0;cursor:pointer;font-family:inherit;font-size:11.5px;text-decoration:underline">/audit/runs/r_8f3a ↗</button>. API keys, DB credentials, and sandbox tokens are the only values ever redacted. Re-running with the captured seed re-produces these exact verdicts.
+    </div>
+
+  </div>
+
+  <!-- ============== INSPECT DRAWER (lifted from design system) ============== -->
+  <sc-if value="{{ showInspect }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:480px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">INSPECT · LLM CALL</div>
+          <div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">{{ data.name }} oracle</div>
+        </div>
+        <button onClick="{{ closeDrawer }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">PROMPT</div>
+          <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6">{{ data.llmPrompt }}</pre>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">RAW RESPONSE</div>
+          <pre style="margin:0;background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#B8C2CE;white-space:pre-wrap;line-height:1.6">{{ data.llmResponse }}</pre>
+        </div>
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;color:#7C8896;letter-spacing:.08em;margin-bottom:6px">PARSED OUTPUT</div>
+          <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;padding:12px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:{{ data.statusFg }}">{{ data.llmParsed }}</div>
+        </div>
+        <div style="display:flex;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#7C8896;flex-wrap:wrap">
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">tokens <span style="color:#E8EDF3">{{ data.llmTokens }}</span></span>
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">cost <span style="color:#57C08A">${{ data.llmCost }}</span></span>
+          <span style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:6px 10px">latency <span style="color:#E8EDF3">{{ data.llmLatency }}</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:#7C8896;border-top:1px solid #232E39;padding-top:14px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#7C8896"></span>
+          API keys, DB credentials, and sandbox tokens are redacted — the only values ever hidden.
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============== REPLAY DRAWER ============== -->
+  <sc-if value="{{ showReplay }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:540px;max-width:94vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">REPLAY · {{ data.name }}</div>
+          <div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">seed 0x91af — original vs replay</div>
+        </div>
+        <button onClick="{{ closeDrawer }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:18px 20px">
+        <div style="background:#0E141B;border:1px solid #232E39;border-radius:7px;overflow:hidden;font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.7">
+          <sc-for list="{{ data.replayRows }}" as="r" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #1D2630">
+              <div style="padding:9px 12px;color:{{ r.lhsFg }};background:{{ r.lhsBg }};border-right:1px solid #1D2630">{{ r.lhs }}</div>
+              <div style="padding:9px 12px;color:{{ r.rhsFg }};background:{{ r.rhsBg }}">{{ r.rhs }}</div>
+            </div>
+          </sc-for>
+        </div>
+        <div style="margin-top:14px;display:flex;align-items:center;gap:8px;font-size:12px;color:{{ data.replayFg }};background:{{ data.replayBg }};border:1px solid {{ data.replayBorder }};border-radius:7px;padding:10px 14px">
+          <span style="width:6px;height:6px;border-radius:50%;background:{{ data.replayFg }}"></span>
+          {{ data.replayFooter }}
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============== SPEC DRAWER ============== -->
+  <sc-if value="{{ showSpec }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDrawer }}" style="position:fixed;inset:0;background:rgba(8,12,16,.62);z-index:60"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:480px;max-width:92vw;background:#161E27;border-left:1px solid #2C3744;z-index:61;display:flex;flex-direction:column;box-shadow:-16px 0 48px rgba(0,0,0,.4)">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #2C3744">
+        <div>
+          <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#4FAAC0;letter-spacing:.08em">SEALED SPEC</div>
+          <div style="font-size:14px;color:#E8EDF3;font-weight:600;margin-top:2px">sha 9f2a4c7b · v3.2.1</div>
+        </div>
+        <button onClick="{{ closeDrawer }}" style="background:#1D2630;border:1px solid #3A4654;color:#B8C2CE;border-radius:6px;width:30px;height:30px;cursor:pointer;font-size:15px">✕</button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:18px 20px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;line-height:1.7">
+        <div><span style="color:#7C8896">spec:</span></div>
+        <div>  target: fraud_adapter</div>
+        <div>  sealed: <span style="color:#57C08A">true</span></div>
+        <div><span style="color:#7C8896">  obligations:</span></div>
+        <div>    - held_out_tests.pass_rate &gt;= 0.95</div>
+        <div>    - metamorphic.invariance == <span style="color:#57C08A">true</span></div>
+        <div>    - differential.cross_family_drift &lt;= 0.03</div>
+        <div>    - fuzz.crashes == <span style="color:#57C08A">0</span></div>
+        <div><span style="color:#7C8896">  oracles:</span> [held_out, metamorphic, differential, fuzz]</div>
+        <div><span style="color:#7C8896">  judge:</span></div>
+        <div>    enabled: <span style="color:#57C08A">true</span></div>
+        <div>    weight: one_vote</div>
+        <div style="margin-top:14px;color:#7C8896"># sealed at submit · sha 9f2a4c7b</div>
+        <div style="color:#7C8896"># operator: j.okafor · 2026-06-21 14:02Z</div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { selected: 'metamorphic', drawer: null };
+
+  // -------- per-oracle data ----------
+  buildOracles() {
+    // helper: a grid cell for the per-case visualization
+    const cell = (pass, tip) => ({ bg: pass ? '#57C08A' : '#E5736B', tip });
+
+    // 64-cell metamorphic grid: 8 fail clustered around amount-scaling relation
+    const metaCells = [];
+    const failIdx = new Set([6, 7, 14, 21, 22, 38, 47, 55]);
+    for (let i = 0; i < 64; i++) {
+      const pass = !failIdx.has(i);
+      const id = 'm_' + String(i + 1).padStart(3, '0');
+      metaCells.push(cell(pass, id + ' · ' + (pass ? 'invariance held' : 'invariance broken')));
+    }
+
+    // 220-cell held-out grid (compress to 110 visible, 2x density)
+    const heldCells = [];
+    for (let i = 0; i < 110; i++) {
+      heldCells.push(cell(true, 'h_' + String(i + 1).padStart(3, '0') + ' · pass'));
+    }
+
+    // 60-cell differential grid (model families × case classes)
+    const diffCells = [];
+    for (let i = 0; i < 60; i++) {
+      diffCells.push(cell(true, 'd_' + String(i + 1).padStart(3, '0') + ' · within tolerance'));
+    }
+
+    // 100-cell fuzz grid sampled from 5000 mutants
+    const fuzzCells = [];
+    for (let i = 0; i < 100; i++) {
+      fuzzCells.push(cell(true, 'f_' + String(i + 1).padStart(4, '0') + ' · no crash · no timeout'));
+    }
+
+    // 24-cell judge grid (one vote, smaller surface) — judge "failed" by majority of 24 rubric checks
+    const judgeCells = [];
+    const judgeFail = new Set([3, 9, 14, 19]);
+    for (let i = 0; i < 24; i++) {
+      const pass = !judgeFail.has(i);
+      judgeCells.push(cell(pass, 'j_' + String(i + 1).padStart(2, '0') + ' · rubric ' + (pass ? 'satisfied' : 'flagged')));
+    }
+
+    const passColors = {
+      statusFg: '#57C08A',
+      statusBg: '#16241C',
+      statusBorder: '#2A4636',
+      statusLabel: 'PASS',
+      statusGlyph: '✓',
+      cardBg: '#12191A',
+      cardBorder: '#2A4636',
+      cardHeadBg: '#16241C',
+      cardLineBg: '#1E2E24',
+    };
+    const failColors = {
+      statusFg: '#E5736B',
+      statusBg: '#1B1518',
+      statusBorder: '#4A2528',
+      statusLabel: 'FAIL',
+      statusGlyph: '✕',
+      cardBg: '#161217',
+      cardBorder: '#4A2528',
+      cardHeadBg: '#1B1518',
+      cardLineBg: '#221A1D',
+    };
+
+    return {
+      held_out: {
+        ...passColors,
+        name: 'Held-Out Tests',
+        subtitle: '220 sealed cases · oracle independent',
+        obligation: 'held_out_tests.pass_rate >= 0.95',
+        observed: '0.98 (216 / 220 passed · 0 regressed vs. baseline)',
+        reasoning: 'No held-out case regressed under the candidate adapter. The four cases that did not pass were already failing on the baseline and are therefore not counted as regressions.',
+        gridLabel: 'PER-CASE RESULTS · 220 sealed cases',
+        gridCols: 22,
+        gridPass: '216',
+        gridFail: '4 (pre-existing, not regressions)',
+        gridFooter: 'each square is one held-out case · hover for id',
+        cells: heldCells,
+        llmTokens: '3,114',
+        llmCost: '0.041',
+        llmLatency: '1.2s',
+        llmPrompt: 'You are the held-out test oracle. Given the producer output and\nthe sealed obligation, report pass_rate over the 220 held-out\ncases. Cite each regressed case by id.',
+        llmResponse: '{"pass_rate":0.98,"regressed":[],\n "n":220,"verdict":"pass",\n "baseline_failures":["h_044","h_088","h_151","h_197"]}',
+        llmParsed: 'pass_rate = 0.98  →  PASS  (≥ 0.95 obligation)',
+        sbxId: 'sbx_h_8f3a',
+        sbxWalltime: '00:01:14',
+        sbxStdout: '[14:07:55] loaded 220 sealed cases\n[14:07:55] running adapter vs. baseline\n[14:08:09] done · pass_rate=0.98 regressions=0',
+        replayFg: '#57C08A',
+        replayBg: '#16241C',
+        replayBorder: '#2A4636',
+        replaySummary: '✓ identical',
+        replayRows: [
+          { lhs: 'verdict: pass', rhs: 'verdict: pass', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'pass_rate: 0.98', rhs: 'pass_rate: 0.98', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'tokens: 3114', rhs: 'tokens: 3114', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'cost: $0.041', rhs: 'cost: $0.041', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+        ],
+        replayFooter: '0 fields drifted · captured seed reproduces this oracle byte-for-byte.',
+        tableLabel: 'BASELINE FAILURES · already failing, not regressions',
+        tableShown: '4 of 4',
+        tableTotal: '4',
+        tableChip: 'class:baseline-fail',
+        col1: 'Case ID', col2: 'Description', col3: 'Class', col4: 'Score',
+        tableRows: [
+          { id: 'h_044', c2: 'Card-present low-amount declined merchant', c3: 'baseline-fail', c3Fg: '#D9A441', c4: '0.42', c4Fg: '#D9A441' },
+          { id: 'h_088', c2: 'Round-number test transaction at 03:00 UTC', c3: 'baseline-fail', c3Fg: '#D9A441', c4: '0.31', c4Fg: '#D9A441' },
+          { id: 'h_151', c2: 'Forex-converted refund within 60s of charge', c3: 'baseline-fail', c3Fg: '#D9A441', c4: '0.49', c4Fg: '#D9A441' },
+          { id: 'h_197', c2: 'Edge: zero-amount authorization probe', c3: 'baseline-fail', c3Fg: '#D9A441', c4: '0.18', c4Fg: '#D9A441' },
+        ],
+        tableFooter: '4 baseline failures preserved · 0 new regressions',
+      },
+
+      metamorphic: {
+        ...failColors,
+        name: 'Metamorphic Relations',
+        subtitle: '64 invariants over generated transformations · oracle independent',
+        obligation: 'metamorphic.invariance == true (across all relations)',
+        observed: '8 of 64 invariants broken — most under the amount-scaling family',
+        reasoning: 'Scaling a transaction 10× should not flip the fraud verdict, since the decision boundary is amount-invariant under the sealed obligation. Eight cases flipped from non-fraud to fraud when amount was scaled, three flipped back when currency was rotated. The candidate adapter has learned an amount-shortcut the baseline did not.',
+        gridLabel: 'PER-INVARIANT RESULTS · 64 metamorphic relations',
+        gridCols: 16,
+        gridPass: '56',
+        gridFail: '8',
+        gridFooter: 'each square is one metamorphic relation · hover for id',
+        cells: metaCells,
+        llmTokens: '4,808',
+        llmCost: '0.063',
+        llmLatency: '2.1s',
+        llmPrompt: 'You are the metamorphic relations oracle. For each of the 64\nrelations in the sealed spec, generate an input/transform pair,\nrun the adapter on both, and decide whether the invariance\nclause holds. Return broken relations with witnesses.',
+        llmResponse: '{"n":64,"held":56,"broken":[\n  {"id":"m_007","relation":"amount_scale_10x","witness":"tx_91af#A"},\n  {"id":"m_008","relation":"amount_scale_10x","witness":"tx_91af#B"},\n  {"id":"m_015","relation":"amount_scale_100x","witness":"tx_91af#C"},\n  {"id":"m_022","relation":"currency_rotate","witness":"tx_91af#D"}, ...\n], "verdict":"fail"}',
+        llmParsed: 'broken_count = 8  >  0  →  FAIL  (invariance obligation)',
+        sbxId: 'sbx_m_8f3a',
+        sbxWalltime: '00:02:38',
+        sbxStdout: '[14:07:55] generated 64 transformed pairs\n[14:08:01] running adapter on each pair\n[14:08:31] done · broken=8 family=amount_scale\n[14:08:31] writing witnesses to /audit/cases/',
+        replayFg: '#57C08A',
+        replayBg: '#16241C',
+        replayBorder: '#2A4636',
+        replaySummary: '✓ broke identically',
+        replayRows: [
+          { lhs: 'verdict: fail', rhs: 'verdict: fail', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'broken: 8', rhs: 'broken: 8', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'family: amount_scale', rhs: 'family: amount_scale', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'witness: tx_91af#A', rhs: 'witness: tx_91af#A', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+        ],
+        replayFooter: '0 fields drifted · failure is deterministic under captured seed.',
+        tableLabel: 'BROKEN INVARIANTS · 8 cases',
+        tableShown: '4 of 8',
+        tableTotal: '8',
+        tableChip: 'family:amount_scale',
+        col1: 'Case ID', col2: 'Relation', col3: 'Witness', col4: 'Δ-score',
+        tableRows: [
+          { id: 'm_007', c2: 'Scaling amount 10× must preserve verdict', c3: 'tx_91af#A → flipped', c3Fg: '#E5736B', c4: '+0.41', c4Fg: '#E5736B' },
+          { id: 'm_008', c2: 'Scaling amount 10× must preserve verdict', c3: 'tx_91af#B → flipped', c3Fg: '#E5736B', c4: '+0.38', c4Fg: '#E5736B' },
+          { id: 'm_015', c2: 'Scaling amount 100× must preserve verdict', c3: 'tx_91af#C → flipped', c3Fg: '#E5736B', c4: '+0.57', c4Fg: '#E5736B' },
+          { id: 'm_022', c2: 'Currency rotation must preserve verdict', c3: 'tx_91af#D → flipped', c3Fg: '#E5736B', c4: '+0.22', c4Fg: '#E5736B' },
+        ],
+        tableFooter: '8 invariants broken · cluster: amount-scaling family (6 of 8)',
+      },
+
+      differential: {
+        ...passColors,
+        name: 'Differential',
+        subtitle: '4 model families × 15 case classes · oracle independent',
+        obligation: 'differential.cross_family_drift <= 0.03',
+        observed: '0.018 (max-pairwise drift over 60 case classes)',
+        reasoning: 'No pair of model families disagreed by more than 1.8 percentage points on any case class. The largest disagreement was claude-sonnet vs gpt-4o on the round-number cluster — within tolerance.',
+        gridLabel: 'PER-CASE-CLASS DRIFT · 60 classes',
+        gridCols: 15,
+        gridPass: '60',
+        gridFail: '0',
+        gridFooter: 'each square is one case class · hover for id',
+        cells: diffCells,
+        llmTokens: '6,221',
+        llmCost: '0.082',
+        llmLatency: '2.4s',
+        llmPrompt: 'You are the differential oracle. For each case class, run the\nadapter through 4 model families and report the max-pairwise\nverdict drift. Flag any class with drift > 0.03.',
+        llmResponse: '{"n_classes":60,"max_drift":0.018,\n "top_drift":[\n  {"class":"round_number","drift":0.018,"pair":["sonnet","gpt4o"]},\n  {"class":"refund_within_60s","drift":0.014},\n  {"class":"low_amount_decline","drift":0.011}],\n "verdict":"pass"}',
+        llmParsed: 'max_drift = 0.018  ≤  0.03  →  PASS  (drift obligation)',
+        sbxId: 'sbx_d_8f3a',
+        sbxWalltime: '00:01:52',
+        sbxStdout: '[14:07:55] loaded 4 model families\n[14:07:58] running 60 case classes ×4\n[14:08:23] done · max_drift=0.018',
+        replayFg: '#57C08A',
+        replayBg: '#16241C',
+        replayBorder: '#2A4636',
+        replaySummary: '✓ identical',
+        replayRows: [
+          { lhs: 'verdict: pass', rhs: 'verdict: pass', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'max_drift: 0.018', rhs: 'max_drift: 0.018', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'top_pair: [sonnet, gpt4o]', rhs: 'top_pair: [sonnet, gpt4o]', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'tokens: 6221', rhs: 'tokens: 6221', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+        ],
+        replayFooter: '0 fields drifted · cross-family ordering reproduces exactly.',
+        tableLabel: 'TOP DRIFT CLASSES · within tolerance',
+        tableShown: '4 of 60',
+        tableTotal: '60',
+        tableChip: 'sort:drift-desc',
+        col1: 'Class ID', col2: 'Description', col3: 'Top pair', col4: 'Drift',
+        tableRows: [
+          { id: 'd_017', c2: 'Round-number amount cluster', c3: 'sonnet vs gpt-4o', c3Fg: '#B8C2CE', c4: '0.018', c4Fg: '#D9A441' },
+          { id: 'd_032', c2: 'Refund within 60 s of charge', c3: 'sonnet vs llama-3.1', c3Fg: '#B8C2CE', c4: '0.014', c4Fg: '#D9A441' },
+          { id: 'd_005', c2: 'Card-present low-amount declines', c3: 'gpt-4o vs llama-3.1', c3Fg: '#B8C2CE', c4: '0.011', c4Fg: '#B8C2CE' },
+          { id: 'd_048', c2: 'Cross-currency same-merchant pair', c3: 'sonnet vs mistral-l', c3Fg: '#B8C2CE', c4: '0.009', c4Fg: '#B8C2CE' },
+        ],
+        tableFooter: 'all 60 classes drift ≤ 0.018 — well under 0.03 ceiling',
+      },
+
+      fuzz: {
+        ...passColors,
+        name: 'Fuzz',
+        subtitle: '5,000 mutated inputs · oracle independent',
+        obligation: 'fuzz.crashes == 0 AND fuzz.timeouts == 0',
+        observed: '0 crashes · 0 timeouts · 0 sanitizer hits across 5,000 mutants',
+        reasoning: 'Five thousand random mutants of the held-out distribution produced zero crashes, zero sandbox timeouts, and zero memory-sanitizer hits. The adapter degraded gracefully on every malformed input.',
+        gridLabel: 'PER-MUTANT BATCH · 100 batches × 50 mutants each',
+        gridCols: 20,
+        gridPass: '5,000',
+        gridFail: '0',
+        gridFooter: 'each square is one batch of 50 mutants · hover for batch id',
+        cells: fuzzCells,
+        llmTokens: '1,944',
+        llmCost: '0.024',
+        llmLatency: '0.8s',
+        llmPrompt: 'You are the fuzz oracle. Summarize the crash log, timeout log,\nand sanitizer log from the sandbox over 5,000 mutated inputs.\nReport totals and any sandbox-side anomaly.',
+        llmResponse: '{"n":5000,"crashes":0,"timeouts":0,\n "sanitizer_hits":0,\n "longest_input_handled":"4.1MB",\n "verdict":"pass"}',
+        llmParsed: 'crashes = 0  AND  timeouts = 0  →  PASS  (fuzz obligation)',
+        sbxId: 'sbx_f_8f3a',
+        sbxWalltime: '00:03:01',
+        sbxStdout: '[14:07:55] starting fuzz run · n=5000\n[14:08:21] 2,500 mutants · 0 crash · 0 timeout\n[14:08:56] 5,000 mutants · 0 crash · 0 timeout\n[14:08:56] done · clean',
+        replayFg: '#57C08A',
+        replayBg: '#16241C',
+        replayBorder: '#2A4636',
+        replaySummary: '✓ identical',
+        replayRows: [
+          { lhs: 'verdict: pass', rhs: 'verdict: pass', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'crashes: 0', rhs: 'crashes: 0', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'timeouts: 0', rhs: 'timeouts: 0', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'n: 5000', rhs: 'n: 5000', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+        ],
+        replayFooter: '0 fields drifted · mutant stream reproduces exactly from seed.',
+        tableLabel: 'NOTABLE MUTANT BATCHES · all clean',
+        tableShown: '4 of 100',
+        tableTotal: '100',
+        tableChip: 'sort:walltime-desc',
+        col1: 'Batch ID', col2: 'Mutator', col3: 'Result', col4: 'Walltime',
+        tableRows: [
+          { id: 'f_042', c2: 'Bit-flip on amount field', c3: 'clean', c3Fg: '#57C08A', c4: '1.42s', c4Fg: '#B8C2CE' },
+          { id: 'f_071', c2: 'UTF-8 surrogate in merchant name', c3: 'clean', c3Fg: '#57C08A', c4: '1.31s', c4Fg: '#B8C2CE' },
+          { id: 'f_088', c2: 'Oversized payload · 4.1 MB', c3: 'clean', c3Fg: '#57C08A', c4: '2.18s', c4Fg: '#D9A441' },
+          { id: 'f_094', c2: 'Recursive nested object · depth 256', c3: 'clean', c3Fg: '#57C08A', c4: '1.74s', c4Fg: '#B8C2CE' },
+        ],
+        tableFooter: 'no crashes, no timeouts, no sanitizer hits across all 100 batches',
+      },
+
+      judge: {
+        ...failColors,
+        name: 'LLM Judge',
+        subtitle: 'rubric-scoring model · ½ weight · adversarially gameable',
+        obligation: 'judge.rubric_score >= 0.80  (advisory · 1 of 5 votes)',
+        observed: '0.71 — 20 / 24 rubric checks satisfied · 4 flagged',
+        reasoning: 'The judge model flagged four rubric items: (1) the adapter "appears amount-sensitive in a way the spec did not authorize" — confirmed by the metamorphic oracle. (2-4) are stylistic and would not change the certification outcome. The judge counts as one vote and is rendered smaller because a sufficiently adversarial producer could game it; the four independent oracles still own the decision.',
+        gridLabel: 'PER-RUBRIC CHECK · 24 items',
+        gridCols: 12,
+        gridPass: '20',
+        gridFail: '4',
+        gridFooter: 'each square is one rubric check · hover for id',
+        cells: judgeCells,
+        llmTokens: '2,402',
+        llmCost: '0.031',
+        llmLatency: '1.6s',
+        llmPrompt: 'You are the LLM judge — one of five votes. Score the candidate\nadapter against the 24-item certification rubric. Flag any item\nthe adapter does not satisfy and cite evidence.',
+        llmResponse: '{"rubric_score":0.71,"flagged":[\n  {"id":"j_004","item":"obligation_scope","evidence":"amount-sensitive"},\n  {"id":"j_010","item":"explainer_clarity"},\n  {"id":"j_015","item":"calibration_drift_disclosure"},\n  {"id":"j_020","item":"failure_mode_doc"}],\n "verdict":"fail","note":"advisory only · one vote"}',
+        llmParsed: 'rubric_score = 0.71  <  0.80  →  FAIL  (advisory vote)',
+        sbxId: 'sbx_j_8f3a',
+        sbxWalltime: '00:00:31',
+        sbxStdout: '[14:08:00] loaded 24-item rubric\n[14:08:11] judge model: claude-sonnet-4.5\n[14:08:31] done · score=0.71 flagged=4',
+        replayFg: '#D9A441',
+        replayBg: '#221C0C',
+        replayBorder: '#4A3D17',
+        replaySummary: '⚠ 1 field drifted',
+        replayRows: [
+          { lhs: 'verdict: fail', rhs: 'verdict: fail', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'rubric_score: 0.71', rhs: 'rubric_score: 0.72', lhsFg: '#D9A441', rhsFg: '#D9A441', lhsBg: '#221C0C', rhsBg: '#221C0C' },
+          { lhs: 'flagged: 4', rhs: 'flagged: 4', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+          { lhs: 'note: advisory', rhs: 'note: advisory', lhsFg: '#B8C2CE', rhsFg: '#B8C2CE', lhsBg: '#0E141B', rhsBg: '#0E141B' },
+        ],
+        replayFooter: '1 field drifted: rubric_score 0.71 → 0.72. Below threshold; vote unchanged — but illustrates exactly why the judge counts as one vote, not the decision.',
+        tableLabel: 'FLAGGED RUBRIC ITEMS · advisory',
+        tableShown: '4 of 4',
+        tableTotal: '4',
+        tableChip: 'severity:any',
+        col1: 'Item ID', col2: 'Rubric item', col3: 'Confirmed by oracle', col4: 'Severity',
+        tableRows: [
+          { id: 'j_004', c2: 'Obligation scope — amount-sensitivity', c3: 'metamorphic ✓', c3Fg: '#E5736B', c4: 'high', c4Fg: '#E5736B' },
+          { id: 'j_010', c2: 'Explainer clarity for refunds', c3: 'no independent vote', c3Fg: '#95A1AE', c4: 'low', c4Fg: '#D9A441' },
+          { id: 'j_015', c2: 'Calibration-drift disclosure', c3: 'no independent vote', c3Fg: '#95A1AE', c4: 'low', c4Fg: '#D9A441' },
+          { id: 'j_020', c2: 'Failure-mode documentation', c3: 'no independent vote', c3Fg: '#95A1AE', c4: 'low', c4Fg: '#D9A441' },
+        ],
+        tableFooter: '1 of 4 flags confirmed by an independent oracle · 3 are advisory-only',
+      },
+    };
+  }
+
+  // selected-card decoration helpers
+  ribbonStyle(key) {
+    const sel = this.state.selected === key;
+    return {
+      bg: sel ? '#11181F' : '#161E27',
+      border: sel ? '#4FAAC0' : '#2C3744',
+    };
+  }
+  failRibbonStyle(key, topBar) {
+    const sel = this.state.selected === key;
+    return {
+      bg: sel ? '#1B1518' : '#161217',
+      border: sel ? '#E5736B' : '#4A2528',
+      topBar: sel ? topBar : 'transparent',
+    };
+  }
+
+  renderVals() {
+    const oracles = this.buildOracles();
+    const data = oracles[this.state.selected];
+
+    const ho = this.ribbonStyle('held_out');
+    const me = this.failRibbonStyle('metamorphic', '#E5736B');
+    const di = this.ribbonStyle('differential');
+    const fz = this.ribbonStyle('fuzz');
+    const ju = this.failRibbonStyle('judge', '#E5736B');
+
+    return {
+      data,
+      heldOutBg: ho.bg, heldOutBorder: ho.border,
+      metaBg: me.bg, metaBorder: me.border, metaTopBar: me.topBar,
+      diffBg: di.bg, diffBorder: di.border,
+      fuzzBg: fz.bg, fuzzBorder: fz.border,
+      judgeBg: ju.bg, judgeBorder: ju.border,
+
+      showInspect: this.state.drawer === 'inspect',
+      showReplay: this.state.drawer === 'replay',
+      showSpec: this.state.drawer === 'spec',
+
+      pickHeldOut:     () => this.setState({ selected: 'held_out' }),
+      pickMeta:        () => this.setState({ selected: 'metamorphic' }),
+      pickDiff:        () => this.setState({ selected: 'differential' }),
+      pickFuzz:        () => this.setState({ selected: 'fuzz' }),
+      pickJudge:       () => this.setState({ selected: 'judge' }),
+
+      openInspect:     () => this.setState({ drawer: 'inspect' }),
+      openReplay:      () => this.setState({ drawer: 'replay' }),
+      openSpec:        () => this.setState({ drawer: 'spec' }),
+      openPatch:       () => {},
+      closeDrawer:     () => this.setState({ drawer: null }),
+    };
+  }
+}
+</script>
+<script src="live.js"></script>
+</body>
+</html>

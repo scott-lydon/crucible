@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:#0E141B;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#2C3744;border-radius:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  .toggle{display:inline-flex;width:42px;height:24px;border-radius:14px;background:#2C3744;position:relative;cursor:pointer;flex:none}
+  .toggle.on{background:#316E7E}
+  .toggle.mock{background:#6E5A1F}
+  .toggle .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#E8EDF3;transition:left .12s}
+  .toggle.on .knob,.toggle.mock .knob{left:20px}
+</style>
+</helmet>
+
+<div data-screen-label="Admin · Debug" style="min-height:100vh;background:#0E141B;color:#B8C2CE;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,sans-serif;font-size:14px;line-height:1.55">
+
+  <div style="position:sticky;top:0;z-index:40;background:#0E141B;border-bottom:1px solid #2C3744">
+    <div style="display:flex;align-items:center;gap:16px;padding:14px 22px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="width:22px;height:22px;border-radius:5px;background:#4FAAC0;display:flex;align-items:center;justify-content:center;color:#0E141B;font-weight:700;font-size:13px;font-family:'IBM Plex Mono',monospace">C</span>
+        <a href="Canvas.dc.html" style="text-decoration:none"><span style="font-weight:600;color:#E8EDF3;letter-spacing:.02em">Crucible</span></a>
+        <span style="display:inline-flex;align-items:center;gap:6px;background:#1B1518;border:1px solid #4A2528;border-radius:3px;padding:3px 9px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E5B5B0">admin · root</span>
+      </div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE"><a href="Canvas.dc.html" style="color:#4FAAC0;text-decoration:none">/admin</a> · <span style="color:#E8EDF3">debug</span></span>
+      <div style="flex:1"></div>
+      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#B8C2CE">every change here is logged to <span style="color:#E8EDF3">audit-log/admin</span></span>
+    </div>
+  </div>
+
+  <div style="background:#3A3413;border-bottom:1px solid #6E5A1F;color:#E8C84A">
+    <div style="max-width:1320px;margin:0 auto;padding:12px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-family:'IBM Plex Mono',monospace;font-size:13px">
+      <span style="font-weight:600;letter-spacing:.04em">MOCK-LLM MODE · ACTIVE</span>
+      <span style="color:#B8C2CE">all producer + judge calls served from cassettes · no vendor billing · disable below</span>
+      <div style="flex:1"></div>
+      <span style="color:#B8C2CE">since 06-21 18:02Z · enabled by m.chen</span>
+    </div>
+  </div>
+
+  <div style="max-width:1320px;margin:0 auto;padding:32px 24px 96px">
+
+    <h1 style="margin:0 0 6px;font-size:22px;font-weight:600;color:#E8EDF3;letter-spacing:-0.01em">Debug controls</h1>
+    <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#B8C2CE;margin-bottom:24px">these toggles change system behavior · use only in staging or with model-risk approval</div>
+
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:18px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630;display:flex;align-items:center;gap:10px"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Mock-LLM mode</span><span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E8C84A">currently enabled</span></div>
+      <div style="padding:18px 22px;display:grid;grid-template-columns:1fr 1fr;gap:24px;font-family:'IBM Plex Mono',monospace;font-size:13px">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle mock"><span class="knob"></span></span><div><div style="color:#E8EDF3">enable mock-llm</div><div style="color:#7C8896;font-size:12px">producer + judge calls served from recorded cassettes</div></div></label>
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle on"><span class="knob"></span></span><div><div style="color:#E8EDF3">surface mock banner</div><div style="color:#7C8896;font-size:12px">global banner on every page (recommended)</div></div></label>
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle"><span class="knob"></span></span><div><div style="color:#E8EDF3">disable cost-meter writes</div><div style="color:#7C8896;font-size:12px">ledger remains historical · no zero-dollar rows</div></div></label>
+        </div>
+        <div style="background:#0E141B;border:1px solid #232E39;border-radius:6px;padding:14px 16px;line-height:1.6;color:#B8C2CE">
+          <div style="color:#7C8896;letter-spacing:.06em;font-size:11px;text-transform:uppercase;margin-bottom:6px">Active cassette set</div>
+          <div style="color:#E8EDF3">acme-fraud / 2026-06-15 · 12,418 turns · 4 producers · 1 judge</div>
+          <div style="margin-top:10px"><a href="#" title="swap to a different recorded cassette set" style="color:#4FAAC0">change set ↗</a> · <a href="#" title="diff this cassette against the live prod corpus" style="color:#4FAAC0">cassette diff vs prod ↗</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px">
+
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Producer routing override</span></div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#E8EDF3">gpt-4.1</span><div style="display:flex;align-items:center;gap:10px"><div style="width:140px;height:6px;background:#0E141B;border-radius:3px;overflow:hidden"><div style="width:34%;height:100%;background:#4FAAC0"></div></div><span style="color:#B8C2CE;width:46px;text-align:right">34%</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#E8EDF3">claude-3.5-sonnet</span><div style="display:flex;align-items:center;gap:10px"><div style="width:140px;height:6px;background:#0E141B;border-radius:3px;overflow:hidden"><div style="width:33%;height:100%;background:#4FAAC0"></div></div><span style="color:#B8C2CE;width:46px;text-align:right">33%</span></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#E8EDF3">llama-3.1-405b</span><div style="display:flex;align-items:center;gap:10px"><div style="width:140px;height:6px;background:#0E141B;border-radius:3px;overflow:hidden"><div style="width:33%;height:100%;background:#4FAAC0"></div></div><span style="color:#B8C2CE;width:46px;text-align:right">33%</span></div></div>
+          <div style="border-top:1px solid #1D2630;padding-top:12px;color:#7C8896;font-size:12px;line-height:1.6">sum must equal 100% · 0% pins traffic away from a vendor (use during a vendor incident)</div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+        <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Halt-policy bypass · staging only</span></div>
+        <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;font-family:'IBM Plex Mono',monospace;font-size:13px">
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle"><span class="knob"></span></span><div><div style="color:#E8EDF3">ignore halt h_19c4</div><div style="color:#7C8896;font-size:12px">disabled in prod · requires policy `staging-only`</div></div></label>
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle"><span class="knob"></span></span><div><div style="color:#E8EDF3">skip 4-eyes on patch apply</div><div style="color:#7C8896;font-size:12px">disabled in prod · violates SR 11-7</div></div></label>
+          <label style="display:flex;align-items:center;gap:14px"><span class="toggle on"><span class="knob"></span></span><div><div style="color:#E8EDF3">expose /admin/debug in nav</div><div style="color:#7C8896;font-size:12px">root role only · audit-logged</div></div></label>
+        </div>
+      </div>
+    </div>
+
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden;margin-bottom:18px">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Feature flags</span></div>
+      <div role="row" style="display:grid;grid-template-columns:1fr 100px 120px 130px 60px;gap:12px;padding:9px 18px;background:#11181F;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8A94A2;letter-spacing:.08em;text-transform:uppercase"><span>Flag</span><span>Rollout</span><span>Owner</span><span>Updated</span><span></span></div>
+      <div role="row" style="display:grid;grid-template-columns:1fr 100px 120px 130px 60px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">judge-pool.streaming-verdicts</span><span style="color:#9BD9B5">100%</span><span style="color:#B8C2CE">platform</span><span style="color:#B8C2CE">06-19</span><span class="toggle on"><span class="knob"></span></span></div>
+      <div role="row" style="display:grid;grid-template-columns:1fr 100px 120px 130px 60px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">replay.parallel-prefetch</span><span style="color:#D9A441">25%</span><span style="color:#B8C2CE">platform</span><span style="color:#B8C2CE">06-21</span><span class="toggle on"><span class="knob"></span></span></div>
+      <div role="row" style="display:grid;grid-template-columns:1fr 100px 120px 130px 60px;gap:12px;padding:11px 18px;border-bottom:1px solid #1D2630;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">leaderboard.public-export</span><span style="color:#B8C2CE">0%</span><span style="color:#B8C2CE">research</span><span style="color:#B8C2CE">06-18</span><span class="toggle"><span class="knob"></span></span></div>
+      <div role="row" style="display:grid;grid-template-columns:1fr 100px 120px 130px 60px;gap:12px;padding:11px 18px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;align-items:center"><span style="color:#E8EDF3">outcomes.cost-per-hack</span><span style="color:#9BD9B5">100%</span><span style="color:#B8C2CE">research</span><span style="color:#B8C2CE">06-14</span><span class="toggle on"><span class="knob"></span></span></div>
+    </div>
+
+    <div style="border:1px solid #2C3744;border-radius:10px;background:#161E27;overflow:hidden">
+      <div style="padding:13px 18px;border-bottom:1px solid #1D2630"><span style="font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.12em;color:#B8C2CE;text-transform:uppercase">Recent admin actions</span></div>
+      <div style="padding:6px 0;font-family:'IBM Plex Mono',monospace;font-size:12.5px">
+        <div style="display:grid;grid-template-columns:170px 130px 1fr;padding:10px 18px;color:#B8C2CE;border-bottom:1px solid #1D2630"><span>06-21 18:02Z</span><span style="color:#E8EDF3">m.chen</span><span>enabled mock-llm · cassette acme-fraud/2026-06-15</span></div>
+        <div style="display:grid;grid-template-columns:170px 130px 1fr;padding:10px 18px;color:#B8C2CE;border-bottom:1px solid #1D2630"><span>06-20 11:44Z</span><span style="color:#E8EDF3">s.lydon</span><span>set replay.parallel-prefetch → 25%</span></div>
+        <div style="display:grid;grid-template-columns:170px 130px 1fr;padding:10px 18px;color:#B8C2CE;border-bottom:1px solid #1D2630"><span>06-19 09:20Z</span><span style="color:#E8EDF3">platform-bot</span><span>graduated judge-pool.streaming-verdicts → 100%</span></div>
+        <div style="display:grid;grid-template-columns:170px 130px 1fr;padding:10px 18px;color:#B8C2CE"><span>06-18 22:12Z</span><span style="color:#E8EDF3">m.chen</span><span>vendor llama-3.1 routing 50% → 33% during INC-2028</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script src="live.js"></script>
+</body>
+</html>
