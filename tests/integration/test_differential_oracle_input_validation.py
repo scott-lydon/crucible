@@ -1,21 +1,15 @@
-"""Verification finding #3 (Gustavo / Measure lane): the differential oracle silently
-neuters itself on a feature-key mismatch instead of validating its input.
+"""Issue #6 (Gustavo / Measure lane) — FIXED: the differential oracle now validates its
+input at the boundary instead of silently 0-filling a feature-key mismatch.
 
-``modules/oracles/differential/oracle.py:37`` builds its feature vector with
-``float(payload.get(name, 0.0))`` — every expected feature that is absent from the
-attack payload defaults to 0.0. So a payload whose keys do not match the model's
-feature names is scored as an all-zeros vector (a "normal"-looking point), the oracle
-returns ``fired=False``, and that is indistinguishable from "I evaluated this input and
-found no missed-fraud disagreement." The single independent corroborator the ensemble
-relies on (metamorphic/property_fuzz are quiet on well-formed, stable outputs — see the
-8%-corroboration measurement in the finding write-up) is silently disabled by a schema
-drift or a crafted payload, with no error and no signal.
+``modules/oracles/differential/oracle.py`` previously built its feature vector with
+``float(payload.get(name, 0.0))`` — every absent feature defaulted to 0.0, so a payload
+whose keys did not match the model's feature names was scored as an all-zeros vector
+and the oracle abstained, indistinguishable from a real "no missed-fraud disagreement".
+The only independent corroborator the ensemble relies on could be neutered by schema
+drift or a crafted payload with no error and no signal.
 
-constitution.md ("validate input at system boundaries") and QA_ADVERSARY rule 6
-(exceptions must propagate; no catch-log-continue) want this to fail loud, not quiet.
-
-First test characterises today's silent behaviour (passes); the second asserts the
-boundary-validation contract and is a strict xfail until the oracle validates its keys.
+The oracle now raises ``ValueError`` when expected features are absent (constitution
+"validate input at system boundaries"; QA_ADVERSARY rule 6 — fail loud, propagate).
 """
 
 from __future__ import annotations
@@ -25,8 +19,9 @@ import asyncio
 import pytest
 
 from modules.oracles.differential.oracle import FraudDifferentialOracle
+from shared.datasets.fraud import load_splits
 from shared.types.core import Attack
-from shared.types.enums import Shape
+from shared.types.enums import OracleKind, Shape
 from shared.types.ids import AttackId, RunId
 from shared.types.sealed_spec import Obligation, SealedSpec
 
@@ -42,25 +37,19 @@ def _attack(payload: dict) -> Attack:
     return Attack(AttackId("a"), RunId("r"), 0, "t", payload, "", "seed")
 
 
-def test_feature_key_mismatch_is_scored_as_normal_silently() -> None:
-    """Characterisation: a payload sharing NO keys with the model's features is scored
-    as an all-zeros vector and abstains, with no indication it could not evaluate."""
+def test_feature_key_mismatch_fails_loud() -> None:
+    """A payload that carries none of the model's features raises, rather than silently
+    scoring an all-zeros vector and abstaining."""
     oracle = FraudDifferentialOracle.load(1)
-    vote = asyncio.run(oracle.vote(_SPEC, _attack({"unrelated_key": 9999.0}), _MISSED_FRAUD_OUTPUT))
-    # The oracle reports a clean "no disagreement" — indistinguishable from a real check.
-    assert vote.fired is False
-    assert "diff_label=0" in vote.observation
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="Finding #3: the differential oracle defaults missing feature keys to 0.0, "
-    "silently neutering itself on a schema mismatch. constitution 'validate input at "
-    "system boundaries' wants it to raise (fail loud), not abstain silently.",
-)
-def test_feature_key_mismatch_must_fail_loud() -> None:
-    """Desired property: given a payload that matches none of the model's expected
-    features, the oracle must refuse to fabricate an all-zeros score and instead raise."""
-    oracle = FraudDifferentialOracle.load(1)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="missing"):
         asyncio.run(oracle.vote(_SPEC, _attack({"unrelated_key": 9999.0}), _MISSED_FRAUD_OUTPUT))
+
+
+def test_full_feature_payload_still_scores() -> None:
+    """Regression: a well-formed feature row is still evaluated normally (no false raise)."""
+    oracle = FraudDifferentialOracle.load(1)
+    splits = load_splits()
+    fraud_row = splits.x_holdout.iloc[splits.y_holdout.tolist().index(1)].to_dict()
+    vote = asyncio.run(oracle.vote(_SPEC, _attack(fraud_row), _MISSED_FRAUD_OUTPUT))
+    assert vote.oracle is OracleKind.differential
+    assert isinstance(vote.fired, bool)
