@@ -116,6 +116,61 @@ class OpenRouterClient:
         )
 
 
+class AnthropicClient:
+    """Direct Anthropic SDK client. Used when ANTHROPIC_API_KEY is set, bypassing
+    OpenRouter. Model names must NOT include the ``anthropic/`` prefix (e.g. pass
+    ``claude-sonnet-4-6`` not ``anthropic/claude-sonnet-4.6``)."""
+
+    # Anthropic pricing per 1M tokens (June 2026). Used for cost tracking only.
+    _PRICING: dict[str, tuple[float, float]] = {
+        "claude-sonnet-4-6": (3.0, 15.0),
+        "claude-opus-4-8": (15.0, 75.0),
+        "claude-haiku-4-5-20251001": (0.80, 4.0),
+    }
+
+    def __init__(self, model: str, api_key: str, *, max_calls: int = 2000,
+                 timeout: float = 120.0) -> None:
+        # Strip the ``anthropic/`` prefix that OpenRouter models use, and normalise
+        # the dotted form (``claude-sonnet-4.6``) to the dashed form the SDK expects.
+        bare = model.removeprefix("anthropic/").replace(".", "-")
+        self.model = bare
+        self._api_key = api_key
+        self._max_calls = max_calls
+        self._timeout = timeout
+        self.n_calls = 0
+        self.cost = 0.0
+
+    @property
+    def available(self) -> bool:
+        return bool(self._api_key)
+
+    async def complete(self, system: str, prompt: str, *, max_tokens: int = 512) -> LLMResult:
+        if self.n_calls >= self._max_calls:
+            raise RuntimeError(f"Anthropic call cap reached ({self._max_calls})")
+        import anthropic
+        client = anthropic.AsyncAnthropic(
+            api_key=self._api_key,
+            timeout=self._timeout,
+        )
+        msg = await client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        self.n_calls += 1
+        text = msg.content[0].text if msg.content else ""
+        p_tok = msg.usage.input_tokens
+        c_tok = msg.usage.output_tokens
+        in_price, out_price = self._PRICING.get(self.model, (3.0, 15.0))
+        dollars = (p_tok * in_price + c_tok * out_price) / 1_000_000
+        self.cost += dollars
+        return LLMResult(
+            text=text, model=self.model,
+            prompt_tokens=p_tok, completion_tokens=c_tok, dollars=dollars,
+        )
+
+
 async def record_llm_call(
     session: AsyncSession,
     result: LLMResult,

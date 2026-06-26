@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from shared.config import load_settings
 from shared.llm.client import (
+    AnthropicClient,
     LLMClient,
     LLMResult,
     OpenRouterClient,
@@ -19,6 +20,7 @@ from shared.llm.recording import (
 )
 
 __all__ = [
+    "AnthropicClient",
     "LLMCallRecord",
     "LLMClient",
     "LLMResult",
@@ -33,12 +35,15 @@ __all__ = [
 
 
 def make_llm(model: str) -> LLMClient:
-    """Real LLM client for ``model``. Fails loud if no provider is configured —
-    never silently falls back to a stub (constitution.md section 8)."""
+    """Real LLM client for ``model``. Prefers Anthropic SDK when ANTHROPIC_API_KEY
+    is set; falls back to OpenRouter. Fails loud if neither is configured (never
+    silently falls back to a stub, constitution.md section 8)."""
     settings = load_settings()
+    if settings.anthropic_api_key:
+        return AnthropicClient(model=model, api_key=settings.anthropic_api_key)
     if settings.openrouter_api_key:
         return OpenRouterClient(model=model, api_key=settings.openrouter_api_key)
     raise RuntimeError(
-        "No LLM provider configured: set OPENROUTER_API_KEY (or place the key at "
-        "~/.config/crucible/openrouter.key)."
+        "No LLM provider configured: set ANTHROPIC_API_KEY or OPENROUTER_API_KEY "
+        "(or place the OpenRouter key at ~/.config/crucible/openrouter.key)."
     )

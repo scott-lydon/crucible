@@ -25,6 +25,8 @@ services:
         value: "true"
       - key: HALT_RECALL_THRESHOLD
         value: "0.7"
+      - key: CRUCIBLE_SEED_DEMO
+        value: "true"
       - key: DATABASE_URL
         fromDatabase:
           name: crucible-db
