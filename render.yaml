@@ -1,0 +1,31 @@
+# Render Blueprint for Crucible (US-1, deploy). One Docker web service plus a
+# managed Postgres. The Claude CLI is unavailable on Render, so the service runs
+# MOCK_LLM=true; the dashboard and every read route serve real persisted data,
+# and a live red/blue walk-through runs locally where the CLI is authenticated.
+#
+# Launch: authenticate the Render CLI once (`render login`), then
+# `render blueprint launch` from the repo root, or connect the GitHub repo as a
+# Blueprint in the Render dashboard. Migrations run on container start.
+databases:
+  - name: crucible-db
+    plan: free
+    databaseName: crucible
+    user: crucible
+
+services:
+  - type: web
+    name: crucible
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: MOCK_LLM
+        value: "true"
+      - key: HALT_RECALL_THRESHOLD
+        value: "0.7"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: crucible-db
+          property: connectionString

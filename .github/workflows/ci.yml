@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  quality-and-tests:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crucible
+          POSTGRES_PASSWORD: crucible
+          POSTGRES_DB: crucible
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U crucible"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://crucible:crucible@localhost:5432/crucible
+      CRUCIBLE_TEST_DATABASE_URL: postgresql+asyncpg://crucible:crucible@localhost:5432/crucible_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Pin Python 3.12
+        run: uv python install 3.12
+
+      - name: Create venv and install
+        run: |
+          uv venv
+          uv pip install -e ".[dev,ml]"
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Type check (mypy --strict)
+        run: uv run mypy .
+
+      - name: Module-boundary check
+        run: uv run python scripts/check_module_imports.py
+
+      - name: Create test database
+        run: psql -h localhost -U crucible -d crucible -tc "SELECT 1 FROM pg_database WHERE datname = 'crucible_test'" | grep -q 1 || psql -h localhost -U crucible -d crucible -c "CREATE DATABASE crucible_test"
+        env:
+          PGPASSWORD: crucible
+
+      - name: Migrate test database
+        run: uv run alembic upgrade head
+        env:
+          DATABASE_URL: postgresql+asyncpg://crucible:crucible@localhost:5432/crucible_test
+
+      - name: Tests
+        run: uv run pytest -q
