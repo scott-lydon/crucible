@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import asyncio
 import datetime as dt
+from collections.abc import Awaitable, Callable
+from typing import Any
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +28,7 @@ from modules.oracles.held_out.oracle import FraudHeldOutOracle
 from modules.oracles.llm_judge.oracle import LLMJudgeOracle
 from modules.oracles.metamorphic.oracle import FraudMetamorphicOracle
 from modules.oracles.property_fuzz.oracle import FraudPropertyFuzzOracle
+from orchestrator.interfaces import Oracle
 from shared.datasets.fraud import load_splits
 from shared.llm.client import ScriptedLLM
 from shared.persistence.models import AttackRow, Run, VerdictRow
@@ -42,12 +45,12 @@ _SPEC = SealedSpec(
 )
 
 
-def _atk(payload: dict, *, metadata: dict | None = None) -> Attack:
+def _atk(payload: dict[str, Any], *, metadata: dict[str, Any] | None = None) -> Attack:
     return Attack(AttackId("a"), RunId("r"), 0, "t", payload, "", "seed",
                   metadata=metadata or {})
 
 
-def _fires(oracle, attack: Attack, output: dict) -> bool:
+def _fires(oracle: Oracle, attack: Attack, output: dict[str, Any]) -> bool:
     return asyncio.run(oracle.vote(_SPEC, attack, output)).fired
 
 
@@ -89,10 +92,12 @@ def test_five_verifiers_each_catch_bad_and_pass_good() -> None:
     assert not _fires(judge_ok, _atk({"Amount": 1.0}), {"label": 0})
 
 
-def _seed_run_with_recall(run_id: str, recall: float):
-    async def work(session: AsyncSession) -> dict:
+def _seed_run_with_recall(
+    run_id: str, recall: float
+) -> Callable[[AsyncSession], Awaitable[dict[str, Any]]]:
+    async def work(session: AsyncSession) -> dict[str, Any]:
         session.add(Run(
-            id=run_id, created_at=dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc),
+            id=run_id, created_at=dt.datetime(2026, 1, 1, tzinfo=dt.UTC),
             status="complete", target_kind="fraud", shape="shape1_ml",
             budget_rounds=5, budget_dollars=1.0, white_box_recall=recall,
         ))
@@ -114,8 +119,10 @@ def test_halt_clears_when_recall_at_or_above_threshold() -> None:
 
 
 # (white_box, held_out_fired, caught) per attack -> drives compute_trust.
-def _seed_trust(run_id: str, attacks: list[tuple[bool, bool, bool]]):
-    async def work(session: AsyncSession) -> dict:
+def _seed_trust(
+    run_id: str, attacks: list[tuple[bool, bool, bool]]
+) -> Callable[[AsyncSession], Awaitable[dict[str, Any]]]:
+    async def work(session: AsyncSession) -> dict[str, Any]:
         session.add(Run(id=run_id, status="complete", target_kind="fraud",
                         shape="shape1_ml", budget_rounds=len(attacks), budget_dollars=1.0))
         await session.flush()

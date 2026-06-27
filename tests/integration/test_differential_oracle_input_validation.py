@@ -15,6 +15,7 @@ The oracle now raises ``ValueError`` when expected features are absent (constitu
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 
 import pytest
 
@@ -33,7 +34,7 @@ _SPEC = SealedSpec(
 _MISSED_FRAUD_OUTPUT = {"label": 0, "fraud_probability": 0.0}  # producer says "legit"
 
 
-def _attack(payload: dict) -> Attack:
+def _attack(payload: dict[str, Any]) -> Attack:
     return Attack(AttackId("a"), RunId("r"), 0, "t", payload, "", "seed")
 
 

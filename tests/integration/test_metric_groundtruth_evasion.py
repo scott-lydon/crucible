@@ -19,6 +19,8 @@ alarm). When that fix lands, the strict xfail flips to XPASS and forces removal.
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -68,7 +70,7 @@ def test_held_out_abstentions_vanish_from_producer_wrong() -> None:
     """Characterisation: genuine producer errors that the held-out oracle misses are
     excluded from the metric's denominator entirely (the blind spot)."""
 
-    async def work(session: AsyncSession) -> dict:
+    async def work(session: AsyncSession) -> dict[str, Any]:
         await _seed_run(session, "run-weak", WEAK_ATTACKER)
         return await compute_metrics(session, run_id="run-weak")
 
