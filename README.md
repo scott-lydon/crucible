@@ -358,28 +358,28 @@ No second adversary is built and no third-party red team is contracted. The same
 sequenceDiagram
   autonumber
   participant RED as Red Agent
-  participant TGT as Target · sandbox
-  participant ORA as Oracles · 4 + judge
+  participant TGT as Target, sandbox
+  participant ORA as Oracles, 4 plus judge
   participant CAT as Strategy Catalog
   participant BLUE as Blue Loop
   participant MEAS as Measure
-  RED->>TGT: submit / query_target()
+  RED->>TGT: submit, query_target()
   TGT-->>RED: score
   Note over RED: reason about why caught,<br/>propose minimal-change evasion
   RED->>TGT: submit evasion
   TGT->>ORA: output only (sealed from spec)
-  Note over ORA: held-out · metamorphic ·<br/>differential · fuzz · judge vote
-  ORA-->>RED: verdict + audit trace
+  Note over ORA: held-out, metamorphic,<br/>differential, fuzz, judge vote
+  ORA-->>RED: verdict, audit trace
   alt undetected hack gets through
     ORA->>CAT: log successful evasion
     CAT->>BLUE: read distilled tactics
-    BLUE->>TGT: features / adv. samples / ensemble, retrain
+    BLUE->>TGT: features, adv. samples, ensemble, retrain
     BLUE->>ORA: re-evaluate on HELD-OUT attacks
   end
-  ORA->>MEAS: recall · ASR · detection · val-vs-heldout gap
-  Note over MEAS: curves · benchmark export ·<br/>halt-cert vs red line
+  ORA->>MEAS: recall, ASR, detection, val-vs-heldout gap
+  Note over MEAS: curves, benchmark export,<br/>halt-cert vs red line
   RED->>TGT: white-box re-attack (knows the scheme)
-  Note over RED,MEAS: loop closes — each pass graded
+  Note over RED,MEAS: loop closes, each pass graded
 ```
 
 The patch is always verified on held-out attacks, never the attacks used to build it — what keeps the recovered detection rate honest.
