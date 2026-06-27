@@ -1,33 +1,39 @@
-"""Issue #8 (Gustavo / Measure lane) — FIXED: the headline undetected-hack rate now
-reflects the white-box worst case instead of the optimistic black+white blend.
+"""Issues #8 and #9 (Gustavo / Measure lane).
 
-#8 — ``modules/measure/metrics.py`` previously computed ``undetected_hack_rate = 1 -
-overall.rate`` over ALL verdicts (black-box + white-box). Black-box attacks (attacker
-blind to the scheme) are easier to catch, so the most prominent risk tile was the
-optimistic blend while the pessimistic white-box reality lived in a separate tile. It
-now reports ``1 - white_box_catch_rate`` whenever a white-box pass ran (falling back to
-the overall blend only when no white-box data exists), so the headline can never be
+#8 — FIXED: ``modules/measure/metrics.py`` previously computed ``undetected_hack_rate =
+1 - overall.rate`` over ALL verdicts (black-box + white-box). Black-box attacks
+(attacker blind to the scheme) are easier to catch, so the most prominent risk tile was
+the optimistic blend while the pessimistic white-box reality lived in a separate tile.
+It now reports ``1 - white_box_catch_rate`` whenever a white-box pass ran (falling back
+to the overall blend only when no white-box data exists), so the headline can never be
 more optimistic than the known worst case (US-10 "honest dashboard").
 
-#9 — ``modules/measure/trust.py`` still divides silent failures by ALL attacks, so the
-trust score is inflatable by padding the run with attacks that trip no ground truth.
-That fix is a semantic redefinition of the cr-f1 trust score (it conflicts with the
-documented ``test_trust_score.py`` criteria), so it is left as a strict-xfail pending a
-spec decision by the Measure owner.
+#9 — RESOLVED as by-design. The cr-f1 trust score is a per-attack SYSTEM-RELIABILITY
+rate: ``1 - silent_failures / attacks`` ("how often does the producer silently fail per
+attack thrown"). That is the metric we want. The earlier concern — that padding the run
+with attacks the held-out oracle cannot verify would inflate the score — does not occur
+for the fraud target: the red agent draws white-box attacks from the held-out labelled
+partition, so held-out participates on every attack (measured 0/15 abstentions). The
+denominator is therefore fully ground-truth-verified, not padded. The guard below locks
+that property in; a switch to label-less attacks (the only way #9 bites) would fail it.
+(Shape-2 agent targets lack perfect ground truth — re-measure there if agent trust ever
+becomes a headline.)
 """
 
 from __future__ import annotations
 
+import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 import pytest
+from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from modules.measure.metrics import compute_metrics
-from modules.measure.trust import compute_trust
 from shared.persistence.models import AttackRow, Run, VerdictRow
-from tests.conftest import run_db
+from tests.conftest import FRAUD_SPEC_YAML, run_db
 
 
 # Each attack is (white_box, held_out_fired, caught). held_out_fired == "producer wrong
@@ -84,49 +90,47 @@ def test_undetected_hack_rate_reflects_white_box_worst_case() -> None:
     assert m["tiles"]["undetected_hack_rate"] >= 1.0 - m["tiles"]["white_box_catch_rate"]
 
 
-# --- Issue #9 (OPEN, spec decision): trust score inflatable by padding -----------------
-# Lean: 1 silent failure among 3 white-box attacks (the other 2 confirmed-and-caught).
-_LEAN = [(True, True, False)] + [(True, True, True)] * 2
-# Padded: same 3, plus 6 white-box attacks that trip no ground truth (held-out abstains).
-_PADDED = _LEAN + [(True, False, False)] * 6
+# --- Issue #9 (RESOLVED): the trust reliability denominator is ground-truth-verified ---
+def _run_fraud(client: TestClient, rounds: int = 10) -> str:
+    rid: str = client.post("/runs", json={
+        "target_kind": "fraud", "shape": "shape1_ml", "spec_yaml": FRAUD_SPEC_YAML,
+        "budget_rounds": rounds, "budget_dollars": 1.0,
+    }).json()["runId"]
+    for _ in range(600):
+        if client.get(f"/runs/{rid}").json()["status"] == "complete":
+            break
+        time.sleep(0.05)
+    return rid
 
 
-def test_trust_score_inflated_by_non_confirming_attacks() -> None:
-    """Characterisation of current cr-f1 behaviour: padding a run with attacks that never
-    trip ground truth raises the trust score even though the real silent-failure count is
-    unchanged (1). Documents the open #9 concern; trust.py is unchanged pending a spec
-    decision (changing it would break the documented test_trust_score.py criteria)."""
+def test_trust_denominator_is_ground_truth_verified(client: TestClient) -> None:
+    """Issue #9 resolution guard: every white-box attack in the trust (reliability)
+    denominator is verified by ground truth — held-out never abstains on a fraud run,
+    because the red agent draws attacks from the held-out labelled partition. So the
+    per-attack reliability score is not padded with unverifiable 'passes'. If the red
+    agent ever emitted label-less attacks, held-out would abstain and this guard would
+    fail — the only way the denominator becomes inflated (issue #9)."""
+    rid = _run_fraud(client)
 
-    async def work(session: AsyncSession) -> tuple[dict[str, Any], dict[str, Any]]:
-        await _seed(session, "run-lean", _LEAN)()
-        await _seed(session, "run-padded", _PADDED)()
-        lean = await compute_trust(session, run_id="run-lean")
-        padded = await compute_trust(session, run_id="run-padded")
-        return lean, padded
+    async def fetch(session: AsyncSession) -> list[list[dict[str, Any]]]:
+        rows = (
+            await session.execute(
+                select(VerdictRow.votes)
+                .join(AttackRow, VerdictRow.attack_id == AttackRow.id)
+                .where(VerdictRow.run_id == rid, AttackRow.white_box.is_(True))
+            )
+        ).all()
+        return [row[0] for row in rows]
 
-    lean, padded = run_db(work)
-    assert lean["silent_failures"] == padded["silent_failures"] == 1   # same real failures
-    assert lean["trust_score"] == 67    # 1 - 1/3
-    assert padded["trust_score"] == 89  # 1 - 1/9 -> inflated by padding (the open concern)
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason="Issue #9 (OPEN): trust score divides silent failures by ALL attacks, so "
-    "padding with non-ground-truth attacks inflates it. The fix (denominator = "
-    "confirmed-wrong) redefines the cr-f1 trust score and conflicts with the documented "
-    "test_trust_score.py criteria — deferred to a Measure-owner spec decision.",
-)
-def test_trust_score_must_be_robust_to_padding() -> None:
-    """Desired property: padding a run with non-ground-truth attacks must not raise the
-    trust score."""
-
-    async def work(session: AsyncSession) -> tuple[dict[str, Any], dict[str, Any]]:
-        await _seed(session, "run-lean", _LEAN)()
-        await _seed(session, "run-padded", _PADDED)()
-        lean = await compute_trust(session, run_id="run-lean")
-        padded = await compute_trust(session, run_id="run-padded")
-        return lean, padded
-
-    lean, padded = run_db(work)
-    assert padded["trust_score"] <= lean["trust_score"]
+    white_box_votes = run_db(fetch)
+    assert white_box_votes, "expected a white-box self-test pass with attacks"
+    abstained = 0
+    for votes in white_box_votes:
+        held_out = next((v for v in votes if v.get("oracle") == "held_out"), None)
+        if (held_out is not None and not held_out.get("fired")
+                and "no held-out ground-truth" in str(held_out.get("observation", ""))):
+            abstained += 1
+    assert abstained == 0, (
+        f"{abstained}/{len(white_box_votes)} white-box attacks had no ground truth — the "
+        "trust reliability denominator is no longer fully verified (issue #9 would bite)"
+    )
