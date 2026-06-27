@@ -143,9 +143,9 @@ Three adapters wrap the systems under test behind one uniform interface and run 
 flowchart LR
   subgraph ADAPT["Adapter layer · one core, three adapters"]
     direction TB
-    FA["Fraud adapter<br/>LightGBM · swap AE / GMM / DAGMM"]:::a
+    FA["Fraud adapter<br/>LightGBM, shipped<br/>stretch: swap for AE / GMM / DAGMM"]:::a
     CA["Code-agent adapter"]:::a
-    RA["Research-agent adapter"]:::a
+    RA["Research-agent adapter (stub, not in core demo)"]:::a
   end
   IFACE["Uniform interface<br/>query_target() · submit()"]:::i
   SBX["Producer sandbox<br/>no path to artifacts"]:::s
@@ -357,28 +357,35 @@ No second adversary is built and no third-party red team is contracted. The same
 ```mermaid
 sequenceDiagram
   autonumber
+  actor OP as Operator
+  participant SPEC as Sealed Spec
   participant RED as Red Agent
   participant TGT as Target, sandbox
   participant ORA as Oracles, 4 plus judge
   participant CAT as Strategy Catalog
   participant BLUE as Blue Loop
   participant MEAS as Measure
-  RED->>TGT: submit, query_target()
-  TGT-->>RED: score
-  Note over RED: reason about why caught,<br/>propose minimal-change evasion
-  RED->>TGT: submit evasion
-  TGT->>ORA: output only (sealed from spec)
-  Note over ORA: held-out, metamorphic,<br/>differential, fuzz, judge vote
-  ORA-->>RED: verdict, audit trace
-  alt undetected hack gets through
-    ORA->>CAT: log successful evasion
-    CAT->>BLUE: read distilled tactics
-    BLUE->>TGT: features, adv. samples, ensemble, retrain
-    BLUE->>ORA: re-evaluate on HELD-OUT attacks
+  OP->>SPEC: author YAML, seal (before the run)
+  SPEC->>ORA: derive checks (held-out, metamorphic, differential, fuzz)
+  Note over TGT: producer is sealed from the spec
+  loop each attack round
+    RED->>TGT: submit candidate, query_target()
+    TGT-->>RED: score (target's own signal)
+    Note over RED: reason about the last verdict,<br/>propose minimal-change evasion
+    RED->>TGT: submit evasion
+    TGT->>ORA: output only (never saw the answer key)
+    ORA->>ORA: held-out, metamorphic,<br/>differential, fuzz, judge vote
+    ORA-->>RED: verdict, audit trace
+    ORA->>MEAS: recall, ASR, detection, val-vs-heldout gap
+    alt undetected hack gets through
+      ORA->>CAT: log successful evasion
+      CAT->>BLUE: read distilled tactics
+      BLUE->>TGT: retrain or patch (adv. samples, prompt-config)
+      BLUE->>ORA: re-evaluate on HELD-OUT attacks
+    end
   end
-  ORA->>MEAS: recall, ASR, detection, val-vs-heldout gap
   Note over MEAS: curves, benchmark export,<br/>halt-cert vs red line
-  RED->>TGT: white-box re-attack (knows the scheme)
+  RED->>TGT: white-box re-attack (knows the scheme, not the instances)
   Note over RED,MEAS: loop closes, each pass graded
 ```
 
