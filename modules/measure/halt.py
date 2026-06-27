@@ -15,24 +15,50 @@ from shared.persistence.models import Run
 
 async def halt_state(session: AsyncSession) -> dict[str, object]:
     threshold = load_settings().halt_recall_threshold
-    row = (
+    # Read the latest COMPLETED run, not the latest run that happens to carry a recall.
+    # Skipping NULL-recall runs (the old behaviour) let a run that fully evaded ground
+    # truth — leaving white_box_recall NULL — be ignored, certifying off a stale healthier
+    # run (issue #5). We now look at the latest completed run regardless of recall.
+    latest = (
         await session.execute(
             select(Run)
-            .where(Run.white_box_recall.is_not(None))
+            .where(Run.status == "complete")
             .order_by(Run.created_at.desc())
             .limit(1)
         )
     ).scalar_one_or_none()
+    # Has white-box recall ever been measured? If not, no fraud white-box pass has run
+    # (e.g. only agent/co-evolution runs), so an unmeasured run is "not applicable" rather
+    # than evasion — do not halt on it.
+    measured_ever = (
+        await session.execute(
+            select(Run.id).where(Run.white_box_recall.is_not(None)).limit(1)
+        )
+    ).first() is not None
+
     recall = (
-        float(row.white_box_recall)
-        if row is not None and row.white_box_recall is not None
+        float(latest.white_box_recall)
+        if latest is not None and latest.white_box_recall is not None
         else None
     )
-    halted = recall is not None and recall < threshold
-    message = (
-        f"Certification halted: recall is {recall:.2f}, threshold is {threshold:.2f}"
-        if halted and recall is not None
-        else ""
-    )
+
+    if latest is None:
+        halted, message = False, ""
+    elif recall is None:
+        # Fail closed: the latest completed run could not measure recall. If recall has
+        # ever been measured, the platform has lost the ability to verify (e.g. the
+        # attacker fully evaded ground truth) — refuse to certify off an earlier run.
+        halted = measured_ever
+        message = (
+            "Certification halted: the latest completed run could not measure white-box "
+            "recall (ground truth may have been evaded); refusing to certify off an "
+            "earlier run." if halted else ""
+        )
+    else:
+        halted = recall < threshold
+        message = (
+            f"Certification halted: recall is {recall:.2f}, threshold is {threshold:.2f}"
+            if halted else ""
+        )
     return {"halted": halted, "white_box_recall": recall, "threshold": threshold,
             "message": message}
