@@ -13,7 +13,7 @@ from tests.conftest import FRAUD_SPEC_YAML
 
 
 def _run_fraud(client: TestClient, rounds: int = 15) -> str:
-    rid = client.post("/runs", json={
+    rid: str = client.post("/runs", json={
         "target_kind": "fraud", "shape": "shape1_ml", "spec_yaml": FRAUD_SPEC_YAML,
         "budget_rounds": rounds, "budget_dollars": 1.0,
     }).json()["runId"]

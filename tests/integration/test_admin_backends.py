@@ -4,6 +4,7 @@ replay+diff of a verdict, spec history, the leaderboard, and the admin/debug sum
 from __future__ import annotations
 
 import time
+from typing import Any
 
 import asyncpg
 from fastapi.testclient import TestClient
@@ -16,8 +17,8 @@ _AGENT_RUN = {
 }
 
 
-def _run(client: TestClient, payload: dict = _AGENT_RUN) -> str:  # type: ignore[assignment]
-    run_id = client.post("/runs", json=payload).json()["runId"]
+def _run(client: TestClient, payload: dict[str, Any] = _AGENT_RUN) -> str:
+    run_id: str = client.post("/runs", json=payload).json()["runId"]
     deadline = time.time() + 8.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):

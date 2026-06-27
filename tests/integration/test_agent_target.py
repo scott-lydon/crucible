@@ -64,7 +64,7 @@ def test_cost_flows_onto_result() -> None:
             return LLMResult(text="x", model=self.model, prompt_tokens=10,
                              completion_tokens=2, dollars=0.0123)
 
-    target = AgentTarget(CostedLLM(), _CONFIG)  # type: ignore[arg-type]
+    target = AgentTarget(CostedLLM(), _CONFIG)
     result = asyncio.run(target.submit({"input": "q"}))
     assert result.dollars == 0.0123
 
@@ -87,7 +87,7 @@ def test_health_amber_when_provider_unavailable() -> None:
         async def complete(self, system: str, prompt: str, *, max_tokens: int = 512) -> LLMResult:
             raise RuntimeError("no provider")
 
-    target = AgentTarget(Unavailable(), _CONFIG)  # type: ignore[arg-type]
+    target = AgentTarget(Unavailable(), _CONFIG)
     health = asyncio.run(target.health())
     assert health.status == "amber"
     assert health.error is not None

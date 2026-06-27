@@ -39,7 +39,7 @@ class _CostedLLM:
 
 def _poll(client: TestClient, run_id: str) -> str:
     deadline = time.time() + 8.0
-    status = ""
+    status: str = ""
     while time.time() < deadline:
         status = client.get(f"/runs/{run_id}").json()["status"]
         if status in ("complete", "failed", "halted"):

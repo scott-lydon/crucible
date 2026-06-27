@@ -5,12 +5,13 @@ run hardened the agent, and renders to a real PDF — all from the run's persist
 from __future__ import annotations
 
 import time
+from typing import Any
 
 from fastapi.testclient import TestClient
 
 
-def _run(client: TestClient, payload: dict) -> str:
-    run_id = client.post("/runs", json=payload).json()["runId"]
+def _run(client: TestClient, payload: dict[str, Any]) -> str:
+    run_id: str = client.post("/runs", json=payload).json()["runId"]
     deadline = time.time() + 10.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):

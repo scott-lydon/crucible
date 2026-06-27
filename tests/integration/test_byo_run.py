@@ -22,7 +22,7 @@ _HUMAN = {
 
 
 def _run(client: TestClient, payload: dict[str, Any]) -> str:
-    run_id = client.post("/runs", json=payload).json()["runId"]
+    run_id: str = client.post("/runs", json=payload).json()["runId"]
     deadline = time.time() + 8.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):

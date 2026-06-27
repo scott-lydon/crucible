@@ -6,6 +6,7 @@ rather than a fake number when there is no data."""
 from __future__ import annotations
 
 import time
+from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +23,7 @@ _AGENT_RUN = {
 
 
 def _run(client: TestClient) -> str:
-    run_id = client.post("/runs", json=_AGENT_RUN).json()["runId"]
+    run_id: str = client.post("/runs", json=_AGENT_RUN).json()["runId"]
     deadline = time.time() + 8.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):
@@ -31,10 +32,10 @@ def _run(client: TestClient) -> str:
     return run_id
 
 
-def _seed_and_score(run_id: str, rows: list[tuple[bool, bool, bool]]) -> dict:
+def _seed_and_score(run_id: str, rows: list[tuple[bool, bool, bool]]) -> dict[str, Any]:
     """rows: (white_box, held_out_fired, caught). Seed + score in one session/transaction
     (run_db does not commit, so the score must read its own uncommitted inserts)."""
-    async def work(session: AsyncSession) -> dict:
+    async def work(session: AsyncSession) -> dict[str, Any]:
         session.add(Run(
             id=run_id, status="complete", target_kind="agent", shape="shape2_agent",
             budget_rounds=len(rows), budget_dollars=1.0))
@@ -78,7 +79,7 @@ def test_trust_high_when_no_proven_silent_failures() -> None:
 
 
 def test_trust_insufficient_when_no_data() -> None:
-    async def score(session: AsyncSession) -> dict:
+    async def score(session: AsyncSession) -> dict[str, Any]:
         return await compute_trust(session, "nonexistent-run")
     result = run_db(score)
     assert result["basis"] == "insufficient"

@@ -30,7 +30,7 @@ async def _fetch(query: str, run_id: str) -> list[dict[str, Any]]:
 
 def _poll_complete(client: TestClient, run_id: str, timeout: float = 8.0) -> str:
     deadline = time.time() + timeout
-    status = ""
+    status: str = ""
     while time.time() < deadline:
         status = client.get(f"/runs/{run_id}").json()["status"]
         if status in ("complete", "failed"):

@@ -81,7 +81,7 @@ def test_consistency_flags_code_that_failed_to_run() -> None:
 
 def _poll(client: TestClient, run_id: str) -> str:
     deadline = time.time() + 8.0
-    s = ""
+    s: str = ""
     while time.time() < deadline:
         s = client.get(f"/runs/{run_id}").json()["status"]
         if s in ("complete", "failed", "halted"):

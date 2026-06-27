@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,7 @@ _AGENT_RUN = {
 
 
 def _run(client: TestClient) -> str:
-    run_id = client.post("/runs", json=_AGENT_RUN).json()["runId"]
+    run_id: str = client.post("/runs", json=_AGENT_RUN).json()["runId"]
     deadline = time.time() + 8.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):
@@ -88,7 +89,7 @@ def test_recording_llm_buffers_only_within_a_sink() -> None:
     asyncio.run(llm.complete("sys", "no-sink"))
     assert drain_records() == []
 
-    sink: list = []
+    sink: list[Any] = []
     with record_into(sink):
         asyncio.run(llm.complete("sys", "in-sink"))
         drained = drain_records()
