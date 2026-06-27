@@ -12,7 +12,7 @@ from modules.oracles.held_out.agent import (
     generate_checks_deterministic,
 )
 from shared.llm.client import ScriptedLLM
-from shared.types.core import Attack
+from shared.types.core import Attack, OracleVote
 from shared.types.enums import OracleKind, Shape
 from shared.types.ids import AttackId, RunId
 from shared.types.sealed_spec import Obligation, SealedSpec
@@ -36,7 +36,7 @@ def _oracle(use_llm: bool = False, responder: object = None) -> AgentHeldOutOrac
     return AgentHeldOutOracle(llm, use_llm=use_llm)
 
 
-def _vote(oracle: AgentHeldOutOracle, response: str) -> object:
+def _vote(oracle: AgentHeldOutOracle, response: str) -> OracleVote:
     return asyncio.run(oracle.vote(_SPEC, _ATTACK, {"response": response, "model": "m"}))
 
 

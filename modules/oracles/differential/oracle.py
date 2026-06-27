@@ -40,6 +40,17 @@ class FraudDifferentialOracle:
     async def vote(
         self, spec: SealedSpec, attack: Attack, output: Mapping[str, Any]
     ) -> OracleVote:
+        # Validate input at the boundary (constitution.md): refuse to score a payload that
+        # does not carry the model's features. Defaulting absent features to 0.0 would
+        # silently fabricate a "normal"-looking vector and abstain — a schema drift or a
+        # crafted payload could then neuter this oracle with no error (issue #6).
+        missing = [name for name in self._features if name not in attack.payload]
+        if missing:
+            raise ValueError(
+                f"differential oracle cannot evaluate: payload is missing "
+                f"{len(missing)}/{len(self._features)} expected feature(s) "
+                f"(e.g. {missing[:5]}); refusing to score a 0-filled vector."
+            )
         score = self._anomaly_score(attack.payload)
         diff_label = 1 if score >= self._threshold else 0
         producer_label = int(output.get("label", 0))

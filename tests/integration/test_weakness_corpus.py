@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import time
+from typing import Any
 
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -18,7 +19,7 @@ from tests.conftest import run_db
 
 
 def test_corpus_is_target_agnostic() -> None:
-    async def work(session: AsyncSession) -> list[dict]:
+    async def work(session: AsyncSession) -> list[dict[str, Any]]:
         session.add(Run(id="corp-run", status="complete", target_kind="agent",
                         shape="shape2_agent", budget_rounds=1, budget_dollars=1.0))
         await session.flush()
@@ -48,7 +49,7 @@ def test_corpus_is_target_agnostic() -> None:
 
 
 def _run(client: TestClient) -> str:
-    run_id = client.post("/runs", json={
+    run_id: str = client.post("/runs", json={
         "target_kind": "agent", "shape": "shape2_agent", "budget_rounds": 1,
         "human_spec": {"task": "Help.", "failure_conditions": ["leak data"]}}).json()["runId"]
     deadline = time.time() + 8.0

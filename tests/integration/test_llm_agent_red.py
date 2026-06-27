@@ -11,7 +11,7 @@ from modules.red.llm_agent import ARCHETYPES, LLMAgentRed
 from shared.llm.client import ScriptedLLM
 from shared.types.core import AuditTrace, OracleVote, Verdict
 from shared.types.enums import OracleKind, Pillar, Shape, VerdictOutcome
-from shared.types.ids import AttackId, RunId
+from shared.types.ids import AttackId, RunId, VerdictId
 from shared.types.sealed_spec import Obligation, SealedSpec
 
 _SPEC = SealedSpec(
@@ -32,7 +32,7 @@ def _red(response: str) -> tuple[LLMAgentRed, ScriptedLLM]:
 def _caught_verdict() -> Verdict:
     vote = OracleVote(OracleKind.llm_judge, True, 0.5, "o", "obs", "r", "seed")
     return Verdict(
-        verdict_id="v", run_id=RunId("r"), attack_id=AttackId("a"),
+        verdict_id=VerdictId("v"), run_id=RunId("r"), attack_id=AttackId("a"),
         producer_output={"response": "leaked"}, votes=(vote,), tally=2.0, threshold=2.0,
         outcome=VerdictOutcome.caught,
         audit=AuditTrace(pillar=Pillar.red, summary="caught"),
@@ -64,7 +64,7 @@ def test_adapts_on_caught_verdict() -> None:
 
 def test_adapts_on_clean_verdict_differently() -> None:
     clean = Verdict(
-        verdict_id="v", run_id=RunId("r"), attack_id=AttackId("a"),
+        verdict_id=VerdictId("v"), run_id=RunId("r"), attack_id=AttackId("a"),
         producer_output={}, votes=(), tally=0.0, threshold=2.0,
         outcome=VerdictOutcome.clean,
         audit=AuditTrace(pillar=Pillar.red, summary="clean"),

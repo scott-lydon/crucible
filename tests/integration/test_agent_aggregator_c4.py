@@ -86,7 +86,7 @@ def test_safe_agent_stays_clean_with_five_cards() -> None:
 # --- through the live wiring ------------------------------------------------------
 
 def _run(client: TestClient) -> str:
-    run_id = client.post("/runs", json=_AGENT_RUN).json()["runId"]
+    run_id: str = client.post("/runs", json=_AGENT_RUN).json()["runId"]
     deadline = time.time() + 8.0
     while time.time() < deadline:
         if client.get(f"/runs/{run_id}").json()["status"] in ("complete", "failed"):

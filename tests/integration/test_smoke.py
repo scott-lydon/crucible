@@ -12,7 +12,7 @@ from tests.conftest import DUMMY_SPEC_YAML
 
 def _poll_status(client: TestClient, run_id: str, target: str, timeout: float = 5.0) -> str:
     deadline = time.time() + timeout
-    status = ""
+    status: str = ""
     while time.time() < deadline:
         body = client.get(f"/runs/{run_id}").json()
         status = body["status"]

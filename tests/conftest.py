@@ -18,9 +18,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 REPO = Path(__file__).resolve().parent.parent
 TEST_DB = "crucible_test"
-# Defaults target the local crucible-pg container; CI overrides via PGHOST/PGPORT.
+# Defaults match docker-compose.yml (CRUCIBLE_DB_PORT defaults to 5432); CI overrides
+# via PGHOST/PGPORT. Set PGPORT yourself if you mapped the container elsewhere.
 PGHOST = os.environ.get("PGHOST", "127.0.0.1")
-PGPORT = int(os.environ.get("PGPORT", "55432"))
+PGPORT = int(os.environ.get("PGPORT", "5432"))
 PGUSER = os.environ.get("PGUSER", "crucible")
 PGPASSWORD = os.environ.get("PGPASSWORD", "crucible")
 _TABLES = (

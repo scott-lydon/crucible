@@ -34,7 +34,7 @@ def _mock_http_factory(cfg: dict[str, Any]) -> Target:
 
 def _poll(client: TestClient, run_id: str) -> str:
     deadline = time.time() + 8.0
-    s = ""
+    s: str = ""
     while time.time() < deadline:
         s = client.get(f"/runs/{run_id}").json()["status"]
         if s in ("complete", "failed", "halted"):
@@ -43,13 +43,14 @@ def _poll(client: TestClient, run_id: str) -> str:
     return s
 
 
-async def _first_attack_audit(run_id: str) -> dict:
+async def _first_attack_audit(run_id: str) -> dict[Any, Any]:
     conn = await asyncpg.connect(
         host=PGHOST, port=PGPORT, user=PGUSER, password=PGPASSWORD, database=TEST_DB)
     try:
         row = await conn.fetchval(
             "SELECT audit_trace FROM attacks WHERE run_id=$1 ORDER BY round_index LIMIT 1", run_id)
-        return json.loads(row) if isinstance(row, str) else row
+        data: dict[Any, Any] = json.loads(row) if isinstance(row, str) else row
+        return data
     finally:
         await conn.close()
 
@@ -77,7 +78,7 @@ def test_http_endpoint_run_targets_the_users_endpoint(client: TestClient) -> Non
         container.http_target_factory = orig
 
 
-async def _fetch_http(run_id: str) -> list[dict]:
+async def _fetch_http(run_id: str) -> list[dict[str, Any]]:
     conn = await asyncpg.connect(
         host=PGHOST, port=PGPORT, user=PGUSER, password=PGPASSWORD, database=TEST_DB)
     try:
