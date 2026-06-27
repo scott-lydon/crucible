@@ -57,7 +57,13 @@ async def compute_metrics(session: AsyncSession, run_id: str | None = None) -> d
     dollars_total = float(sum(v.dollars_spent for v in verdicts))
     caught_total = sum(1 for v in verdicts if v.outcome == "caught")
     dollars_per_caught = (dollars_total / caught_total) if caught_total else None
-    undetected_rate = (1.0 - overall.rate) if overall.rate is not None else None
+    # Headline undetected-hack rate reflects the white-box worst case (an attacker who
+    # knows the scheme) whenever a white-box pass ran; it only falls back to the overall
+    # black+white blend when no white-box data exists. Using the blend here understated
+    # the known worst case — easier black-box attacks diluted the most prominent risk
+    # tile (issue #8, US-10 "honest dashboard").
+    undetected_basis = wb.rate if wb.rate is not None else overall.rate
+    undetected_rate = (1.0 - undetected_basis) if undetected_basis is not None else None
     gap = (bb.rate - wb.rate) if (bb.rate is not None and wb.rate is not None) else None
 
     return {
