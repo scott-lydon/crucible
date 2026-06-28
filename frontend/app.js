@@ -436,17 +436,46 @@
         h("pre", { class: "prompt" }, (d.producer_output || {}).response ||
           JSON.stringify(d.producer_output || {}, null, 2)));
       var cards = (d.votes || []).map(function (v) {
+        // B1: an oracle that could not run (available === false, e.g. the judge answered in
+        // prose) shows a grey UNAVAILABLE badge, never FIRED — it guessed nothing.
+        var votePill = v.available === false
+          ? pill("UNAVAILABLE", "grey")
+          : pill(v.fired ? "FIRED" : "pass", v.fired ? "red" : "green");
         return h("div", { class: "card", style: "margin-bottom:12px;background:var(--surface2)" },
           h("div", { class: "card-h" },
             h("div", {}, h("b", { class: "hi" }, v.oracle), " ",
               h("span", { class: "muted mono", style: "font-size:11px" }, "weight " + v.weight)),
-            pill(v.fired ? "FIRED" : "pass", v.fired ? "red" : "green")),
+            votePill),
           h("div", { class: "muted", style: "font-size:12px;margin-bottom:4px" }, "Obligation: " + v.obligation),
           h("div", { style: "font-size:13px" }, v.reason),
           v.observation ? h("div", { class: "muted mono", style: "font-size:11px;margin-top:6px" },
             v.observation) : null);
       });
-      setView(head, io, card("Five checker cards (≥ 2.0 weight fired = caught)", cards));
+      // A1 + A3: replay the verdict from its persisted JSON. The byte-identical badge proves
+      // the stored votes round-trip through serialize/deserialize unchanged; the two panels
+      // show the original stored JSON next to the round-tripped JSON.
+      var replayOut = h("div", { id: "replay-out", style: "margin-top:12px" });
+      var replayBtn = h("button", { class: "btn ghost", id: "replay-btn", onclick: function () {
+        replayOut.textContent = "Replaying…";
+        jget("/attacks/" + d.attackId + "/replay").then(function (r) {
+          var ok = r.votesRoundTrip;
+          replayOut.innerHTML = "";
+          replayOut.append(
+            pill(ok ? "Replay matches original (byte-identical)" : "Replay DIFFERS from original",
+              ok ? "green" : "red"),
+            h("div", { class: "row", style: "margin-top:12px" },
+              h("div", { style: "flex:1;min-width:280px" },
+                h("div", { class: "label" }, "Original (stored votes JSON)"),
+                h("pre", { class: "prompt", id: "replay-original" },
+                  JSON.stringify(r.storedVotes, null, 2))),
+              h("div", { style: "flex:1;min-width:280px" },
+                h("div", { class: "label" }, "Replayed (round-tripped JSON)"),
+                h("pre", { class: "prompt", id: "replay-replayed" },
+                  JSON.stringify(r.roundTrippedVotes, null, 2)))));
+        }).catch(function (e) { replayOut.textContent = "Replay failed: " + e.message; });
+      } }, "Replay verdict from JSON");
+      setView(head, io, card("Five checker cards (≥ 2.0 weight fired = caught)", cards),
+        card("Replay determinism", replayBtn, replayOut));
     }).catch(err);
   }
 

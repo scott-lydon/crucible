@@ -453,10 +453,12 @@ async def replay_attack(attack_id: str) -> dict[str, object]:
         and str(replayed.outcome) == verdict.outcome)
     # Serialization round trip (PR3 port A3): the stored votes deserialize and re-serialize
     # byte-identical, the audit-row replayer's proof that a persisted verdict cannot have
-    # drifted from the shape the aggregator wrote.
-    votes_round_trip = verdict is not None and [
-        vote_as_json(v) for v in votes_from_json(verdict.votes)
-    ] == list(verdict.votes)
+    # drifted from the shape the aggregator wrote. We surface BOTH the stored votes JSON and
+    # the round-tripped votes JSON so the UI can show the two panels side by side.
+    round_tripped_votes = (
+        [] if verdict is None else [vote_as_json(v) for v in votes_from_json(verdict.votes)]
+    )
+    votes_round_trip = verdict is not None and round_tripped_votes == list(verdict.votes)
     return {
         "attackId": attack_id, "runId": atk.run_id, "seed": atk.seed,
         "stored": None if verdict is None else {
@@ -467,6 +469,8 @@ async def replay_attack(attack_id: str) -> dict[str, object]:
             "fired": [str(v.oracle) for v in replayed.votes if v.fired]},
         "identical": identical,
         "votesRoundTrip": votes_round_trip,
+        "storedVotes": None if verdict is None else list(verdict.votes),
+        "roundTrippedVotes": round_tripped_votes,
     }
 
 
