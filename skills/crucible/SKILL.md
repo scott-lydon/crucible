@@ -48,20 +48,54 @@ first run needs no authoring. Default `--target` set: `fraud`, `code_agent`, `du
    exact fix. Docker is required only for code-shaped targets (the producer sandbox);
    a fraud-only run reports Docker as "not required".
 2. Run `crucible run --target <target> [--spec <file>] --rounds <n> --max-dollars <d>
-   --stream human`. The eligibility gate runs first and spends nothing; an INELIGIBLE
-   target exits non-zero with the reason and fix, never a silent failure. Suitability
-   warns but never halts.
+   --stream human` **in the foreground** so its stdout flows back through the shell
+   tool's result and the user sees every `Tracer.emit` line in chat. The eligibility
+   gate runs first and spends nothing; an INELIGIBLE target exits non-zero with the
+   reason and fix, never a silent failure. Suitability warns but never halts.
 3. When the run ends, surface the run directory and the key artifacts as clickable
    links with `mcp__cowork__present_files` (and always print the plain absolute paths
    too): `report.md`, `metrics.json`, `sr-117.md`, and `trace.jsonl`. Offer
    `crucible report --open <run_id>` to render the static site.
 
-## Long runs (real LLMs)
+## Streaming the run to chat (default behavior)
 
-A real-LLM, many-round run can exceed one turn. Do not block. Start it writing to
-`trace.jsonl`, then schedule a follow-up (per the user's long-wait pattern) to read
-the finished `metrics.json` / `report.md` and deliver them, rather than sitting in a
-polling loop. Tell the user the run id and where the artifacts will land.
+The slash command's primary value is the user watching the loop work. Default to a
+foreground synchronous invocation so every event lands in chat:
+
+```bash
+crucible run --target <target> [--spec <file>] --rounds <n> --max-dollars <d> --stream human
+```
+
+The shell tool's stdout is the per-event log. The user reads the run as it happens
+(`run_start`, `eligibility_checked`, `spec_sealed`, `red_tactic_proposed`,
+`oracle_voted`, `verdict_decided`, `metric_update`, `artifact_written`, `run_end`).
+A short fraud run (`--rounds 3`, real Claude judge) finishes in ~75 seconds and the
+full event log fits in one tool result, which is the desired behavior.
+
+**Do NOT background a default-shape run.** Backgrounding with `nohup ... &` makes the
+events land in `trace.jsonl` on disk but never reach the chat, leaving the user
+staring at "I am notified on completion" prose while the run silently finishes.
+That was the 2026-06-28 streaming regression; the fix is to keep the run in the
+foreground unless the run is genuinely long.
+
+## Long runs (genuinely long: real LLMs + many rounds OR coevolution)
+
+A run is "genuinely long" only when at least one of: `--rounds > 10`, `--coevolution`
+is passed, or `--max-dollars > 5.0` against a real-LLM provider. For those, the
+foreground tool call may exceed a single turn. In that case AND ONLY IN THAT CASE:
+
+1. Start the run backgrounded:
+   `nohup crucible run ... --stream human > /tmp/crucible-<run_id>.log 2>&1 & disown`
+2. Surface the first ~5 events (the doctor, eligibility, spec_sealed, run_start) to
+   chat by reading the head of the log right after launch.
+3. Schedule a follow-up (per the long-wait pattern in `~/.claude/CLAUDE.md`) to
+   read the finished `metrics.json` / `report.md` and deliver them rather than
+   sitting in a polling loop.
+4. Tell the user the run id, the log path (`/tmp/crucible-<run_id>.log`), and the
+   artifact directory.
+
+Default-shape runs (`--rounds <= 6`, no coevolution, max-dollars <= 5) are NOT
+long. Run them foreground.
 
 ## Cost discipline
 
