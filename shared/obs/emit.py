@@ -35,6 +35,7 @@ class EventType(StrEnum):
     the runtime stand-in for compile-time exhaustiveness."""
 
     run_start = "run_start"
+    mock_llm_acknowledged = "mock_llm_acknowledged"
     eligibility_checked = "eligibility_checked"
     suitability_assessed = "suitability_assessed"
     run_rejected = "run_rejected"
@@ -53,6 +54,12 @@ class EventType(StrEnum):
     metric_update = "metric_update"
     halt_check = "halt_check"
     artifact_written = "artifact_written"
+    # llm_call: one event per RecordingLLM-wrapped LLM call. Carries the pillar that
+    # made the call (red/judge/target/blue), the model id, a truncated prompt + reply,
+    # token counts, and dollar spend. Surfaces the actual prompt text in the stream so
+    # "why did the metamorphic / judge / red say that" is answerable without diffing
+    # the database. Added 2026-06-28 in response to operator feedback.
+    llm_call = "llm_call"
     run_end = "run_end"
 
 
@@ -61,6 +68,7 @@ class EventType(StrEnum):
 # here is the neutral "fired" marker.
 GLYPHS: dict[EventType, str] = {
     EventType.run_start: "▶",
+    EventType.mock_llm_acknowledged: "⚠️",
     EventType.eligibility_checked: "🔎",
     EventType.suitability_assessed: "🧭",
     EventType.run_rejected: "🚫",
@@ -79,12 +87,14 @@ GLYPHS: dict[EventType, str] = {
     EventType.metric_update: "📈",
     EventType.halt_check: "🛑",
     EventType.artifact_written: "📄",
+    EventType.llm_call: "🤖",
     EventType.run_end: "🏁",
 }
 
 # ASCII fallback tag per EventType for terminals that mangle wide glyphs (--no-emoji).
 ASCII_TAGS: dict[EventType, str] = {
     EventType.run_start: "[START]",
+    EventType.mock_llm_acknowledged: "[MOCK-LLM]",
     EventType.eligibility_checked: "[ELIG]",
     EventType.suitability_assessed: "[FIT]",
     EventType.run_rejected: "[REJECT]",
@@ -103,6 +113,7 @@ ASCII_TAGS: dict[EventType, str] = {
     EventType.metric_update: "[METRIC]",
     EventType.halt_check: "[HALT]",
     EventType.artifact_written: "[FILE]",
+    EventType.llm_call: "[LLM]",
     EventType.run_end: "[END]",
 }
 
@@ -168,6 +179,19 @@ def artifacts_root() -> Path:
     return Path(os.environ.get("CRUCIBLE_ARTIFACTS_DIR", "artifacts")).resolve()
 
 
+# Cross-cutting helpers (RecordingLLM) reach for the active Tracer here. ContextVar so
+# concurrent runs in their own asyncio tasks don't cross-attribute. None when no run is
+# in flight (e.g. spec compilation before run_start); helpers MUST treat None as a no-op.
+from contextvars import ContextVar  # noqa: E402
+
+_CURRENT_TRACER: ContextVar["Tracer | None"] = ContextVar("crucible_current_tracer", default=None)
+
+
+def current_tracer() -> "Tracer | None":
+    """Return the Tracer bound by the active run, or None if no run is in flight."""
+    return _CURRENT_TRACER.get()
+
+
 def run_dir_for(run_id: RunId | str) -> Path:
     return artifacts_root() / "runs" / str(run_id)
 
@@ -196,6 +220,10 @@ class Tracer:
         except OSError as exc:
             raise TraceSinkUnwritableError(self.run_dir, exc) from exc
         self._trace_path = self.run_dir / "trace.jsonl"
+        # Bind self as the current-run tracer so cross-cutting helpers (RecordingLLM)
+        # can find a Tracer without being plumbed one explicitly. Reset by the loop's
+        # `with use_tracer(...)` context manager at end-of-run (see use_tracer below).
+        _CURRENT_TRACER.set(self)
 
     @property
     def trace_path(self) -> Path:
@@ -266,6 +294,25 @@ def _marker(event: TraceEvent, emoji: bool) -> str:
     return glyph_for(event.type)
 
 
+def _short(value: Any, limit: int = 60) -> str:
+    """Render any value as a short, single-line string for the live stream. Floats keep
+    4 significant digits, strings are truncated with an ellipsis, dicts and lists fall
+    back to their JSON repr. Used by every renderer branch that surfaces payload data;
+    full untruncated content is always in trace.jsonl."""
+    if isinstance(value, float):
+        s = f"{value:.4g}"
+    elif isinstance(value, (int, bool, type(None))):
+        s = str(value)
+    elif isinstance(value, str):
+        s = value
+    else:
+        s = json.dumps(value, separators=(",", ":"))
+    s = s.replace("\n", " ").strip()
+    if len(s) > limit:
+        return s[: limit - 1] + "…"
+    return s
+
+
 def _summary(event: TraceEvent) -> str:
     """A short human summary per event type. Kept data-driven so adding a type does not
     require touching a giant switch; falls back to a compact dump of the payload."""
@@ -273,6 +320,8 @@ def _summary(event: TraceEvent) -> str:
     t = event.type
     if t is EventType.run_start:
         return f"run {event.run_id} target={d.get('target')} rounds={d.get('rounds')}"
+    if t is EventType.mock_llm_acknowledged:
+        return "MOCK LLM judge active (--allow-mock-llm waiver) — outputs are NOT real"
     if t is EventType.eligibility_checked:
         return f"{d.get('verdict')} — {d.get('reason', '')}".rstrip(" —")
     if t is EventType.suitability_assessed:
@@ -286,11 +335,53 @@ def _summary(event: TraceEvent) -> str:
     if t is EventType.round_start:
         return f"round {d.get('round')}" + (" (white-box)" if d.get("white_box") else "")
     if t is EventType.red_tactic_proposed:
+        intent = d.get("intent", "")
+        synonyms = d.get("synonyms", []) or []
+        if intent or synonyms:
+            # Multi-line (DR-3): the intent on the marker line, then one indented line per
+            # synonym, the committed phrasing tagged CHOSEN.
+            chosen = d.get("chosen_phrasing_index", 0)
+            lines = [f"red intent  {intent[:80]}"]
+            for i, syn in enumerate(synonyms):
+                tag = "  CHOSEN" if i == chosen else ""
+                lines.append(f"            #{i + 1}  {str(syn)[:80]}{tag}")
+            return "\n".join(lines)
         return f"{d.get('tactic')}: {d.get('rationale', '')}"
     if t is EventType.target_queried:
+        # Show the actual attack payload so the operator sees WHAT was queried, not
+        # just the attack_id. Keys are sorted for deterministic diffs; values are
+        # truncated per-field so a large feature vector still fits.
+        payload = d.get("payload", {}) or {}
+        if payload:
+            items = sorted(payload.items(), key=lambda kv: kv[0])
+            preview = ", ".join(f"{k}={_short(v)}" for k, v in items[:8])
+            tail = "" if len(items) <= 8 else f" ... (+{len(items) - 8} more)"
+            return f"attack {d.get('attack_id', '')} payload={{ {preview}{tail} }}"
         return f"attack {d.get('attack_id', '')}"
     if t is EventType.target_scored:
-        return f"output keys={list(d.get('output', {}))}"
+        # Surface the actual scored values, not just the keys, so the operator can see
+        # what the producer returned (e.g. fraud_probability=0.04 label=0).
+        out = d.get("output", {}) or {}
+        if out:
+            items = ", ".join(f"{k}={_short(v)}" for k, v in out.items())
+            return f"output {{ {items} }}"
+        return "output {}"
+    if t is EventType.llm_call:
+        # Render: pillar/model · prompt(...) -> reply(...)  ·  N tokens · $X
+        # Truncate prompt/reply so a 2K-token prompt doesn't flood the stream;
+        # the full text is in trace.jsonl for grep.
+        pillar = d.get("pillar", "?")
+        model = d.get("model", "?")
+        prompt_preview = _short(d.get("prompt", ""), 160)
+        reply_preview = _short(d.get("reply", ""), 160)
+        tokens = d.get("tokens")
+        dollars = d.get("dollars")
+        tok_s = f" · {tokens}t" if tokens else ""
+        cost_s = f" · ${dollars:.4f}" if isinstance(dollars, (int, float)) else ""
+        return (
+            f"{pillar}/{model} · prompt({prompt_preview}) "
+            f"-> reply({reply_preview}){tok_s}{cost_s}"
+        )
     if t is EventType.oracle_fired:
         verdict = "PASS" if d.get("passed") else "FAIL"
         return f"{d.get('oracle')}: {verdict} — {d.get('reason', '')}".rstrip(" —")
@@ -298,7 +389,10 @@ def _summary(event: TraceEvent) -> str:
         tag = " [replay]" if d.get("replay") else ""
         return f"{d.get('outcome')} tally={d.get('tally')}/{d.get('threshold')}{tag}"
     if t is EventType.catalog_hit:
-        return f"undetected: {d.get('tactic')}"
+        src = d.get("source_attack_id") or d.get("attack_id", "")
+        score = d.get("score")
+        score_s = f" score={score}" if score is not None else ""
+        return f"undetected sample added: {d.get('tactic')} (from {src}){score_s}"
     if t is EventType.blue_patch_proposed:
         return str(d.get("summary", "patch"))
     if t is EventType.blue_retrained:

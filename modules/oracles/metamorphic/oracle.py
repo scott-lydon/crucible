@@ -60,24 +60,37 @@ class FraudMetamorphicOracle:
         self, spec: SealedSpec, attack: Attack, output: Mapping[str, Any]
     ) -> OracleVote:
         base_label = int(output.get("label", self._label(attack.payload)))
+        # Track every rule's outcome so the reason can name what was checked, not just
+        # whether anything fired. Observer feedback (2026-06-28): "why did metamorphic
+        # pass" is unanswerable without the per-rule trace.
+        per_rule: list[tuple[str, int]] = []
         violated: list[str] = []
         for name, transformed in self._rules(attack.payload, attack.seed):
-            if self._label(transformed) != base_label:
+            new_label = self._label(transformed)
+            per_rule.append((name, new_label))
+            if new_label != base_label:
                 violated.append(name)
         fired = len(violated) > 0
         if fired:
             reason = (
-                f"Metamorphic relation(s) violated: {violated}. The producer's label "
-                f"flipped under semantically-neutral transform(s); the decision on this "
-                f"input is unstable and cannot be trusted."
+                f"Metamorphic relation(s) violated: {violated}. Per-rule labels "
+                f"{[(n, lbl) for n, lbl in per_rule]} vs base_label={base_label}. "
+                f"The producer's label flipped under semantically-neutral transform(s); "
+                f"the decision on this input is unstable and cannot be trusted."
             )
         else:
-            reason = ("All three metamorphic relations held: the label is stable under "
-                      "neutral transforms.")
+            rule_summary = "; ".join(f"{n} -> label={lbl}" for n, lbl in per_rule)
+            reason = (
+                f"All three metamorphic relations held (base_label={base_label}): "
+                f"{rule_summary}. The label is stable under neutral transforms."
+            )
         return OracleVote(
             oracle=self.kind, fired=fired, weight=self.weight,
             obligation=spec.obligation_text("label_match"),
-            observation=f"rules_checked=3 violated={violated} base_label={base_label}",
+            observation=(
+                f"rules_checked=3 violated={violated} base_label={base_label} "
+                f"per_rule={per_rule}"
+            ),
             reason=reason, seed=attack.seed,
         )
 

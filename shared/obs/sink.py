@@ -58,8 +58,18 @@ class FileTraceSink:
             out.append((EventType.red_tactic_proposed, {
                 "tactic": p.get("tactic"), "attack_id": p.get("attack_id"),
                 "white_box": p.get("white_box", False),
-                "rationale": p.get("rationale", "")}))
-            out.append((EventType.target_queried, {"attack_id": p.get("attack_id")}))
+                "rationale": p.get("rationale", ""),
+                # Red intent + synonym brainstorm (DR-3).
+                "intent": p.get("intent", ""),
+                "synonyms": p.get("synonyms", []),
+                "chosen_phrasing_index": p.get("chosen_phrasing_index", 0)}))
+            # Include the actual attack payload so the operator can see what the
+            # producer was asked about, not just the attack_id. Keys are surfaced
+            # in deterministic sorted order and values truncated by the renderer.
+            out.append((EventType.target_queried, {
+                "attack_id": p.get("attack_id"),
+                "payload": dict(p.get("payload", {})),
+            }))
         elif kind == "producer_output":
             out.append((EventType.target_scored, {
                 "attack_id": p.get("attack_id"), "output": p.get("output", {})}))
@@ -85,7 +95,13 @@ class FileTraceSink:
         elif kind == "blue_patch":
             out.append((EventType.blue_patch_proposed, {
                 "round": p.get("round"), "patch_id": p.get("patch_id"),
-                "summary": p.get("summary", "")}))
+                "summary": p.get("summary", ""),
+                # Unified diff of the hardened config vs the prior version (DR-5); empty
+                # until the blue agent supplies it, so the field is always present.
+                "config_diff": p.get("config_diff", "")}))
+            out.append((EventType.blue_retrained, {
+                "patch_id": p.get("patch_id"), "version": p.get("version"),
+                "summary": p.get("summary", ""), "validated": p.get("validated")}))
             out.append((EventType.holdout_validated, {
                 "before": p.get("safe_before"), "after": p.get("safe_after"),
                 "validated": p.get("validated")}))
