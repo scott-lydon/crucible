@@ -138,6 +138,10 @@ def build_parser() -> argparse.ArgumentParser:
     cowork_install.add_argument(
         "--dest", help="destination path (default ~/.claude/skills/crucible/SKILL.md)")
     cowork_install.add_argument(
+        "--mode", choices=("copy", "symlink"), default="copy",
+        help="copy the SKILL.md (default; survives uninstall, drifts on upgrade) or "
+             "symlink it to the bundled path (auto-refresh on upgrade; not on Windows)")
+    cowork_install.add_argument(
         "--force", action="store_true",
         help="overwrite an existing file (default refuses, to protect local edits)")
 
