@@ -15,18 +15,37 @@ code-agent sibling.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Protocol, runtime_checkable
 
-from modules.targets.agent.code_agent import CodeRunner, extract_code
 from shared.llm.client import LLMClient
+from shared.sandbox.local import SandboxResult
 from shared.types.core import Attack, OracleVote
 from shared.types.enums import OracleKind
 from shared.types.results import HealthStatus
 from shared.types.sealed_spec import SealedSpec
 
 _INPUT_KEYS = ("input", "prompt", "task", "message", "text")
+_FENCE = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.S)
+
+
+@runtime_checkable
+class CodeRunner(Protocol):
+    """The sealed sandbox the producer ran in (structural type, so the oracle does not
+    import the targets module — module-boundary rule, F2)."""
+
+    async def run(
+        self, main_script: str, *, files: Mapping[str, str] | None = ...,
+        argv: list[str] | None = ...,
+    ) -> SandboxResult: ...
+
+
+def extract_code(text: str) -> str:
+    """Pull the Python out of a model reply — the code fence if present, else the whole text."""
+    match = _FENCE.search(text)
+    return (match.group(1) if match else text).strip()
 _REFERENCE_SYSTEM = (
     "You are a careful Python engineer. Given a task, output a COMPLETE Python script "
     "(only code, no markdown, no prose) that solves it and prints its results to stdout, "

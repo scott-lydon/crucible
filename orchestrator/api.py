@@ -38,6 +38,7 @@ from modules.targets.agent import (
     validate_http_endpoint,
 )
 from orchestrator.errors import NoTargetRegisteredError
+from orchestrator.import_audit import import_audit, set_inject_bad_import
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import build_container, get_container, set_container
 from shared.config import load_settings
@@ -718,6 +719,40 @@ async def inject_leaky_run() -> dict[str, object]:
                 seed=f"leaky-{i}", dollars_spent=0.0,
                 audit_trace={"summary": "silent failure: held-out fired, tally below threshold"}))
     return {"runId": run_id}
+
+
+@app.get("/admin/wired-components")
+async def wired_components() -> dict[str, object]:
+    """The wired registry shell (PR3 port F1): the eight components wiring assembles at
+    startup. The registry is built once at boot (set_container) and treated as frozen for
+    the run's lifetime — the Admin page's Hot-swap button is disabled to reflect that; the
+    only mutations are the explicit debug routes."""
+    c = get_container()
+    fields = [
+        {"name": "targets", "value": sorted(c.targets)},
+        {"name": "oracles", "value": {k: [str(o.kind) for o in v] for k, v in c.oracles.items()}},
+        {"name": "aggregator", "value": getattr(c.verify, "__name__", "run_verdict")},
+        {"name": "red", "value": [*sorted(c.reds), "default:" + type(c.default_red).__name__]},
+        {"name": "blue", "value": sorted(c.blues)},
+        {"name": "measure", "value": type(c.sink).__name__},
+        {"name": "halt", "value": "HaltRule (trust-gated, persisted)"},
+        {"name": "spec_compiler", "value": type(c.spec_compiler).__name__},
+    ]
+    return {"frozen": True, "fields": fields}
+
+
+@app.get("/admin/import-audit")
+async def get_import_audit() -> dict[str, object]:
+    """Module-boundary audit for the dashboard badge (PR3 port F2)."""
+    return import_audit()
+
+
+@app.post("/admin/inject-bad-import")
+async def inject_bad_import(enabled: bool) -> dict[str, object]:
+    """Debug route (PR3 port F2): arm/clear a demo cross-module import so the operator can
+    watch the 'Module boundaries' badge flip red, then clear it."""
+    set_inject_bad_import(enabled)
+    return import_audit()
 
 
 @app.post("/admin/reload-backend")

@@ -693,8 +693,11 @@
   }
   function viewAdmin() {
     renderTabs("admin");
-    Promise.all([jget("/debug"), jget("/budget")]).then(function (r) {
-      var d = r[0], b = r[1], t = d.totals || {};
+    Promise.all([jget("/debug"), jget("/budget"),
+      jget("/admin/wired-components").catch(function () { return { fields: [] }; }),
+      jget("/admin/import-audit").catch(function () { return { clean: true, offenders: [] }; })
+    ]).then(function (r) {
+      var d = r[0], b = r[1], wired = r[2], audit = r[3], t = d.totals || {};
       var budgetCard = card("Real-LLM budget",
         h("div", { style: "display:flex;align-items:baseline;gap:10px" },
           h("div", { style: "font-size:30px;font-family:var(--mono);color:var(--hi)" },
@@ -771,7 +774,38 @@
           "brief shrink. Inject a leaky run to halt on the trust score. Toggle the halt " +
           "override to launch despite a halt (the banner still reports the real halt)."),
         injectBtn, dropJudgeBtn, leakyBtn, overrideOn, overrideOff);
-      setView(budgetCard, totals, byStatus, debugCard);
+
+      // F1: the wired registry shell — eight components, frozen at startup.
+      var wiredCard = card("Wired components",
+        h("div", { id: "wired-components" }, (wired.fields || []).map(function (f) {
+          return h("div", { class: "wired-field card",
+            style: "margin-bottom:6px;background:var(--surface2);padding:10px" },
+            h("b", { class: "hi" }, f.name), " ",
+            h("span", { class: "muted mono", style: "font-size:11px" },
+              JSON.stringify(f.value)));
+        })),
+        h("button", { class: "btn ghost", id: "hot-swap", disabled: true,
+          title: "Registry is frozen at startup" }, "Hot-swap"));
+
+      // F2: module-boundary audit badge — green when clean, red with the offender list.
+      var injectBadImport = h("button", { class: "btn ghost", id: "inject-bad-import",
+        style: "margin-left:10px",
+        onclick: function () { jpost("/admin/inject-bad-import?enabled=true", {})
+          .then(function () { go("#/admin"); route(); }); } }, "Inject bad import (demo)");
+      var clearBadImport = h("button", { class: "btn ghost", id: "clear-bad-import",
+        style: "margin-left:10px",
+        onclick: function () { jpost("/admin/inject-bad-import?enabled=false", {})
+          .then(function () { go("#/admin"); route(); }); } }, "Clear");
+      var boundariesCard = card("Module boundaries",
+        audit.clean
+          ? h("span", { id: "boundaries-badge", class: "pill green" }, "Module boundaries clean")
+          : h("div", {},
+              h("span", { id: "boundaries-badge", class: "pill red" }, "Module boundaries VIOLATED"),
+              h("ul", { class: "muted", style: "font-size:12px;margin-top:8px" },
+                (audit.offenders || []).map(function (o) { return h("li", {}, o); }))),
+        h("div", { style: "margin-top:10px" }, injectBadImport, clearBadImport));
+
+      setView(budgetCard, totals, byStatus, wiredCard, boundariesCard, debugCard);
     }).catch(err);
   }
 
