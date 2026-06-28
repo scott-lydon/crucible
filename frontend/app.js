@@ -59,6 +59,28 @@
   }
   function shorten(s, n) { s = String(s == null ? "" : s).replace(/\s+/g, " ").trim();
     return s.length > n ? s.slice(0, n) + "…" : s; }
+  // Local wall-clock HH:MM:SS for a row. Accepts an ISO server time or, when none is
+  // present (live SSE), falls back to the client's current receive time.
+  function fmtTime(v) {
+    var d = v ? new Date(v) : new Date();
+    return isNaN(d.getTime()) ? "—" : d.toTimeString().slice(0, 8);
+  }
+  // Legible verdict conviction: keep the CAUGHT/clean pill, then show how far the fired
+  // oracles' combined weight reached toward the conviction bar (threshold, ~2.0) as a tiny
+  // bar plus "N of T checks agreed". Raw tally/threshold stays in the title tooltip; tally
+  // can exceed the bar, so the bar is clamped at 100%.
+  function convictionMeter(tally, threshold) {
+    var t = tally || 0, thr = threshold || 2;
+    var frac = thr > 0 ? Math.min(1, t / thr) : 0;
+    var n = Math.round(t * 10) / 10;
+    return h("span", { title: "tally " + t + " / threshold " + thr,
+      style: "display:inline-flex;align-items:center;gap:6px;margin-left:8px;vertical-align:middle" },
+      h("span", { class: "bar", style: "width:48px" },
+        h("i", { style: "width:" + Math.round(frac * 100) + "%;background:" +
+          (t >= thr ? "#E5736B" : "#7C8896") })),
+      h("span", { class: "muted mono", style: "font-size:11px" },
+        n + " of " + thr + " checks agreed"));
+  }
   function empty(msg) { return h("div", { class: "empty" }, msg); }
   function loading() { setView(h("div", { class: "empty" },
     h("span", { class: "spinner" }), " loading…")); }
@@ -85,6 +107,49 @@
       s = s.replace(re, function (m) { return '<mark class="leak">' + m + "</mark>"; });
     });
     return s;
+  }
+
+  // Minimal, self-contained Markdown → HTML — headings, lists, code (fenced + inline),
+  // bold, and links. No external dependency (consistent with the project's minimize-deps
+  // value). Everything is HTML-escaped first, so the rendered report can't inject markup.
+  function mdInline(s) {
+    s = escHtml(s);
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, function (m, t, u) {
+      // Only allow safe schemes (http/https/mailto) or relative/anchor links — blocks
+      // javascript: and data: URIs that could ride in via attacker-controlled report text.
+      var safe = /^(https?:|mailto:|[/#.])/i.test(u);
+      return safe ? '<a href="' + u + '" target="_blank" rel="noopener">' + t + "</a>"
+                  : t;
+    });
+    return s;
+  }
+  function renderMarkdown(md) {
+    var lines = String(md == null ? "" : md).split(/\r?\n/);
+    var out = [], inList = false, inCode = false, code = [];
+    function closeList() { if (inList) { out.push("</ul>"); inList = false; } }
+    lines.forEach(function (line) {
+      if (/^\s*```/.test(line)) {
+        if (inCode) { out.push('<pre class="prompt">' + escHtml(code.join("\n")) + "</pre>");
+          code = []; inCode = false; }
+        else { closeList(); inCode = true; }
+        return;
+      }
+      if (inCode) { code.push(line); return; }
+      var hm = line.match(/^(#{1,6})\s+(.*)$/);
+      if (hm) { closeList(); var lvl = Math.min(hm[1].length, 6);
+        out.push("<h" + lvl + ">" + mdInline(hm[2]) + "</h" + lvl + ">"); return; }
+      var lm = line.match(/^\s*[-*]\s+(.*)$/);
+      if (lm) { if (!inList) { out.push("<ul>"); inList = true; }
+        out.push("<li>" + mdInline(lm[1]) + "</li>"); return; }
+      if (/^\s*$/.test(line)) { closeList(); return; }
+      closeList();
+      out.push("<p>" + mdInline(line) + "</p>");
+    });
+    if (inCode) out.push('<pre class="prompt">' + escHtml(code.join("\n")) + "</pre>");
+    closeList();
+    return out.join("\n");
   }
 
   var LS = { get: function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
@@ -147,13 +212,13 @@
   function viewLaunch() {
     renderTabs("launch");
     var targetSel = h("select", { id: "f-target" },
-      h("option", { value: "support-bot" }, "Demo · customer-support bot (chat)"),
-      h("option", { value: "coder" }, "Demo · Python coding assistant (chat)"),
-      h("option", { value: "code-agent" }, "Demo · code agent — writes AND RUNS Python in a sandbox"),
-      h("option", { value: "byo" }, "Bring your own agent — model + system prompt"),
-      h("option", { value: "http" }, "Bring your own agent — HTTP endpoint (your deployed agent)"),
-      h("option", { value: "yaml" }, "Advanced · paste a sealed-spec (YAML)"),
-      h("option", { value: "fraud" }, "Demo · fraud model (built-in, free)"));
+      h("option", { value: "support-bot" }, "Sample · customer-support bot (chat)"),
+      h("option", { value: "coder" }, "Sample · Python coding assistant (chat)"),
+      h("option", { value: "code-agent" }, "Sample · code agent — writes AND RUNS Python in a sandbox"),
+      h("option", { value: "byo" }, "Bring your own agent — model + system prompt (beta)"),
+      h("option", { value: "http" }, "Bring your own agent — HTTP endpoint (your deployed agent) (beta)"),
+      h("option", { value: "yaml" }, "Advanced · paste a sealed-spec (YAML) (beta)"),
+      h("option", { value: "fraud" }, "Sample · fraud model (built-in, free)"));
 
     var model = h("input", { id: "f-model", list: "modellist",
       placeholder: "anthropic/claude-sonnet-4.6" });
@@ -184,21 +249,30 @@
     var task = h("input", { id: "f-task" });
     var fails = h("textarea", { id: "f-fails", rows: 4 });
     var hidden = h("textarea", { id: "f-hidden", rows: 2,
-      placeholder: "optional — secret checks the agent never sees, one per line" });
+      placeholder: "optional — extra rules the checker panel grades; the agent never sees them" });
     var spec = h("div", { id: "spec" },
       h("label", { class: "field" }, h("span", { class: "label" }, "Task — what the agent is for"), task),
       h("label", { class: "field" },
         h("span", { class: "label" }, "What counts as failure (one per line)"), fails),
       h("label", { class: "field" },
-        h("span", { class: "label" }, "Hidden tests (optional, one per line)"), hidden));
+        h("span", { class: "label" }, "Extra hidden obligations (optional, one per line)"), hidden));
 
     var mode = h("select", { id: "f-mode" },
       h("option", { value: "redteam" }, "Red-team — attacker + checker panel + white-box self-test"),
       h("option", { value: "coevolution" }, "Co-evolution — attacker vs AI defender over rounds"));
     var modeWrap = h("label", { class: "field", id: "modewrap" },
-      h("span", { class: "label" }, "Mode"), mode);
+      h("span", { class: "label" }, "Mode"), mode,
+      h("div", { class: "muted", style: "font-size:12px;margin-top:6px;line-height:1.5" },
+        "Co-evolution = the attacker and an AI defender duel over rounds; the defender hardens " +
+        "the agent's system prompt between rounds. Needs a hardenable agent (not fraud or the " +
+        "sandboxed code agent), and real models (CRUCIBLE_REAL_AGENT) to show movement."));
     var rounds = h("input", { id: "f-rounds", type: "number", min: 1, value: 3 });
+    var roundsLabel = h("span", { class: "label" }, "Attacks per probe");
+    var roundsHelp = h("div",
+      { class: "muted", style: "font-size:12px;margin-top:6px;line-height:1.5" }, "");
     var apr = h("input", { id: "f-apr", type: "number", min: 1, value: 3 });
+    var aprWrap = h("label", { class: "field", id: "aprwrap" },
+      h("span", { class: "label" }, "Attacks / round"), apr);
     var dollars = h("input", { id: "f-dollars", type: "number", min: 0, step: "0.5", value: 2 });
     var status = h("span", { class: "muted mono", style: "font-size:12px" });
     var startBtn = h("button", { class: "btn", onclick: launch }, "Start evaluation →");
@@ -214,8 +288,25 @@
       else { modeWrap.style.display = "block"; }
       var d = DEMOS[t];
       if (d) { task.value = d.task; fails.value = d.fails.join("\n"); }
+      applyMode();
+    }
+    // Only co-evolution consumes attacks_per_round; hide it otherwise.
+    // Red-team probes twice (blind, then informed); co-evolution is duel rounds. Labels +
+    // helper adapt; only co-evolution consumes attacks_per_round.
+    function applyMode() {
+      var coevo = mode.value === "coevolution";
+      aprWrap.style.display = coevo ? "block" : "none";
+      roundsLabel.textContent = coevo ? "Duel rounds" : "Attacks per probe";
+      roundsHelp.textContent = coevo
+        ? "Each round runs that many attacks, then the AI defender hardens the agent's prompt. " +
+          "Total = rounds × attacks/round. The $ budget is a safety cap that can halt the run " +
+          "early; it does not set the count."
+        : "Each run probes twice: first BLIND to the panel, then INFORMED (the attacker is told " +
+          "the panel's checks — a self-test). So this number runs twice, e.g. 3 → 6 total " +
+          "attacks. The $ budget is a safety cap that can halt the run early; it does not set the count.";
     }
     targetSel.addEventListener("change", applyTarget);
+    mode.addEventListener("change", applyMode);
 
     function launch() {
       var t = targetSel.value, body;
@@ -253,7 +344,8 @@
             output_field: outField.value.trim() || "output" };
         } else if (t !== "code-agent") { body.demo_agent = t; }
       }
-      startBtn.disabled = true; status.textContent = "Launching…";
+      startBtn.disabled = true;
+      status.innerHTML = ""; status.append(h("span", { class: "spinner" }), " Launching…");
       jpost("/runs", body).then(function (j) {
         LS.set("cru.run", j.runId); go("#/run/" + j.runId);
       }).catch(function (e) {
@@ -263,15 +355,17 @@
 
     var form = card("Stress-test an AI agent",
       h("p", { class: "muted", style: "margin-top:-6px" },
-        "Point it at any AI agent — a demo, your own model + prompt, a deployed HTTP endpoint, " +
-        "or a sandboxed code agent. A real AI attacker red-teams it, an independent checker " +
-        "panel grades every output, and you end on a trust score you can stand behind."),
+        "For this capstone, Crucible runs against a set of curated, preloaded agents. A real AI " +
+        "attacker red-teams the agent, an independent checker panel grades every output, and you " +
+        "end on a trust score you can stand behind. Pointing Crucible at your own agents and specs " +
+        "is in progress (tagged beta) and out of scope for the capstone."),
       h("label", { class: "field" }, h("span", { class: "label" }, "Target"), targetSel),
       byo, http, yamlWrap, spec, modeWrap,
       h("div", { class: "inline" },
-        h("label", { class: "field" }, h("span", { class: "label" }, "Rounds"), rounds),
-        h("label", { class: "field" }, h("span", { class: "label" }, "Attacks / round"), apr),
+        h("label", { class: "field" }, roundsLabel, rounds),
+        aprWrap,
         h("label", { class: "field" }, h("span", { class: "label" }, "Budget $ (per run)"), dollars)),
+      roundsHelp,
       h("div", { style: "display:flex;align-items:center;gap:16px;margin-top:6px" }, startBtn, status));
     setView(form);
     applyTarget();
@@ -283,6 +377,7 @@
   // they can never drift from what's actually running.
   function viewDemoGuide() {
     renderTabs("demo");
+    loading();
     jget("/health").then(function (probes) {
       function hv(key, field) {
         var p = probes[key];
@@ -399,6 +494,7 @@
   function viewRun(id) {
     renderTabs("");
     closeES();
+    loading();
     jget("/runs/" + id).then(function (run) {
       var statusPill = pillForStatus(run.status);
       var counters = h("span", { class: "muted mono", style: "font-size:12px" });
@@ -413,8 +509,9 @@
         h("a", { class: "btn ghost", href: "#/launch" }, "New run"));
       var tbody = h("tbody");
       var table = h("table", {}, h("thead", {}, h("tr", {},
-        h("th", {}, "#"), h("th", {}, "pass"), h("th", {}, "tactic"),
-        h("th", {}, "attacker input"), h("th", {}, "agent output"), h("th", {}, "verdict"))), tbody);
+        h("th", {}, "#"), h("th", {}, "attacker"), h("th", {}, "tactic"),
+        h("th", {}, "attacker input"), h("th", {}, "agent output"), h("th", {}, "verdict"),
+        h("th", {}, "time"))), tbody);
       var coevoBox = h("div", {});
       setView(head, actions, coevoBox, card("Attacks & verdicts", table,
         tbody.children.length ? null : h("div", { class: "empty", id: "run-empty" },
@@ -423,13 +520,14 @@
             : "no streamed events (server may have restarted) — see the dashboard")));
 
       var rows = {}, graded = 0, flagged = 0;
-      function setCounters() { counters.textContent = "graded " + graded + " · flagged by panel " + flagged; }
+      function setCounters() { counters.textContent = "evaluated " + graded + " · caught by panel " + flagged; }
       function rowFor(aid) {
         if (rows[aid]) return rows[aid];
         var e = document.getElementById("run-empty"); if (e) e.remove();
         var tds = { n: h("td", {}), wb: h("td", {}), tac: h("td", {}),
-          inp: h("td", { class: "muted" }), out: h("td", { class: "muted" }), ver: h("td", {}) };
-        var tr = h("tr", {}, tds.n, tds.wb, tds.tac, tds.inp, tds.out, tds.ver);
+          inp: h("td", { class: "muted" }), out: h("td", { class: "muted" }), ver: h("td", {}),
+          time: h("td", { class: "muted mono", style: "font-size:11px;white-space:nowrap" }) };
+        var tr = h("tr", {}, tds.n, tds.wb, tds.tac, tds.inp, tds.out, tds.ver, tds.time);
         tds.tr = tr;
         tbody.append(tr); rows[aid] = tds; return tds;
       }
@@ -438,9 +536,10 @@
         es.addEventListener("attack", function (ev) {
           var d = JSON.parse(ev.data), r = rowFor(d.attack_id);
           r.n.textContent = (d.round != null ? d.round : "");
-          r.wb.append(d.white_box ? pill("white-box", "amber") : pill("black-box", "grey"));
+          r.wb.append(d.white_box ? pill("knows panel", "amber") : pill("blind", "grey"));
           r.tac.textContent = d.tactic || "";
           r.inp.textContent = shorten((d.payload || {}).input || JSON.stringify(d.payload || {}), 90);
+          if (!r.time.textContent) r.time.textContent = fmtTime(d.created_at);
         });
         es.addEventListener("producer_output", function (ev) {
           var d = JSON.parse(ev.data), r = rowFor(d.attack_id);
@@ -453,8 +552,7 @@
           r.ver.append(h("a", { href: "#/verdict/" + d.verdict_id },
             pill(d.outcome === "caught" ? "CAUGHT" : "clean",
               d.outcome === "caught" ? "red" : "green")),
-            h("span", { class: "muted mono", style: "font-size:11px;margin-left:6px" },
-              (d.tally || 0) + "/" + d.threshold));
+            convictionMeter(d.tally, d.threshold));
           // Make the whole streamed row clickable into the full verdict (input, output,
           // and the five oracle cards) the moment its verdict lands — so rows are no
           // longer dead while the run is still streaming.
@@ -489,15 +587,16 @@
             }
             tbody.append(h("tr", attrs,
               h("td", {}, a.round != null ? a.round : ""),
-              h("td", {}, a.white_box ? pill("white-box", "amber") : pill("black-box", "grey")),
+              h("td", {}, a.white_box ? pill("knows panel", "amber") : pill("blind", "grey")),
               h("td", {}, a.tactic || "—"),
               h("td", { class: "muted" }, shorten(a.input, 90) || "—"),
               h("td", { class: "muted" }, shorten(a.output, 90) || "—"),
               a.outcome
                 ? h("td", {}, pill(caught ? "CAUGHT" : "clean", caught ? "red" : "green"),
-                    h("span", { class: "muted mono", style: "font-size:11px;margin-left:6px" },
-                      (a.tally || 0) + "/" + a.threshold))
-                : h("td", { class: "muted" }, "—")));
+                    convictionMeter(a.tally, a.threshold))
+                : h("td", { class: "muted" }, "—"),
+              h("td", { class: "muted mono", style: "font-size:11px;white-space:nowrap" },
+                a.created_at ? fmtTime(a.created_at) : "—")));
           });
           setCounters();
         }).catch(err);
@@ -529,6 +628,7 @@
   // ---- dashboard ---------------------------------------------------------
   function viewDashboard(id) {
     renderTabs("dashboard");
+    loading();
     resolveRun(id).then(function (rid) {
       if (!rid) return setView(card("Dashboard", empty("No runs yet — start one from Launch.")));
       Promise.all([jget("/trust?run_id=" + rid), jget("/metrics?run_id=" + rid),
@@ -585,10 +685,10 @@
             h("a", { href: "#/demo" }, "Demo guide"), "."));
         var tileEls = [
           mt("White-box catch rate", pct(tiles.white_box_catch_rate),
-            "Of failures in the white-box pass (attacker is told the panel's scheme), the share the panel caught.",
+            "Of failures in informed attacks (the attacker is told the panel's scheme), the share the panel caught.",
             tiles.white_box_catch_rate == null),
           mt("Black-box catch rate", pct(tiles.black_box_catch_rate),
-            "Of failures in ordinary black-box attacks, the share the panel caught.",
+            "Of failures in blind attacks (the attacker doesn't know the panel), the share the panel caught.",
             tiles.black_box_catch_rate == null),
           mt("Undetected-hack rate", pct(tiles.undetected_hack_rate),
             "Of attacks that truly failed, the share that slipped EVERY check — the silent, dangerous ones.",
@@ -601,7 +701,7 @@
         ];
         var links = card("Artifacts",
           h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" },
-            h("a", { class: "btn ghost", href: "/reports/" + rid, target: "_blank" }, "Risk report (Markdown)"),
+            h("a", { class: "btn ghost", href: "#/report/" + rid }, "Risk report (Markdown)"),
             h("a", { class: "btn ghost", href: "/reports/" + rid + "?format=pdf", target: "_blank" }, "Risk report (PDF)"),
             h("a", { class: "btn ghost", href: "#/run/" + rid }, "Attack timeline"),
             h("a", { class: "btn ghost", href: "#/coevolution/" + rid }, "Co-evolution"),
@@ -620,9 +720,31 @@
     return h("div", { class: "tile" }, h("div", { class: "label" }, label), h("div", { class: "v" }, value));
   }
 
+  // ---- risk report (rendered Markdown) -----------------------------------
+  // The report endpoint serves raw text/markdown; render it in-app instead of dumping the
+  // source text, while keeping a "download raw .md" link and the existing PDF export.
+  function viewReport(id) {
+    renderTabs("dashboard");
+    loading();
+    fetch("/reports/" + id, { headers: { accept: "text/markdown" } }).then(function (r) {
+      if (!r.ok) throw new Error("/reports/" + id + " → " + r.status);
+      return r.text();
+    }).then(function (md) {
+      var actions = h("div", { style: "margin-bottom:14px;display:flex;gap:10px;flex-wrap:wrap" },
+        h("a", { class: "btn ghost", href: "#/dashboard/" + id }, "← Dashboard"),
+        h("a", { class: "btn ghost", href: "/reports/" + id, target: "_blank",
+          download: "risk-report-" + id + ".md" }, "Download raw .md"),
+        h("a", { class: "btn ghost", href: "/reports/" + id + "?format=pdf", target: "_blank" },
+          "Risk report (PDF)"));
+      setView(actions, card("Risk report · " + id,
+        h("div", { style: "line-height:1.7", html: renderMarkdown(md) })));
+    }).catch(err);
+  }
+
   // ---- verdict detail ----------------------------------------------------
   function viewVerdict(id) {
     renderTabs("");
+    loading();
     jget("/verdicts/" + id).then(function (d) {
       var atk = d.attack || {};
       var caught = d.outcome === "caught";
@@ -670,6 +792,7 @@
   // ---- catalog -----------------------------------------------------------
   function viewCatalog() {
     renderTabs("catalog");
+    loading();
     jget("/catalog").then(function (rows) {
       if (!rows.length) return setView(card("Strategy catalog",
         empty("No tactics yet — run an evaluation.")));
@@ -689,6 +812,7 @@
   // ---- co-evolution ------------------------------------------------------
   function viewCoevolution(id) {
     renderTabs("coevolution");
+    loading();
     resolveRun(id).then(function (rid) {
       if (!rid) return setView(card("Co-evolution", empty("No runs yet.")));
       jget("/coevolution/" + rid).then(function (rounds) {
@@ -733,6 +857,7 @@
   // ---- leaderboard / health / admin --------------------------------------
   function viewLeaderboard() {
     renderTabs("leaderboard");
+    loading();
     jget("/leaderboard").then(function (rows) {
       var body = h("tbody");
       rows.forEach(function (r) {
@@ -753,6 +878,7 @@
   }
   function viewHealth() {
     renderTabs("health");
+    loading();
     jget("/health").then(function (probes) {
       var rows = Object.keys(probes).sort().map(function (name) {
         var p = probes[name];
@@ -768,6 +894,7 @@
   }
   function viewAdmin() {
     renderTabs("admin");
+    loading();
     Promise.all([jget("/debug"), jget("/budget")]).then(function (r) {
       var d = r[0], b = r[1], t = d.totals || {};
       var budgetCard = card("Real-LLM budget",
@@ -819,6 +946,7 @@
       if (name === "runs") return viewRuns();
       if (name === "run") return viewRun(arg);
       if (name === "dashboard") return viewDashboard(arg);
+      if (name === "report") return viewReport(arg);
       if (name === "verdict") return viewVerdict(arg);
       if (name === "catalog") return viewCatalog();
       if (name === "coevolution") return viewCoevolution(arg);
@@ -831,6 +959,7 @@
 
   function viewRuns() {
     renderTabs("runs");
+    loading();
     jget("/runs?limit=40").then(function (rows) {
       if (!rows.length) return setView(card("Runs", empty("No runs yet — start one from Launch.")));
       var body = h("tbody");
