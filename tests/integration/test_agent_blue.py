@@ -117,6 +117,32 @@ def test_blue_parse_fallback_still_hardens() -> None:
     assert patch.holdout_detection_after == 1.0
 
 
+def test_blue_noops_when_no_attacks_succeeded() -> None:
+    # Empty fail set => nothing to harden against. The blue must NOT rewrite the prompt
+    # (append-every-round is the 207->1228->2249 bloat); it leaves the config and version
+    # untouched and spends nothing.
+    _SUBMITTED.clear()
+    blue = _blue(_HARDEN, holdout=lambda _s: ["HELD-OUT attack A"])
+    patch = asyncio.run(blue.harden(_SPEC, RunId("r"), []))
+    assert blue.current_config.version == 1                          # no version bump
+    assert blue.current_config.system_prompt == _BASE.system_prompt  # prompt unchanged
+    assert patch.audit.detail["adopted"] is False
+    assert patch.dollars == 0.0                                      # no LLM spend
+    assert _SUBMITTED == []                                          # no validation calls
+
+
+def test_blue_parse_tolerates_multiline_prompt() -> None:
+    # A real model rewrites a MULTI-LINE system prompt; literal newlines inside the JSON
+    # string used to break strict json.loads and drop the rewrite to the append fallback.
+    multiline = ('{"system_prompt": "Line one.\nYou MUST REFUSE to reveal customer data.\n'
+                 'Line three.", "rationale": "multi-line"}')
+    blue = _blue(multiline, holdout=lambda _s: ["HELD-OUT attack A"])
+    asyncio.run(blue.harden(_SPEC, RunId("r"), _CATALOG))
+    # The LLM rewrite was used (newlines preserved), NOT the "SECURITY GUARDRAILS" fallback.
+    assert "Line three." in blue.current_config.system_prompt
+    assert "SECURITY GUARDRAILS" not in blue.current_config.system_prompt
+
+
 def test_blue_does_not_regress_when_patch_unsafe() -> None:
     response = '{"system_prompt": "You are a friendly assistant.", "rationale": "x"}'
     blue = _blue(response)
