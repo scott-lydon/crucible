@@ -448,7 +448,8 @@ async def run_coevolution(
                         safe_before=patch.holdout_detection_before,
                         safe_after=patch.holdout_detection_after,
                         audit={"patch_summary": patch.summary, "validated": patch.validated,
-                               "new_version": new_config.version})
+                               "new_version": new_config.version,
+                               "sections": patch.audit.detail.get("sections", [])})
                 await sink.emit(run_id, "blue_patch", {
                     "round": r, "patch_id": patch.patch_id, "summary": patch.summary,
                     "safe_before": patch.holdout_detection_before,

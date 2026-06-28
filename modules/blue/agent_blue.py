@@ -13,10 +13,12 @@ it deterministic for tests; real Sonnet/Opus on CRUCIBLE_REAL_BLUE=1."""
 
 from __future__ import annotations
 
+import datetime as dt
 import json
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
+from modules.blue.holdout_validator import HoldoutValidator
 from orchestrator.interfaces import Target
 from shared.llm.client import LLMClient
 from shared.types.agent import AgentConfig
@@ -118,6 +120,7 @@ class LLMAgentBlue:
         self, llm: LLMClient, base_config: AgentConfig, *,
         make_target: TargetFactory, is_safe: SafetyFn,
         holdout: HoldoutFn = held_out_attacks,
+        validator: HoldoutValidator | None = None,
     ) -> None:
         self._llm = llm
         self._base_config = base_config
@@ -125,6 +128,9 @@ class LLMAgentBlue:
         self._make_target = make_target
         self._is_safe = is_safe
         self._holdout = holdout
+        # C3: the same HoldoutValidator the fraud blue uses — the held-out disjointness guard
+        # lives in one place, shared across both blue agents.
+        self._validator = validator or HoldoutValidator()
         self._dollars = 0.0
 
     @property
@@ -190,10 +196,21 @@ class LLMAgentBlue:
         # Validate on a held-out set defined up front, disjoint from the seen attacks, so
         # a passing patch has generalized — not memorized the specific attacks (cr-d2).
         holdout = [h for h in self._holdout(spec) if h not in seen]
+        # C3: the shared HoldoutValidator guards disjointness (same firewall as the fraud blue).
+        self._validator.assert_disjoint(seen, set(holdout))
         base = self._config
-        before = await self._safe_rate(spec, base, holdout)
+
+        # 1. Proposal: ask the model to rewrite the system prompt against the seen attacks.
+        t_proposal = dt.datetime.now(dt.UTC).isoformat()
         new_prompt = await self._propose(spec, catalog_slice)
+
+        # 2. Rewrite: form the candidate config (a new version; vendor model unchanged).
+        t_rewrite = dt.datetime.now(dt.UTC).isoformat()
         candidate = base.revised(new_prompt)
+
+        # 3. Holdout validation: honest before/after safe-rate on the up-front held-out set.
+        t_validation = dt.datetime.now(dt.UTC).isoformat()
+        before = await self._safe_rate(spec, base, holdout)
         after = await self._safe_rate(spec, candidate, holdout)
 
         improved = after >= before
@@ -207,11 +224,25 @@ class LLMAgentBlue:
             f"Rewrote {base.name} system prompt -> v{applied.version} (proposed from "
             f"{len(seen)} attacks); held-out safe-rate {before:.2f} -> {after:.2f} ({verb})."
         )
+        # The same three-section patch trail the fraud blue emits (C1/C3): Proposal, the
+        # change (a prompt Rewrite here, a Retrain for fraud), then Holdout validation.
+        sections = [
+            {"label": "Proposal", "at": t_proposal,
+             "detail": {"attacks_seen": len(seen)}},
+            {"label": "Rewrite", "at": t_rewrite,
+             "detail": {"new_version": applied.version, "vendor_model_unchanged": base.model}},
+            {"label": "Holdout validation", "at": t_validation,
+             "detail": {"held_out_attacks": len(holdout),
+                        "holdout_detection_before": round(before, 4),
+                        "holdout_detection_after": round(after, 4),
+                        "disjoint_from_training": True}},
+        ]
         return PatchResult(
             patch_id=new_id("patch"), summary=summary,
             validated=validated,
             holdout_detection_before=before, holdout_detection_after=after,
             audit=AuditTrace(Pillar.blue, summary, {
+                "sections": sections,
                 "agent": base.name,
                 "base_version": base.version,
                 "new_version": applied.version,

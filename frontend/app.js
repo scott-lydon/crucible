@@ -552,12 +552,28 @@
     jget("/blue/" + pid).then(function (d) {
       var box = document.getElementById("patchbox"); if (!box) return;
       box.innerHTML = "";
+      // C1/C3: the patch audit trail as three labelled sub-sections (Proposal, the change,
+      // Holdout validation), in chronological order.
+      var sections = (d.sections || []).map(function (s) {
+        var fields = Object.keys(s.detail || {}).map(function (k) {
+          return h("div", { class: "muted mono", style: "font-size:11px" },
+            k + ": " + JSON.stringify(s.detail[k]));
+        });
+        return h("div", { class: "patch-section card",
+          style: "margin-bottom:8px;background:var(--surface2)" },
+          h("div", { class: "card-h" }, h("b", { class: "hi" }, s.label),
+            h("span", { class: "muted mono", style: "font-size:11px" },
+              (s.at || "").replace("T", " ").slice(0, 19))),
+          h("div", {}, fields));
+      });
       box.append(card("Blue patch · " + pid,
         h("div", { class: "muted mono", style: "font-size:12px;margin-bottom:10px" },
           "v" + d.base_version + " → v" + d.new_version + " · safe-rate " + pct(d.safe_before) +
           " → " + pct(d.safe_after) + " · " + (d.validated ? "validated" : "not validated") +
           " · vendor model unchanged"),
-        h("div", { class: "label" }, "Rewritten system prompt"),
+        h("div", { class: "label", style: "margin-bottom:6px" }, "Patch audit trail"),
+        h("div", { id: "patch-sections" }, sections),
+        h("div", { class: "label", style: "margin-top:12px" }, "Rewritten system prompt"),
         h("pre", { class: "prompt" }, d.new_system_prompt || "(none)")));
       box.scrollIntoView({ behavior: "smooth" });
     });

@@ -419,6 +419,9 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         "validated": row.audit_trace.get("validated"),
         "summary": row.audit_trace.get("patch_summary"),
         "new_system_prompt": cfg.system_prompt if cfg is not None else None,
+        # C1/C3: the three labelled patch sub-sections (Proposal, Rewrite/Retrain, Holdout
+        # validation) the Blue Patch Review renders.
+        "sections": row.audit_trace.get("sections", []),
     }
 
 
