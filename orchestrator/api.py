@@ -26,6 +26,7 @@ from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
 from modules.oracles.aggregator import vote_as_json, votes_from_json
+from modules.oracles.protocol import oracle_protocols
 from modules.red.catalog import build_catalog
 from modules.targets.agent import (
     HttpEndpointConfig,
@@ -575,6 +576,14 @@ async def get_corpus(run_id: str | None = None) -> Response:
     body = "\n".join(json.dumps(row) for row in rows)
     return Response(content=body, media_type="application/x-ndjson",
                     headers={"X-Row-Count": str(len(rows))})
+
+
+@app.get("/oracle-protocols")
+async def get_oracle_protocols() -> list[dict[str, object]]:
+    """The disclosed verification scheme (PR3 port B3): each oracle kind's name + the first
+    paragraph of its README. Red reads the same text in white-box mode and the strategy
+    catalog renders it, so attacker and operator see one disclosed scheme."""
+    return oracle_protocols()
 
 
 @app.get("/catalog")

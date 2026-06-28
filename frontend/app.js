@@ -482,19 +482,36 @@
   // ---- catalog -----------------------------------------------------------
   function viewCatalog() {
     renderTabs("catalog");
-    jget("/catalog").then(function (rows) {
-      if (!rows.length) return setView(card("Strategy catalog",
-        empty("No tactics yet — run an evaluation.")));
-      var body = h("tbody");
-      rows.forEach(function (r) {
-        body.append(h("tr", {}, h("td", {}, r.tactic), h("td", { class: "muted" }, r.target_type),
-          h("td", {}, r.n_uses), h("td", {}, r.n_runs), h("td", {}, pct(r.detection_rate)),
-          h("td", {}, r.confirmed_hacks), h("td", {}, r.white_box ? pill("yes", "amber") : "—")));
-      });
-      setView(card("Strategy catalog — tactics the attacker named, across all runs",
-        h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "tactic"), h("th", {}, "target"),
-          h("th", {}, "uses"), h("th", {}, "runs"), h("th", {}, "detection"),
-          h("th", {}, "confirmed hacks"), h("th", {}, "white-box"))), body)));
+    // The disclosed verification scheme (PR3 port B3) renders from each oracle's README,
+    // independent of whether any run has produced catalog rows yet.
+    Promise.all([
+      jget("/oracle-protocols").catch(function () { return []; }),
+      jget("/catalog").catch(function () { return []; }),
+    ]).then(function (res) {
+      var protos = res[0] || [], rows = res[1] || [];
+      var scheme = card("Disclosed verification scheme — the checks the attacker is told about",
+        h("div", { id: "scheme" }, protos.map(function (p) {
+          return h("details", { class: "scheme-oracle card",
+            style: "margin-bottom:8px;background:var(--surface2)" },
+            h("summary", { style: "cursor:pointer;color:var(--hi);font-weight:600" }, p.name),
+            h("div", { class: "muted", style: "margin-top:8px;font-size:13px" }, p.description));
+        })));
+      var tableCard;
+      if (!rows.length) {
+        tableCard = card("Strategy catalog", empty("No tactics yet — run an evaluation."));
+      } else {
+        var body = h("tbody");
+        rows.forEach(function (r) {
+          body.append(h("tr", {}, h("td", {}, r.tactic), h("td", { class: "muted" }, r.target_type),
+            h("td", {}, r.n_uses), h("td", {}, r.n_runs), h("td", {}, pct(r.detection_rate)),
+            h("td", {}, r.confirmed_hacks), h("td", {}, r.white_box ? pill("yes", "amber") : "—")));
+        });
+        tableCard = card("Strategy catalog — tactics the attacker named, across all runs",
+          h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "tactic"), h("th", {}, "target"),
+            h("th", {}, "uses"), h("th", {}, "runs"), h("th", {}, "detection"),
+            h("th", {}, "confirmed hacks"), h("th", {}, "white-box"))), body));
+      }
+      setView(scheme, tableCard);
     }).catch(err);
   }
 
