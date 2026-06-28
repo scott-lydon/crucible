@@ -171,11 +171,6 @@ async def post_runs(req: RunRequest) -> RunAccepted:
 
     if req.mode not in ("redteam", "coevolution"):
         raise HTTPException(status_code=422, detail=f"unknown mode {req.mode!r}")
-    if req.target_kind == "code_agent" and req.mode == "coevolution":
-        raise HTTPException(
-            status_code=422,
-            detail="co-evolution is not yet wired for the code-agent — use red-team mode "
-                   "(it writes + runs the code and the panel grades it)")
 
     # Resolve the agent target (Shape 2): a BYO model+prompt, a built-in demo, or a BYO
     # HTTP endpoint — mutually exclusive.
@@ -380,6 +375,7 @@ async def list_attacks(run_id: str) -> list[dict[str, object]]:
             "round": a.round_index,
             "tactic": a.tactic,
             "white_box": a.white_box,
+            "created_at": a.created_at.isoformat() if a.created_at is not None else None,
             "rationale": a.rationale,
             "input": payload.get("input") if payload.get("input") is not None
                      else json.dumps(payload),

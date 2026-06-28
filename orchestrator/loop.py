@@ -373,10 +373,14 @@ async def run_coevolution(
         red = container.red_for(target_kind)
         oracles = container.oracles_for(target_kind)
         blue = container.blue_for(target_kind)
-        factory = container.agent_target_factory
+        # Per-kind factory (cr-d3, cr-ui5): agent -> AgentTarget, code_agent -> CodeAgentTarget.
+        # The AGENT kind's registered factory delegates to ``agent_target_factory`` so its
+        # field stays authoritative (and test overrides keep working).
+        factory = container.target_factory_for(target_kind)
         if blue is None or factory is None or not isinstance(blue, ConfigurableBlue):
             raise RuntimeError(
-                "co-evolution requires an agent blue (ConfigurableBlue) + agent target factory")
+                "co-evolution requires a ConfigurableBlue + a config->target factory for "
+                f"target kind {target_kind!r}")
 
         if isinstance(red, SchemeAware):
             red.note_scheme([str(o.kind) for o in oracles])
