@@ -49,8 +49,9 @@ async def sr_11_7_markdown(session: AsyncSession, run_id: str) -> str:
     trust_line = (
         "Not yet measured" if trust["trust_score"] is None
         else f"**{trust['trust_score']}/100** (band {trust['band']}) — "
-             f"{trust['silent_failures']} silent failure(s) over {trust['n_attacks']} "
-             f"{str(trust['basis']).replace('_', '-')} attacks")
+             f"{trust['failures']} failure(s) over {trust['n_attacks']} "
+             f"{str(trust['basis']).replace('_', '-')} attacks "
+             f"({trust['caught_failures']} caught, {trust['silent_failures']} silent)")
 
     coevo = await coevolution_series(session, run_id)
     coevo_section = ""
