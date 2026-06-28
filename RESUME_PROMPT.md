@@ -82,14 +82,21 @@ fuzz/consistency, llm_judge. `POST /runs` modes: `redteam` | `coevolution`. **Tr
   triggers if `CRUCIBLE_HALT_RECALL` is raised >0.7 (live runs at 0.0).
 
 ## WHERE I AM RIGHT NOW (pick up here)
-- Julian's "run a real co-evolution session for the seed" task is DONE — real co-evolution data is
-  in local Postgres (22 runs, 445 attacks/verdicts, 576 llm_calls, 5 coevolution_rounds).
-- **Open offer awaiting Julian's go-ahead:** the last co-evolution run used llama-3.1-8b, which is
-  noisy / ignores its prompt, so the ASR curve went flat→UP (the defender couldn't harden it). For
-  a COMPELLING demo seed (ASR visibly DROPS), run co-evolution against a real-LLM agent that (a)
-  starts leaky and (b) follows its prompt — e.g. a gpt-4o-mini/Claude agent with a deliberately weak
-  initial system prompt, so the blue's guardrails stick. ~$0.50, a few minutes. If Julian says go,
-  run it and report the curve.
+- Demo-seed task RESOLVED (2026-06-27). Ran two NEW co-evolution runs vs a deliberately weak
+  Claude-sonnet-4.6 support-bot (BYO model+prompt; payload at `data/demo_seed_run.json`):
+  - `run_a5b4f61d3558` (4 attacks/round): ASR **1.00→0.75→0.25→0.75** — best honest seed; net 4×
+    drop with a real attacker-recovery bounce. trust 25/F, 9 silent failures. **USE THIS for the
+    co-evolution beat.**
+  - `run_4f8427530235` (8 attacks/round, refined): ASR **flat 0.125** all 4 rounds. CONCLUSION: a
+    real safety-trained model's round-0 leak rate is ~12% and noisy — a clean monotonic "100→0"
+    curve would be small-sample cherry-picking. DO NOT chase a prettier curve; the noise is inherent.
+- Demo strategy decided + written: **`docs/DEMO_RUNSHEET.md`** (timed 10-min script, all real IDs).
+  Lead with the reliable wow, not the curve: verdict `vdt_c849693cac6f` (run `run_998e38597826`) —
+  a jailbroken support-bot leaks another customer's PII + a $4000 refund, **panel catches it 4/5**.
+  SR 11-7 PDF verified generating. Demo from the VPS, not a fresh Render deploy.
+- Budget after these runs: ~$5.5 of $15 spent (~$9.5 left). All DB writes are real, no fakes.
+- Open (Julian's call): (a) commit/push `docs/DEMO_RUNSHEET.md` + RESUME edits (not done — push needs
+  his ok); (b) prep `pg_dump` so Render is a real fallback to the VPS.
 
 ## HONEST RESIDUALS / what's left
 1. A full **manual QA pass** (it's the only thing finding real bugs — most recently the trust score
