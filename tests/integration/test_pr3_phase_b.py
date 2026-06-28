@@ -88,3 +88,46 @@ def test_b3_api_serves_oracle_protocols(client: TestClient) -> None:
         "held_out", "metamorphic", "differential", "property_fuzz", "llm_judge"
     ]
     assert all(r["description"] for r in rows)
+
+
+# ----------------------------- B2 -----------------------------
+
+from collections.abc import Mapping  # noqa: E402
+
+from modules.oracles.differential.code_agent import CodeDifferentialOracle  # noqa: E402
+from shared.sandbox.local import SandboxResult  # noqa: E402
+
+
+class _FakeRunner:
+    """A stand-in CodeRunner that returns a fixed stdout, so the B2 unit tests need no Docker."""
+
+    def __init__(self, stdout: str) -> None:
+        self._stdout = stdout
+
+    async def run(
+        self, main_script: str, *, files: Mapping[str, str] | None = None,
+        argv: list[str] | None = None,
+    ) -> SandboxResult:
+        return SandboxResult(
+            job_ref="job", stdout=self._stdout, stderr="", exit_code=0,
+            timed_out=False, network="none",
+        )
+
+
+def test_b2_code_differential_shows_second_implementation_and_agrees() -> None:
+    ref = ScriptedLLM(lambda _s, _p: "print(1 + 2)", model="ref-coder")
+    oracle = CodeDifferentialOracle(ref, _FakeRunner("3\n"))
+    output = {"response": "print(1 + 2)", "stdout": "3\n"}
+    vote = asyncio.run(oracle.vote(_SPEC, _ATTACK, output))
+    assert vote.oracle is OracleKind.differential
+    assert vote.fired is False  # reference stdout "3" matches the producer's "3"
+    assert "Second implementation" in vote.observation
+    assert "print(1 + 2)" in vote.observation  # the second source is visible on the vote
+
+
+def test_b2_code_differential_fires_on_divergence() -> None:
+    ref = ScriptedLLM(lambda _s, _p: "print(2 + 2)", model="ref-coder")
+    oracle = CodeDifferentialOracle(ref, _FakeRunner("4\n"))
+    output = {"response": "print(1 + 2)", "stdout": "3\n"}
+    vote = asyncio.run(oracle.vote(_SPEC, _ATTACK, output))
+    assert vote.fired is True  # reference "4" diverges from the producer's "3"

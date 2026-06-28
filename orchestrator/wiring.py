@@ -21,6 +21,7 @@ from modules.blue.agent_blue import LLMAgentBlue
 from modules.measure.sink import InMemoryMeasureSink
 from modules.oracles.aggregator import run_verdict
 from modules.oracles.differential.agent import AgentDifferentialOracle
+from modules.oracles.differential.code_agent import CodeDifferentialOracle
 from modules.oracles.differential.oracle import FraudDifferentialOracle
 from modules.oracles.held_out.agent import AgentHeldOutOracle, detect_violations
 from modules.oracles.held_out.oracle import FraudHeldOutOracle
@@ -173,6 +174,20 @@ def _code_agent_llm() -> LLMClient:
     return ScriptedLLM(
         lambda _system, _prompt: "print('hello from the sandboxed coder')",
         model="scripted-coder",
+    )
+
+
+def _reference_coder_llm() -> LLMClient:
+    """The code-agent differential oracle's REFERENCE coder (PR3 port B2): a DIFFERENT model
+    family (Opus) writes a second implementation of the same task. Real Opus on
+    CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free ScriptedLLM that emits an independent
+    correct snippet, so the second implementation is real and visible in mock mode."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_DIFFERENTIAL") == "1" and settings.openrouter_api_key:
+        return make_llm(settings.opus_model)
+    return ScriptedLLM(
+        lambda _system, _prompt: "print('hello from the sandboxed coder')",
+        model="scripted-reference-coder",
     )
 
 
@@ -436,8 +451,9 @@ def build_container() -> Container:
     # Shape-2 CODE-AGENT target (cr-ui5): writes Python and RUNS it in the sealed
     # docker --network none sandbox; the panel grades the code (destructive ops, secrets,
     # crashes). Red-team mode (the AI defender / co-evolution lands later).
+    code_sandbox = LocalDockerSandbox()
     code_target = CodeAgentTarget(
-        RecordingLLM(_code_agent_llm(), "targets"), CODE_AGENT_DEMO, LocalDockerSandbox())
+        RecordingLLM(_code_agent_llm(), "targets"), CODE_AGENT_DEMO, code_sandbox)
     container.register_target(code_target)
     sink.register_health_probe(f"targets/{CODE_AGENT_KIND}", code_target.health)
     container.register_red(CODE_AGENT_KIND, LLMAgentRed(RecordingLLM(_agent_red_llm(), "red")))
@@ -445,8 +461,12 @@ def build_container() -> Container:
         RecordingLLM(_judge_llm(), "oracles"),
         use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1")
     container.register_oracle(CODE_AGENT_KIND, code_held_out)
+    # B2: the code-agent differential is the second-implementation check (a different model
+    # family solves the same task; both run in the sandbox and their stdout is compared),
+    # the sibling of Julian's fraud differential.
     container.register_oracle(
-        CODE_AGENT_KIND, AgentDifferentialOracle(RecordingLLM(_differential_llm(), "oracles")))
+        CODE_AGENT_KIND,
+        CodeDifferentialOracle(RecordingLLM(_reference_coder_llm(), "oracles"), code_sandbox))
     container.register_oracle(CODE_AGENT_KIND, AgentMetamorphicOracle(code_target.submit))
     container.register_oracle(CODE_AGENT_KIND, AgentConsistencyOracle())
     container.register_oracle(CODE_AGENT_KIND, judge)

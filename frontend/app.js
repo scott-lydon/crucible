@@ -448,8 +448,12 @@
             votePill),
           h("div", { class: "muted", style: "font-size:12px;margin-bottom:4px" }, "Obligation: " + v.obligation),
           h("div", { style: "font-size:13px" }, v.reason),
-          v.observation ? h("div", { class: "muted mono", style: "font-size:11px;margin-top:6px" },
-            v.observation) : null);
+          // Multi-line observations (e.g. the differential oracle's second-implementation
+          // source) render as a code panel so the source is readable; short ones stay inline.
+          v.observation ? (/\n/.test(v.observation)
+            ? h("pre", { class: "prompt", style: "margin-top:6px;font-size:11px" }, v.observation)
+            : h("div", { class: "muted mono", style: "font-size:11px;margin-top:6px" }, v.observation))
+            : null);
       });
       // A1 + A3: replay the verdict from its persisted JSON. The byte-identical badge proves
       // the stored votes round-trip through serialize/deserialize unchanged; the two panels
