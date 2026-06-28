@@ -45,7 +45,7 @@ dependencies = [
 # the user's Claude skills dir, and `crucible website build` (website extra)
 # renders the static architecture site. One source of truth; three install paths.
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff", "mypy", "types-PyYAML"]
+dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff", "mypy", "types-PyYAML", "build"]
 slash-command = []   # SKILL.md is data only; no extra Python deps required
 website = []         # website is static HTML today; future render deps land here
 all = ["crucible[dev,slash-command,website]"]
