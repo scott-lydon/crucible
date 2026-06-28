@@ -125,6 +125,22 @@ def build_parser() -> argparse.ArgumentParser:
     ev = sub.add_parser("eval", help="run a component eval (dataset + metric + threshold)")
     ev.add_argument("component", help="component name, or 'all'")
 
+    # --- cowork: install the /crucible SKILL.md to ~/.claude/skills/crucible/ ---
+    # The [slash-command] install-time extra ships the SKILL.md as package data;
+    # this subcommand writes it to the user's Claude skills dir so Cowork picks
+    # it up. Refuses to clobber a hand-edited file without --force.
+    cowork = sub.add_parser("cowork", help="Cowork / Claude Code integration")
+    cowork_sub = cowork.add_subparsers(dest="cowork_command", required=True)
+    cowork_install = cowork_sub.add_parser(
+        "install-skill",
+        help="copy the bundled SKILL.md to ~/.claude/skills/crucible/SKILL.md",
+    )
+    cowork_install.add_argument(
+        "--dest", help="destination path (default ~/.claude/skills/crucible/SKILL.md)")
+    cowork_install.add_argument(
+        "--force", action="store_true",
+        help="overwrite an existing file (default refuses, to protect local edits)")
+
     # --- demo (10): anti-reward-hacking authenticity observer --------------
     demo = sub.add_parser("demo", help="demo-authenticity observer (certify a captured run)")
     demo_sub = demo.add_subparsers(dest="demo_command", required=True)
@@ -183,6 +199,11 @@ def main(argv: list[str] | None = None) -> int:
     if cmd == "demo":
         from crucible.demo_observer import cmd_demo_verify
         return cmd_demo_verify(args)
+    if cmd == "cowork":
+        if args.cowork_command == "install-skill":
+            from crucible.cowork import cmd_cowork_install_skill
+            return cmd_cowork_install_skill(args)
+        parser.error(f"unknown cowork subcommand {args.cowork_command!r}")
 
     parser.error(f"unknown command {cmd!r}")
     return 2

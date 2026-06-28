@@ -103,7 +103,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests", "modules"]
+# `crucible` is the CLI package; its tests (e.g. the SKILL.md vs CLI contract
+# test) run without the DB-backed conftest in tests/. Per-module tests under
+# `modules/<module>/tests/` continue to follow the colocated convention.
+testpaths = ["tests", "modules", "crucible"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
