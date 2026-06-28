@@ -73,11 +73,16 @@ def test_coevolution_runs_and_persists_rounds(client: TestClient) -> None:
         assert row["n_attacks"] == 2
         assert 0.0 <= row["asr"] <= 1.0
         assert 0.0 <= row["detection"] <= 1.0
-    # The agent config is versioned each round (base + blue revisions).
+    # The base config is always saved. A blue revision is saved ONLY when an attack actually
+    # succeeded that round — the blue no-ops (no version bump, no prompt bloat) when the fail
+    # set is empty, so versioning is conditional on a real failure, not automatic each round.
     configs = asyncio.run(_fetch(
         "SELECT source, version FROM agent_configs WHERE run_id = $1 ORDER BY version", run_id))
     assert any(c["source"] == "base" for c in configs)
-    assert any(c["source"] == "blue" for c in configs)
+    if any(row["asr"] > 0 for row in rounds):
+        assert any(c["source"] == "blue" for c in configs)
+    else:
+        assert all(c["source"] == "base" for c in configs)
 
 
 def test_coevolution_and_blue_endpoints(client: TestClient) -> None:
