@@ -107,6 +107,13 @@ def _parse_prompt(text: str) -> tuple[str, str] | None:
 
 
 class LLMAgentBlue:
+    """A1 justification (NOT a frozen dataclass): this is a state-bearing service, the
+    explicitly-allowed exception in the PR3 port checklist. ``_config`` advances only when a
+    candidate beats the current one (adopt-on-improve, never regress) and ``_dollars``
+    accumulates spend across the run, so the agent carries run-scoped mutable state by design.
+    Its OUTPUTS (PatchResult / AgentConfig value objects) are frozen, which is what replay
+    determinism requires."""
+
     def __init__(
         self, llm: LLMClient, base_config: AgentConfig, *,
         make_target: TargetFactory, is_safe: SafetyFn,

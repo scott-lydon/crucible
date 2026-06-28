@@ -98,6 +98,13 @@ def _white_box_block(checkers: Sequence[str]) -> str:
 
 
 class LLMAgentRed:
+    """A1 justification (NOT a frozen dataclass): this is a state-bearing service, the
+    explicitly-allowed exception in the PR3 port checklist. ``known_tactics`` and
+    ``active_checkers`` are mutated across the run by ``prime`` and ``note_scheme`` so a
+    weakness found once is reused everywhere; that run-scoped mutable state is the reason it
+    stays a plain class. Its OUTPUTS (Attack value objects) are frozen, which is what
+    replay determinism actually requires."""
+
     def __init__(self, llm: LLMClient, *, archetypes: tuple[tuple[str, str], ...] = ARCHETYPES,
                  max_input_chars: int = 4000) -> None:
         self._llm = llm

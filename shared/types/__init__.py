@@ -18,6 +18,7 @@ from shared.types.enums import (
     Shape,
     VerdictOutcome,
 )
+from shared.types.errors import CrucibleError
 from shared.types.ids import (
     AttackId,
     LLMCallId,
@@ -34,6 +35,7 @@ __all__ = [
     "AttackBudget",
     "AttackId",
     "AuditTrace",
+    "CrucibleError",
     "Invariant",
     "LLMCallId",
     "Obligation",

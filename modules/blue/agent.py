@@ -15,6 +15,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
@@ -33,9 +34,14 @@ THRESHOLD = 0.5
 _UPWEIGHT = 50
 
 
+@dataclass(frozen=True, slots=True)
 class FraudBlueAgent:
-    def __init__(self, base_version: int = 1) -> None:
-        self._base = base_version
+    """A1 frozen value object: the only field is the base model version it hardens from;
+    it never mutates itself (each ``harden`` writes a NEW versioned artifact and returns a
+    fresh PatchResult), so the agent is safe to share and its outputs replay deterministically
+    (PR3 port checklist A1)."""
+
+    base_version: int = 1
 
     def _booster(self, version: int) -> lgb.Booster:
         return lgb.Booster(model_file=str(ARTIFACTS / f"fraud-v{version}.lgb"))
@@ -79,8 +85,8 @@ class FraudBlueAgent:
             {k: float(v) for k, v in splits.x_eval.loc[i].to_dict().items()}
             for i in splits.y_eval[splits.y_eval == 1].index
         ]
-        before = self._recall(self._booster(self._base), features, validation)
-        new_version = self._base + 1
+        before = self._recall(self._booster(self.base_version), features, validation)
+        new_version = self.base_version + 1
         self._retrain(features, adv, new_version)
         after = self._recall(self._booster(new_version), features, validation)
 

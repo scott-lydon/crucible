@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 from shared.llm.client import LLMClient
@@ -66,12 +67,18 @@ def _obligations_block(spec: SealedSpec) -> str:
     return "\n".join(f"- [{o.obligation_id}] {o.description}" for o in spec.obligations)
 
 
+@dataclass(frozen=True, slots=True)
 class LLMJudgeOracle:
+    """A1 frozen value object: holds only its injected LLM client and carries no mutable
+    state across votes, so a verdict that includes the judge's vote replays byte-identical
+    (PR3 port checklist A1; the round-trip is exercised by the aggregator's serialization)."""
+
+    _llm: LLMClient
+    # Instance fields with fixed defaults (not ClassVar): the Oracle protocol declares
+    # ``kind`` and ``weight`` as instance variables, and a frozen dataclass field keeps them
+    # immutable while still satisfying that protocol.
     kind: OracleKind = OracleKind.llm_judge
     weight: float = 0.5
-
-    def __init__(self, llm: LLMClient) -> None:
-        self._llm = llm
 
     def _cited_obligation(self, spec: SealedSpec, obligation_id: str) -> str:
         for obligation in spec.obligations:

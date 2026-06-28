@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -25,6 +25,7 @@ from modules.measure.halt import halt_state
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
+from modules.oracles.aggregator import vote_as_json, votes_from_json
 from modules.red.catalog import build_catalog
 from modules.targets.agent import (
     HttpEndpointConfig,
@@ -32,6 +33,7 @@ from modules.targets.agent import (
     validate_agent_config,
     validate_http_endpoint,
 )
+from orchestrator.errors import NoTargetRegisteredError
 from orchestrator.loop import create_run, run_coevolution, run_loop
 from orchestrator.wiring import get_container
 from shared.config import load_settings
@@ -51,6 +53,7 @@ from shared.telemetry.log import configure_logging
 from shared.types.agent import AgentConfig
 from shared.types.core import Attack, AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
+from shared.types.errors import CrucibleError
 from shared.types.ids import AttackId, RunId
 from shared.types.sealed_spec import HumanSpec, SealedSpec
 
@@ -65,6 +68,14 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title="Crucible", version="0.1.0", lifespan=_lifespan)
+
+
+@app.exception_handler(CrucibleError)
+async def _crucible_error_handler(_request: Any, exc: CrucibleError) -> JSONResponse:
+    """A typed wiring error (no target / no oracle registered) is the caller's mistake,
+    not a server crash: surface its self-describing message as a 422 so the operator sees
+    "Registered target types: ..." instead of "Internal server error" (PR3 port A2)."""
+    return JSONResponse(status_code=422, content={"detail": str(exc)})
 
 
 class HumanSpecModel(BaseModel):
@@ -128,6 +139,15 @@ class RunAccepted(BaseModel):
 @app.post("/runs", response_model=RunAccepted, status_code=201)
 async def post_runs(req: RunRequest) -> RunAccepted:
     container = get_container()
+    # Fail loud at the boundary (PR3 port A2): an unregistered target_kind is rejected here
+    # with the registered-types enumeration, before a run row is ever created, so the
+    # operator sees "Registered target types: ..." rather than a mid-loop crash. The BYO
+    # HTTP-endpoint path resolves through a factory, not a registered target, so skip it.
+    if req.http_endpoint is None:
+        try:
+            container.get_target(req.target_kind)
+        except NoTargetRegisteredError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
     # Halt-certification gate (spec US-13): refuse new runs when white-box recall is
     # below the red line.
     async with session_scope() as session:
@@ -431,6 +451,12 @@ async def replay_attack(attack_id: str) -> dict[str, object]:
         verdict is not None
         and abs(replayed.tally - verdict.tally) < 1e-9
         and str(replayed.outcome) == verdict.outcome)
+    # Serialization round trip (PR3 port A3): the stored votes deserialize and re-serialize
+    # byte-identical, the audit-row replayer's proof that a persisted verdict cannot have
+    # drifted from the shape the aggregator wrote.
+    votes_round_trip = verdict is not None and [
+        vote_as_json(v) for v in votes_from_json(verdict.votes)
+    ] == list(verdict.votes)
     return {
         "attackId": attack_id, "runId": atk.run_id, "seed": atk.seed,
         "stored": None if verdict is None else {
@@ -440,6 +466,7 @@ async def replay_attack(attack_id: str) -> dict[str, object]:
             "tally": replayed.tally, "outcome": str(replayed.outcome),
             "fired": [str(v.oracle) for v in replayed.votes if v.fired]},
         "identical": identical,
+        "votesRoundTrip": votes_round_trip,
     }
 
 

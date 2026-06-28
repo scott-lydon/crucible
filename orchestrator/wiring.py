@@ -50,6 +50,7 @@ from modules.targets.agent import (
 )
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
+from orchestrator.errors import NoOracleRegisteredError, NoTargetRegisteredError
 from orchestrator.interfaces import (
     BlueAgent,
     HealthProbe,
@@ -231,9 +232,9 @@ class Container:
 
     def get_target(self, kind: str) -> Target:
         if kind not in self.targets:
-            raise KeyError(
-                f"No target adapter registered for kind={kind!r}. "
-                f"Registered: {sorted(self.targets)}"
+            raise NoTargetRegisteredError(
+                f"No target adapter registered for target_kind={kind!r}. "
+                f"Registered target types: {sorted(self.targets)}"
             )
         return self.targets[kind]
 
@@ -242,6 +243,19 @@ class Container:
 
     def oracles_for(self, target_kind: str) -> list[Oracle]:
         return self.oracles.get(target_kind, [])
+
+    def get_oracles(self, target_kind: str) -> list[Oracle]:
+        """Like ``oracles_for`` but fails loud: raise if no oracle is wired for this kind,
+        naming the kinds that DO have oracles (PR #3 NoOracleRegisteredError, adapted to
+        main's oracles-per-target-kind shape). Use at a boundary where a missing oracle
+        must surface as a typed error, not a silently empty ensemble."""
+        oracles = self.oracles.get(target_kind)
+        if not oracles:
+            raise NoOracleRegisteredError(
+                f"No oracle registered for target_kind={target_kind!r}. "
+                f"Registered: {sorted(self.oracles)}"
+            )
+        return oracles
 
     def register_red(self, target_kind: str, agent: RedAgent) -> None:
         self.reds[target_kind] = agent

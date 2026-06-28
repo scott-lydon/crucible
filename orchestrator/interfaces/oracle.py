@@ -20,8 +20,16 @@ ResubmitFn = Callable[[Mapping[str, Any]], Awaitable[ProducerResult]]
 
 @runtime_checkable
 class Oracle(Protocol):
-    kind: OracleKind
-    weight: float   # 1.0 for the four independent oracles, 0.5 for the LLM judge
+    # Read-only: an oracle's identity (kind) and vote weight are constant for its lifetime.
+    # Declaring them as properties (not settable attributes) lets a frozen-dataclass oracle
+    # like LLMJudgeOracle satisfy the protocol while plain-class oracles still match
+    # (PR3 port A1: module value objects are frozen).
+    @property
+    def kind(self) -> OracleKind: ...
+
+    @property
+    def weight(self) -> float:  # 1.0 for the four independent oracles, 0.5 for the judge
+        ...
 
     async def vote(
         self, spec: SealedSpec, attack: Attack, output: Mapping[str, Any]

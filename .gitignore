@@ -28,3 +28,4 @@ Thumbs.db
 # Frontend (lands later)
 node_modules/
 dashboard/dist/
+.venv312/
