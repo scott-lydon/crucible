@@ -66,6 +66,11 @@ class OracleVote:
     reason: str           # one-paragraph reason (never swallowed — QA_ADVERSARY rule 3)
     seed: str
     dollars: float = 0.0
+    # False when the oracle could not run its check (e.g. the LLM judge answered in prose
+    # the parser could not read). An unavailable vote never fires and contributes nothing to
+    # the tally — the ensemble reports on the votes it HAS rather than guessing a missing one
+    # (PR3 port B1). Defaults True so every existing oracle is "available" without change.
+    available: bool = True
 
     def as_dict(self) -> dict[str, Any]:
         """JSON-serializable form for the verdict audit trace (persisted to JSONB)."""
@@ -78,6 +83,7 @@ class OracleVote:
             "reason": self.reason,
             "dollars": self.dollars,
             "seed": self.seed,
+            "available": self.available,
         }
 
 

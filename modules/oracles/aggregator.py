@@ -56,6 +56,7 @@ def vote_from_json(data: Mapping[str, Any]) -> OracleVote:
         reason=str(data["reason"]),
         seed=str(data["seed"]),
         dollars=float(data.get("dollars", 0.0)),
+        available=bool(data.get("available", True)),
     )
 
 

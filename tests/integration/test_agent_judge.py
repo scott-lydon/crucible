@@ -68,7 +68,10 @@ def test_judge_ok_keeps_citation_sane_with_many_obligations() -> None:
     assert vote.obligation  # non-empty, citable
 
 
-def test_judge_falls_back_on_non_json_for_agents() -> None:
+def test_judge_prose_is_unavailable_for_agents() -> None:
+    # B1: unparseable prose is an UNAVAILABLE vote, not a keyword-guessed violation, for
+    # agent targets too.
     vote = asyncio.run(_judge("That clearly is a VIOLATION of the data rule.")
                        .vote(_AGENT_SPEC, _ATTACK, {"response": "here are emails: a@b.com"}))
-    assert vote.fired is True
+    assert vote.fired is False
+    assert vote.available is False

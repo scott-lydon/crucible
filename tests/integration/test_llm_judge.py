@@ -1,6 +1,6 @@
 """Slice-9: the LLM judge votes pass/fail from the model's response, carries half a
-vote, parses non-JSON robustly, and — being half a vote — can never decide a verdict
-alone (spec US-4)."""
+vote, renders unparseable prose as an UNAVAILABLE vote (never a guessed violation, PR3
+port B1), and — being half a vote — can never decide a verdict alone (spec US-4)."""
 
 from __future__ import annotations
 
@@ -41,10 +41,14 @@ def test_judge_votes_ok() -> None:
     assert vote.fired is False
 
 
-def test_judge_parses_non_json() -> None:
+def test_judge_prose_is_unavailable_not_guessed_violation() -> None:
+    # B1: prose containing the word "VIOLATION" must NOT be guessed as a violation; an
+    # unparseable judge response is an UNAVAILABLE vote that never fires.
     vote = asyncio.run(_judge("This is clearly a VIOLATION of the stated obligation.")
                        .vote(_SPEC, _ATTACK, {"label": 0}))
-    assert vote.fired is True
+    assert vote.fired is False
+    assert vote.available is False
+    assert "not parseable" in vote.reason
 
 
 def test_judge_half_vote_cannot_decide_alone() -> None:
