@@ -13,14 +13,48 @@ agents until cr-c2 lands)."""
 
 from __future__ import annotations
 
+import datetime as dt
+import json
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from shared.persistence.models import AttackRow, Run, VerdictRow
+
+# Append-only discovery log (PR3 port D3): one persisted JSONL row per evasion (an attack
+# that slipped the verification panel), so the catalog's discoveries survive a restart and
+# are downloadable as an audit trail. File-backed so it persists across the API process
+# restarting; the catalog reuse-count aggregate is computed from the persisted attacks +
+# verdicts (also restart-stable).
+DISCOVERY_LOG = Path(__file__).resolve().parents[2] / "artifacts" / "discovery-log.jsonl"
+
+
+def append_discovery(
+    *, run_id: str, attack_id: str, tactic: str, target_type: str, white_box: bool
+) -> None:
+    """Append one evasion to the discovery log (append-only; never rewrites prior rows)."""
+    DISCOVERY_LOG.parent.mkdir(parents=True, exist_ok=True)
+    row = {
+        "run_id": run_id, "attack_id": attack_id, "tactic": tactic,
+        "target_type": target_type, "white_box": white_box,
+        "discovered_at": dt.datetime.now(dt.UTC).isoformat(),
+    }
+    with DISCOVERY_LOG.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row) + "\n")
+
+
+def read_discovery_log(run_id: str | None = None) -> list[dict[str, Any]]:
+    """Every logged evasion (optionally filtered to one run), in append order."""
+    if not DISCOVERY_LOG.exists():
+        return []
+    rows = [
+        json.loads(line) for line in DISCOVERY_LOG.read_text("utf-8").splitlines() if line.strip()
+    ]
+    return [r for r in rows if run_id is None or r.get("run_id") == run_id]
 
 
 def _held_out_fired(votes: Sequence[Mapping[str, Any]]) -> bool:

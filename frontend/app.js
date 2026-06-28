@@ -556,6 +556,11 @@
             h("td", {}, r.confirmed_hacks), h("td", {}, r.white_box ? pill("yes", "amber") : "—")));
         });
         tableCard = card("Strategy catalog — tactics the attacker named, across all runs",
+          h("div", { style: "margin:-6px 0 10px" },
+            h("a", { id: "discovery-log-link", href: "/catalog/discovery-log",
+              download: "discovery-log.jsonl" }, "Discovery log"),
+            h("span", { class: "muted", style: "font-size:12px;margin-left:8px" },
+              "(append-only JSONL, one row per evasion — survives restart)")),
           h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "tactic"), h("th", {}, "target"),
             h("th", {}, "uses"), h("th", {}, "runs"), h("th", {}, "detection"),
             h("th", {}, "confirmed hacks"), h("th", {}, "white-box"))), body));

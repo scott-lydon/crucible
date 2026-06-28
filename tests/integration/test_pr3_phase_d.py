@@ -6,6 +6,7 @@ D1 the run drives two distinct red passes (black-box then white-box); verdicts c
 
 from __future__ import annotations
 
+import json
 import time
 
 from fastapi.testclient import TestClient
@@ -61,3 +62,25 @@ def test_d2_compose_brief_is_one_line_per_oracle() -> None:
     lines = [ln for ln in brief.splitlines() if ln.startswith("- ")]
     assert len(lines) == 2
     assert "LLM judge" not in brief  # only the wired oracles appear
+
+
+# ----------------------------- D3 -----------------------------
+
+def test_d3_discovery_log_records_evasions(client: TestClient) -> None:
+    resp = client.post("/runs", json={
+        "target_kind": "fraud", "shape": "shape1_ml",
+        "spec_yaml": FRAUD_SPEC_YAML, "budget_rounds": 3, "budget_dollars": 1.0,
+    })
+    run_id = resp.json()["runId"]
+    assert _poll_complete(client, run_id) == "complete"
+
+    body = client.get("/catalog/discovery-log", params={"run_id": run_id}).text
+    rows = [json.loads(line) for line in body.splitlines() if line.strip()]
+    assert rows, "expected at least one logged evasion"
+    for r in rows:
+        assert r["run_id"] == run_id
+        assert r["tactic"] and r["target_type"] == "fraud"
+
+
+def test_d3_reload_backend_route(client: TestClient) -> None:
+    assert client.post("/admin/reload-backend").json() == {"reloaded": True}

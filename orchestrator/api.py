@@ -29,7 +29,7 @@ from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
 from modules.oracles.aggregator import vote_as_json, votes_from_json
 from modules.oracles.protocol import oracle_protocols
-from modules.red.catalog import build_catalog
+from modules.red.catalog import build_catalog, read_discovery_log
 from modules.red.white_box import compose_white_box_brief
 from modules.targets.agent import (
     HttpEndpointConfig,
@@ -39,7 +39,7 @@ from modules.targets.agent import (
 )
 from orchestrator.errors import NoTargetRegisteredError
 from orchestrator.loop import create_run, run_coevolution, run_loop
-from orchestrator.wiring import get_container
+from orchestrator.wiring import build_container, get_container, set_container
 from shared.config import load_settings
 from shared.persistence.db import session_scope
 from shared.persistence.models import (
@@ -673,6 +673,28 @@ async def get_catalog(
     cr-b2). Target-agnostic; optionally filtered by run or target kind."""
     async with session_scope() as session:
         return await build_catalog(session, target_kind=target_kind, run_id=run_id)
+
+
+@app.post("/admin/reload-backend")
+async def reload_backend() -> dict[str, object]:
+    """Debug route (PR3 port D3): rebuild the in-memory container, the same fresh state a
+    server restart produces. The strategy-catalog reuse counts (from persisted attacks +
+    verdicts) and the discovery log (file-backed) are unaffected, proving they survive a
+    restart rather than living only in process memory."""
+    set_container(build_container())
+    return {"reloaded": True}
+
+
+@app.get("/catalog/discovery-log")
+async def get_discovery_log(run_id: str | None = None) -> Response:
+    """The append-only discovery log as a JSONL download (PR3 port D3): one row per evasion
+    (an attack that slipped the panel), persisted so it survives a restart."""
+    rows = read_discovery_log(run_id)
+    body = "\n".join(json.dumps(r) for r in rows)
+    return Response(
+        content=body, media_type="application/x-ndjson",
+        headers={"X-Row-Count": str(len(rows)),
+                 "Content-Disposition": "attachment; filename=discovery-log.jsonl"})
 
 
 @app.get("/reports/{run_id}")

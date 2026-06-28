@@ -15,6 +15,7 @@ from sqlalchemy import select
 
 from modules.measure.budget import global_spend, run_spend, should_halt
 from modules.oracles.protocol import oracle_protocols
+from modules.red.catalog import append_discovery
 from modules.red.white_box import compose_white_box_brief
 from orchestrator.interfaces import (
     ConfigurableBlue,
@@ -251,6 +252,11 @@ async def _drive_attempt(
             "white_box": white_box, "outcome": str(verdict.outcome), "tally": verdict.tally,
             "threshold": verdict.threshold, "summary": verdict.audit.summary,
         })
+        # D3: an attack that slipped the panel is an evasion — append it to the discovery log.
+        if not verdict.caught:
+            append_discovery(
+                run_id=str(run_id), attack_id=str(attack.attack_id), tactic=attack.tactic,
+                target_type=str(getattr(target, "kind", "")), white_box=white_box)
     return verdict
 
 
