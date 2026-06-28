@@ -231,6 +231,12 @@
             output_field: outField.value.trim() || "output" };
         } else if (t !== "code-agent") { body.demo_agent = t; }
       }
+      // Debug override (PR3 port A2): "#/launch?target=<kind>" forces the submitted
+      // target_kind, so an operator can drive the launcher into the unregistered-kind
+      // error state the happy-path select cannot reach. The typed boundary error then
+      // renders inline as "Launch failed: ... Registered target types: ...".
+      var ov = (location.href.match(/[?&]target=([^&#]+)/) || [])[1];
+      if (ov) body.target_kind = decodeURIComponent(ov);
       startBtn.disabled = true; status.textContent = "Launching…";
       jpost("/runs", body).then(function (j) {
         LS.set("cru.run", j.runId); go("#/run/" + j.runId);
@@ -589,7 +595,9 @@
   function route() {
     closeES();
     var parts = (location.hash || "#/launch").replace(/^#\/?/, "").split("/");
-    var name = parts[0] || "launch", arg = parts[1];
+    // Tolerate a query suffix on the route (e.g. "#/launch?target=nope"), the debug
+    // override the launcher reads to inject an unregistered target kind (PR3 port A2).
+    var name = (parts[0] || "launch").split("?")[0], arg = (parts[1] || "").split("?")[0];
     try {
       if (name === "launch") return viewLaunch();
       if (name === "runs") return viewRuns();

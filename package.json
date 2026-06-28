@@ -1,0 +1,13 @@
+{
+  "name": "crucible-walkthroughs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Playwright interactive walkthroughs that drive the live Crucible GUI to prove each PR3-port goal.",
+  "scripts": {
+    "test": "playwright test",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
