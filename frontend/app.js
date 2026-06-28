@@ -549,12 +549,55 @@
                 t.n_attacks + " " + String(t.basis || "").replace("_", "-") + " attacks" : ""))),
           h("ul", { class: "muted", style: "font-size:12px;margin:14px 0 0;padding-left:18px;line-height:1.7" },
             (t.caveats || []).map(function (c) { return h("li", {}, c); })));
+        function mt(label, value, desc, na) {
+          return h("div", { class: "tile" },
+            h("div", { class: "label" }, label),
+            h("div", { class: "v", style: na ? "color:var(--mut)" : "" }, value),
+            h("div", { class: "muted", style: "font-size:11px;margin-top:7px;line-height:1.5" },
+              desc + (na ? " · n/a here — no failures in this run to measure." : "")));
+        }
+        // Plain-English "what this run found", and an explicit explanation of why the
+        // per-failure rate tiles read "—" on a clean run (the question every viewer asks).
+        var basis = String(t.basis || "").replace("_", "-");
+        var lines = [];
+        if (t.trust_score == null) {
+          lines.push("This run hasn't been measured yet.");
+        } else if (t.failures === 0) {
+          lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed none of " +
+            "them — it resisted every jailbreak the attacker tried. That's why the trust score is " +
+            t.trust_score + "/100 (" + t.band + ").");
+          lines.push("This is an absence of PROVEN failure, not a proof of safety — a harder or " +
+            "longer attack run may still find something.");
+          lines.push("The catch-rate, undetected-hack and recall tiles below read “—” on purpose: " +
+            "each is a ratio measured per failure, so with zero failures there's nothing to divide. " +
+            "Real LLM spend is the only absolute number, so it's the one that shows.");
+        } else {
+          lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed " +
+            t.failures + " (" + t.silent_failures + " slipped EVERY check — the dangerous silent " +
+            "failures). The panel caught " + t.caught_failures + " of the " + t.failures + ".");
+          lines.push("Trust = 1 − failures ÷ attacks = " + t.trust_score + "/100 (" + t.band +
+            "). Silent failures are surfaced separately because they're the highest-risk finding.");
+        }
+        var summary = card("What this run found",
+          lines.map(function (s) { return h("p", { style: "margin:0 0 10px;line-height:1.7" }, s); }),
+          h("div", { class: "muted", style: "font-size:12px" },
+            "What the agent is, the five oracles, and the models in use are explained on the ",
+            h("a", { href: "#/demo" }, "Demo guide"), "."));
         var tileEls = [
-          tile("White-box catch rate", pct(tiles.white_box_catch_rate)),
-          tile("Black-box catch rate", pct(tiles.black_box_catch_rate)),
-          tile("Undetected-hack rate", pct(tiles.undetected_hack_rate)),
-          tile("White-box recall", pct(run.white_box_recall)),
-          tile("Real LLM spend", "$" + (run.dollars_spent || 0).toFixed(4))
+          mt("White-box catch rate", pct(tiles.white_box_catch_rate),
+            "Of failures in the white-box pass (attacker is told the panel's scheme), the share the panel caught.",
+            tiles.white_box_catch_rate == null),
+          mt("Black-box catch rate", pct(tiles.black_box_catch_rate),
+            "Of failures in ordinary black-box attacks, the share the panel caught.",
+            tiles.black_box_catch_rate == null),
+          mt("Undetected-hack rate", pct(tiles.undetected_hack_rate),
+            "Of attacks that truly failed, the share that slipped EVERY check — the silent, dangerous ones.",
+            tiles.undetected_hack_rate == null),
+          mt("White-box recall", pct(run.white_box_recall),
+            "Of held-out-confirmed failures, the share the panel still caught when the attacker knew its scheme.",
+            run.white_box_recall == null),
+          mt("Real LLM spend", "$" + (run.dollars_spent || 0).toFixed(4),
+            "Total Anthropic spend for this run (attacker + agent + panel + defender).", false)
         ];
         var links = card("Artifacts",
           h("div", { style: "display:flex;gap:10px;flex-wrap:wrap" },
@@ -563,7 +606,13 @@
             h("a", { class: "btn ghost", href: "#/run/" + rid }, "Attack timeline"),
             h("a", { class: "btn ghost", href: "#/coevolution/" + rid }, "Co-evolution"),
             h("a", { class: "btn ghost", href: "#/catalog" }, "Strategy catalog")));
-        setView(trust, card("Honest metrics", h("div", { class: "tiles" }, tileEls)), links);
+        setView(trust, summary,
+          card("Honest metrics",
+            h("p", { class: "muted", style: "margin:-4px 0 14px;font-size:12.5px;line-height:1.6" },
+              "These are per-failure rates — each only has a value once the agent actually fails an " +
+              "attack. “—” means there were no failures to measure, not an error."),
+            h("div", { class: "tiles" }, tileEls)),
+          links);
       }).catch(err);
     });
   }
