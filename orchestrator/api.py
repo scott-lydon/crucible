@@ -369,10 +369,16 @@ async def list_verdicts(run_id: str) -> list[dict[str, object]]:
         rows = (
             await session.execute(select(VerdictRow).where(VerdictRow.run_id == run_id))
         ).scalars().all()
+        # Which pass each verdict belongs to (D1): the attack carries white_box.
+        attacks = (
+            await session.execute(select(AttackRow).where(AttackRow.run_id == run_id))
+        ).scalars().all()
+    white_box_by_attack = {a.id: a.white_box for a in attacks}
     return [
         {
             "verdictId": v.id, "attackId": v.attack_id, "outcome": v.outcome,
             "tally": v.tally, "threshold": v.threshold,
+            "white_box": white_box_by_attack.get(v.attack_id, False),
             "fired": [vote["oracle"] for vote in v.votes if vote.get("fired")],
         }
         for v in rows

@@ -223,11 +223,12 @@ async def _persist_llm_calls(
             )
 
 
-async def _run_round(
+async def _drive_attempt(
     container: Container, spec: SealedSpec, target: Target, red: RedAgent,
     oracles: list[Oracle], run_id: RunId, round_index: int, white_box: bool,
     last_verdict: Verdict | None,
 ) -> Verdict | None:
+    """One red attempt: propose -> submit -> verify -> persist -> stream (PR3 port D1)."""
     sink = container.sink
     attack = await red.propose(spec, run_id, round_index, last_verdict, white_box=white_box)
     result = await target.submit(attack.payload)
@@ -249,6 +250,33 @@ async def _run_round(
             "threshold": verdict.threshold, "summary": verdict.audit.summary,
         })
     return verdict
+
+
+async def _red_pass(
+    container: Container, spec: SealedSpec, target: Target, red: RedAgent,
+    oracles: list[Oracle], run_id: RunId, *, white_box: bool, start_round: int,
+    n_rounds: int, pass_index: int, pass_count: int, last_verdict: Verdict | None,
+    budget_dollars: float,
+) -> tuple[Verdict | None, int, int]:
+    """Drive one full red pass (PR3 port D1): black-box first, then the white-box self-test.
+    Emits a ``pass_started`` marker so the live-run view shows two clearly labelled passes,
+    each with its own progress and verdict count. Returns (last_verdict, caught, wrong) over
+    the held-out fires in this pass (used for the white-box recall)."""
+    label = "White-box pass" if white_box else "Black-box pass"
+    await container.sink.emit(run_id, "pass_started", {
+        "label": label, "white_box": white_box, "index": pass_index, "of": pass_count,
+        "rounds": n_rounds})
+    caught = wrong = 0
+    for k in range(n_rounds):
+        last_verdict = await _drive_attempt(
+            container, spec, target, red, oracles, run_id, start_round + k, white_box,
+            last_verdict)
+        if last_verdict is not None and _held_out_fired(last_verdict):
+            wrong += 1
+            if last_verdict.caught:
+                caught += 1
+        await _enforce_budget(run_id, budget_dollars)
+    return last_verdict, caught, wrong
 
 
 async def _set_white_box_recall(run_id: RunId, recall: float) -> None:
@@ -290,25 +318,19 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         # Bind a task-local sink so every LLM call the round makes is recorded (cr-b4).
         call_sink: list[LLMCallRecord] = []
         with record_into(call_sink):
-            last_verdict: Verdict | None = None
-            for i in range(budget_rounds):
-                last_verdict = await _run_round(
-                    container, spec, target, red, oracles, run_id, i, False, last_verdict)
-                await _enforce_budget(run_id, budget_dollars)
+            # Pass 1 of 2: black-box (the attacker does not know the scheme).
+            last_verdict, _, _ = await _red_pass(
+                container, spec, target, red, oracles, run_id, white_box=False,
+                start_round=0, n_rounds=budget_rounds, pass_index=1, pass_count=2,
+                last_verdict=None, budget_dollars=budget_dollars)
 
-            # White-box self-test pass: same red agent, the oracles' scheme revealed.
+            # Pass 2 of 2: white-box self-test, same red agent, the oracles' scheme revealed.
+            # It begins only after the black-box pass completes (no interleaving).
             await sink.emit(run_id, "white_box_started", {"run_id": str(run_id)})
-            wb_caught = wb_wrong = 0
-            for j in range(budget_rounds):
-                verdict = await _run_round(
-                    container, spec, target, red, oracles, run_id, budget_rounds + j, True,
-                    last_verdict)
-                last_verdict = verdict
-                if verdict is not None and _held_out_fired(verdict):
-                    wb_wrong += 1
-                    if verdict.caught:
-                        wb_caught += 1
-                await _enforce_budget(run_id, budget_dollars)
+            last_verdict, wb_caught, wb_wrong = await _red_pass(
+                container, spec, target, red, oracles, run_id, white_box=True,
+                start_round=budget_rounds, n_rounds=budget_rounds, pass_index=2, pass_count=2,
+                last_verdict=last_verdict, budget_dollars=budget_dollars)
             if wb_wrong:
                 await _set_white_box_recall(run_id, wb_caught / wb_wrong)
 

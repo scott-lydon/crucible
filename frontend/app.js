@@ -280,43 +280,74 @@
         h("a", { class: "btn", href: "#/dashboard/" + id }, "Trust score & dashboard →"),
         h("a", { class: "btn ghost", href: "#/coevolution/" + id }, "Co-evolution"),
         h("a", { class: "btn ghost", href: "#/launch" }, "New run"));
-      var tbody = h("tbody");
-      var table = h("table", {}, h("thead", {}, h("tr", {},
-        h("th", {}, "#"), h("th", {}, "pass"), h("th", {}, "tactic"),
-        h("th", {}, "attacker input"), h("th", {}, "agent output"), h("th", {}, "verdict"))), tbody);
       var coevoBox = h("div", {});
-      setView(head, actions, coevoBox, card("Attacks & verdicts", table,
-        tbody.children.length ? null : h("div", { class: "empty", id: "run-empty" },
-          run.status === "running" || run.status === "pending"
-            ? h("span", {}, h("span", { class: "spinner" }), " waiting for the first attack…")
-            : "no streamed events (server may have restarted) — see the dashboard")));
+      var passesBox = h("div", {});
+      setView(head, actions, coevoBox, passesBox, h("div", { class: "empty", id: "run-empty" },
+        run.status === "running" || run.status === "pending"
+          ? h("span", {}, h("span", { class: "spinner" }), " waiting for the first attack…")
+          : "no streamed events (server may have restarted) — see the dashboard"));
 
       var rows = {}, graded = 0, flagged = 0;
       function setCounters() { counters.textContent = "graded " + graded + " · flagged by panel " + flagged; }
-      function rowFor(aid) {
-        if (rows[aid]) return rows[aid];
+
+      // D1: one labelled section per red pass (black-box, then white-box), each with its own
+      // verdict count and progress bar, so the operator sees two clearly separated passes.
+      var passes = {};
+      function passFor(whiteBox, meta) {
+        var key = String(!!whiteBox);
+        if (passes[key]) return passes[key];
         var e = document.getElementById("run-empty"); if (e) e.remove();
-        var tds = { n: h("td", {}), wb: h("td", {}), tac: h("td", {}),
-          inp: h("td", { class: "muted" }), out: h("td", { class: "muted" }), ver: h("td", {}) };
-        var tr = h("tr", {}, tds.n, tds.wb, tds.tac, tds.inp, tds.out, tds.ver);
-        tbody.append(tr); rows[aid] = tds; return tds;
+        var label = whiteBox ? "White-box pass" : "Black-box pass";
+        var idx = (meta && meta.index) || (whiteBox ? 2 : 1), of = (meta && meta.of) || 2;
+        var cnt = h("span", { class: "muted mono", style: "font-size:12px" }, "graded 0 · flagged 0");
+        var fill = h("i", { style: "width:0%;background:" + (whiteBox ? "#D9A441" : "#4FAAC0") });
+        var tb = h("tbody");
+        var sec = card(null,
+          h("div", { class: "card-h" },
+            h("div", {}, h("b", { class: "hi" }, label), " ",
+              h("span", { class: "muted mono", style: "font-size:11px" }, "Pass: " + idx + " of " + of)),
+            h("div", { style: "display:flex;gap:10px;align-items:center" },
+              h("span", { class: "bar", style: "width:120px;height:8px" }, fill), cnt)),
+          h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "#"), h("th", {}, "tactic"),
+            h("th", {}, "attacker input"), h("th", {}, "agent output"), h("th", {}, "verdict"))), tb));
+        sec.classList.add("pass-section");
+        sec.setAttribute("data-pass", whiteBox ? "white-box" : "black-box");
+        passesBox.append(sec);
+        var p = { tbody: tb, graded: 0, flagged: 0, rounds: (meta && meta.rounds) || 0,
+          count: cnt, fill: fill };
+        passes[key] = p; return p;
+      }
+      function rowFor(aid, whiteBox) {
+        if (rows[aid]) return rows[aid];
+        var p = passFor(whiteBox);
+        var tds = { n: h("td", {}), tac: h("td", {}), inp: h("td", { class: "muted" }),
+          out: h("td", { class: "muted" }), ver: h("td", {}), _pass: p };
+        p.tbody.append(h("tr", {}, tds.n, tds.tac, tds.inp, tds.out, tds.ver));
+        rows[aid] = tds; return tds;
+      }
+      function tallyVerdict(p, caught) {
+        graded++; if (caught) flagged++; setCounters();
+        p.graded++; if (caught) p.flagged++;
+        p.count.textContent = "graded " + p.graded + " · flagged " + p.flagged;
+        if (p.rounds) p.fill.style.width = Math.min(100, (p.graded / p.rounds) * 100) + "%";
       }
       if (run.status === "pending" || run.status === "running") {
         var es = new EventSource("/runs/" + id + "/stream"); activeES = es;
+        es.addEventListener("pass_started", function (ev) {
+          var d = JSON.parse(ev.data); passFor(d.white_box, d); });
         es.addEventListener("attack", function (ev) {
-          var d = JSON.parse(ev.data), r = rowFor(d.attack_id);
+          var d = JSON.parse(ev.data), r = rowFor(d.attack_id, d.white_box);
           r.n.textContent = (d.round != null ? d.round : "");
-          r.wb.append(d.white_box ? pill("white-box", "amber") : pill("black-box", "grey"));
           r.tac.textContent = d.tactic || "";
           r.inp.textContent = shorten((d.payload || {}).input || JSON.stringify(d.payload || {}), 90);
         });
         es.addEventListener("producer_output", function (ev) {
-          var d = JSON.parse(ev.data), r = rowFor(d.attack_id);
+          var d = JSON.parse(ev.data), r = rowFor(d.attack_id, false);
           r.out.textContent = shorten((d.output || {}).response || JSON.stringify(d.output || {}), 90);
         });
         es.addEventListener("verdict", function (ev) {
-          var d = JSON.parse(ev.data), r = rowFor(d.attack_id);
-          graded++; if (d.outcome === "caught") flagged++; setCounters();
+          var d = JSON.parse(ev.data), r = rowFor(d.attack_id, d.white_box);
+          tallyVerdict(r._pass, d.outcome === "caught");
           r.ver.innerHTML = "";
           r.ver.append(h("a", { href: "#/verdict/" + d.verdict_id },
             pill(d.outcome === "caught" ? "CAUGHT" : "clean",
@@ -332,21 +363,24 @@
           coevoBox.prepend(card("Budget cap reached",
             h("div", { class: "muted" }, JSON.parse(ev.data).reason))); });
       } else {
-        // terminal run: render verdicts from the database (SSE history may be gone)
+        // terminal run: render verdicts from the database, split by pass (SSE history is gone)
         jget("/runs/" + id + "/verdicts").then(function (vs) {
           if (!vs.length) return;
           var e = document.getElementById("run-empty"); if (e) e.remove();
+          // Black-box pass section first, then white-box (D1 order).
+          vs.sort(function (a, b) { return (a.white_box ? 1 : 0) - (b.white_box ? 1 : 0); });
           vs.forEach(function (v, i) {
-            var caught = v.outcome === "caught"; graded++; if (caught) flagged++;
-            tbody.append(h("tr", { class: "clickable",
+            var caught = v.outcome === "caught";
+            var p = passFor(!!v.white_box);
+            tallyVerdict(p, caught);
+            p.tbody.append(h("tr", { class: "clickable",
               onclick: function () { go("#/verdict/" + v.verdictId); } },
-              h("td", {}, i + 1), h("td", {}, ""), h("td", { class: "muted" }, "—"),
+              h("td", {}, i + 1), h("td", { class: "muted" }, "—"),
               h("td", { class: "muted" }, ""), h("td", { class: "muted" }, ""),
               h("td", {}, pill(caught ? "CAUGHT" : "clean", caught ? "red" : "green"),
                 h("span", { class: "muted mono", style: "font-size:11px;margin-left:6px" },
                   (v.fired || []).join(",") || ""))));
           });
-          setCounters();
         });
       }
       setCounters();
