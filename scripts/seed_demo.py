@@ -56,7 +56,8 @@ async def _seed() -> None:
     if not os.path.exists(fixture_path):
         print(f"[seed_demo] fixture missing at {fixture_path}; skipping.")
         return
-    fixture = json.load(open(fixture_path))
+    with open(fixture_path) as _fh:
+        fixture = json.load(_fh)
     tables_data = fixture["tables"]
 
     from sqlalchemy import delete, func, select
@@ -105,7 +106,7 @@ async def _seed() -> None:
 def main() -> None:
     try:
         asyncio.run(_seed())
-    except Exception as exc:  # never break container boot
+    except Exception as exc:  # noqa: BLE001  (never break container boot)
         print(f"[seed_demo] non-fatal error, continuing boot: {exc!r}")
 
 

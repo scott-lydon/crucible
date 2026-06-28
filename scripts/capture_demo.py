@@ -39,13 +39,12 @@ def _encode(v: Any) -> Any:
 
 
 async def _capture() -> None:
-    from sqlalchemy import select, text
-
-    from shared.persistence.base import Base
-    from shared.persistence.db import get_engine
+    from sqlalchemy import select
 
     # Force the ORM models to register on Base.metadata.
     import shared.persistence.models  # noqa: F401
+    from shared.persistence.base import Base
+    from shared.persistence.db import get_engine
 
     eng = get_engine()
     sorted_tables = list(Base.metadata.sorted_tables)
