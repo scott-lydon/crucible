@@ -115,14 +115,18 @@ flowchart LR
   CAT["Strategy Catalog<br/>persistent memory"]:::red
   BLUE["Blue Loop<br/>auto-harden + retrain"]:::blue
   MEAS["Measure<br/>dashboard · traces · benchmark"]:::meas
+  REF["Admissibility Referee<br/>ground truth + sealed committee"]:::ref
   RED -->|"query_target / submit"| TARGET
   TARGET -->|"output only"| ORACLES
   SPEC -->|"derives"| ORACLES
   ORACLES -. "verdict + audit trace" .-> RED
-  ORACLES -->|"undetected hacks"| CAT
+  ORACLES -->|"claimed success"| REF
+  REF -->|"genuine evasion"| CAT
+  REF -->|"red precision · false-success rate"| MEAS
   CAT --> BLUE
   BLUE -. "retrain" .-> TARGET
   ORACLES -->|"recall · ASR · val-vs-heldout gap"| MEAS
+  classDef ref fill:#3a2a1a,stroke:#d4a341,color:#f6ecd9,stroke-width:2px;
   classDef spec fill:#3a2f5c,stroke:#8b7fd4,color:#ede9fe,stroke-width:2px;
   classDef red fill:#7f2d2d,stroke:#c0584f,color:#ffffff,stroke-width:2px;
   classDef tgt fill:#1a2236,stroke:#475569,color:#e2e8f0,stroke-width:2px;
