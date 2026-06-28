@@ -151,6 +151,13 @@ def build_parser() -> argparse.ArgumentParser:
     demo_verify.add_argument("--allow-mock", action="store_true",
                              help="do not require real LLM (for testing the observer itself)")
 
+    # --- serve: run the FastAPI app (folded in from orchestrator/cli.py) ----
+    # uvicorn is imported only when `serve` dispatches, so `crucible --help` and
+    # the loop core never pull the web server onto the path.
+    serve = sub.add_parser("serve", help="run the FastAPI server (orchestrator.api:app)")
+    serve.add_argument("--host", default="127.0.0.1")
+    serve.add_argument("--port", type=int, default=8099)
+
     return parser
 
 
@@ -204,6 +211,10 @@ def main(argv: list[str] | None = None) -> int:
             from crucible.cowork import cmd_cowork_install_skill
             return cmd_cowork_install_skill(args)
         parser.error(f"unknown cowork subcommand {args.cowork_command!r}")
+    if cmd == "serve":
+        import uvicorn  # deferred: web server deps stay off the path until `serve` runs
+        uvicorn.run("orchestrator.api:app", host=args.host, port=args.port, log_level="info")
+        return 0
 
     parser.error(f"unknown command {cmd!r}")
     return 2

@@ -51,11 +51,10 @@ website = []         # website is static HTML today; future render deps land her
 all = ["crucible[dev,slash-command,website]"]
 
 [project.scripts]
-# Entry point for the full slash command CLI (run, replay, report, doctor,
-# eligibility, suitability, catalog, status, eval, demo). The pre-existing
-# `orchestrator/cli.py` (serve, demo-run) stays invokable as
-# `python -m orchestrator.cli` until its serve command is folded into
-# `crucible serve` in a follow-up.
+# Single entry point for the whole CLI (run, replay, report, doctor, eligibility,
+# suitability, catalog, status, eval, demo, cowork, serve). `crucible serve` runs
+# the FastAPI app (orchestrator.api:app); the former standalone serve command was
+# folded into it and its module deleted.
 crucible = "crucible.cli:main"
 
 [tool.setuptools.packages.find]
