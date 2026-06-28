@@ -11,6 +11,24 @@ streams to the terminal and lands in durable artifact files under
 `artifacts/runs/<run_id>/`. The terminal stream and the report site are two
 renderers of one append-only event log, so nothing on screen can be faked.
 
+## Install
+
+The slash command ships from the Crucible wheel. Install the CLI with the
+slash-command extra, then write the SKILL.md into your Claude skills dir:
+
+```bash
+pip install 'crucible[slash-command]'
+crucible cowork install-skill
+```
+
+The slash-command extra ships the SKILL.md as package data inside the wheel, and
+`crucible cowork install-skill` copies it to
+`~/.claude/skills/crucible/SKILL.md`. By design it refuses to overwrite an
+existing file, so a hand-edited local copy is never clobbered silently. After a
+wheel upgrade, re-run with `crucible cowork install-skill --force` to take the
+newer bundled copy, or pass `--dest <path>` to write somewhere other than the
+default skills dir.
+
 ## Repo and environment
 
 The CLI lives in the Crucible repo: `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
