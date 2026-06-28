@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import ClassVar, Protocol, runtime_checkable
 
 import httpx
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -122,7 +122,7 @@ class AnthropicClient:
     ``claude-sonnet-4-6`` not ``anthropic/claude-sonnet-4.6``)."""
 
     # Anthropic pricing per 1M tokens (June 2026). Used for cost tracking only.
-    _PRICING: dict[str, tuple[float, float]] = {
+    _PRICING: ClassVar[dict[str, tuple[float, float]]] = {
         "claude-sonnet-4-6": (3.0, 15.0),
         "claude-opus-4-8": (15.0, 75.0),
         "claude-haiku-4-5-20251001": (0.80, 4.0),
