@@ -352,6 +352,49 @@ async def list_verdicts(run_id: str) -> list[dict[str, object]]:
     ]
 
 
+@app.get("/runs/{run_id}/attacks")
+async def list_attacks(run_id: str) -> list[dict[str, object]]:
+    """The full attack timeline for a run (cr-e3): every attack with the input it sent,
+    the agent's output, and its panel verdict — re-read from the database so a FINISHED
+    run renders the same clickable sequence the live SSE stream showed. Without this the
+    timeline can only be reconstructed from the live stream, so revisiting a complete run
+    showed blank rows (the SSE history is gone once the run ends)."""
+    async with session_scope() as session:
+        attacks = (
+            await session.execute(
+                select(AttackRow)
+                .where(AttackRow.run_id == run_id)
+                .order_by(AttackRow.round_index, AttackRow.created_at))
+        ).scalars().all()
+        verdicts = (
+            await session.execute(select(VerdictRow).where(VerdictRow.run_id == run_id))
+        ).scalars().all()
+    by_attack = {v.attack_id: v for v in verdicts}
+    out: list[dict[str, object]] = []
+    for a in attacks:
+        payload = dict(a.payload or {})
+        producer = dict((a.audit_trace or {}).get("producer_output", {}))
+        v = by_attack.get(a.id)
+        out.append({
+            "attackId": a.id,
+            "round": a.round_index,
+            "tactic": a.tactic,
+            "white_box": a.white_box,
+            "rationale": a.rationale,
+            "input": payload.get("input") if payload.get("input") is not None
+                     else json.dumps(payload),
+            "output": producer.get("response") if producer.get("response") is not None
+                      else (json.dumps(producer) if producer else ""),
+            "verdictId": v.id if v is not None else None,
+            "outcome": v.outcome if v is not None else None,
+            "tally": v.tally if v is not None else None,
+            "threshold": v.threshold if v is not None else None,
+            "fired": [vote["oracle"] for vote in v.votes if vote.get("fired")]
+                     if v is not None else [],
+        })
+    return out
+
+
 @app.get("/coevolution/{run_id}")
 async def get_coevolution(run_id: str) -> list[dict[str, object]]:
     """The co-evolution series for a run (cr-d4): per round, ASR (the agent's failure

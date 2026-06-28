@@ -108,6 +108,26 @@ def _maybe_json(value: Any) -> Any:
     return json.loads(value) if isinstance(value, str) else value
 
 
+def test_attacks_timeline_endpoint_serves_full_rows(client: TestClient) -> None:
+    """The /runs/{id}/attacks timeline must carry the attacker input, the agent output and
+    the verdict for a FINISHED run — the data the run view re-renders so a complete run is
+    never blank (the bug this endpoint fixes)."""
+    run_id = client.post("/runs", json=_AGENT_RUN).json()["runId"]
+    assert _poll_complete(client, run_id) == "complete"
+
+    rows = client.get(f"/runs/{run_id}/attacks").json()
+    assert len(rows) == 6, rows  # 3 black-box + 3 white-box
+    for r in rows:
+        assert r["tactic"], r
+        assert r["input"], r  # the crafted attacker input is present, not blank
+        assert "[mock agent]" in r["output"], r  # the agent's actual reply is present
+        assert r["verdictId"], r
+        assert r["outcome"] in ("caught", "clean"), r
+        assert isinstance(r["fired"], list)
+    # Ordered by round so the timeline reads top-to-bottom like the live stream did.
+    assert [r["round"] for r in rows] == sorted(r["round"] for r in rows)
+
+
 def test_health_lists_agent_target(client: TestClient) -> None:
     health = client.get("/health").json()
     assert health["targets/agent"]["status"] == "green"
