@@ -30,6 +30,7 @@ from modules.measure.trust import compute_trust
 from modules.oracles.aggregator import vote_as_json, votes_from_json
 from modules.oracles.protocol import oracle_protocols
 from modules.red.catalog import build_catalog
+from modules.red.white_box import compose_white_box_brief
 from modules.targets.agent import (
     HttpEndpointConfig,
     demo_agent,
@@ -622,6 +623,37 @@ async def get_corpus(run_id: str | None = None) -> Response:
     body = "\n".join(json.dumps(row) for row in rows)
     return Response(content=body, media_type="application/x-ndjson",
                     headers={"X-Row-Count": str(len(rows))})
+
+
+@app.get("/white-box-brief")
+async def get_white_box_brief(target_kind: str) -> dict[str, object]:
+    """The white-box brief for a target's WIRED oracle panel (PR3 port D2): the disclosed
+    protocol descriptions of exactly the oracles currently wired for ``target_kind`` — drop
+    one (via /admin/drop-oracle) and its line disappears."""
+    container = get_container()
+    wired = {str(o.kind) for o in container.oracles_for(target_kind)}
+    protocols = [p for p in oracle_protocols() if p["kind"] in wired]
+    return {
+        "target_kind": target_kind,
+        "oracles": [p["name"] for p in protocols],
+        "kinds": sorted(wired),
+        "brief": compose_white_box_brief(protocols),
+    }
+
+
+@app.post("/admin/drop-oracle")
+async def drop_oracle(target_kind: str, kind: str) -> dict[str, object]:
+    """Debug route (PR3 port D2): remove a wired oracle KIND from a target's panel in memory,
+    so the operator can watch the white-box brief shrink to the remaining oracles. Restart the
+    server (or rebuild the container) to restore the full panel."""
+    container = get_container()
+    container.oracles[target_kind] = [
+        o for o in container.oracles_for(target_kind) if str(o.kind) != kind
+    ]
+    return {
+        "target_kind": target_kind, "dropped": kind,
+        "remaining": [str(o.kind) for o in container.oracles_for(target_kind)],
+    }
 
 
 @app.get("/oracle-protocols")

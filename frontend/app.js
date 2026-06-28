@@ -282,7 +282,18 @@
         h("a", { class: "btn ghost", href: "#/launch" }, "New run"));
       var coevoBox = h("div", {});
       var passesBox = h("div", {});
-      setView(head, actions, coevoBox, passesBox, h("div", { class: "empty", id: "run-empty" },
+      // D2: the white-box prompt inspector shows the brief assembled from the WIRED oracles.
+      var wbBrief = h("pre", { class: "prompt", id: "wb-brief" }, "loading…");
+      var wbInspector = h("details", { class: "card", id: "white-box-inspector" },
+        h("summary", { style: "cursor:pointer;color:var(--hi);font-weight:600" }, "White-box prompt"),
+        h("p", { class: "muted", style: "font-size:12px" },
+          "The verification scheme disclosed to the attacker in the white-box pass, assembled " +
+          "from the oracles actually wired for this run."),
+        wbBrief);
+      jget("/white-box-brief?target_kind=" + encodeURIComponent(run.target_kind))
+        .then(function (d) { wbBrief.textContent = d.brief; })
+        .catch(function () { wbBrief.textContent = "(unavailable)"; });
+      setView(head, actions, wbInspector, coevoBox, passesBox, h("div", { class: "empty", id: "run-empty" },
         run.status === "running" || run.status === "pending"
           ? h("span", {}, h("span", { class: "spinner" }), " waiting for the first attack…")
           : "no streamed events (server may have restarted) — see the dashboard"));
@@ -702,11 +713,24 @@
           }).catch(function (e) { injectBtn.disabled = false;
             injectBtn.textContent = "Inject contamination demo (failed: " + e.message + ")"; });
         } }, "Inject contamination demo");
+      // D2 debug route: drop the LLM judge from a target's panel so the white-box brief
+      // shrinks to the remaining oracles.
+      var dropJudgeBtn = h("button", { class: "btn ghost", id: "drop-llm-judge",
+        style: "margin-left:10px",
+        onclick: function () {
+          dropJudgeBtn.disabled = true;
+          jpost("/admin/drop-oracle?target_kind=fraud&kind=llm_judge", {}).then(function (res) {
+            dropJudgeBtn.textContent = "LLM judge dropped (fraud panel: " +
+              res.remaining.length + " oracles)";
+          }).catch(function (e) { dropJudgeBtn.disabled = false;
+            dropJudgeBtn.textContent = "Drop LLM judge (failed: " + e.message + ")"; });
+        } }, "Drop LLM judge (fraud, debug)");
       var debugCard = card("Debug routes",
         h("p", { class: "muted", style: "margin-top:-6px;font-size:13px" },
           "Seed a deliberately contaminated blue patch (held-out set overlaps training) to " +
-          "see the Blue Patch Review refuse it with a red banner and no recovery claim."),
-        injectBtn);
+          "see the Blue Patch Review refuse it with a red banner and no recovery claim. Or " +
+          "drop the LLM judge to watch the white-box brief shrink to the wired oracles."),
+        injectBtn, dropJudgeBtn);
       setView(budgetCard, totals, byStatus, debugCard);
     }).catch(err);
   }

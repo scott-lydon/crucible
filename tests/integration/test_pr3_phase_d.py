@@ -36,3 +36,28 @@ def test_d1_run_has_both_black_box_and_white_box_passes(client: TestClient) -> N
     verdicts = client.get(f"/runs/{run_id}/verdicts").json()
     passes = {v["white_box"] for v in verdicts}
     assert passes == {True, False}, f"expected both passes, got {passes}"
+
+
+# ----------------------------- D2 -----------------------------
+
+def test_d2_white_box_brief_lists_the_wired_oracles(client: TestClient) -> None:
+    brief = client.get("/white-box-brief", params={"target_kind": "fraud"}).json()
+    # The full fraud panel is the four mechanical oracles + the LLM judge.
+    assert brief["oracles"] == [
+        "Held-out oracle", "Metamorphic oracle", "Differential oracle",
+        "Property / fuzz oracle", "LLM judge oracle",
+    ]
+    assert "WHITE-BOX" in brief["brief"]
+    assert "LLM judge oracle" in brief["brief"]
+
+
+def test_d2_compose_brief_is_one_line_per_oracle() -> None:
+    from modules.red.white_box import compose_white_box_brief
+    protocols = [
+        {"kind": "held_out", "name": "Held-out oracle", "description": "checks ground truth"},
+        {"kind": "differential", "name": "Differential oracle", "description": "a second model"},
+    ]
+    brief = compose_white_box_brief(protocols)
+    lines = [ln for ln in brief.splitlines() if ln.startswith("- ")]
+    assert len(lines) == 2
+    assert "LLM judge" not in brief  # only the wired oracles appear

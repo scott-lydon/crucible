@@ -14,6 +14,8 @@ from typing import Any
 from sqlalchemy import select
 
 from modules.measure.budget import global_spend, run_spend, should_halt
+from modules.oracles.protocol import oracle_protocols
+from modules.red.white_box import compose_white_box_brief
 from orchestrator.interfaces import (
     ConfigurableBlue,
     Oracle,
@@ -279,6 +281,13 @@ async def _red_pass(
     return last_verdict, caught, wrong
 
 
+def _white_box_brief(oracles: list[Oracle]) -> str:
+    """Compose the white-box brief from the WIRED oracles' disclosed protocol descriptions
+    (PR3 port D2): only the oracle kinds actually in the panel contribute a line."""
+    wired = {str(o.kind) for o in oracles}
+    return compose_white_box_brief([p for p in oracle_protocols() if p["kind"] in wired])
+
+
 async def _set_white_box_recall(run_id: RunId, recall: float) -> None:
     async with session_scope() as session:
         run = (await session.execute(select(Run).where(Run.id == run_id))).scalar_one()
@@ -313,7 +322,7 @@ async def run_loop(run_id: RunId, container: Container) -> None:
         # Scheme-aware white-box (cr-b3): tell the attacker which checkers are actually in
         # the panel, so its white-box pass tries to beat the real ensemble.
         if isinstance(red, SchemeAware):
-            red.note_scheme([str(o.kind) for o in oracles])
+            red.note_scheme(_white_box_brief(oracles))
 
         # Bind a task-local sink so every LLM call the round makes is recorded (cr-b4).
         call_sink: list[LLMCallRecord] = []
@@ -401,7 +410,7 @@ async def run_coevolution(
                 "co-evolution requires an agent blue (ConfigurableBlue) + agent target factory")
 
         if isinstance(red, SchemeAware):
-            red.note_scheme([str(o.kind) for o in oracles])
+            red.note_scheme(_white_box_brief(oracles))
         if isinstance(red, Primable):
             async with session_scope() as session:
                 known = await container.tactic_loader(session, target_kind)

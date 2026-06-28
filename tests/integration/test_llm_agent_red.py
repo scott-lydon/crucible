@@ -76,27 +76,34 @@ def test_adapts_on_clean_verdict_differently() -> None:
 
 
 def test_white_box_injects_verification_scheme() -> None:
+    # D2: the white-box brief disclosed via note_scheme is injected into the white-box system.
     red, llm = _red('{"tactic": "t", "input": "x", "rationale": "r"}')
+    red.note_scheme("WHITE-BOX: panel\n- Held-out oracle: checks withheld ground truth")
     asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=True))
     system = llm.calls[-1][0]
     assert "WHITE-BOX" in system
-    assert "held-out" in system and "metamorphic" in system
+    assert "Held-out oracle" in system
 
 
-def test_white_box_lists_only_active_checkers() -> None:
+def test_white_box_brief_lists_only_wired_oracles() -> None:
+    # D2: the brief is composed from the WIRED oracles' descriptions; dropped oracles are absent.
+    from modules.red.white_box import compose_white_box_brief
     red, llm = _red('{"tactic": "t", "input": "x", "rationale": "r"}')
-    red.note_scheme(["llm_judge", "held_out"])
+    red.note_scheme(compose_white_box_brief([
+        {"kind": "llm_judge", "name": "LLM judge oracle", "description": "an Opus judge"},
+        {"kind": "held_out", "name": "Held-out oracle", "description": "withheld ground truth"},
+    ]))
     asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=True))
     system = llm.calls[-1][0]
-    assert "llm_judge" in system and "held_out" in system
-    # Checkers NOT in the wired panel are not described.
-    assert "differential" not in system
-    assert "property_fuzz" not in system
+    assert "LLM judge oracle" in system and "Held-out oracle" in system
+    # Oracles NOT in the wired panel are not described.
+    assert "Differential oracle" not in system
+    assert "Property / fuzz oracle" not in system
 
 
 def test_note_scheme_only_affects_white_box_pass() -> None:
     red, llm = _red('{"tactic": "t", "input": "x", "rationale": "r"}')
-    red.note_scheme(["llm_judge"])
+    red.note_scheme("WHITE-BOX: panel\n- Held-out oracle: checks ground truth")
     asyncio.run(red.propose(_SPEC, RunId("r"), 0, None, white_box=False))
     assert "WHITE-BOX" not in llm.calls[-1][0]  # black-box pass stays scheme-blind
 
