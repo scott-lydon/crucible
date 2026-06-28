@@ -18,6 +18,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sse_starlette.sse import EventSourceResponse
 
+from modules.blue.errors import HoldoutContamination
+from modules.blue.holdout_validator import HoldoutValidator
 from modules.measure.admin import debug_summary, leaderboard
 from modules.measure.budget import budget_status, global_spend
 from modules.measure.corpus import export_corpus
@@ -49,13 +51,17 @@ from shared.persistence.models import (
     VerdictRow,
 )
 from shared.persistence.resolver import resolve_spec
-from shared.persistence.store import coevolution_series, save_agent_config
+from shared.persistence.store import (
+    coevolution_series,
+    save_agent_config,
+    save_coevolution_round,
+)
 from shared.telemetry.log import configure_logging
 from shared.types.agent import AgentConfig
 from shared.types.core import Attack, AttackBudget, TargetSpec
 from shared.types.enums import RunStatus, Shape
 from shared.types.errors import CrucibleError
-from shared.types.ids import AttackId, RunId
+from shared.types.ids import AttackId, RunId, new_id
 from shared.types.sealed_spec import HumanSpec, SealedSpec
 
 # Background loop tasks, kept referenced so they are not garbage-collected mid-run.
@@ -394,6 +400,34 @@ async def get_coevolution(run_id: str) -> list[dict[str, object]]:
     ]
 
 
+@app.post("/admin/inject-contamination-demo")
+async def inject_contamination_demo() -> dict[str, object]:
+    """Debug route (PR3 port C2): seed a deliberately CONTAMINATED blue patch so the operator
+    can see the Blue Patch Review refuse it. The held-out ids overlap the training ids, so the
+    real HoldoutValidator raises HoldoutContamination; we persist that message on a patch with
+    NO after-recall (a contaminated patch earns no recovery claim) and return its ids."""
+    overlap_ids = ["atk-7", "atk-12", "atk-19", "atk-23", "atk-31"]
+    try:
+        HoldoutValidator().assert_disjoint(set(overlap_ids), set(overlap_ids))
+        message = ""  # unreachable: the sets fully overlap
+    except HoldoutContamination as exc:
+        message = str(exc)
+    run_id = new_id("run")
+    patch_id = new_id("patch")
+    async with session_scope() as session:
+        session.add(Run(
+            id=run_id, status="complete", target_kind="agent", shape="shape2_agent",
+            budget_rounds=1, budget_dollars=0.0))
+        await session.flush()  # the round's FK needs the run row to exist first
+        await save_coevolution_round(
+            session, run_id=run_id, round_index=0, config_version=1, n_attacks=5,
+            n_caught=0, asr=1.0, detection=0.0, patch_id=patch_id,
+            safe_before=0.5, safe_after=None,
+            audit={"contamination": message, "validated": False, "new_version": 1,
+                   "sections": []})
+    return {"runId": run_id, "patch_id": patch_id}
+
+
 @app.get("/blue/{patch_id}")
 async def get_blue_patch(patch_id: str) -> dict[str, object]:
     """One blue hardening patch (cr-d4): the rewritten system prompt, the before/after
@@ -422,6 +456,9 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         # C1/C3: the three labelled patch sub-sections (Proposal, Rewrite/Retrain, Holdout
         # validation) the Blue Patch Review renders.
         "sections": row.audit_trace.get("sections", []),
+        # C2: a non-empty contamination message means the held-out set overlapped training;
+        # the review shows a red banner and NO recovery claim.
+        "contamination": row.audit_trace.get("contamination"),
     }
 
 

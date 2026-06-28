@@ -14,6 +14,7 @@ import asyncio
 import lightgbm as lgb
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 
 from modules.blue.agent import ARTIFACTS, FraudBlueAgent
 from modules.blue.errors import HoldoutContamination
@@ -65,3 +66,12 @@ def test_c2_holdout_validator_rejects_contamination() -> None:
     assert "overlap training" in str(exc.value)
     # A disjoint set is accepted silently.
     validator.assert_disjoint({"atk-1"}, {"holdout-eval-1"})
+
+
+def test_c2_contamination_demo_route_seeds_a_refused_patch(client: TestClient) -> None:
+    seeded = client.post("/admin/inject-contamination-demo").json()
+    patch = client.get(f"/blue/{seeded['patch_id']}").json()
+    assert "overlap training" in patch["contamination"]
+    # No false recovery: the after-recall number is withheld for a contaminated patch.
+    assert patch["safe_after"] is None
+    assert patch["validated"] is False

@@ -552,6 +552,20 @@
     jget("/blue/" + pid).then(function (d) {
       var box = document.getElementById("patchbox"); if (!box) return;
       box.innerHTML = "";
+      // C2: a contaminated patch (held-out set overlapped training) is refused with a red
+      // banner and NO after-recall — a contaminated patch earns no recovery claim.
+      if (d.contamination) {
+        box.append(card("Blue patch · " + pid,
+          h("div", { class: "patch-contamination",
+            style: "background:rgba(229,115,107,.15);border:1px solid var(--danger);" +
+              "color:var(--danger);border-radius:8px;padding:12px;font-size:13px" },
+            d.contamination),
+          h("div", { class: "muted mono", style: "font-size:12px;margin-top:10px" },
+            "safe-rate before " + pct(d.safe_before) + " · after-recall withheld " +
+            "(no recovery claimed for a contaminated patch)")));
+        box.scrollIntoView({ behavior: "smooth" });
+        return;
+      }
       // C1/C3: the patch audit trail as three labelled sub-sections (Proposal, the change,
       // Holdout validation), in chronological order.
       var sections = (d.sections || []).map(function (s) {
@@ -645,7 +659,21 @@
           : empty("none"),
         (d.recent_errors || []).length ? h("div", { style: "color:#E5736B;margin-top:10px;font-size:12px" },
           d.recent_errors.length + " run(s) with errors") : null);
-      setView(budgetCard, totals, byStatus);
+      // C2 debug route: seed a contaminated blue patch and jump to its Blue Patch Review.
+      var injectBtn = h("button", { class: "btn ghost", id: "inject-contamination",
+        onclick: function () {
+          injectBtn.disabled = true; injectBtn.textContent = "Seeding…";
+          jpost("/admin/inject-contamination-demo", {}).then(function (res) {
+            go("#/coevolution/" + res.runId);
+          }).catch(function (e) { injectBtn.disabled = false;
+            injectBtn.textContent = "Inject contamination demo (failed: " + e.message + ")"; });
+        } }, "Inject contamination demo");
+      var debugCard = card("Debug routes",
+        h("p", { class: "muted", style: "margin-top:-6px;font-size:13px" },
+          "Seed a deliberately contaminated blue patch (held-out set overlaps training) to " +
+          "see the Blue Patch Review refuse it with a red banner and no recovery claim."),
+        injectBtn);
+      setView(budgetCard, totals, byStatus, debugCard);
     }).catch(err);
   }
 
