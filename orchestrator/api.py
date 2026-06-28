@@ -23,7 +23,7 @@ from modules.blue.holdout_validator import HoldoutValidator
 from modules.measure.admin import debug_summary, leaderboard
 from modules.measure.budget import budget_status, global_spend
 from modules.measure.corpus import export_corpus
-from modules.measure.halt import halt_state
+from modules.measure.halt import get_halt_override, halt_state, set_halt_override
 from modules.measure.metrics import compute_metrics
 from modules.measure.report import sr_11_7_markdown, sr_11_7_pdf
 from modules.measure.trust import compute_trust
@@ -60,7 +60,7 @@ from shared.persistence.store import (
 from shared.telemetry.log import configure_logging
 from shared.types.agent import AgentConfig
 from shared.types.core import Attack, AttackBudget, TargetSpec
-from shared.types.enums import RunStatus, Shape
+from shared.types.enums import Pillar, RunStatus, Shape
 from shared.types.errors import CrucibleError
 from shared.types.ids import AttackId, RunId, new_id
 from shared.types.sealed_spec import HumanSpec, SealedSpec
@@ -160,7 +160,9 @@ async def post_runs(req: RunRequest) -> RunAccepted:
     # below the red line.
     async with session_scope() as session:
         halt = await halt_state(session)
-    if halt["halted"]:
+    # E2: the devmode override bypasses the launch guard for manual testing; the banner
+    # still reports the real halt (the override never changes the displayed metric).
+    if halt["halted"] and not get_halt_override():
         raise HTTPException(status_code=409, detail=halt["message"])
     # Budget gate (cr-f4): refuse a new run once the global real-LLM cap is reached, so a
     # public endpoint can never spend without bound.
@@ -673,6 +675,49 @@ async def get_catalog(
     cr-b2). Target-agnostic; optionally filtered by run or target kind."""
     async with session_scope() as session:
         return await build_catalog(session, target_kind=target_kind, run_id=run_id)
+
+
+@app.post("/admin/halt-override")
+async def set_halt_override_route(enabled: bool) -> dict[str, object]:
+    """Debug route (PR3 port E2): arm/disarm the devmode halt-launch override. When ON, a
+    new run may launch despite a halt; the dashboard banner keeps reporting the real halt."""
+    set_halt_override(enabled)
+    return {"override": get_halt_override()}
+
+
+@app.post("/admin/inject-leaky-run")
+async def inject_leaky_run() -> dict[str, object]:
+    """Debug route (PR3 port E3): seed a run whose white-box attacks are held-out-confirmed
+    failures the panel MISSED (silent failures: a held_out 'fired' vote with a clean outcome,
+    tally below threshold). That drives Julian's trust score to 0/F, so the platform halts on
+    the TRUST score, not on raw catch rate."""
+    run_id = new_id("run")
+    async with session_scope() as session:
+        # Seed a HEALTHY-looking recall (1.0) alongside silent-failure verdicts (trust 0): the
+        # recall gate would NOT halt this run, so the halt is driven purely by Julian's trust
+        # score — exactly E3's point that the gate is on trust, not raw catch rate / recall.
+        session.add(Run(
+            id=run_id, status="complete", target_kind="agent", shape="shape2_agent",
+            budget_rounds=3, budget_dollars=0.0, white_box_recall=1.0))
+        await session.flush()
+        for i in range(3):
+            aid = new_id("atk")
+            session.add(AttackRow(
+                id=aid, run_id=run_id, round_index=i, tactic="leaky", payload={"input": "x"},
+                rationale="seeded leaky", white_box=True, hybrid=False, succeeded=True,
+                pillar=Pillar.red, seed=f"leaky-{i}", dollars_spent=0.0,
+                audit_trace={"producer_output": {"response": "leaks"}}))
+            session.add(VerdictRow(
+                id=new_id("vdt"), run_id=run_id, attack_id=aid,
+                producer_output={"response": "leaks"},
+                votes=[{"oracle": "held_out", "fired": True, "weight": 1.0, "obligation": "o",
+                        "observation": "held-out ground truth: a real, missed failure",
+                        "reason": "the producer leaked and the panel did not catch it",
+                        "dollars": 0.0, "seed": f"leaky-{i}", "available": True}],
+                tally=1.0, threshold=2.0, outcome="clean", pillar=Pillar.oracles,
+                seed=f"leaky-{i}", dollars_spent=0.0,
+                audit_trace={"summary": "silent failure: held-out fired, tally below threshold"}))
+    return {"runId": run_id}
 
 
 @app.post("/admin/reload-backend")

@@ -455,7 +455,19 @@
             h("a", { class: "btn ghost", href: "#/run/" + rid }, "Attack timeline"),
             h("a", { class: "btn ghost", href: "#/coevolution/" + rid }, "Co-evolution"),
             h("a", { class: "btn ghost", href: "#/catalog" }, "Strategy catalog")));
-        setView(trust, card("Honest metrics", h("div", { class: "tiles" }, tileEls)), links);
+        // E1/E3: the halt banner reads from the persisted halt state. "Halted at" is the
+        // last_evaluated timestamp, which only advances when the decision changes (so it is
+        // stable across a page refresh).
+        var halt = m.halt || {};
+        var haltBanner = halt.halted ? card(null,
+          h("div", { id: "halt-banner",
+            style: "background:rgba(229,115,107,.15);border:1px solid var(--danger);" +
+              "color:var(--danger);border-radius:8px;padding:12px;font-size:13px" },
+            h("b", {}, "HALTED. "), halt.message,
+            h("div", { class: "muted mono", id: "halted-at", style: "margin-top:6px;font-size:11px" },
+              "Halted at: " + (halt.last_evaluated || "—") +
+              (halt.override ? " · launch override ON (banner still reports the real halt)" : "")))) : null;
+        setView(haltBanner, trust, card("Honest metrics", h("div", { class: "tiles" }, tileEls)), links);
       }).catch(err);
     });
   }
@@ -730,12 +742,35 @@
           }).catch(function (e) { dropJudgeBtn.disabled = false;
             dropJudgeBtn.textContent = "Drop LLM judge (failed: " + e.message + ")"; });
         } }, "Drop LLM judge (fraud, debug)");
+      // E3 debug route: seed a leaky-but-recall-clean run (silent failures) so trust -> 0/F
+      // and the platform halts on the trust score, then jump to its dashboard.
+      var leakyBtn = h("button", { class: "btn ghost", id: "inject-leaky-run",
+        style: "margin-left:10px",
+        onclick: function () {
+          leakyBtn.disabled = true; leakyBtn.textContent = "Seeding…";
+          jpost("/admin/inject-leaky-run", {}).then(function (res) {
+            go("#/dashboard/" + res.runId);
+          }).catch(function (e) { leakyBtn.disabled = false;
+            leakyBtn.textContent = "Inject leaky run (failed: " + e.message + ")"; });
+        } }, "Inject leaky run (E3)");
+      // E2 debug toggle: arm/disarm the devmode halt-launch override.
+      var overrideOn = h("button", { class: "btn ghost", id: "halt-override-on",
+        style: "margin-left:10px",
+        onclick: function () { jpost("/admin/halt-override?enabled=true", {})
+          .then(function () { overrideOn.textContent = "Halt override: ON"; }); } },
+        "Halt override: ON");
+      var overrideOff = h("button", { class: "btn ghost", id: "halt-override-off",
+        style: "margin-left:10px",
+        onclick: function () { jpost("/admin/halt-override?enabled=false", {})
+          .then(function () { overrideOff.textContent = "Halt override: OFF"; }); } },
+        "Halt override: OFF");
       var debugCard = card("Debug routes",
         h("p", { class: "muted", style: "margin-top:-6px;font-size:13px" },
           "Seed a deliberately contaminated blue patch (held-out set overlaps training) to " +
-          "see the Blue Patch Review refuse it with a red banner and no recovery claim. Or " +
-          "drop the LLM judge to watch the white-box brief shrink to the wired oracles."),
-        injectBtn, dropJudgeBtn);
+          "see the Blue Patch Review refuse it. Drop the LLM judge to watch the white-box " +
+          "brief shrink. Inject a leaky run to halt on the trust score. Toggle the halt " +
+          "override to launch despite a halt (the banner still reports the real halt)."),
+        injectBtn, dropJudgeBtn, leakyBtn, overrideOn, overrideOff);
       setView(budgetCard, totals, byStatus, debugCard);
     }).catch(err);
   }
