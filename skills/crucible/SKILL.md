@@ -57,7 +57,7 @@ first run needs no authoring. Default `--target` set: `fraud`, `code_agent`, `du
    too): `report.md`, `metrics.json`, `sr-117.md`, and `trace.jsonl`. Offer
    `crucible report --open <run_id>` to render the static site.
 
-## Streaming the run to chat (default behavior)
+## Streaming the run to chat (default behavior, HARD RULE)
 
 The slash command's primary value is the user watching the loop work. Default to a
 foreground synchronous invocation so every event lands in chat:
@@ -66,17 +66,53 @@ foreground synchronous invocation so every event lands in chat:
 crucible run --target <target> [--spec <file>] --rounds <n> --max-dollars <d> --stream human
 ```
 
-The shell tool's stdout is the per-event log. The user reads the run as it happens
-(`run_start`, `eligibility_checked`, `spec_sealed`, `red_tactic_proposed`,
-`oracle_voted`, `verdict_decided`, `metric_update`, `artifact_written`, `run_end`).
-A short fraud run (`--rounds 3`, real Claude judge) finishes in ~75 seconds and the
-full event log fits in one tool result, which is the desired behavior.
+### What you MUST do after the shell tool returns
+
+**Your reply MUST contain the captured stdout VERBATIM inside a fenced code block,
+BEFORE any summary, table, or commentary.** The shell tool returns the entire
+per-event log; your job is to surface it, not to translate it.
+
+Correct shape:
+
+````
+Run started. Live event stream:
+
+```
+17:44:26 ▶ run_start  run run_feec... target=fraud rounds=1
+17:44:26 ⚠️ mock_llm_acknowledged  MOCK LLM judge active (--allow-mock-llm waiver)
+17:44:26 🔎 eligibility_checked  ELIGIBLE_WITH_CAVEAT
+... every single line from the tool result, copy-pasted, no edits ...
+17:44:27 🏁 run_end  status=complete
+```
+
+Headline (parsed from the same trace):
+- White-box catch rate: 0.0
+- ... etc ...
+```
+````
+
+Wrong shapes (what the 2026-06-28 streaming regression looked like, do NOT repeat):
+
+- "Ran 1 shell command" followed by a metrics table with no event log. The agent
+  hid the per-event stream behind a tidy summary; the user lost the loop's audit
+  trail and the table is what they got instead of the live run they asked for.
+- A prose paragraph saying "the red agent attacked, the oracles voted, the verdict
+  was caught" without the actual `🎯 red_tactic_proposed`, `📡 target_queried`,
+  `🟢 oracle_fired` lines verbatim.
+- ANSI color codes stripped, emoji collapsed to text descriptions. Leave the raw
+  output untouched; the chat renders the colors and glyphs.
+
+The per-event log is the deliverable. The metrics summary is a follow-on.
 
 **Do NOT background a default-shape run.** Backgrounding with `nohup ... &` makes the
-events land in `trace.jsonl` on disk but never reach the chat, leaving the user
-staring at "I am notified on completion" prose while the run silently finishes.
-That was the 2026-06-28 streaming regression; the fix is to keep the run in the
-foreground unless the run is genuinely long.
+events land in `trace.jsonl` on disk but never reach the chat. Foreground +
+verbatim-stdout is the only correct shape for short runs.
+
+A short fraud run (`--rounds 3`, real Claude judge) finishes in ~75 seconds and the
+full event log fits in one tool result, which is the desired behavior. Trigger:
+2026-06-28 streaming regression where the agent invoked the loop in the foreground
+correctly but then SUMMARIZED the stdout into a metrics table, hiding every event
+from the user.
 
 ## Long runs (genuinely long: real LLMs + many rounds OR coevolution)
 
