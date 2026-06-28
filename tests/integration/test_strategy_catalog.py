@@ -56,7 +56,8 @@ def test_catalog_distills_tactics_across_runs(client: TestClient) -> None:
     assert catalog, "catalog should not be empty after two agent runs"
     tactics = {row["tactic"] for row in catalog}
     # The mock attacker cycles the named archetypes; both runs exercised the same set.
-    assert "instruction-override" in tactics
+    # (Archetype 0 is now a correctness probe — Crucible's headline silent-wrongness case.)
+    assert "false-premise-acceptance" in tactics
     for row in catalog:
         assert row["target_type"] == "agent"
         assert row["n_runs"] == 2          # the tactic appeared in both runs (reuse)
