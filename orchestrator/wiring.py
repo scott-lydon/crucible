@@ -83,10 +83,19 @@ def _untrained_probe(message: str) -> HealthProbe:
 
 def _judge_llm() -> LLMClient:
     """Real Opus when CRUCIBLE_REAL_JUDGE=1 and a key is present; otherwise a free,
-    deterministic ScriptedLLM that votes 'ok' (mock mode, spec US-15)."""
+    deterministic ScriptedLLM that votes 'ok' (mock mode, spec US-15).
+
+    Debug fixture (PR3 port B1): with CRUCIBLE_JUDGE_PROSE=1 the mock judge answers in plain
+    prose instead of JSON, so an operator can drive the launcher into the UNAVAILABLE-vote
+    state the happy path never reaches (the judge-prose-fallback fixture)."""
     settings = load_settings()
     if os.environ.get("CRUCIBLE_REAL_JUDGE") == "1" and settings.openrouter_api_key:
         return make_llm(settings.opus_model)
+    if os.environ.get("CRUCIBLE_JUDGE_PROSE") == "1":
+        return ScriptedLLM(
+            lambda _system, _prompt: "I looked at the output and it seems fine to me overall.",
+            model="scripted-judge-prose",
+        )
     return ScriptedLLM(
         lambda _system, _prompt: '{"verdict": "ok", "reason": "mock judge: no violation asserted"}',
         model="scripted-judge",
