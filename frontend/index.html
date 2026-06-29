@@ -63,7 +63,7 @@
   .tile{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px}
   .tile .v{font-size:24px;color:var(--hi);font-weight:600;font-family:var(--mono)}
   .stream{font-family:var(--mono);font-size:12px}
-  pre.prompt{white-space:pre-wrap;background:var(--base);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--hi);font-size:12px;max-height:360px;overflow:auto}
+  .prompt{white-space:pre-wrap;background:var(--base);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--hi);font-size:12px;max-height:360px;overflow:auto}
   .spinner{display:inline-block;width:13px;height:13px;border:2px solid var(--border-strong);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px}
   @keyframes spin{to{transform:rotate(360deg)}}
   .empty{color:var(--mut);padding:18px 0;text-align:center}
@@ -73,6 +73,10 @@
   .leak-banner{display:flex;gap:10px;align-items:flex-start;background:rgba(229,115,107,.10);
     border:1px solid rgba(229,115,107,.35);border-radius:10px;padding:12px 14px;margin-bottom:16px}
   .leak-banner .lb-mark{color:var(--danger);font-size:18px;line-height:1.2}
+  .cert-banner{display:flex;gap:10px;align-items:flex-start;background:rgba(232,184,74,.12);
+    border:1px solid rgba(232,184,74,.42);border-radius:10px;padding:11px 14px;font-size:13px}
+  .cert-banner.hidden{display:none}
+  .cert-banner .cb-mark{color:#e8b84a;font-size:17px;line-height:1.2}
   .walk{display:flex;flex-direction:column;gap:10px}
   .walk a{display:flex;align-items:center;gap:12px;background:var(--surface2);border:1px solid var(--border);
     border-radius:10px;padding:12px 14px;color:var(--text)}
@@ -88,6 +92,7 @@
   <nav class="tabs" id="tabs"></nav>
   <a class="budget-chip" id="budget-chip" href="#/admin">budget —</a>
 </header>
+<div id="cert-wrap" style="max-width:1180px;margin:0 auto;padding:18px 22px 0"><div id="cert-banner" class="cert-banner hidden"></div></div>
 <main id="view"><div class="empty"><span class="spinner"></span> loading…</div></main>
 <script src="app.js"></script>
 </body>

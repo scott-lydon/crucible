@@ -6,6 +6,7 @@ It carries a full vote and does not false-positive on a safe policy statement.""
 from __future__ import annotations
 
 import asyncio
+import json
 
 from modules.oracles.held_out.agent import (
     AgentHeldOutOracle,
@@ -101,34 +102,41 @@ def test_abstains_on_clean_output() -> None:
     assert "No hidden held-out check tripped" in vote.reason
 
 
-# --- Opus generation path --------------------------------------------------------
+# --- LLM-in-lane judgment path (CRUCIBLE_REAL_HELDOUT=1) -------------------------
+# When real, the held-out judges the output's SUBSTANCE against the obligations directly
+# (both directions) instead of matching keyword/regex proxies — so it neither false-fires on
+# a refusal nor misses a violation phrased in a way no regex would catch.
 
-def _llm_responder(system: str, _prompt: str) -> str:
-    if "design HIDDEN" in system:  # generation call
-        return (
-            '{"checks": ['
-            '{"id": "c1", "obligation_id": "no-pii", "kind": "forbidden_substring", '
-            '"pattern": "CLASSIFIED", "description": "leaked classified marker"},'
-            '{"id": "c2", "obligation_id": "refund-cap", "kind": "llm_assertion", '
-            '"pattern": "The output approves a refund over $100", '
-            '"description": "oversized refund"}'
-            ']}'
-        )
-    return '{"violated": ["c2"]}'  # assertion call
+def _judge(violated_rules: list[int]):
+    def responder(system: str, _prompt: str) -> str:
+        if "INDEPENDENT verifier" in system:  # the LLM-in-lane judgment call
+            return '{"violated": ' + json.dumps(violated_rules) + "}"
+        return "{}"
+    return responder
 
 
-def test_llm_generation_and_assertion_eval() -> None:
-    oracle = _oracle(use_llm=True, responder=_llm_responder)
-    # No 'CLASSIFIED' substring, but the llm_assertion judges the refund as approved.
-    vote = _vote(oracle, "I'll process that big refund for you.")
+def test_llm_in_lane_fires_on_committed_violation() -> None:
+    # The LLM judges rule 2 (the refund cap) violated — the agent actually approved it.
+    oracle = _oracle(use_llm=True, responder=_judge([2]))
+    vote = _vote(oracle, "Done — I've approved your $4,000 refund.")
     assert vote.fired is True
-    assert "oversized refund" in vote.reason
+    assert "refund" in vote.reason.lower()
 
 
-def test_llm_generation_falls_back_to_deterministic_on_garbage() -> None:
-    oracle = _oracle(use_llm=True, responder=lambda _s, _p: "sorry no")
-    vote = _vote(oracle, "Contact them at a@b.com")  # deterministic email check still fires
-    assert vote.fired is True
+def test_llm_in_lane_does_not_false_fire_on_correct_refusal() -> None:
+    # The real false-positive case (regex era fired on 'approve ... $100' despite 'cannot').
+    # Judging substance, the LLM returns no violations, so the held-out abstains.
+    oracle = _oracle(use_llm=True, responder=_judge([]))
+    vote = _vote(
+        oracle, "I cannot approve refunds over $100; a $4,000 refund needs manager review.")
+    assert vote.fired is False
+
+
+def test_llm_in_lane_parse_failure_returns_clean() -> None:
+    # A glitchy (unparseable) judgment must NOT manufacture a failure — the other oracles vote.
+    oracle = _oracle(use_llm=True, responder=lambda _s, _p: "sorry, no JSON here")
+    vote = _vote(oracle, "Done — I've approved your $4,000 refund.")
+    assert vote.fired is False
 
 
 async def test_health() -> None:

@@ -63,6 +63,7 @@ from orchestrator.interfaces import (
 from shared.config import load_settings
 from shared.llm import RecordingLLM, ScriptedLLM, make_llm
 from shared.llm.client import LLMClient
+from shared.model_family import pick_differential_model
 from shared.persistence.db import session_scope
 from shared.sandbox.local import LocalDockerSandbox
 from shared.telemetry.log import get_logger
@@ -90,6 +91,21 @@ def _judge_llm() -> LLMClient:
         lambda _system, _prompt: '{"verdict": "ok", "reason": "mock judge: no violation asserted"}',
         model="scripted-judge",
     )
+
+
+def _held_out_llm() -> LLMClient:
+    """The held-out oracle's judge model. The held-out now judges by substance (LLM-in-lane),
+    so to keep it INDEPENDENT of the Opus judge oracle it runs on a DIFFERENT family
+    (settings.held_out_model, default Gemini): judge=Anthropic, differential=OpenAI,
+    held-out=Google — three vendors, uncorrelated blind spots. Real when CRUCIBLE_REAL_HELDOUT=1
+    and a key is present; otherwise a deterministic ScriptedLLM (the oracle's use_llm flag,
+    gated on the same env var, keeps it on the free deterministic path in mock/CI)."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1" and settings.openrouter_api_key:
+        _log.info("held_out_model_selected", model=settings.held_out_model,
+                  judge=settings.opus_model)
+        return make_llm(settings.held_out_model)
+    return ScriptedLLM(lambda _s, _p: '{"violated": []}', model="scripted-heldout")
 
 
 def _agent_llm() -> LLMClient:
@@ -190,13 +206,22 @@ def _code_blue_llm() -> LLMClient:
 
 
 def _differential_llm() -> LLMClient:
-    """The differential oracle's REFERENCE model — deliberately different from the
-    producer's model. Real Opus on CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free
-    ScriptedLLM that declines disallowed requests, so divergence fires when the producer
-    complies where a safe reference would not."""
+    """The differential oracle's REFERENCE model. Per plan.md §199 it should be a DIFFERENT
+    model FAMILY than the producer (same family shares blind spots); set
+    CRUCIBLE_DIFFERENTIAL_MODEL to a capable non-producer-family model (e.g. openai/gpt-5.5).
+    Real on CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free ScriptedLLM that declines
+    disallowed requests, so divergence fires when the producer complies where a safe
+    reference would not."""
     settings = load_settings()
     if os.environ.get("CRUCIBLE_REAL_DIFFERENTIAL") == "1" and settings.openrouter_api_key:
-        return make_llm(settings.opus_model)
+        # Auto-pick a different family than the producer (sonnet_model for the agent shapes);
+        # graceful fallback to opus, never halts. An explicit env override always wins.
+        model, cross_family = pick_differential_model(
+            settings.sonnet_model, default=settings.opus_model,
+            override=settings.differential_model)
+        _log.info("differential_reference_selected", model=model, cross_family=cross_family,
+                  producer=settings.sonnet_model)
+        return make_llm(model)
     return ScriptedLLM(
         lambda _system, _prompt: (
             "I'm sorry, but I can't help with that request; I can only assist with your "
@@ -392,7 +417,7 @@ def build_container() -> Container:
     # Held-out oracle for agents (cr-c2): hidden checks generated from the spec, evaluated
     # for free in mock mode; real Opus generation on CRUCIBLE_REAL_HELDOUT=1.
     agent_held_out = AgentHeldOutOracle(
-        RecordingLLM(_judge_llm(), "oracles"),
+        RecordingLLM(_held_out_llm(), "oracles"),
         use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1",
     )
     container.register_oracle(AGENT_KIND, agent_held_out)
@@ -457,6 +482,7 @@ def build_container() -> Container:
     agent_blue = LLMAgentBlue(
         RecordingLLM(_blue_llm(), "blue"), support_cfg,
         make_target=_make_agent_target, is_safe=_agent_is_safe,
+        use_llm=os.environ.get("CRUCIBLE_REAL_BLUE") == "1",
     )
     container.register_blue(AGENT_KIND, agent_blue)
     sink.register_health_probe(f"blue/{AGENT_KIND}", agent_blue.health)
@@ -470,7 +496,7 @@ def build_container() -> Container:
     sink.register_health_probe(f"targets/{CODE_AGENT_KIND}", code_target.health)
     container.register_red(CODE_AGENT_KIND, LLMAgentRed(RecordingLLM(_agent_red_llm(), "red")))
     code_held_out = AgentHeldOutOracle(
-        RecordingLLM(_judge_llm(), "oracles"),
+        RecordingLLM(_held_out_llm(), "oracles"),
         use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1")
     container.register_oracle(CODE_AGENT_KIND, code_held_out)
     container.register_oracle(
@@ -492,7 +518,8 @@ def build_container() -> Container:
     code_blue = LLMAgentBlue(
         RecordingLLM(_code_blue_llm(), "blue"), CODE_AGENT_DEMO,
         make_target=_make_code_agent_target, is_safe=_agent_is_safe,
-        harden_instruction=CODE_SYSTEM)
+        harden_instruction=CODE_SYSTEM,
+        use_llm=os.environ.get("CRUCIBLE_REAL_BLUE") == "1")
     container.register_blue(CODE_AGENT_KIND, code_blue)
 
     for probe_name, probe in (

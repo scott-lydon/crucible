@@ -29,6 +29,7 @@ from modules.red.catalog import build_catalog
 from modules.targets.agent import (
     HttpEndpointConfig,
     demo_agent,
+    demo_spec,
     validate_agent_config,
     validate_http_endpoint,
 )
@@ -128,12 +129,11 @@ class RunAccepted(BaseModel):
 @app.post("/runs", response_model=RunAccepted, status_code=201)
 async def post_runs(req: RunRequest) -> RunAccepted:
     container = get_container()
-    # Halt-certification gate (spec US-13): refuse new runs when white-box recall is
-    # below the red line.
-    async with session_scope() as session:
-        halt = await halt_state(session)
-    if halt["halted"]:
-        raise HTTPException(status_code=409, detail=halt["message"])
+    # Certification is ADVISORY, not blocking (spec US-13, revised). A low or unmeasurable
+    # white-box recall surfaces a yellow "not certified" WARNING on the dashboard
+    # (see halt_state / the banner), but it MUST NOT refuse a run — the platform stays usable.
+    # Certification is a rubber stamp we withhold, not a kill-switch on the tool. (Budget below
+    # remains a HARD gate: spend is a real-world cap; certification is only a stamp.)
     # Budget gate (cr-f4): refuse a new run once the global real-LLM cap is reached, so a
     # public endpoint can never spend without bound.
     global_cap = load_settings().global_budget_dollars
@@ -147,6 +147,17 @@ async def post_runs(req: RunRequest) -> RunAccepted:
         raise HTTPException(
             status_code=422, detail="provide exactly one of spec_yaml or human_spec"
         )
+
+    # A built-in demo agent carries an authoritative spec (incl. hidden-test ground truth) in
+    # demo_spec(name). The UI builds its human_spec without hidden_tests, so backfill them here
+    # — otherwise the held-out oracle has no ground truth and can't catch the agent's factual
+    # errors (the whole point of the weak-start co-evolution demo).
+    if (req.demo_agent is not None and req.human_spec is not None
+            and not req.human_spec.hidden_tests):
+        try:
+            req.human_spec.hidden_tests = list(demo_spec(req.demo_agent).hidden_tests)
+        except KeyError:
+            pass
 
     source_text: HumanSpec | None = None
     compiler_name = "yaml"
@@ -424,18 +435,32 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         if row is None:
             raise HTTPException(status_code=404, detail="patch not found")
         new_version = row.audit_trace.get("new_version")
+        # A no-op round (no hardening) resolves to the BASE version, which can have >1 config
+        # row (e.g. a "demo" and a "base" save) — scalar_one_or_none() would 500 there. Take
+        # the first; they are the same prompt at that version.
         cfg = (
             await session.execute(
                 select(AgentConfigRow).where(
                     AgentConfigRow.run_id == row.run_id,
-                    AgentConfigRow.version == new_version))
-        ).scalar_one_or_none()
+                    AgentConfigRow.version == new_version)
+                .order_by(AgentConfigRow.id))
+        ).scalars().first()
+        # The BEFORE prompt (base version) so the report shows what CHANGED, not just the
+        # result. Same multi-row guard as above.
+        base_cfg = (
+            await session.execute(
+                select(AgentConfigRow).where(
+                    AgentConfigRow.run_id == row.run_id,
+                    AgentConfigRow.version == row.config_version)
+                .order_by(AgentConfigRow.id))
+        ).scalars().first()
     return {
         "patch_id": patch_id, "runId": row.run_id, "round": row.round_index,
         "base_version": row.config_version, "new_version": new_version,
         "safe_before": row.safe_before, "safe_after": row.safe_after,
         "validated": row.audit_trace.get("validated"),
         "summary": row.audit_trace.get("patch_summary"),
+        "old_system_prompt": base_cfg.system_prompt if base_cfg is not None else None,
         "new_system_prompt": cfg.system_prompt if cfg is not None else None,
     }
 

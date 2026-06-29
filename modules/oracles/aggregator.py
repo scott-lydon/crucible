@@ -9,6 +9,7 @@ votes, the verdict replays byte-for-byte (spec US-5)."""
 
 from __future__ import annotations
 
+import asyncio
 from collections.abc import Mapping, Sequence
 from typing import Any
 
@@ -64,5 +65,8 @@ async def run_verdict(
     """Collect every oracle's vote on one producer output, then aggregate. Oracles are
     polled independently — none sees another's vote (non-colluding ensemble). Matches
     the VerifyFn port so wiring can inject it into the loop."""
-    votes = [await oracle.vote(spec, attack, output) for oracle in oracles]
+    # Oracles are independent (none sees another's vote), so run them CONCURRENTLY; gather
+    # preserves order, so the verdict still replays byte-for-byte (spec US-5).
+    votes = list(await asyncio.gather(
+        *(oracle.vote(spec, attack, output) for oracle in oracles)))
     return aggregate(attack.run_id, attack, output, votes)
