@@ -23,9 +23,11 @@ class Settings:
     # auto-picks a DIFFERENT family than the producer (shared/model_family.py), gracefully
     # falling back when the family is unknown. Set CRUCIBLE_DIFFERENTIAL_MODEL to force one.
     differential_model: str | None
-    # The held-out is now an LLM judge too (substance, not regex). To keep it INDEPENDENT of
-    # the Opus judge oracle, it runs on a THIRD vendor by default (Gemini) — judge=Anthropic,
-    # differential=OpenAI, held-out=Google — so the three LLM oracles don't share blind spots.
+    # The held-out is the GROUND-TRUTH anchor (trust, recall AND co-evolution safe-rate all read
+    # it, and nothing else computes ground truth), so ACCURACY matters most. It runs on the
+    # strongest available non-Anthropic model (GPT-5.5) — accurate AND independent of the Opus
+    # judge. Two families (Anthropic judge + OpenAI held-out/differential) is enough corroboration
+    # for the demo; a weaker "third vendor" on the answer key would just understate failures.
     # Override with CRUCIBLE_HELDOUT_MODEL.
     held_out_model: str
     halt_recall_threshold: float
@@ -52,7 +54,7 @@ def load_settings() -> Settings:
         sonnet_model=os.environ.get("CRUCIBLE_SONNET_MODEL", "anthropic/claude-sonnet-4.6"),
         opus_model=opus_model,
         differential_model=os.environ.get("CRUCIBLE_DIFFERENTIAL_MODEL"),
-        held_out_model=os.environ.get("CRUCIBLE_HELDOUT_MODEL", "google/gemini-3.5-flash"),
+        held_out_model=os.environ.get("CRUCIBLE_HELDOUT_MODEL", "openai/gpt-5.5"),
         halt_recall_threshold=float(os.environ.get("CRUCIBLE_HALT_RECALL", "0.7")),
         global_budget_dollars=float(os.environ.get("CRUCIBLE_GLOBAL_BUDGET", "25.0")),
     )
