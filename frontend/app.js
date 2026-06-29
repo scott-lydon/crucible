@@ -710,15 +710,20 @@
         } else if (t.improved_from) {
           // Co-evolution: the headline scores the FINAL config, but the narrative must describe
           // the whole journey, or a 100/A reads as "nothing happened" when the run found failures.
+          // An ML target (shape1_ml) hardens by RETRAINING; an LLM agent by prompt rewriting.
+          var isML = run.shape === "shape1_ml";
+          var noun = isML ? "model" : "agent";
+          var fixVerb = isML ? "retrained the model on the adversarial samples it found"
+            : "rewrote the agent's prompt to fix what it found";
           lines.push("This was a co-evolution run. Across the whole run the attacker landed " +
-            ov.n_attacks + " attacks, and the agent failed " + ov.failures +
+            ov.n_attacks + " attacks, and the " + noun + " failed " + ov.failures +
             (ov.failures ? " of them (the panel caught " + ov.caught + "; " + ov.silent +
               " slipped EVERY check)" : "") + ".");
-          lines.push("The AI defender then rewrote the agent's prompt to fix what it found. The " +
-            "FINAL hardened agent (scored above) resisted all " + t.n_attacks + " of its attacks, " +
-            "so trust climbed from " + t.improved_from.band + " (" + t.improved_from.score +
-            "/100) to " + t.band + " (" + t.trust_score + "/100). The headline is that shipped " +
-            "agent, not an average of the journey.");
+          lines.push("The AI defender then " + fixVerb + ". The FINAL hardened " + noun +
+            " (scored above) resisted all " + t.n_attacks + " of its attacks, so trust climbed " +
+            "from " + t.improved_from.band + " (" + t.improved_from.score + "/100) to " + t.band +
+            " (" + t.trust_score + "/100). The headline is that shipped " + noun + ", not an " +
+            "average of the journey.");
         } else if (t.failures === 0) {
           lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed none of " +
             "them; it resisted every jailbreak the attacker tried. That's why the trust score is " +
@@ -891,8 +896,11 @@
         var patchBox = h("div", { id: "patchbox" });
         setView(card("Co-evolution · " + rid,
           h("p", { class: "muted", style: "margin-top:-6px" },
-            "Each round the attacker attacks, the panel grades, and the AI defender rewrites the " +
-            "agent's system prompt. ASR is the agent's residual failure rate — it should drop as the defender hardens it."),
+            "Each round the attacker attacks, the panel grades, and the AI defender hardens the " +
+            "target between rounds: an LLM agent by rewriting its system prompt, an ML model by " +
+            "RETRAINING on the adversarial samples. ASR is the target's residual failure rate; it " +
+            "should drop as the defender hardens it. Blue safe-rate is the held-out validation " +
+            "score before and after each hardening (for fraud, the model's fraud-detection recall)."),
           h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "round"), h("th", {}, "agent"),
             h("th", {}, "ASR (attacks that worked)"), h("th", {}, "detection"),
             h("th", {}, "blue safe-rate"), h("th", {}, "patch"))), body)), patchBox);
