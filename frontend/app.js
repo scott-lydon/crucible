@@ -658,7 +658,7 @@
     renderTabs("dashboard");
     loading();
     resolveRun(id).then(function (rid) {
-      if (!rid) return setView(card("Dashboard", empty("No runs yet — start one from Launch.")));
+      if (!rid) return setView(card("Dashboard", empty("No runs yet. Start one from Launch.")));
       Promise.all([jget("/trust?run_id=" + rid), jget("/metrics?run_id=" + rid),
         jget("/runs/" + rid)]).then(function (r) {
         var t = r[0], m = r[1], run = r[2], tiles = m.tiles || {};
