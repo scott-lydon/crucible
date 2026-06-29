@@ -313,6 +313,6 @@ class AgentHeldOutOracle:
 
     async def health(self) -> HealthStatus:
         return HealthStatus(status="green", detail={
-            "oracle": "held_out", "target": "agent",
-            "source": "llm_generated" if self._use_llm else "deterministic",
+            "oracle": "held_out", "target": "agent", "model": self._llm.model,
+            "source": "llm_judged" if self._use_llm else "deterministic",
         })
