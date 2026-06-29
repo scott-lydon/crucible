@@ -613,7 +613,7 @@
           atks.forEach(function (a) {
             var caught = a.outcome === "caught";
             if (a.outcome) { graded++; if (caught) flagged++; }
-            var attrs = {};
+            var attrs = { title: "attack " + (a.attackId || "") };
             if (caught) attrs.class = "row-caught";
             if (a.verdictId) {
               attrs.class = (attrs.class ? attrs.class + " " : "") + "clickable";
@@ -790,7 +790,9 @@
         h("div", { style: "display:flex;align-items:center;gap:12px" },
           h("h2", {}, "Verdict"),
           h("span", { class: "pill " + (caught ? "red" : "green"),
-            style: "font-size:14px;padding:4px 14px" }, caught ? "CAUGHT" : "CLEAN")),
+            style: "font-size:14px;padding:4px 14px" }, caught ? "CAUGHT" : "CLEAN"),
+          h("span", { class: "muted mono", style: "font-size:11px",
+            title: "attack id — copy to reference this exact attack" }, d.attackId || "")),
         h("div", { class: "muted mono", style: "font-size:12px" },
           fired.length + "/" + (votes.length || 5) + " oracles flagged · tally " + d.tally +
           " / " + d.threshold + " · tactic " + (atk.tactic || "—") +
