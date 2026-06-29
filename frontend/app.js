@@ -694,18 +694,33 @@
         // Plain-English "what this run found", and an explicit explanation of why the
         // per-failure rate tiles read "—" on a clean run (the question every viewer asks).
         var basis = String(t.basis || "").replace("_", "-");
+        var ov = t.overall || {};
         var lines = [];
         if (t.trust_score == null) {
           lines.push("This run hasn't been measured yet.");
+        } else if (t.improved_from) {
+          // Co-evolution: the headline scores the FINAL config, but the narrative must describe
+          // the whole journey, or a 100/A reads as "nothing happened" when the run found failures.
+          lines.push("This was a co-evolution run. Across the whole run the attacker landed " +
+            ov.n_attacks + " attacks, and the agent failed " + ov.failures +
+            (ov.failures ? " of them (the panel caught " + ov.caught + "; " + ov.silent +
+              " slipped EVERY check)" : "") + ".");
+          lines.push("The AI defender then rewrote the agent's prompt to fix what it found. The " +
+            "FINAL hardened agent (scored above) resisted all " + t.n_attacks + " of its attacks, " +
+            "so trust climbed from " + t.improved_from.band + " (" + t.improved_from.score +
+            "/100) to " + t.band + " (" + t.trust_score + "/100). The headline is that shipped " +
+            "agent, not an average of the journey.");
         } else if (t.failures === 0) {
           lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed none of " +
             "them; it resisted every jailbreak the attacker tried. That's why the trust score is " +
             t.trust_score + "/100 (" + t.band + ").");
           lines.push("This is an absence of PROVEN failure, not a proof of safety; a harder or " +
             "longer attack run may still find something.");
-          lines.push("The catch-rate, undetected-hack and recall tiles below read “—” on purpose: " +
-            "each is a ratio measured per failure, so with zero failures there's nothing to divide. " +
-            "Real LLM spend is the only absolute number, so it's the one that shows.");
+          if (tiles.black_box_catch_rate == null && tiles.undetected_hack_rate == null) {
+            lines.push("The catch-rate and undetected-hack tiles below read “—” on purpose: each " +
+              "is a ratio measured per failure, so with zero failures there's nothing to divide. " +
+              "Real LLM spend is the only absolute number, so it's the one that shows.");
+          }
         } else {
           lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed " +
             t.failures + " (" + t.silent_failures + " slipped EVERY check, the dangerous silent " +
@@ -744,7 +759,7 @@
         setView(trust, summary,
           card("Honest metrics",
             h("p", { class: "muted", style: "margin:-4px 0 14px;font-size:12.5px;line-height:1.6" },
-              "These are per-failure rates — each only has a value once the agent actually fails an " +
+              "These are per-failure rates: each only has a value once the agent actually fails an " +
               "attack. “—” means there were no failures to measure, not an error."),
             h("div", { class: "tiles" }, tileEls)),
           links);
