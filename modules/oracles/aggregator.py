@@ -1,8 +1,10 @@
-"""Verdict aggregator. Vote-weighted: each of the four independent oracles carries
-one vote, the LLM judge half a vote; the ensemble "catches" producer wrongness when
-the fired weight reaches the threshold (2.0). The half-vote judge can therefore never
-decide a verdict alone (spec US-4), and a single oracle (weight 1.0) cannot either —
-two independent mechanisms must agree (plan.md section 3).
+"""Verdict aggregator. We report HOW MANY of the panel's independent oracles flagged an
+output ("X of N flagged") — a plain count, each oracle one vote, no weighting. ``tally`` is
+that fired count and ``threshold`` is the CORROBORATION bar (2): a verdict is "caught" only
+when >= 2 independent oracles agree, which is what the silent-failure and white-box-recall
+metrics need (one oracle alone, including the ground-truth held-out, can have a blind spot).
+The UI shows the full count and colours by strength (0 clean, 1 flagged, >=2 corroborated);
+the co-evolution loop improves on ANY firing, separately from this bar.
 
 Deterministic: given the same producer output and the same (deterministic) oracle
 votes, the verdict replays byte-for-byte (spec US-5)."""
@@ -19,7 +21,9 @@ from shared.types.enums import Pillar, VerdictOutcome
 from shared.types.ids import RunId, VerdictId, new_id
 from shared.types.sealed_spec import SealedSpec
 
-PASS_THRESHOLD = 2.0
+# Corroboration bar as a COUNT (was a weighted 2.0): >= this many independent oracles must
+# flag an output for it to count as "caught" (corroborated). Drives silent/recall, not the UI.
+PASS_THRESHOLD = 2
 
 
 def aggregate(
@@ -30,16 +34,22 @@ def aggregate(
     *,
     threshold: float = PASS_THRESHOLD,
 ) -> Verdict:
-    tally = sum(v.weight for v in votes if v.fired)
-    outcome = VerdictOutcome.caught if tally >= threshold else VerdictOutcome.clean
     fired_oracles = [str(v.oracle) for v in votes if v.fired]
+    fired_count = len(fired_oracles)
+    total = len(votes)
+    # "caught" == CORROBORATED: >= threshold (2) independent oracles flagged it. The UI shows
+    # the full "fired_count of total" and colours by strength; this binary only drives the
+    # corroboration-dependent metrics (silent failures, white-box recall).
+    outcome = VerdictOutcome.caught if fired_count >= threshold else VerdictOutcome.clean
     audit = AuditTrace(
         pillar=Pillar.oracles,
         summary=(
-            f"{outcome}: fired weight {tally:.1f} / threshold {threshold:.1f} "
-            f"from {len(votes)} oracle(s); fired={fired_oracles}"
+            f"{fired_count} of {total} oracles flagged"
+            + (" (corroborated)" if outcome is VerdictOutcome.caught else "")
+            + f"; fired={fired_oracles}"
         ),
-        detail={"votes": [v.as_dict() for v in votes], "fired": fired_oracles},
+        detail={"votes": [v.as_dict() for v in votes], "fired": fired_oracles,
+                "fired_count": fired_count, "total": total},
     )
     return Verdict(
         verdict_id=VerdictId(new_id("vdt")),
@@ -47,8 +57,8 @@ def aggregate(
         attack_id=attack.attack_id,
         producer_output=dict(output),
         votes=tuple(votes),
-        tally=tally,
-        threshold=threshold,
+        tally=float(fired_count),
+        threshold=float(threshold),
         outcome=outcome,
         audit=audit,
         seed=attack.seed,

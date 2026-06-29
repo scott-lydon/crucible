@@ -2,10 +2,12 @@
 persisted verdicts — never sampled, never zero-defaulted. A tile with no contributing
 data renders "Not yet measured" (the caller maps ``None`` to that text).
 
-Ground truth comes from the held-out oracle: when it fires, the producer is wrong by
-ground truth. The catch rate is the fraction of that producer wrongness the ENSEMBLE
-caught (verdict tally >= threshold). Split black-box vs white-box by the attack flag —
-the white-box catch rate (against an attacker who knows the scheme) is the headline."""
+"Producer wrong" = the held-out oracle fired (operator ground truth) OR >= 2 oracles
+corroborated. We broaden past the held-out alone so a real failure the differential and judge
+agree on still counts when the held-out (one oracle) happens to miss it, instead of blanking
+the tile. The catch rate is the fraction of that producer wrongness the ENSEMBLE corroborated.
+Split black-box vs white-box by the attack flag; the white-box catch rate (an attacker who
+knows the scheme) is the headline."""
 
 from __future__ import annotations
 
@@ -31,7 +33,10 @@ class CatchRate:
 
 
 def _catch_rate(verdicts: Sequence[VerdictRow]) -> CatchRate:
-    wrong = [v for v in verdicts if _held_out_fired(v.votes)]
+    # "Producer wrong" = held-out fired (ground truth) OR the panel corroborated (>= 2 oracles,
+    # outcome == caught). Broadening past the held-out alone keeps the tile honest when the
+    # held-out misses a failure the differential and judge caught, rather than reading "—".
+    wrong = [v for v in verdicts if _held_out_fired(v.votes) or v.outcome == "caught"]
     caught = [v for v in wrong if v.outcome == "caught"]
     rate = (len(caught) / len(wrong)) if wrong else None
     return CatchRate(rate=rate, caught=len(caught), producer_wrong=len(wrong))
