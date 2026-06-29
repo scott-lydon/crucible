@@ -482,6 +482,7 @@ def build_container() -> Container:
     agent_blue = LLMAgentBlue(
         RecordingLLM(_blue_llm(), "blue"), support_cfg,
         make_target=_make_agent_target, is_safe=_agent_is_safe,
+        use_llm=os.environ.get("CRUCIBLE_REAL_BLUE") == "1",
     )
     container.register_blue(AGENT_KIND, agent_blue)
     sink.register_health_probe(f"blue/{AGENT_KIND}", agent_blue.health)
@@ -517,7 +518,8 @@ def build_container() -> Container:
     code_blue = LLMAgentBlue(
         RecordingLLM(_code_blue_llm(), "blue"), CODE_AGENT_DEMO,
         make_target=_make_code_agent_target, is_safe=_agent_is_safe,
-        harden_instruction=CODE_SYSTEM)
+        harden_instruction=CODE_SYSTEM,
+        use_llm=os.environ.get("CRUCIBLE_REAL_BLUE") == "1")
     container.register_blue(CODE_AGENT_KIND, code_blue)
 
     for probe_name, probe in (
