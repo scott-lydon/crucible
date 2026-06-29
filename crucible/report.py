@@ -58,96 +58,239 @@ def _collect(run_id: str) -> dict[str, Any]:
 
 
 # The metric slots are EMPTY (data-metric=...) — JS fills them from DATA at load. There is
-# no numeric literal in any metric slot, so the facade-grep stays clean.
+# no numeric literal in any metric slot, so the facade-grep stays clean. Typography uses a
+# sans-serif (Inter via system stack) for prose and a monospace for IDs / code / trace so
+# the report reads like a report instead of a terminal dump.
 _TEMPLATE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>Crucible report — {run_id}</title>
 <style>
- body{{font-family:ui-monospace,Menlo,monospace;background:#0a0e1a;color:#e2e8f0;margin:0;padding:24px}}
- h1,h2{{color:#fff}} .muted{{color:#94a3b8}}
- .cards{{display:flex;flex-wrap:wrap;gap:12px;margin:16px 0}}
- .card{{background:#1a2236;border:1px solid #2a3550;border-radius:8px;padding:14px 18px;min-width:180px}}
- .card .v{{font-size:1.6em;color:#6366f1}} .card .l{{font-size:.8em}}
- table{{border-collapse:collapse;width:100%;margin:8px 0}}
- td,th{{border:1px solid #2a3550;padding:6px 8px;text-align:left;font-size:.85em}}
- .pass{{color:#22c55e}} .fail{{color:#ef4444}}
- .ev{{padding:2px 0;font-size:.85em}} .seq{{color:#64748b}}
- details{{margin:6px 0}} summary{{cursor:pointer}}
+ :root{{
+   --bg:#0a0e1a; --panel:#111726; --panel2:#141b2e; --border:#1f2942;
+   --text:#e7ecf5; --muted:#8b95ad; --dim:#5b6584;
+   --accent:#7c8cff; --accent-soft:#2a3568;
+   --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa;
+   --mono:ui-monospace, "JetBrains Mono", "SF Mono", Menlo, monospace;
+   --sans:Inter, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+ }}
+ *{{box-sizing:border-box}}
+ body{{font-family:var(--sans);background:var(--bg);color:var(--text);margin:0;
+   line-height:1.55;letter-spacing:-.005em;
+   font-feature-settings:"ss01","cv02","cv11";
+   background-image:radial-gradient(1200px 600px at 80% -10%,rgba(124,140,255,.06),transparent),
+                    radial-gradient(900px 500px at -10% 110%,rgba(96,165,250,.05),transparent)}}
+ .wrap{{max-width:1120px;margin:0 auto;padding:48px 32px 96px}}
+ .hdr{{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}}
+ h1{{font-size:2.1em;font-weight:700;letter-spacing:-.02em;margin:0;color:#fff}}
+ h2{{font-size:1.1em;font-weight:600;letter-spacing:-.005em;color:#fff;
+   margin:40px 0 12px;text-transform:none}}
+ h2::before{{content:"";display:inline-block;width:3px;height:14px;background:var(--accent);
+   border-radius:2px;margin-right:10px;vertical-align:middle}}
+ p{{color:var(--muted);margin:.4em 0}}
+ .lede{{font-size:.92em;max-width:62ch}}
+ .mono,code,.id{{font-family:var(--mono);font-size:.9em}}
+ .id{{color:var(--muted);background:rgba(255,255,255,.03);
+   padding:2px 8px;border-radius:6px;border:1px solid var(--border)}}
+ /* Status pills */
+ .pillrow{{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 8px}}
+ .pill{{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;
+   border-radius:999px;font-size:.82em;font-weight:600;letter-spacing:.01em;
+   background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--text)}}
+ .pill .dot{{width:7px;height:7px;border-radius:50%;background:var(--muted)}}
+ .pill.ok .dot{{background:var(--ok)}} .pill.ok{{color:#a7f3d0}}
+ .pill.warn .dot{{background:var(--warn)}} .pill.warn{{color:#fde68a}}
+ .pill.bad .dot{{background:var(--bad)}} .pill.bad{{color:#fecaca}}
+ .pill.info .dot{{background:var(--info)}} .pill.info{{color:#bfdbfe}}
+ .pill .k{{color:var(--dim);font-weight:500;text-transform:uppercase;font-size:.78em;
+   letter-spacing:.06em}}
+ /* Metric cards */
+ .cards{{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+   gap:12px;margin:16px 0}}
+ .card{{background:linear-gradient(180deg,var(--panel) 0%,var(--panel2) 100%);
+   border:1px solid var(--border);border-radius:14px;padding:18px 20px;
+   position:relative;overflow:hidden}}
+ .card::after{{content:"";position:absolute;left:0;right:0;top:0;height:1px;
+   background:linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent)}}
+ .card .v{{font-size:2.2em;font-weight:700;letter-spacing:-.03em;color:#fff;
+   font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}}
+ .card .v.ok{{color:var(--ok)}} .card .v.warn{{color:var(--warn)}}
+ .card .v.bad{{color:var(--bad)}}
+ .card .l{{font-size:.82em;color:var(--muted);font-weight:500}}
+ /* Tables */
+ .tbl{{border:1px solid var(--border);border-radius:12px;overflow:hidden;
+   margin:8px 0;background:var(--panel)}}
+ table{{border-collapse:collapse;width:100%}}
+ th{{text-align:left;font-size:.78em;font-weight:600;text-transform:uppercase;
+   letter-spacing:.06em;color:var(--dim);padding:12px 16px;
+   background:rgba(255,255,255,.02);border-bottom:1px solid var(--border)}}
+ td{{padding:12px 16px;border-bottom:1px solid var(--border);font-size:.92em;
+   font-variant-numeric:tabular-nums}}
+ tr:last-child td{{border-bottom:none}}
+ tr:hover td{{background:rgba(255,255,255,.02)}}
+ td.right{{text-align:right}}
+ td.mono{{font-family:var(--mono);font-size:.86em;color:var(--muted)}}
+ /* Verdict cards */
+ .verdicts{{display:grid;gap:10px;margin:8px 0}}
+ .vd{{border:1px solid var(--border);border-radius:12px;background:var(--panel);
+   overflow:hidden;transition:border-color .15s}}
+ .vd:hover{{border-color:#2d3a5e}}
+ .vd>summary{{list-style:none;cursor:pointer;padding:14px 16px;
+   display:flex;align-items:center;gap:12px}}
+ .vd>summary::-webkit-details-marker{{display:none}}
+ .vd>summary::before{{content:"▸";color:var(--dim);transition:transform .15s;
+   display:inline-block;font-size:.9em}}
+ .vd[open]>summary::before{{transform:rotate(90deg)}}
+ .vd .vid{{font-family:var(--mono);font-size:.88em;color:var(--text);flex:1}}
+ .vd .tally{{font-family:var(--mono);font-size:.82em;color:var(--muted)}}
+ .vd .body{{padding:4px 16px 16px;border-top:1px solid var(--border);
+   background:rgba(0,0,0,.15)}}
+ .vd.caught{{border-left:3px solid var(--bad)}}
+ .vd.clean{{border-left:3px solid var(--ok)}}
+ /* Per-vote styling */
+ .pass{{color:var(--ok);font-weight:600}}
+ .fail{{color:var(--bad);font-weight:600}}
+ /* Trace timeline */
+ .trace{{border:1px solid var(--border);border-radius:12px;background:var(--panel);
+   max-height:480px;overflow-y:auto;padding:6px 0}}
+ .ev{{padding:6px 16px;font-family:var(--mono);font-size:.84em;
+   border-bottom:1px solid rgba(255,255,255,.03);display:flex;gap:10px}}
+ .ev:last-child{{border-bottom:none}}
+ .ev:hover{{background:rgba(255,255,255,.02)}}
+ .seq{{color:var(--dim);min-width:36px;text-align:right}}
+ .etype{{color:var(--accent);font-weight:600;min-width:160px}}
+ .edata{{color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;
+   white-space:nowrap}}
+ .empty{{padding:14px 16px;color:var(--muted);font-style:italic;
+   background:var(--panel);border:1px dashed var(--border);border-radius:12px}}
 </style></head><body>
-<h1>Crucible run <span class="muted">{run_id}</span></h1>
-<p class="muted">Pure renderer: every number below is read from this run's artifact files.
-A blank metric means the run did not measure it.</p>
-<div id="header"></div>
-<h2>Headline metrics</h2>
-<div class="cards">
- <div class="card"><div class="v" data-metric="white_box_catch_rate"></div><div class="l">White-box catch rate</div></div>
- <div class="card"><div class="v" data-metric="black_box_catch_rate"></div><div class="l">Black-box catch rate</div></div>
- <div class="card"><div class="v" data-metric="validation_vs_holdout_gap"></div><div class="l">BB vs WB gap</div></div>
- <div class="card"><div class="v" data-metric="undetected_hack_rate"></div><div class="l">Undetected-hack rate</div></div>
- <div class="card"><div class="v" data-metric="dollars_per_caught_hack"></div><div class="l">$ / caught hack</div></div>
+<div class="wrap">
+ <div class="hdr">
+  <h1>Crucible run</h1>
+  <span class="id">{run_id}</span>
+ </div>
+ <p class="lede">Every number below is read directly from this run's artifact files.
+ A blank metric reads <em>Not yet measured</em>, never a placeholder zero.</p>
+ <div class="pillrow" id="header"></div>
+ <h2>Headline metrics</h2>
+ <div class="cards">
+  <div class="card"><div class="v" data-metric="white_box_catch_rate" data-tone="catch"></div><div class="l">White-box catch rate</div></div>
+  <div class="card"><div class="v" data-metric="black_box_catch_rate" data-tone="catch"></div><div class="l">Black-box catch rate</div></div>
+  <div class="card"><div class="v" data-metric="validation_vs_holdout_gap" data-tone="gap"></div><div class="l">Black-box vs white-box gap</div></div>
+  <div class="card"><div class="v" data-metric="undetected_hack_rate" data-tone="undetected"></div><div class="l">Undetected-hack rate</div></div>
+  <div class="card"><div class="v" data-metric="dollars_per_caught_hack" data-tone="neutral"></div><div class="l">Cost per caught hack</div></div>
+ </div>
+ <h2>Co-evolution and attack success rate</h2>
+ <div id="coevo"></div>
+ <h2>Strategy leaderboard</h2>
+ <p>Undetected tactics the red agent landed on, in discovery order.</p>
+ <div id="catalog"></div>
+ <h2>Verdicts</h2>
+ <div id="verdicts" class="verdicts"></div>
+ <h2>Trace timeline</h2>
+ <div id="trace" class="trace"></div>
 </div>
-<h2>Co-evolution &amp; ASR (from trace)</h2>
-<div id="coevo"></div>
-<h2>Strategy leaderboard (undetected tactics)</h2>
-<div id="catalog"></div>
-<h2>Verdicts</h2>
-<div id="verdicts"></div>
-<h2>Trace timeline</h2>
-<div id="trace"></div>
 <script id="data" type="application/json">{data_json}</script>
 <script>
 const DATA = JSON.parse(document.getElementById('data').textContent);
-const NM = '<span class="muted">Not yet measured</span>';
+const NM = '<span class="mono" style="color:var(--dim)">not yet measured</span>';
 function pct(v){{return (v===null||v===undefined)?NM:(v*100).toFixed(1)+'%';}}
 function usd(v){{return (v===null||v===undefined)?NM:'$'+Number(v).toFixed(4);}}
-// Header: grades from eligibility + suitability so a reader does not over-trust a thin verdict.
+// Pick a tone class for a metric tile based on the value's direction. catch rates: green
+// if >=0.8, amber 0.5-0.8, red <0.5. undetected rates: inverted. gap: green when low.
+function metricTone(kind,v){{
+ if(v===null||v===undefined) return '';
+ if(kind==='catch') return v>=.8?'ok':v>=.5?'warn':'bad';
+ if(kind==='undetected') return v<=.2?'ok':v<=.5?'warn':'bad';
+ if(kind==='gap') return v<=.1?'ok':v<=.3?'warn':'bad';
+ return '';
+}}
+// Status pills: eligibility + suitability with verdict-aware colors.
+function pillTone(verdict){{
+ const s = String(verdict||'').toUpperCase();
+ if(s.includes('INELIGIBLE')||s.includes('BLOCK')) return 'bad';
+ if(s.includes('CAVEAT')||s.includes('WARN')||s==='WORKABLE') return 'warn';
+ if(s.includes('ELIGIBLE')||s==='IDEAL'||s==='OK') return 'ok';
+ return 'info';
+}}
 (function(){{
- const e=DATA.eligibility, s=DATA.suitability; let h='';
- if(e) h+='<span class="card">Eligibility: '+e.verdict+'</span> ';
- if(s) h+='<span class="card">Suitability: '+s.grade+'</span>';
- document.getElementById('header').innerHTML=h;
+ const e=DATA.eligibility, s=DATA.suitability;
+ const h=document.getElementById('header'); h.innerHTML='';
+ if(e){{
+  const t=pillTone(e.verdict);
+  h.insertAdjacentHTML('beforeend',
+   '<span class="pill '+t+'"><span class="dot"></span><span class="k">Eligibility</span>'+e.verdict+'</span>');
+ }}
+ if(s){{
+  const t=pillTone(s.grade);
+  h.insertAdjacentHTML('beforeend',
+   '<span class="pill '+t+'"><span class="dot"></span><span class="k">Suitability</span>'+s.grade+'</span>');
+ }}
 }})();
 // Metric slots: filled ONLY from DATA.metrics.tiles; null/absent -> "Not yet measured".
 (function(){{
  const tiles=(DATA.metrics&&DATA.metrics.tiles)||{{}};
  document.querySelectorAll('[data-metric]').forEach(el=>{{
-  const k=el.getAttribute('data-metric'); const v=tiles[k];
+  const k=el.getAttribute('data-metric'); const tone=el.getAttribute('data-tone');
+  const v=tiles[k];
   el.innerHTML = (k==='dollars_per_caught_hack') ? usd(v) : pct(v);
+  const cls = metricTone(tone,v);
+  if(cls) el.classList.add(cls);
  }});
 }})();
 // Co-evolution / ASR curve from metric_update events that carry asr/detection.
 (function(){{
  const rows=DATA.events.filter(e=>e.type==='metric_update'&&(e.data.asr!=null||e.data.detection!=null));
- if(!rows.length){{document.getElementById('coevo').innerHTML=NM;return;}}
- let t='<table><tr><th>round</th><th>ASR</th><th>detection</th></tr>';
- rows.forEach((r,i)=>{{t+='<tr><td>'+(r.data.round??i)+'</td><td>'+pct(r.data.asr)+'</td><td>'+pct(r.data.detection)+'</td></tr>';}});
- document.getElementById('coevo').innerHTML=t+'</table>';
+ const wrap=document.getElementById('coevo');
+ if(!rows.length){{wrap.innerHTML='<div class="empty">No co-evolution rounds yet.</div>';return;}}
+ let t='<div class="tbl"><table><tr><th>round</th><th class="right">attack success rate</th><th class="right">detection</th></tr>';
+ rows.forEach((r,i)=>{{t+='<tr><td class="mono">'+(r.data.round??i)+'</td>'
+   +'<td class="right">'+pct(r.data.asr)+'</td>'
+   +'<td class="right">'+pct(r.data.detection)+'</td></tr>';}});
+ wrap.innerHTML=t+'</table></div>';
 }})();
 // Strategy leaderboard from catalog.jsonl.
 (function(){{
- const c=DATA.catalog;
- if(!c.length){{document.getElementById('catalog').innerHTML='<p class="muted">No undetected tactics recorded.</p>';return;}}
- let t='<table><tr><th>#</th><th>tactic / verdict</th><th>outcome</th></tr>';
- c.forEach((r,i)=>{{t+='<tr><td>'+(i+1)+'</td><td>'+(r.tactic||r.attack_id||r.verdict_id||'?')+'</td><td>'+(r.outcome||'')+'</td></tr>';}});
- document.getElementById('catalog').innerHTML=t+'</table>';
+ const c=DATA.catalog; const wrap=document.getElementById('catalog');
+ if(!c.length){{wrap.innerHTML='<div class="empty">No undetected tactics recorded.</div>';return;}}
+ let t='<div class="tbl"><table><tr><th>#</th><th>tactic</th><th>outcome</th></tr>';
+ c.forEach((r,i)=>{{const o=String(r.outcome||'').toLowerCase();
+   const cls=o==='clean'?'fail':o==='caught'?'pass':'';
+   t+='<tr><td class="mono">'+(i+1)+'</td>'
+     +'<td>'+(r.tactic||r.attack_id||r.verdict_id||'?')+'</td>'
+     +'<td class="'+cls+'">'+(r.outcome||'')+'</td></tr>';}});
+ wrap.innerHTML=t+'</table></div>';
 }})();
-// Verdict drill-down.
+// Verdict drill-down with caught/clean color stripe.
 (function(){{
- const v=DATA.verdicts;
- if(!v.length){{document.getElementById('verdicts').innerHTML='<p class="muted">No verdicts.</p>';return;}}
+ const v=DATA.verdicts; const wrap=document.getElementById('verdicts');
+ if(!v.length){{wrap.innerHTML='<div class="empty">No verdicts.</div>';return;}}
  let h='';
  v.forEach(vd=>{{
-  let votes='<table><tr><th>oracle</th><th>fired</th><th>obligation</th></tr>';
-  (vd.votes||[]).forEach(o=>{{const cls=o.fired?'fail':'pass';votes+='<tr><td>'+o.oracle+'</td><td class="'+cls+'">'+(o.fired?'caught':'ok')+'</td><td>'+(o.obligation||'')+'</td></tr>';}});
-  votes+='</table>';
-  h+='<details><summary>'+vd.verdict_id+' — '+vd.outcome+' (tally '+vd.tally+'/'+vd.threshold+')</summary>'+votes+'</details>';
+  const outcome=String(vd.outcome||'').toLowerCase();
+  let votes='<div class="body"><div class="tbl"><table><tr><th>oracle</th><th>verdict</th><th>obligation</th></tr>';
+  (vd.votes||[]).forEach(o=>{{const cls=o.fired?'fail':'pass';
+   votes+='<tr><td class="mono">'+o.oracle+'</td>'
+     +'<td class="'+cls+'">'+(o.fired?'caught':'ok')+'</td>'
+     +'<td>'+(o.obligation||'')+'</td></tr>';}});
+  votes+='</table></div></div>';
+  h+='<details class="vd '+outcome+'"><summary>'
+   +'<span class="vid">'+vd.verdict_id+'</span>'
+   +'<span class="pill '+(outcome==='caught'?'bad':'ok')+'"><span class="dot"></span>'+vd.outcome+'</span>'
+   +'<span class="tally">tally '+vd.tally+' / '+vd.threshold+'</span>'
+   +'</summary>'+votes+'</details>';
  }});
- document.getElementById('verdicts').innerHTML=h;
+ wrap.innerHTML=h;
 }})();
 // Trace timeline.
 (function(){{
- let h=''; DATA.events.forEach(e=>{{h+='<div class="ev"><span class="seq">#'+e.seq+'</span> <b>'+e.type+'</b> '+JSON.stringify(e.data).slice(0,160)+'</div>';}});
- document.getElementById('trace').innerHTML=h;
+ const wrap=document.getElementById('trace');
+ if(!DATA.events.length){{wrap.innerHTML='<div class="empty">No trace events.</div>';return;}}
+ let h='';
+ DATA.events.forEach(e=>{{const d=JSON.stringify(e.data).slice(0,200);
+  h+='<div class="ev"><span class="seq">#'+e.seq+'</span>'
+    +'<span class="etype">'+e.type+'</span>'
+    +'<span class="edata">'+d+'</span></div>';}});
+ wrap.innerHTML=h;
 }})();
 </script></body></html>
 """
