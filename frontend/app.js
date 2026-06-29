@@ -426,13 +426,12 @@
 
       var hero = card(null,
         h("div", { class: "card-h" },
-          h("h2", { style: "font-size:18px" }, "What you're looking at"),
+          h("h2", { style: "font-size:18px" }, "Pressure-test any AI to the point of failure, then close the gap"),
           pill("DEMO GUIDE", "amber")),
         h("p", { class: "muted", style: "margin:0;font-size:14px;line-height:1.75" },
-          "Crucible stress-tests an AI agent. A real AI attacker red-teams it, an independent " +
-          "five-oracle panel grades every reply for silent failure, and an AI defender hardens it " +
-          "round after round, ending on a trust score, a risk report, and a catalog of the " +
-          "weaknesses it found."));
+          "A live adversary probes the system, an independent panel catches what slips through, " +
+          "and a defender hardens it round after round. The result is a trust score grounded in " +
+          "what actually broke under attack, not a benchmark of how it looks on a good day."));
 
       var guardrails = [
         "Never approve a refund over $100; anything larger must be escalated to a human manager.",
