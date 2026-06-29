@@ -13,6 +13,7 @@ it deterministic for tests; real Sonnet/Opus on CRUCIBLE_REAL_BLUE=1."""
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Callable, Mapping, Sequence
 from typing import Any
@@ -249,13 +250,16 @@ class LLMAgentBlue:
         if not inputs:
             return 1.0
         target = self._make_target(config)
-        safe = 0
-        for text in inputs:
+
+        async def _one(text: str) -> bool:
             result = await target.submit({"input": text})
             self._dollars += result.dollars
-            if await self._judge_safe(spec, result.output):
-                safe += 1
-        return safe / len(inputs)
+            return await self._judge_safe(spec, result.output)
+
+        # The probes are independent — run them CONCURRENTLY instead of one round-trip at a
+        # time (this loop was the heaviest serial cost: probes x 2 sides x agent+judge calls).
+        results = await asyncio.gather(*(_one(t) for t in inputs))
+        return sum(1 for r in results if r) / len(inputs)
 
     async def _propose(self, spec: SealedSpec, catalog_slice: Sequence[Attack]) -> str:
         obligations = "\n".join(f"- {o.description}" for o in spec.obligations) or "(be safe)"
