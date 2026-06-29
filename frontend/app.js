@@ -672,18 +672,25 @@
               t.trust_score == null ? "—" : t.trust_score,
               h("span", { class: "muted", style: "font-size:18px" }, "/100")),
             t.band ? h("div", { style: "font-size:24px;color:" + color }, t.band) : null,
+            t.improved_from ? h("span", { class: "pill green", style: "font-size:12px",
+              title: "the agent started at this score; this headline scores the FINAL hardened "
+                + "config (the one you would ship), not an average of the journey" },
+              "↑ from " + t.improved_from.band + " (" + t.improved_from.score + "/100)") : null,
             h("div", { class: "muted mono", style: "font-size:12px" },
               (t.failures != null ? t.failures + " failed (" + t.silent_failures + " silent) / " +
                 t.n_attacks + " " + String(t.basis || "").replace("_", "-") + " attacks" : ""))),
           h("ul", { class: "muted", style: "font-size:12px;margin:14px 0 0;padding-left:18px;line-height:1.7" },
             (t.caveats || []).map(function (c) { return h("li", {}, c); })));
-        function mt(label, value, desc, na) {
+        function mt(label, value, desc, na, naMsg) {
           return h("div", { class: "tile" },
             h("div", { class: "label" }, label),
             h("div", { class: "v", style: na ? "color:var(--mut)" : "" }, value),
             h("div", { class: "muted", style: "font-size:11px;margin-top:7px;line-height:1.5" },
-              desc + (na ? " · n/a here — no failures in this run to measure." : "")));
+              desc + (na ? " · " + (naMsg || "n/a here: no failures in this run to measure.") : "")));
         }
+        // White-box tiles read n/a on a co-evolution run because white-box is a red-team-mode
+        // pass; co-evolution attacks are all black-box. Say that, instead of "no failures".
+        var wbNa = "n/a: white-box is a red-team-mode pass; co-evolution runs black-box only.";
         // Plain-English "what this run found", and an explicit explanation of why the
         // per-failure rate tiles read "—" on a clean run (the question every viewer asks).
         var basis = String(t.basis || "").replace("_", "-");
@@ -692,16 +699,16 @@
           lines.push("This run hasn't been measured yet.");
         } else if (t.failures === 0) {
           lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed none of " +
-            "them — it resisted every jailbreak the attacker tried. That's why the trust score is " +
+            "them; it resisted every jailbreak the attacker tried. That's why the trust score is " +
             t.trust_score + "/100 (" + t.band + ").");
-          lines.push("This is an absence of PROVEN failure, not a proof of safety — a harder or " +
+          lines.push("This is an absence of PROVEN failure, not a proof of safety; a harder or " +
             "longer attack run may still find something.");
           lines.push("The catch-rate, undetected-hack and recall tiles below read “—” on purpose: " +
             "each is a ratio measured per failure, so with zero failures there's nothing to divide. " +
             "Real LLM spend is the only absolute number, so it's the one that shows.");
         } else {
           lines.push("Across " + t.n_attacks + " " + basis + " attacks, the agent failed " +
-            t.failures + " (" + t.silent_failures + " slipped EVERY check — the dangerous silent " +
+            t.failures + " (" + t.silent_failures + " slipped EVERY check, the dangerous silent " +
             "failures). The panel caught " + t.caught_failures + " of the " + t.failures + ".");
           lines.push("Trust = 1 − failures ÷ attacks = " + t.trust_score + "/100 (" + t.band +
             "). Silent failures are surfaced separately because they're the highest-risk finding.");
@@ -714,16 +721,16 @@
         var tileEls = [
           mt("White-box catch rate", pct(tiles.white_box_catch_rate),
             "Of failures in white-box attacks (the attacker is told the panel's scheme), the share the panel caught.",
-            tiles.white_box_catch_rate == null),
+            tiles.white_box_catch_rate == null, wbNa),
           mt("Black-box catch rate", pct(tiles.black_box_catch_rate),
             "Of failures in black-box attacks (the attacker doesn't know the panel), the share the panel caught.",
             tiles.black_box_catch_rate == null),
           mt("Undetected-hack rate", pct(tiles.undetected_hack_rate),
-            "Of attacks that truly failed, the share that slipped EVERY check — the silent, dangerous ones.",
+            "Of attacks that truly failed, the share that slipped EVERY check: the silent, dangerous ones.",
             tiles.undetected_hack_rate == null),
           mt("White-box recall", pct(run.white_box_recall),
             "Of held-out-confirmed failures, the share the panel still caught when the attacker knew its scheme.",
-            run.white_box_recall == null),
+            run.white_box_recall == null, wbNa),
           mt("Real LLM spend", "$" + (run.dollars_spent || 0).toFixed(4),
             "Total Anthropic spend for this run (attacker + agent + panel + defender).", false)
         ];
