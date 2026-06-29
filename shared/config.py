@@ -23,6 +23,11 @@ class Settings:
     # auto-picks a DIFFERENT family than the producer (shared/model_family.py), gracefully
     # falling back when the family is unknown. Set CRUCIBLE_DIFFERENTIAL_MODEL to force one.
     differential_model: str | None
+    # The held-out is now an LLM judge too (substance, not regex). To keep it INDEPENDENT of
+    # the Opus judge oracle, it runs on a THIRD vendor by default (Gemini) — judge=Anthropic,
+    # differential=OpenAI, held-out=Google — so the three LLM oracles don't share blind spots.
+    # Override with CRUCIBLE_HELDOUT_MODEL.
+    held_out_model: str
     halt_recall_threshold: float
     global_budget_dollars: float  # hard ceiling on total real-LLM spend across all runs
 
@@ -47,6 +52,7 @@ def load_settings() -> Settings:
         sonnet_model=os.environ.get("CRUCIBLE_SONNET_MODEL", "anthropic/claude-sonnet-4.6"),
         opus_model=opus_model,
         differential_model=os.environ.get("CRUCIBLE_DIFFERENTIAL_MODEL"),
+        held_out_model=os.environ.get("CRUCIBLE_HELDOUT_MODEL", "google/gemini-3.5-flash"),
         halt_recall_threshold=float(os.environ.get("CRUCIBLE_HALT_RECALL", "0.7")),
         global_budget_dollars=float(os.environ.get("CRUCIBLE_GLOBAL_BUDGET", "25.0")),
     )

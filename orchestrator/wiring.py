@@ -93,6 +93,21 @@ def _judge_llm() -> LLMClient:
     )
 
 
+def _held_out_llm() -> LLMClient:
+    """The held-out oracle's judge model. The held-out now judges by substance (LLM-in-lane),
+    so to keep it INDEPENDENT of the Opus judge oracle it runs on a DIFFERENT family
+    (settings.held_out_model, default Gemini): judge=Anthropic, differential=OpenAI,
+    held-out=Google — three vendors, uncorrelated blind spots. Real when CRUCIBLE_REAL_HELDOUT=1
+    and a key is present; otherwise a deterministic ScriptedLLM (the oracle's use_llm flag,
+    gated on the same env var, keeps it on the free deterministic path in mock/CI)."""
+    settings = load_settings()
+    if os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1" and settings.openrouter_api_key:
+        _log.info("held_out_model_selected", model=settings.held_out_model,
+                  judge=settings.opus_model)
+        return make_llm(settings.held_out_model)
+    return ScriptedLLM(lambda _s, _p: '{"violated": []}', model="scripted-heldout")
+
+
 def _agent_llm() -> LLMClient:
     """The demo agent target's vendor model. Real Sonnet when CRUCIBLE_REAL_AGENT=1 and a
     key is present; otherwise a free, deterministic ScriptedLLM that answers safely (mock
@@ -402,7 +417,7 @@ def build_container() -> Container:
     # Held-out oracle for agents (cr-c2): hidden checks generated from the spec, evaluated
     # for free in mock mode; real Opus generation on CRUCIBLE_REAL_HELDOUT=1.
     agent_held_out = AgentHeldOutOracle(
-        RecordingLLM(_judge_llm(), "oracles"),
+        RecordingLLM(_held_out_llm(), "oracles"),
         use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1",
     )
     container.register_oracle(AGENT_KIND, agent_held_out)
@@ -480,7 +495,7 @@ def build_container() -> Container:
     sink.register_health_probe(f"targets/{CODE_AGENT_KIND}", code_target.health)
     container.register_red(CODE_AGENT_KIND, LLMAgentRed(RecordingLLM(_agent_red_llm(), "red")))
     code_held_out = AgentHeldOutOracle(
-        RecordingLLM(_judge_llm(), "oracles"),
+        RecordingLLM(_held_out_llm(), "oracles"),
         use_llm=os.environ.get("CRUCIBLE_REAL_HELDOUT") == "1")
     container.register_oracle(CODE_AGENT_KIND, code_held_out)
     container.register_oracle(
