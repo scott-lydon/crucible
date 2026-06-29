@@ -67,17 +67,17 @@ def test_sr_11_7_report_renders_real_numbers(client: TestClient) -> None:
     assert "Undetected-hack rate" in report.text
 
 
-def test_halt_certification_blocks_new_runs(client: TestClient) -> None:
+def test_halt_certification_is_advisory_not_blocking(client: TestClient) -> None:
     # A completed run sets a white-box recall below the 0.7 red line (the fraud
-    # verifier's honest recall is low), so certification halts (spec US-13).
+    # verifier's honest recall is low), so certification is WITHHELD (spec US-13, revised:
+    # advisory). /halt flags it for the warning banner, but it must NOT block launches.
     _run_fraud(client, rounds=20)
     halt = client.get("/halt").json()
     assert halt["halted"] is True
     assert halt["white_box_recall"] < halt["threshold"]
-    # New run-launch requests are refused with 409 + a typed message.
+    # Certification is a withheld rubber stamp, not a kill-switch: a new run is still accepted.
     resp = client.post("/runs", json={
         "target_kind": "fraud", "shape": "shape1_ml", "spec_yaml": FRAUD_SPEC_YAML,
         "budget_rounds": 2, "budget_dollars": 1.0,
     })
-    assert resp.status_code == 409
-    assert "halted" in resp.json()["detail"].lower()
+    assert resp.status_code == 201
