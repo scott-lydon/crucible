@@ -48,8 +48,8 @@ def test_blue_retrains_validates_and_reports_honestly() -> None:
     blue = FraudBlueAgent(base_version=1)
     result = asyncio.run(blue.harden(_SPEC, RunId("r"), missed))
 
-    # Mechanism: a new model version was produced and is loadable by the target adapter.
-    assert result.new_model_version == "fraud-v2"
+    # Mechanism: the retrain TRAINED a new model-version artifact (loadable), whether or not
+    # the blue adopts it.
     assert (ARTIFACTS / "fraud-v2.lgb").exists()
     v2 = FraudTarget.load(2)
     assert v2.predict_sync(missed[0].payload)["label"] in (0, 1)
@@ -60,5 +60,40 @@ def test_blue_retrains_validates_and_reports_honestly() -> None:
     assert result.audit.detail["validation_disjoint_from_training"] is True
     assert result.audit.detail["adversarial_samples"] == len(missed)
     assert "recall" in result.summary
-    # validated reflects the true result (>= before with samples); never fabricated.
-    assert result.validated == (result.holdout_detection_after >= result.holdout_detection_before)
+    # validated == STRICT improvement, never fabricated. The blue ADOPTS the retrain (advances
+    # the version) only when it did not regress on held-out; on the production model the residual
+    # misses are idiosyncratic, so a regression keeps the agent at the prior version (honest).
+    improved = result.holdout_detection_after >= result.holdout_detection_before
+    assert result.validated == (result.holdout_detection_after > result.holdout_detection_before)
+    assert result.new_model_version == ("fraud-v2" if improved else "fraud-v1")
+    assert result.audit.detail["adopted"] is improved
+
+
+def test_weak_fraud_blue_genuinely_hardens_and_adopts() -> None:
+    """The deliberately UNDER-TRAINED co-evolution model has SYSTEMATIC gaps, so adversarial
+    retraining genuinely lifts held-out recall and the blue ADOPTS the new version — the
+    real-hardening counterpart to the production model's idiosyncratic, non-generalizing
+    residual. This is what makes fraud_weak an honest co-evolution improvement demo."""
+    from modules.targets.fraud.train import WEAK_PARAMS, WEAK_TAG, ensure_weak_model
+
+    ensure_weak_model(1)
+    splits = load_splits()
+    feats = splits.feature_names
+    booster = lgb.Booster(model_file=str(ARTIFACTS / "fraud-weak-v1.lgb"))
+    missed: list[Attack] = []
+    for idx in splits.y_holdout[splits.y_holdout == 1].index:
+        row = {k: float(v) for k, v in splits.x_holdout.loc[idx].to_dict().items()}
+        if float(booster.predict(np.asarray([[row[f] for f in feats]]))[0]) < 0.5:
+            missed.append(Attack(AttackId("a"), RunId("r"), 0, "holdout-fraud", row, "",
+                                 f"s{idx}", metadata={"true_label": 1}))
+    assert len(missed) >= 8, "the weak model should miss many holdout frauds"
+
+    blue = FraudBlueAgent(base_version=1, tag=WEAK_TAG, upweight=5, **WEAK_PARAMS)
+    result = asyncio.run(blue.harden(_SPEC, RunId("r"), missed[:8]))
+
+    # Genuine hardening: held-out recall climbs, the result validates, and the blue adopts v2.
+    assert result.holdout_detection_after > result.holdout_detection_before
+    assert result.validated is True
+    assert result.new_model_version == "fraud-weak-v2"
+    assert blue.current_config.version == 2
+    assert blue.current_config.params["tag"] == WEAK_TAG
