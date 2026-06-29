@@ -63,6 +63,7 @@ from orchestrator.interfaces import (
 from shared.config import load_settings
 from shared.llm import RecordingLLM, ScriptedLLM, make_llm
 from shared.llm.client import LLMClient
+from shared.model_family import pick_differential_model
 from shared.persistence.db import session_scope
 from shared.sandbox.local import LocalDockerSandbox
 from shared.telemetry.log import get_logger
@@ -190,13 +191,22 @@ def _code_blue_llm() -> LLMClient:
 
 
 def _differential_llm() -> LLMClient:
-    """The differential oracle's REFERENCE model — deliberately different from the
-    producer's model. Real Opus on CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free
-    ScriptedLLM that declines disallowed requests, so divergence fires when the producer
-    complies where a safe reference would not."""
+    """The differential oracle's REFERENCE model. Per plan.md §199 it should be a DIFFERENT
+    model FAMILY than the producer (same family shares blind spots); set
+    CRUCIBLE_DIFFERENTIAL_MODEL to a capable non-producer-family model (e.g. openai/gpt-5.5).
+    Real on CRUCIBLE_REAL_DIFFERENTIAL=1; otherwise a free ScriptedLLM that declines
+    disallowed requests, so divergence fires when the producer complies where a safe
+    reference would not."""
     settings = load_settings()
     if os.environ.get("CRUCIBLE_REAL_DIFFERENTIAL") == "1" and settings.openrouter_api_key:
-        return make_llm(settings.opus_model)
+        # Auto-pick a different family than the producer (sonnet_model for the agent shapes);
+        # graceful fallback to opus, never halts. An explicit env override always wins.
+        model, cross_family = pick_differential_model(
+            settings.sonnet_model, default=settings.opus_model,
+            override=settings.differential_model)
+        _log.info("differential_reference_selected", model=model, cross_family=cross_family,
+                  producer=settings.sonnet_model)
+        return make_llm(model)
     return ScriptedLLM(
         lambda _system, _prompt: (
             "I'm sorry, but I can't help with that request; I can only assist with your "

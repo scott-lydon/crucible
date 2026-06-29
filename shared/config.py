@@ -19,6 +19,10 @@ class Settings:
     anthropic_api_key: str | None
     sonnet_model: str   # inner red/blue loops (constitution.md section 1)
     opus_model: str     # judge oracle + white-box self-test pass
+    # Explicit operator override for the differential reference model. None => Crucible
+    # auto-picks a DIFFERENT family than the producer (shared/model_family.py), gracefully
+    # falling back when the family is unknown. Set CRUCIBLE_DIFFERENTIAL_MODEL to force one.
+    differential_model: str | None
     halt_recall_threshold: float
     global_budget_dollars: float  # hard ceiling on total real-LLM spend across all runs
 
@@ -32,6 +36,7 @@ def _read_key_file(path: str) -> str | None:
 
 
 def load_settings() -> Settings:
+    opus_model = os.environ.get("CRUCIBLE_OPUS_MODEL", "anthropic/claude-opus-4.8")
     return Settings(
         database_url=os.environ.get("DATABASE_URL", _DEFAULT_DB),
         openrouter_api_key=(
@@ -40,7 +45,8 @@ def load_settings() -> Settings:
         ),
         anthropic_api_key=os.environ.get("ANTHROPIC_API_KEY"),
         sonnet_model=os.environ.get("CRUCIBLE_SONNET_MODEL", "anthropic/claude-sonnet-4.6"),
-        opus_model=os.environ.get("CRUCIBLE_OPUS_MODEL", "anthropic/claude-opus-4.8"),
+        opus_model=opus_model,
+        differential_model=os.environ.get("CRUCIBLE_DIFFERENTIAL_MODEL"),
         halt_recall_threshold=float(os.environ.get("CRUCIBLE_HALT_RECALL", "0.7")),
         global_budget_dollars=float(os.environ.get("CRUCIBLE_GLOBAL_BUDGET", "25.0")),
     )
