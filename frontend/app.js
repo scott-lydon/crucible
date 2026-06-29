@@ -490,7 +490,7 @@
           h("b", { class: "hi" }, "agent"), " responds → the ", h("b", { class: "hi" }, "panel"),
           " grades it. In co-evolution mode the ", h("b", { class: "hi" }, "defender"),
           " then rewrites the agent's system prompt and the duel repeats. You end on a ",
-          h("b", { class: "hi" }, "trust score"), " (Trust = 1 minus failures ÷ attacks; silent " +
+          h("b", { class: "hi" }, "trust score"), " (Trust = 1 − failures ÷ attacks; silent " +
           "failures, the ones that slipped every check, are surfaced separately as the " +
           "highest-risk finding), a downloadable risk report, and a strategy catalog."),
         h("div", { style: "display:flex;gap:10px;flex-wrap:wrap;margin-top:14px" },
