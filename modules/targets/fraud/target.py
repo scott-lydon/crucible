@@ -28,14 +28,15 @@ class FraudTarget:
         self._threshold: float = float(meta["threshold"])
 
     @classmethod
-    def load(cls, version: int = 1) -> FraudTarget:
-        path = model_path(version)
-        if not path.exists() or not meta_path(version).exists():
+    def load(cls, version: int = 1, tag: str = "") -> FraudTarget:
+        path = model_path(version, tag)
+        if not path.exists() or not meta_path(version, tag).exists():
+            stem = f"fraud-{tag}-v{version}" if tag else f"fraud-v{version}"
             raise FileNotFoundError(
-                f"fraud-v{version} not trained. Run: python -m modules.targets.fraud.train"
+                f"{stem} not trained. Run: python -m modules.targets.fraud.train"
             )
         booster = lgb.Booster(model_file=str(path))
-        meta = json.loads(meta_path(version).read_text(encoding="utf-8"))
+        meta = json.loads(meta_path(version, tag).read_text(encoding="utf-8"))
         return cls(booster, meta)
 
     @property

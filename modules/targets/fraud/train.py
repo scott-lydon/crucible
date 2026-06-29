@@ -23,12 +23,26 @@ ARTIFACTS = Path(__file__).resolve().parents[3] / "artifacts"
 DEFAULT_THRESHOLD = 0.5
 
 
-def model_path(version: int) -> Path:
-    return ARTIFACTS / f"fraud-v{version}.lgb"
+def _stem(version: int, tag: str = "") -> str:
+    # tag namespaces a model line ("weak" -> fraud-weak-vN) so the deliberately under-trained
+    # co-evolution demo model never shadows the production fraud-vN artifact.
+    return f"fraud-{tag}-v{version}" if tag else f"fraud-v{version}"
 
 
-def meta_path(version: int) -> Path:
-    return ARTIFACTS / f"fraud-v{version}.meta.json"
+def model_path(version: int, tag: str = "") -> Path:
+    return ARTIFACTS / f"{_stem(version, tag)}.lgb"
+
+
+def meta_path(version: int, tag: str = "") -> Path:
+    return ARTIFACTS / f"{_stem(version, tag)}.meta.json"
+
+
+# The deliberately weak co-evolution demo model: a small LightGBM on a 5% subsample. Its
+# misses are SYSTEMATIC (recall ~0.5 on held-out frauds), so adversarial retraining genuinely
+# closes them (0.53 -> 0.82 measured), unlike the production model whose residuals are
+# idiosyncratic and do not generalize (plan.md section 6).
+WEAK_TAG = "weak"
+WEAK_PARAMS = {"n_estimators": 40, "num_leaves": 8, "train_frac": 0.05}
 
 
 def _sha256_file(path: Path) -> str:
@@ -36,12 +50,21 @@ def _sha256_file(path: Path) -> str:
 
 
 def train_and_save(
-    version: int = 1, *, extra_samples: list[dict[str, Any]] | None = None
+    version: int = 1, *, extra_samples: list[dict[str, Any]] | None = None,
+    tag: str = "", n_estimators: int = 200, num_leaves: int = 31, train_frac: float = 1.0,
 ) -> dict[str, Any]:
-    """Train and serialize fraud-vN. ``extra_samples`` (adversarial training rows from
-    the blue loop, slice 14) are appended to the real training data when present."""
+    """Train and serialize fraud-[tag-]vN. ``extra_samples`` (adversarial training rows from
+    the blue loop, slice 14) are appended to the real training data when present. ``tag`` +
+    the hyperparameters + ``train_frac`` produce the deliberately weak co-evolution model
+    (default args reproduce the production model exactly)."""
+    import numpy as np  # local: only the subsample path needs it
+
     splits = load_splits()
     x_train, y_train = splits.x_train, splits.y_train
+    if train_frac < 1.0:
+        rng = np.random.default_rng(42)
+        idx = rng.choice(len(x_train), int(len(x_train) * train_frac), replace=False)
+        x_train, y_train = x_train.iloc[idx], y_train.iloc[idx]
 
     if extra_samples:
         import pandas as pd  # local: only the blue retrain path needs it
@@ -56,7 +79,7 @@ def train_and_save(
     scale_pos_weight = (n_neg / n_pos) if n_pos else 1.0
 
     clf = lgb.LGBMClassifier(
-        n_estimators=200, learning_rate=0.05, num_leaves=31,
+        n_estimators=n_estimators, learning_rate=0.05, num_leaves=num_leaves,
         scale_pos_weight=scale_pos_weight, random_state=42, n_jobs=2, verbose=-1,
     )
     clf.fit(x_train, y_train)
@@ -66,10 +89,10 @@ def train_and_save(
 
     ARTIFACTS.mkdir(parents=True, exist_ok=True)
     booster = clf.booster_
-    booster.save_model(str(model_path(version)))
+    booster.save_model(str(model_path(version, tag)))
 
     meta: dict[str, Any] = {
-        "version": version,
+        "version": version, "tag": tag,
         "feature_names": splits.feature_names,
         "threshold": DEFAULT_THRESHOLD,
         "auc_eval": auc,
@@ -77,11 +100,11 @@ def train_and_save(
         "n_eval": len(splits.x_eval),
         "scale_pos_weight": scale_pos_weight,
         "data_sha256": splits.data_sha256,
-        "model_sha256": _sha256_file(model_path(version)),
+        "model_sha256": _sha256_file(model_path(version, tag)),
         "trained_at": dt.datetime.now(dt.UTC).isoformat(),
         "extra_samples": len(extra_samples or []),
     }
-    meta_path(version).write_text(json.dumps(meta, indent=2), encoding="utf-8")
+    meta_path(version, tag).write_text(json.dumps(meta, indent=2), encoding="utf-8")
     return meta
 
 
@@ -90,6 +113,15 @@ def ensure_model(version: int = 1) -> dict[str, Any]:
     if model_path(version).exists() and meta_path(version).exists():
         return cast("dict[str, Any]", json.loads(meta_path(version).read_text(encoding="utf-8")))
     return train_and_save(version)
+
+
+def ensure_weak_model(version: int = 1) -> dict[str, Any]:
+    """Return metadata for the weak co-evolution model fraud-weak-vN, training it only if
+    missing (idempotent, cheap)."""
+    if model_path(version, WEAK_TAG).exists() and meta_path(version, WEAK_TAG).exists():
+        return cast("dict[str, Any]",
+                    json.loads(meta_path(version, WEAK_TAG).read_text(encoding="utf-8")))
+    return train_and_save(version, tag=WEAK_TAG, **WEAK_PARAMS)  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

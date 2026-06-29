@@ -7,6 +7,7 @@ container (``build_container``) injecting ScriptedLLM-backed fakes."""
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -50,6 +51,7 @@ from modules.targets.agent import (
 )
 from modules.targets.dummy.target import DummyTarget
 from modules.targets.fraud.target import FraudTarget
+from modules.targets.fraud.train import WEAK_PARAMS, WEAK_TAG, ensure_weak_model
 from orchestrator.interfaces import (
     BlueAgent,
     HealthProbe,
@@ -397,6 +399,41 @@ def build_container() -> Container:
     fraud_blue = FraudBlueAgent(base_version=1)
     container.register_blue("fraud", fraud_blue)
     sink.register_health_probe("blue/fraud", fraud_blue.health)
+    # Co-evolution rebuilds the retrained model each round (cr-d3): the fraud "config" carries
+    # the model version, so factory(config) loads that LightGBM version the blue just trained.
+    container.register_target_factory("fraud", lambda cfg: FraudTarget.load(cfg.version))
+
+    # Weak fraud co-evolution demo (fraud_weak): a deliberately UNDER-TRAINED model (5% of the
+    # data) whose systematic gaps GENUINELY close with adversarial retraining (recall 0.53 ->
+    # 0.82 measured), mirroring support-bot-weak. Reuses the fraud oracle/red classes pointed at
+    # the weak model; the blue retrains with matched weak hyperparameters so the gain is from the
+    # adversarial samples, not from a bigger model.
+    try:
+        ensure_weak_model(1)
+        fraud_weak = FraudTarget.load(1, tag=WEAK_TAG)
+        container.register_target(fraud_weak)
+        sink.register_health_probe("targets/fraud_weak", fraud_weak.health)
+        weak_red = LLMHybridFraudRed(
+            RecordingLLM(_red_llm(), "red"), fraud_weak.predict_sync, fraud_weak.raw_margin,
+            fraud_weak.feature_names, fraud_weak.feature_importances)
+        container.register_red("fraud_weak", weak_red)
+        sink.register_health_probe("red/fraud_weak/llm-hybrid", weak_red.health)
+        container.register_oracle("fraud_weak", FraudHeldOutOracle())
+        with contextlib.suppress(FileNotFoundError):
+            container.register_oracle("fraud_weak", FraudDifferentialOracle.load())
+        container.register_oracle("fraud_weak", FraudMetamorphicOracle(
+            fraud_weak.predict_sync, fraud_weak.feature_names))
+        container.register_oracle("fraud_weak", FraudPropertyFuzzOracle(
+            fraud_weak.predict_sync, fraud_weak.feature_names))
+        container.register_oracle(
+            "fraud_weak", LLMJudgeOracle(RecordingLLM(_judge_llm(), "oracles")))
+        weak_blue = FraudBlueAgent(base_version=1, tag=WEAK_TAG, upweight=5, **WEAK_PARAMS)
+        container.register_blue("fraud_weak", weak_blue)
+        sink.register_health_probe("blue/fraud_weak", weak_blue.health)
+        container.register_target_factory(
+            "fraud_weak", lambda cfg: FraudTarget.load(cfg.version, tag=WEAK_TAG))
+    except (FileNotFoundError, OSError) as exc:
+        _log.warning("fraud_weak_unavailable", error=str(exc))
 
     # Shape-2 AGENT target (Milestone A): the built-in support-bot demo, a vendor model
     # behind a system prompt. Mock LLM by default (free); real Sonnet on CRUCIBLE_REAL_AGENT.
