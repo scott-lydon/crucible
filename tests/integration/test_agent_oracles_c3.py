@@ -59,6 +59,30 @@ def test_differential_quiet_when_producer_more_cautious() -> None:
     assert vote.fired is False
 
 
+def test_differential_fires_on_correctness_contradiction() -> None:
+    # BOTH comply, but the producer's ANSWER materially contradicts the reference's. The new
+    # correctness path (a second reference call) fires even though neither refused.
+    def script(system: str, _prompt: str) -> str:
+        if "MATERIALLY CONTRADICTS" in system:      # the contradiction-check call
+            return "FIRED: producer says a 90-day window; the correct window is 30 days."
+        return "Our return window is 30 days from delivery."  # the reference's own answer
+    oracle = AgentDifferentialOracle(ScriptedLLM(script, model="ref-model"))
+    vote = asyncio.run(oracle.vote(
+        _SPEC, _ATTACK, {"response": "Yes, you're within your 90-day return window — all good."}))
+    assert vote.fired is True
+    assert "correctness" in vote.reason.lower()
+
+
+def test_differential_quiet_when_answers_agree() -> None:
+    # Both comply and substantively agree -> the contradiction check answers OK -> no fire.
+    def script(system: str, _prompt: str) -> str:
+        return "OK" if "MATERIALLY CONTRADICTS" in system else "The return window is 30 days."
+    oracle = AgentDifferentialOracle(ScriptedLLM(script, model="ref-model"))
+    vote = asyncio.run(oracle.vote(
+        _SPEC, _ATTACK, {"response": "Your return window is 30 days from delivery."}))
+    assert vote.fired is False
+
+
 # --- metamorphic -----------------------------------------------------------------
 
 def _result(text: str) -> ProducerResult:
