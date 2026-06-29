@@ -24,12 +24,11 @@ export CRUCIBLE_REAL_HELDOUT=1       # LLM-generated held-out checks — REQUIRE
 
 # --- Safety / cost ---
 export CRUCIBLE_GLOBAL_BUDGET=25     # hard dollar cap protecting the shared key (default 25.0)
-# Demo-only: relax the certification gate. The panel under-catches white-box (informed)
-# attacks on these targets — held-out(1.0)+judge(0.5)=1.5 is below the 2.0 conviction bar —
-# so white-box recall is ~0, which (at the default 0.70) latches "certification halted" and
-# blocks ALL new launches. 0 keeps the launcher usable for the demo. Remove it to demo the
-# gate itself as a feature. (Kept out of .env so normal runs keep the real 0.70 gate.)
-export CRUCIBLE_HALT_RECALL=0
+# Certification is now ADVISORY, not blocking (api.py no longer 409s on a low/unmeasurable
+# recall) — it surfaces a yellow "not certified" warning banner but never stops a launch. So
+# we keep the real 0.70 line here to DEMONSTRATE the warning. Set to 0 to silence the banner
+# entirely (kill-switch); raise it to make the warning stricter.
+export CRUCIBLE_HALT_RECALL=0.70
 
 # --- Reminders (printed, not enforced) ---
 echo "[demo_env] Real-model flags exported (AGENT/RED/JUDGE/BLUE/DIFFERENTIAL)."

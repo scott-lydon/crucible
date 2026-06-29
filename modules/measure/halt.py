@@ -15,6 +15,13 @@ from shared.persistence.models import Run
 
 async def halt_state(session: AsyncSession) -> dict[str, object]:
     threshold = load_settings().halt_recall_threshold
+    # A threshold of 0 (or less) fully DISABLES the gate — an explicit kill-switch
+    # (CRUCIBLE_HALT_RECALL=0) for demos / instances that don't want fail-closed
+    # certification. It short-circuits BOTH halt paths (low recall AND unmeasurable recall),
+    # so it can never block a launch. Any positive threshold keeps the full gate behaviour.
+    if threshold <= 0:
+        return {"halted": False, "white_box_recall": None, "threshold": threshold,
+                "message": ""}
     # Read the latest COMPLETED run, not the latest run that happens to carry a recall.
     # Skipping NULL-recall runs (the old behaviour) let a run that fully evaded ground
     # truth — leaving white_box_recall NULL — be ignored, certifying off a stale healthier
@@ -50,14 +57,15 @@ async def halt_state(session: AsyncSession) -> dict[str, object]:
         # attacker fully evaded ground truth) — refuse to certify off an earlier run.
         halted = measured_ever
         message = (
-            "Certification halted: the latest completed run could not measure white-box "
-            "recall (ground truth may have been evaded); refusing to certify off an "
-            "earlier run." if halted else ""
+            "Not certified: the latest completed run could not measure white-box recall "
+            "(ground truth may have been evaded). Advisory only — the platform stays usable."
+            if halted else ""
         )
     else:
         halted = recall < threshold
         message = (
-            f"Certification halted: recall is {recall:.2f}, threshold is {threshold:.2f}"
+            f"Not certified: white-box recall is {recall:.2f}, below the {threshold:.2f} line. "
+            f"Advisory only — the platform stays usable."
             if halted else ""
         )
     return {"halted": halted, "white_box_recall": recall, "threshold": threshold,
