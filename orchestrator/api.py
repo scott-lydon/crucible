@@ -432,14 +432,24 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
             await session.execute(
                 select(AgentConfigRow).where(
                     AgentConfigRow.run_id == row.run_id,
-                    AgentConfigRow.version == new_version))
-        ).scalar_one_or_none()
+                    AgentConfigRow.version == new_version).limit(1))
+        ).scalars().first()
+        # The prompt the defender started this round from, so the UI can show a
+        # before -> after DIFF (exactly what guardrails the blue added), not just the
+        # full new prompt. version may have two rows at v1 (byo + base) — take either.
+        base_cfg = (
+            await session.execute(
+                select(AgentConfigRow).where(
+                    AgentConfigRow.run_id == row.run_id,
+                    AgentConfigRow.version == row.config_version).limit(1))
+        ).scalars().first()
     return {
         "patch_id": patch_id, "runId": row.run_id, "round": row.round_index,
         "base_version": row.config_version, "new_version": new_version,
         "safe_before": row.safe_before, "safe_after": row.safe_after,
         "validated": row.audit_trace.get("validated"),
         "summary": row.audit_trace.get("patch_summary"),
+        "base_system_prompt": base_cfg.system_prompt if base_cfg is not None else None,
         "new_system_prompt": cfg.system_prompt if cfg is not None else None,
     }
 

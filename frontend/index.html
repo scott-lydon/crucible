@@ -80,6 +80,20 @@
   .walk .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#06121A;
     font-weight:700;font-family:var(--mono);display:flex;align-items:center;justify-content:center;font-size:13px}
   .walk .wt{font-weight:600;color:var(--hi)} .walk .wd{color:var(--mut);font-size:12px}
+  .diff{font-family:var(--mono);font-size:12px;background:var(--base);border:1px solid var(--border);
+    border-radius:8px;padding:10px 12px;max-height:440px;overflow:auto;white-space:pre-wrap;line-height:1.6}
+  .diff span{display:block}
+  .diff .add{background:rgba(87,192,138,.16);color:#c9efd8}
+  .diff .del{background:rgba(229,115,107,.14);color:#f0c0ba}
+  .diff .ctx{color:var(--mut)}
+  details.breakdown{margin-top:16px;border-top:1px solid var(--border);padding-top:12px}
+  details.breakdown>summary{cursor:pointer;color:var(--primary);font-size:13px;font-weight:500;
+    list-style:none;user-select:none}
+  details.breakdown>summary::-webkit-details-marker{display:none}
+  details.breakdown>summary::before{content:"▸ ";color:var(--mut)}
+  details.breakdown[open]>summary::before{content:"▾ "}
+  details.breakdown table{margin-top:12px}
+  details.breakdown td{vertical-align:middle}
 </style>
 </head>
 <body>
