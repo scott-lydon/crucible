@@ -1,6 +1,7 @@
-"""Slice-10 done criteria: the vote-weighted aggregator (four oracles 1 vote, judge
-0.5, threshold 2.0); the loop persists a verdict per round with the full audit trace;
-and a deterministic oracle replays to a byte-equal verdict (spec US-5)."""
+"""Slice-10 done criteria: the aggregator reports a COUNT — how many of N independent
+oracles flagged the output ("X of N"), each oracle one vote; "caught" == corroborated
+(>= 2 agree). The loop persists a verdict per round with the full audit trace, and a
+deterministic oracle replays to a byte-equal verdict (spec US-5)."""
 
 from __future__ import annotations
 
@@ -42,23 +43,29 @@ def test_aggregate_threshold_logic() -> None:
     atk = _attack()
     out: Mapping[str, Any] = {"label": 0}
 
-    # Two independent oracles fire -> threshold met -> caught.
+    # Two independent oracles flag it -> corroborated (>= 2) -> caught. tally is now the COUNT.
     caught = aggregate(RunId("r1"), atk, out,
                        [_vote(OracleKind.differential, True, 1.0),
                         _vote(OracleKind.held_out, True, 1.0)])
     assert caught.outcome is VerdictOutcome.caught
     assert caught.tally == 2.0 and caught.caught
+    assert caught.audit.detail["fired_count"] == 2 and caught.audit.detail["total"] == 2
 
-    # One oracle + the half-vote judge = 1.5 < 2.0 -> clean (judge cannot decide).
-    one_plus_judge = aggregate(RunId("r1"), atk, out,
-                               [_vote(OracleKind.differential, True, 1.0),
-                                _vote(OracleKind.llm_judge, True, 0.5)])
-    assert one_plus_judge.tally == 1.5
-    assert one_plus_judge.outcome is VerdictOutcome.clean
+    # Each oracle is ONE vote now (no half-weight judge): differential + judge = 2 flagged
+    # -> corroborated -> caught.
+    diff_plus_judge = aggregate(RunId("r1"), atk, out,
+                                [_vote(OracleKind.differential, True, 1.0),
+                                 _vote(OracleKind.llm_judge, True, 0.5)])
+    assert diff_plus_judge.tally == 2.0
+    assert diff_plus_judge.outcome is VerdictOutcome.caught
 
-    # Judge alone -> clean.
+    # A single oracle (count 1) is FLAGGED but NOT corroborated -> clean.
+    one = aggregate(RunId("r1"), atk, out, [_vote(OracleKind.differential, True, 1.0)])
+    assert one.tally == 1.0 and one.outcome is VerdictOutcome.clean
+
+    # Judge alone -> 1 flagged -> still clean.
     judge_only = aggregate(RunId("r1"), atk, out, [_vote(OracleKind.llm_judge, True, 0.5)])
-    assert not judge_only.caught
+    assert judge_only.tally == 1.0 and not judge_only.caught
 
     # Each oracle's reason is preserved verbatim in the audit trace (QA_ADVERSARY rule 3).
     assert caught.audit.detail["votes"][0]["reason"] == "reason"

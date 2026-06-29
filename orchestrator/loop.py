@@ -246,7 +246,8 @@ async def _run_round(
         await sink.emit(run_id, "verdict", {
             "verdict_id": str(verdict.verdict_id), "attack_id": str(attack.attack_id),
             "white_box": white_box, "outcome": str(verdict.outcome), "tally": verdict.tally,
-            "threshold": verdict.threshold, "summary": verdict.audit.summary,
+            "threshold": verdict.threshold, "total": len(verdict.votes),
+            "summary": verdict.audit.summary,
         })
     return verdict
 
@@ -347,7 +348,8 @@ async def _coevo_attack(
         await container.sink.emit(run_id, "verdict", {
             "verdict_id": str(verdict.verdict_id), "attack_id": str(attack.attack_id),
             "outcome": str(verdict.outcome), "tally": verdict.tally,
-            "threshold": verdict.threshold, "summary": verdict.audit.summary})
+            "threshold": verdict.threshold, "total": len(verdict.votes),
+            "summary": verdict.audit.summary})
     return attack, verdict
 
 

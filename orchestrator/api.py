@@ -5,6 +5,7 @@ API is the product surface every other slice verifies through."""
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -154,10 +155,8 @@ async def post_runs(req: RunRequest) -> RunAccepted:
     # errors (the whole point of the weak-start co-evolution demo).
     if (req.demo_agent is not None and req.human_spec is not None
             and not req.human_spec.hidden_tests):
-        try:
+        with contextlib.suppress(KeyError):
             req.human_spec.hidden_tests = list(demo_spec(req.demo_agent).hidden_tests)
-        except KeyError:
-            pass
 
     source_text: HumanSpec | None = None
     compiler_name = "yaml"
@@ -398,6 +397,7 @@ async def list_attacks(run_id: str) -> list[dict[str, object]]:
             "threshold": v.threshold if v is not None else None,
             "fired": [vote["oracle"] for vote in v.votes if vote.get("fired")]
                      if v is not None else [],
+            "total": len(v.votes) if v is not None else None,
         })
     return out
 
