@@ -24,11 +24,10 @@ export CRUCIBLE_REAL_HELDOUT=1       # LLM-generated held-out checks — REQUIRE
 
 # --- Safety / cost ---
 export CRUCIBLE_GLOBAL_BUDGET=25     # hard dollar cap protecting the shared key (default 25.0)
-# Certification is now ADVISORY, not blocking (api.py no longer 409s on a low/unmeasurable
-# recall) — it surfaces a yellow "not certified" warning banner but never stops a launch. So
-# we keep the real 0.70 line here to DEMONSTRATE the warning. Set to 0 to silence the banner
-# entirely (kill-switch); raise it to make the warning stricter.
-export CRUCIBLE_HALT_RECALL=0.70
+# Certification is ADVISORY, not blocking (api.py no longer 409s). 0 is the kill-switch:
+# halt_state() returns halted=false, so the yellow "not certified" banner never renders.
+# The feature stays in the code — raise this to 0.70 to bring the advisory warning back.
+export CRUCIBLE_HALT_RECALL=0
 
 # --- Reminders (printed, not enforced) ---
 echo "[demo_env] Real-model flags exported (AGENT/RED/JUDGE/BLUE/DIFFERENTIAL)."

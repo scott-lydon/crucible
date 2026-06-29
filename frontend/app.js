@@ -300,7 +300,7 @@
         "the agent's system prompt between rounds. Needs a hardenable agent (not fraud or the " +
         "sandboxed code agent), and real models (CRUCIBLE_REAL_AGENT) to show movement."));
     var rounds = h("input", { id: "f-rounds", type: "number", min: 1, value: 3 });
-    var roundsLabel = h("span", { class: "label" }, "Attacks per pass");
+    var roundsLabel = h("span", { class: "label" }, "Attacks per phase");
     var roundsHelp = h("div",
       { class: "muted", style: "font-size:12px;margin-top:6px;line-height:1.5" }, "");
     var apr = h("input", { id: "f-apr", type: "number", min: 1, value: 3 });
@@ -324,19 +324,20 @@
       applyMode();
     }
     // Only co-evolution consumes attacks_per_round; hide it otherwise.
-    // Red-team runs two passes (black-box, then white-box self-test); co-evolution is duel
+    // Red-team runs two phases (black-box, then white-box self-test); co-evolution is duel
     // rounds. Labels + helper adapt; only co-evolution consumes attacks_per_round.
     function applyMode() {
       var coevo = mode.value === "coevolution";
       aprWrap.style.display = coevo ? "block" : "none";
-      roundsLabel.textContent = coevo ? "Duel rounds" : "Attacks per pass";
+      roundsLabel.textContent = coevo ? "Duel rounds" : "Attacks per phase";
       roundsHelp.textContent = coevo
         ? "Each round runs that many attacks, then the AI defender hardens the agent's prompt. " +
           "Total = rounds × attacks/round. The $ budget is a safety cap that can halt the run " +
           "early; it does not set the count."
-        : "Each run does two passes: a black-box pass (the attacker is blind to the panel), then " +
-          "a white-box self-test (the attacker is told the panel's checks). So this number runs " +
-          "twice, e.g. 3 → 6 total attacks. The $ budget is a safety cap that can halt the run " +
+        : "Each run does two phases: a black-box phase (the attacker is blind to the panel), then " +
+          "a white-box phase (a self-test where the attacker is told the panel's checks). So this " +
+          "number runs twice, e.g. 3 → 6 total attacks. The $ budget is a safety cap that can halt " +
+          "the run " +
           "early; it does not set the count.";
     }
     targetSel.addEventListener("change", applyTarget);
