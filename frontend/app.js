@@ -522,7 +522,7 @@
             h("div", {}, h("div", { class: "wt" }, w[1]), h("div", { class: "wd" }, w[3])));
         })));
 
-      setView(walkCard, hero, agentCard, modelsCard, panelCard, loopCard);
+      setView(hero, walkCard, agentCard, modelsCard, panelCard, loopCard);
     }).catch(err);
   }
 
