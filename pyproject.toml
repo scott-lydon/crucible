@@ -28,14 +28,46 @@ dependencies = [
     "reportlab",
 ]
 
+# Install-time separation. Crucible ships three runtime artifacts from one
+# source tree: the CLI (default), the /crucible slash command (skills/), and
+# the architecture website (website/). Each can be installed independently.
+#
+#   pip install crucible                       -> CLI only (default)
+#   pip install crucible[slash-command]        -> CLI + ships skills/crucible/SKILL.md
+#                                                 as installable package data so
+#                                                 `crucible cowork install-skill`
+#                                                 can write it to ~/.claude/skills/
+#   pip install crucible[website]              -> CLI + website-render dependencies
+#   pip install crucible[all]                  -> everything (dev + slash + website)
+#
+# The CLI is the single entry point. `crucible run` drives a verification loop,
+# `crucible cowork install-skill` (slash-command extra) installs the SKILL.md to
+# the user's Claude skills dir, and `crucible website build` (website extra)
+# renders the static architecture site. One source of truth; three install paths.
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "pytest-cov", "ruff", "mypy", "types-PyYAML"]
+slash-command = []   # SKILL.md is data only; no extra Python deps required
+website = []         # website is static HTML today; future render deps land here
+all = ["crucible[dev,slash-command,website]"]
 
 [project.scripts]
-crucible = "orchestrator.cli:main"
+# Entry point for the full slash command CLI (run, replay, report, doctor,
+# eligibility, suitability, catalog, status, eval, demo). The pre-existing
+# `orchestrator/cli.py` (serve, demo-run) stays invokable as
+# `python -m orchestrator.cli` until its serve command is folded into
+# `crucible serve` in a follow-up.
+crucible = "crucible.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["shared*", "orchestrator*", "modules*"]
+# `crucible*` is the CLI package merged from scott-lydon/crucible-cli@dc297e5.
+# `skills*` ships the SKILL.md as installable package data when the
+# slash-command extra is selected; see [tool.setuptools.package-data] below.
+include = ["shared*", "orchestrator*", "modules*", "crucible*", "skills*"]
+
+[tool.setuptools.package-data]
+# Ship the SKILL.md inside the wheel so `crucible cowork install-skill` can
+# read it via importlib.resources without needing the repo on disk.
+"skills.crucible" = ["SKILL.md"]
 
 [tool.ruff]
 line-length = 100
@@ -71,7 +103,10 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests", "modules"]
+# `crucible` is the CLI package; its tests (e.g. the SKILL.md vs CLI contract
+# test) run without the DB-backed conftest in tests/. Per-module tests under
+# `modules/<module>/tests/` continue to follow the colocated convention.
+testpaths = ["tests", "modules", "crucible"]
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]

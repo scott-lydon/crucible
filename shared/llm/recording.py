@@ -48,6 +48,25 @@ class RecordingLLM:
         sink = _SINK.get()
         if sink is not None:
             sink.append(LLMCallRecord(self.pillar, system, prompt, result))
+        # Live-stream the call to the operator. The Tracer is bound by the run's loop
+        # via emit.current_tracer() (ContextVar); when no run is in flight (spec
+        # compilation, tests with no Tracer set) this is a no-op. The full prompt and
+        # reply land in trace.jsonl; the human renderer truncates for readability.
+        from shared.obs.emit import EventType, current_tracer  # local: avoid cycles
+        tracer = current_tracer()
+        if tracer is not None:
+            tracer.emit(
+                EventType.llm_call,
+                {
+                    "pillar": self.pillar,
+                    "model": getattr(result, "model", self.model),
+                    "system": system,
+                    "prompt": prompt,
+                    "reply": getattr(result, "text", ""),
+                    "tokens": getattr(result, "tokens", None),
+                    "dollars": getattr(result, "dollars", None),
+                },
+            )
         return result
 
 
