@@ -434,6 +434,8 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         ).scalar_one_or_none()
         if row is None:
             raise HTTPException(status_code=404, detail="patch not found")
+        run = (await session.execute(
+            select(Run).where(Run.id == row.run_id))).scalar_one_or_none()
         new_version = row.audit_trace.get("new_version")
         # A no-op round (no hardening) resolves to the BASE version, which can have >1 config
         # row (e.g. a "demo" and a "base" save) — scalar_one_or_none() would 500 there. Take
@@ -456,6 +458,8 @@ async def get_blue_patch(patch_id: str) -> dict[str, object]:
         ).scalars().first()
     return {
         "patch_id": patch_id, "runId": row.run_id, "round": row.round_index,
+        "shape": run.shape if run is not None else None,
+        "target_kind": run.target_kind if run is not None else None,
         "base_version": row.config_version, "new_version": new_version,
         "safe_before": row.safe_before, "safe_after": row.safe_after,
         "validated": row.audit_trace.get("validated"),

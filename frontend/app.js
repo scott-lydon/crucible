@@ -910,27 +910,40 @@
     jget("/blue/" + pid).then(function (d) {
       var box = document.getElementById("patchbox"); if (!box) return;
       box.innerHTML = "";
-      var oldP = d.old_system_prompt || "", newP = d.new_system_prompt || "";
-      var changed = oldP !== newP, dl = newP.length - oldP.length;
-      var meta = h("div", { class: "muted mono", style: "font-size:12px;margin-bottom:10px" },
-        "v" + d.base_version + " → v" + d.new_version + " · safe-rate " + pct(d.safe_before) +
-        " → " + pct(d.safe_after) + " · " + (d.validated ? "validated" : "not validated") +
-        " · vendor model unchanged · prompt " + oldP.length + " → " + newP.length +
-        " chars (" + (dl >= 0 ? "+" : "") + dl + ")");
-      var body = changed
-        ? h("div", { style: "display:flex;gap:14px;flex-wrap:wrap" },
-            h("div", { style: "flex:1;min-width:280px" },
-              h("div", { class: "label" }, "Before · v" + d.base_version),
-              h("pre", { class: "prompt" }, oldP || "(none)")),
-            h("div", { style: "flex:1;min-width:280px" },
-              h("div", { class: "label" }, "After · v" + d.new_version),
-              h("pre", { class: "prompt" }, newP || "(none)")))
-        : h("div", { class: "empty" },
-            "No change this round — no attack succeeded, so the prompt was left as-is (v" +
-            d.base_version + ").");
-      var kids = ["Blue patch · " + pid, meta];
-      if (d.summary) kids.push(h("div", { class: "muted", style: "margin-bottom:10px" }, d.summary));
-      kids.push(body);
+      var kids = ["Blue patch · " + pid];
+      if (d.shape === "shape1_ml") {
+        // An ML target hardens by RETRAINING, not a prompt. "Adopted" == the version advanced
+        // (the retrain did not regress on held-out); otherwise the prior model is kept.
+        var adopted = d.new_version > d.base_version;
+        kids.push(h("div", { class: "muted mono", style: "font-size:12px;margin-bottom:10px" },
+          "v" + d.base_version + (adopted ? " → v" + d.new_version : " (kept)") +
+          " · held-out recall " + pct(d.safe_before) + " → " + pct(d.safe_after) + " · " +
+          (adopted ? "ADOPTED" : "NOT adopted")));
+        if (d.summary) kids.push(h("div", { class: "muted", style: "margin-bottom:10px" }, d.summary));
+        kids.push(h("div", { class: "empty" }, adopted
+          ? "The retrain improved held-out fraud recall, so it was adopted as v" + d.new_version + "."
+          : "The retrain did NOT improve held-out recall, so it was discarded and the model stayed "
+            + "at v" + d.base_version + ". Crucible never ships a worse model."));
+      } else {
+        var oldP = d.old_system_prompt || "", newP = d.new_system_prompt || "";
+        var changed = oldP !== newP, dl = newP.length - oldP.length;
+        kids.push(h("div", { class: "muted mono", style: "font-size:12px;margin-bottom:10px" },
+          "v" + d.base_version + " → v" + d.new_version + " · safe-rate " + pct(d.safe_before) +
+          " → " + pct(d.safe_after) + " · " + (d.validated ? "validated" : "not validated") +
+          " · vendor model unchanged · prompt " + oldP.length + " → " + newP.length +
+          " chars (" + (dl >= 0 ? "+" : "") + dl + ")"));
+        if (d.summary) kids.push(h("div", { class: "muted", style: "margin-bottom:10px" }, d.summary));
+        kids.push(changed
+          ? h("div", { style: "display:flex;gap:14px;flex-wrap:wrap" },
+              h("div", { style: "flex:1;min-width:280px" },
+                h("div", { class: "label" }, "Before · v" + d.base_version),
+                h("pre", { class: "prompt" }, oldP || "(none)")),
+              h("div", { style: "flex:1;min-width:280px" },
+                h("div", { class: "label" }, "After · v" + d.new_version),
+                h("pre", { class: "prompt" }, newP || "(none)")))
+          : h("div", { class: "empty" },
+              "No change this round: the rewrite left the prompt as-is (v" + d.base_version + ")."));
+      }
       box.append(card.apply(null, kids));
       box.scrollIntoView({ behavior: "smooth" });
     });
