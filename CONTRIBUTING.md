@@ -30,6 +30,19 @@ To exercise the real models, put the relevant keys in a local `.env` (see
 - Errors fail loud with typed, specific exceptions. Do not catch and swallow.
 - Conventional Commits for messages: `type(scope): subject`.
 
+## Secret scanning
+
+The repository ships a pre-commit hook that runs [gitleaks](https://github.com/gitleaks/gitleaks)
+on staged changes, so a credential cannot be committed by accident. Enable it once
+after cloning:
+
+    brew install gitleaks          # or see the gitleaks install docs
+    git config core.hooksPath .githooks
+
+The hook reads `.gitleaks.toml`, which extends the default ruleset and allowlists
+the canary tokens the test suite uses on purpose. If gitleaks is not installed the
+hook skips with a warning rather than blocking your commit.
+
 ## Pull requests
 
 1. Branch from `main`.

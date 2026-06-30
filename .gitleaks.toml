@@ -1,0 +1,15 @@
+# gitleaks configuration for Crucible.
+# Extends the built-in ruleset and allowlists values that look like secrets
+# but are deliberately committed test fixtures (canary tokens used to verify
+# that the adversarial harness detects a leak). These are not real credentials.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Intentional non-secret canary values used by the test suite"
+# Canary tokens follow the CANARY-... convention and are scanned-for on
+# purpose by the multi-turn leak tests. Allowlisting the prefix keeps real
+# provider keys (sk-ant-..., sk-or-...) fully in scope.
+regexes = [
+  '''CANARY-[A-Za-z0-9-]+''',
+]

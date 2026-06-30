@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+# Block commits that introduce secrets. Enable with:
+#   git config core.hooksPath .githooks
+#
+# Requires gitleaks (https://github.com/gitleaks/gitleaks): brew install gitleaks
+set -e
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "warning: gitleaks not installed; skipping secret scan." >&2
+  echo "         install it with 'brew install gitleaks' to enable this hook." >&2
+  exit 0
+fi
+
+gitleaks git --staged --redact --no-banner --config .gitleaks.toml
