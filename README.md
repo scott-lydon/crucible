@@ -1,10 +1,32 @@
 # Crucible
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 **An adversarial platform for AI Integrity: Crucible's red agent attacks an AI system under verification (a classifier such as a fraud LightGBM model, or an agent such as a code-generation agent), independent oracles verify each output using checks held back from that AI system and its makers, a blue loop hardens it by retraining classical-ML targets or patching agent targets' prompts and configuration, and the platform measures its own catch rate against the same red agent, now armed with the verification scheme. Crucible does NOT detect fraud or write code itself; it verifies that the AI systems doing those jobs are not silently wrong. See [`docs/VOCABULARY.md`](docs/VOCABULARY.md) for term-by-term definitions.**
 
-`Direction:` ML + LLM hybrid &nbsp;•&nbsp; `Showcase:` June 29, 2026 (10-minute live demo) &nbsp;•&nbsp; `Team:` clean four-way split
+`Direction:` ML + LLM hybrid
 
-> **Provenance.** This architecture is derived solely from the project proposal (`Crucible_Capstone_Proposal.pdf`). It is proposal-stage: no implementation exists yet, so the dashboard metrics named below are listed without values — they populate from real runs, never from placeholders.
+> **Note.** Every metric on the dashboard populates from a real run; the platform never shows placeholder values.
+
+## Run it locally (no API key needed)
+
+Crucible is mock-first: the full test suite runs offline against a deterministic
+scripted model, so you can clone, install, and verify it with no Anthropic or
+OpenRouter key.
+
+```bash
+uv sync --all-extras   # app plus the dev and ml extras (pytest, ruff, the ML stack)
+docker compose up -d   # local Postgres 16, publishes on $CRUCIBLE_DB_PORT (default 5432)
+uv run pytest          # full suite, scripted model, zero API keys
+```
+
+If port 5432 is already taken, pick a free one first (the suite reads `PGPORT`):
+
+```bash
+export CRUCIBLE_DB_PORT=5439 PGPORT=5439
+```
+
+To run the API or exercise the real models, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -471,4 +493,4 @@ Component for component, Crucible is a working testbed for problems on Anthropic
 
 ---
 
-*Crucible · Gauntlet capstone proposal · combined from the fraud-detection red/blue harness and the self-measuring verification platform. Architecture derived solely from the uploaded proposal.*
+*Crucible · an adversarial platform for AI Integrity, combining the fraud-detection red/blue harness and the self-measuring verification platform.*
