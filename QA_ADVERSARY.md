@@ -2,13 +2,12 @@
 
 Project-specific brief for the `vouch` sub-agent (`~/.claude/agents/vouch.md`). The agent reads this file on every invocation and treats it as the authoritative override on its generic playbook.
 
-If this file ever reverts to the verbatim template, the sub-agent silently runs the generic playbook and the project loses its targeted Quality Assurance (QA) coverage. The grep in `/Users/scottlydon/Documents/Claude/Projects/Gauntlet/CLAUDE.md` catches that drift.
+If this file ever reverts to the verbatim template, the sub-agent silently runs the generic playbook and the project loses its targeted Quality Assurance (QA) coverage. The grep in the project governance docs catches that drift.
 
 ## 1. Project name and repo path
 
-- Repo path on disk: `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
+- Repo path on disk: `<repo-root>`
 - GitHub: `https://github.com/scott-lydon/crucible`
-- GitLab: `https://labs.gauntletai.com/scottlydon/crucible`
 
 ## 2. Base branch for diff
 
@@ -94,7 +93,7 @@ Expected: exit code 0, non-empty Postgres `verdicts` rows for the run, a non-emp
 
 From Cowork mode, invocation is via the `claude-code-bridge` Model Context Protocol (MCP) (`mcp__claude-code-bridge__delegate_to_claude_code`). The brief passed in:
 
-- Repo path: `/Users/scottlydon/Desktop/Clutter/iOS/crucible`
+- Repo path: `<repo-root>`
 - Diff range: `main..<current-branch>`
 - Foundational artifacts: `constitution.md`, `spec.md`, `plan.md`, `tasks.md`, this file
 - Slice being graded: `<slice-id>` from `tasks.md`

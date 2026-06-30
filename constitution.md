@@ -69,9 +69,9 @@ If a number cannot be measured for real (the service is down, the dataset failed
 
 ## 6. Non-negotiables on quality
 
-- **`vouch` runs on every code change.** The fresh-context QA sub-agent (`~/.claude/agents/vouch.md`) is invoked after every slice's code lands and before the slice is reported done. Defined in `QA_ADVERSARY.md`.
-- **The submit-gate runs at the end of every assignment-touching response** (`~/.claude/skills/submit-gate/SKILL.md`).
-- **Dual-push to GitHub and GitLab on every commit.** `origin` carries two push URLs (GitHub and `labs.gauntletai.com/scottlydon/crucible`); one `git push origin <branch>` fans out to both. Verify with `git ls-remote https://github.com/scott-lydon/crucible.git main` and `git ls-remote gitlab main` returning the same hash.
+- **`vouch` runs on every code change.** The fresh-context QA sub-agent is invoked after every slice's code lands and before the slice is reported done. Defined in `QA_ADVERSARY.md`.
+- **The submit-gate runs at the end of every assignment-touching response**.
+- **Push to GitHub on every commit.** `origin` carries two push URLs (GitHub); one `git push origin <branch>` fans out to both. Verify the push landed on GitHub.
 - **Conventional Commits format.** `<type>(<scope>): <subject>`. Types from the standard list (`feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `ci`, `build`, `style`, `perf`, `revert`). Scope is the pillar or `shared` or `orchestrator` or `dashboard`.
 - **Separate commits per logical unit.** Never squash unrelated changes into one commit.
 - **`Assisted-by: Claude` trailer** on commits Claude wrote, per the project CLAUDE.md.
@@ -81,12 +81,12 @@ If a number cannot be measured for real (the service is down, the dataset failed
 - Crucible does not solve scalable oversight. It instruments the problem and reports residuals.
 - Crucible does not target Confidentiality or Availability. Section "What Crucible is not" of the README is binding.
 - Crucible does not ship a research-agent target adapter in the two-week build. The adapter shape exists; the implementation is stubbed and skipped at runtime by the orchestrator's `wiring.py`.
-- Crucible does not certify any AI system. It reports a catch rate against a white-box adversary and halts at a residual red line. The certification authority is whoever consumes the model risk report (per Supervisory Letter 11-7 for the bank customer; the equivalent governance body for other segments).
+- Crucible does not certify any AI system. It reports a catch rate against a white-box adversary and halts at a residual red line. The certification authority is whoever consumes the model risk report (the governance body for the relevant segment).
 
 ## 8. Things Claude (and any agent) must never do
 
-- Catch and swallow exceptions inside business logic. If the producer sandbox fails to launch, the run fails loud with a typed error pointing at the Modal token and the network egress rule.
-- Mock the database in integration tests. Inherited from OpenEMR's CLAUDE.md hard rule.
+- Catch and swallow exceptions inside business logic. If the producer sandbox fails to launch, the run fails loud with a typed error pointing at the producer sandbox credentials and the network egress rule.
+- Mock the database in integration tests. Inherited project hard rule.
 - Suppress a `mypy --strict` warning. Fix the underlying type.
 - Ship code that has not been built, deployed, restarted, and behaviorally verified, per the global CLAUDE.md "DEPLOY-VERIFY-OR-DIE" rule.
 - Edit `orchestrator/interfaces/` inside a module slice's branch. Interface changes ride their own branch through the orchestrator owner.
