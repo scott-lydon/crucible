@@ -10,9 +10,8 @@ Run the block below verbatim. If any command fails, stop and surface the failure
 
 ```bash
 # 1.1 environment sanity
-cd /Users/scottlydon/Desktop/Clutter/iOS/crucible || exit 1
+cd <repo-root> || exit 1
 git status                                                    # must be clean
-git remote -v | grep -q "labs.gauntletai.com"                 # must exist
 git rev-parse --abbrev-ref HEAD                               # report branch
 python3.12 --version                                          # must be 3.12+
 test -f pyproject.toml || echo "WARNING: slice 0 not yet landed"
@@ -112,7 +111,7 @@ One slice equals one commit. No "WIP" commits on the slice branch; squash locall
 From Cowork mode, invoke the `claude-code-bridge` Model Context Protocol (MCP) (`mcp__claude-code-bridge__delegate_to_claude_code`). The brief to pass:
 
 ```
-Repo: /Users/scottlydon/Desktop/Clutter/iOS/crucible
+Repo: <repo-root>
 Slice: slice-<N>-<short-title>
 Diff range: main..<current-branch>
 Read first: constitution.md, spec.md, plan.md, tasks.md, QA_ADVERSARY.md
