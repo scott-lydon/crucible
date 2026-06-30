@@ -7,7 +7,7 @@ pull-request flow.
 
 Crucible runs on Python 3.12+ with Postgres via Docker.
 
-1. Install dependencies with uv: `uv sync`
+1. Install dependencies with uv: `uv sync --all-extras` (the `dev` and `ml` extras carry pytest, ruff, mypy, and the ML stack)
 2. Start Postgres: `docker compose up -d`
 3. Apply migrations: `uv run alembic upgrade head`
 4. Run the API: `uv run uvicorn orchestrator.api:app --reload`
